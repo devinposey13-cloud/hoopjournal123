@@ -10,8 +10,12 @@ import { AddClipDialog } from '@/components/AddClipDialog';
 import { AddScheduleDialog } from '@/components/AddScheduleDialog';
 import { ScheduleCard } from '@/components/ScheduleCard';
 import { SettingsPanel } from '@/components/SettingsPanel';
-import { useBasketballData } from '@/hooks/useBasketballData';
+import { AuthForm } from '@/components/AuthForm';
+import { useAuth } from '@/hooks/useAuth';
+import { useCloudData } from '@/hooks/useCloudData';
 import { isAfter, isBefore, isToday, startOfDay } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { LogOut, Loader2 } from 'lucide-react';
 import {
   Target,
   Repeat,
@@ -23,11 +27,13 @@ import {
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const { user, loading: authLoading, signOut } = useAuth();
   const {
     games,
     clips,
     profile,
     schedule,
+    loading: dataLoading,
     seasonStats,
     addGame,
     deleteGame,
@@ -36,7 +42,20 @@ export default function Index() {
     updateProfile,
     addScheduledGame,
     deleteScheduledGame,
-  } = useBasketballData();
+  } = useCloudData();
+
+  // Show auth form if not logged in
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthForm />;
+  }
 
   const today = startOfDay(new Date());
   const upcomingGames = schedule.filter(
@@ -45,6 +64,17 @@ export default function Index() {
   const pastScheduledGames = schedule.filter(
     (g) => isBefore(new Date(g.date), today) && !isToday(new Date(g.date))
   );
+
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading your stats...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -255,11 +285,21 @@ export default function Index() {
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="animate-fade-in">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold">Settings</h1>
-              <p className="text-muted-foreground">
-                Manage your player profile
-              </p>
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold">Settings</h1>
+                <p className="text-muted-foreground">
+                  Manage your player profile
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={signOut}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
             </div>
             <SettingsPanel profile={profile} onUpdateProfile={updateProfile} />
           </div>

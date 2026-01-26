@@ -14,7 +14,194 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      games: {
+        Row: {
+          assists: number
+          blocks: number
+          created_at: string
+          date: string
+          fg_attempted: number
+          fg_made: number
+          ft_attempted: number
+          ft_made: number
+          id: string
+          is_win: boolean
+          minutes_played: number
+          opponent: string
+          points: number
+          rebounds: number
+          steals: number
+          three_pt_attempted: number
+          three_pt_made: number
+          turnovers: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assists?: number
+          blocks?: number
+          created_at?: string
+          date: string
+          fg_attempted?: number
+          fg_made?: number
+          ft_attempted?: number
+          ft_made?: number
+          id?: string
+          is_win?: boolean
+          minutes_played?: number
+          opponent: string
+          points?: number
+          rebounds?: number
+          steals?: number
+          three_pt_attempted?: number
+          three_pt_made?: number
+          turnovers?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assists?: number
+          blocks?: number
+          created_at?: string
+          date?: string
+          fg_attempted?: number
+          fg_made?: number
+          ft_attempted?: number
+          ft_made?: number
+          id?: string
+          is_win?: boolean
+          minutes_played?: number
+          opponent?: string
+          points?: number
+          rebounds?: number
+          steals?: number
+          three_pt_attempted?: number
+          three_pt_made?: number
+          turnovers?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      player_settings: {
+        Row: {
+          created_at: string
+          grade: string
+          height: string
+          id: string
+          name: string
+          number: number
+          position: string
+          team: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          grade?: string
+          height?: string
+          id?: string
+          name?: string
+          number?: number
+          position?: string
+          team?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          grade?: string
+          height?: string
+          id?: string
+          name?: string
+          number?: number
+          position?: string
+          team?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scheduled_games: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          is_home: boolean
+          location: string
+          notes: string | null
+          opponent: string
+          time: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          is_home?: boolean
+          location: string
+          notes?: string | null
+          opponent: string
+          time: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          is_home?: boolean
+          location?: string
+          notes?: string | null
+          opponent?: string
+          time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      video_clips: {
+        Row: {
+          created_at: string
+          date: string
+          description: string | null
+          file_path: string
+          game_id: string | null
+          id: string
+          thumbnail_path: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          file_path: string
+          game_id?: string | null
+          id?: string
+          thumbnail_path?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          file_path?: string
+          game_id?: string | null
+          id?: string
+          thumbnail_path?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_clips_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
