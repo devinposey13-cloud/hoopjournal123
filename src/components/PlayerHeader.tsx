@@ -1,12 +1,19 @@
-import { PlayerProfile, SeasonStats } from '@/types/basketball';
-import { User, Trophy, TrendingUp } from 'lucide-react';
+import { PlayerProfile, SeasonStats, GameStats } from '@/types/basketball';
+import { Trophy, TrendingUp, FileDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { exportSeasonStatsPdf } from '@/utils/exportPdf';
 
 interface PlayerHeaderProps {
   profile: PlayerProfile;
   seasonStats: SeasonStats;
+  games: GameStats[];
 }
 
-export function PlayerHeader({ profile, seasonStats }: PlayerHeaderProps) {
+export function PlayerHeader({ profile, seasonStats, games }: PlayerHeaderProps) {
+  const handleExport = () => {
+    exportSeasonStatsPdf(profile, seasonStats, games);
+  };
+
   return (
     <div className="gradient-card rounded-2xl p-6 shadow-card border border-border/50">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
@@ -44,24 +51,35 @@ export function PlayerHeader({ profile, seasonStats }: PlayerHeaderProps) {
           </div>
         </div>
 
-        {/* Season Record */}
-        <div className="flex items-center gap-6">
-          <div className="text-center">
-            <div className="flex items-center gap-1.5 text-primary">
-              <Trophy className="w-4 h-4" />
-              <span className="text-sm font-medium">Record</span>
+        {/* Season Record & Export */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
+            <div className="text-center">
+              <div className="flex items-center gap-1.5 text-primary">
+                <Trophy className="w-4 h-4" />
+                <span className="text-sm font-medium">Record</span>
+              </div>
+              <p className="text-2xl font-bold mt-1">
+                {seasonStats.wins}-{seasonStats.losses}
+              </p>
             </div>
-            <p className="text-2xl font-bold mt-1">
-              {seasonStats.wins}-{seasonStats.losses}
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center gap-1.5 text-primary">
-              <TrendingUp className="w-4 h-4" />
-              <span className="text-sm font-medium">PPG</span>
+            <div className="text-center">
+              <div className="flex items-center gap-1.5 text-primary">
+                <TrendingUp className="w-4 h-4" />
+                <span className="text-sm font-medium">PPG</span>
+              </div>
+              <p className="text-2xl font-bold mt-1">{seasonStats.avgPoints}</p>
             </div>
-            <p className="text-2xl font-bold mt-1">{seasonStats.avgPoints}</p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            className="hidden md:flex"
+          >
+            <FileDown className="w-4 h-4 mr-2" />
+            Export PDF
+          </Button>
         </div>
       </div>
     </div>
