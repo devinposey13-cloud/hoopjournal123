@@ -87,7 +87,7 @@ export default function Index() {
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6 animate-fade-in">
-            <PlayerHeader profile={profile} seasonStats={seasonStats} />
+            <PlayerHeader profile={profile} seasonStats={seasonStats} games={games} />
 
             {/* Season Averages */}
             <section>
