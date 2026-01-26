@@ -377,16 +377,19 @@ export function useCloudData() {
     try {
       const { error } = await supabase
         .from('player_settings')
-        .upsert({
-          user_id: user.id,
-          name: updates.name ?? profile.name,
-          team: updates.team ?? profile.team,
-          position: updates.position ?? profile.position,
-          number: updates.number ?? profile.number,
-          height: updates.height ?? profile.height,
-          grade: updates.grade ?? profile.grade,
-          avatar_url: updates.avatar ?? profile.avatar ?? null,
-        });
+        .upsert(
+          {
+            user_id: user.id,
+            name: updates.name ?? profile.name,
+            team: updates.team ?? profile.team,
+            position: updates.position ?? profile.position,
+            number: updates.number ?? profile.number,
+            height: updates.height ?? profile.height,
+            grade: updates.grade ?? profile.grade,
+            avatar_url: updates.avatar ?? profile.avatar ?? null,
+          },
+          { onConflict: 'user_id' }
+        );
 
       if (error) throw error;
 
