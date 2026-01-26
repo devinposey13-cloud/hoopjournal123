@@ -9,6 +9,7 @@ import { AddGameDialog } from '@/components/AddGameDialog';
 import { AddClipDialog } from '@/components/AddClipDialog';
 import { AddScheduleDialog } from '@/components/AddScheduleDialog';
 import { ScheduleCard } from '@/components/ScheduleCard';
+import { ScheduleCalendar } from '@/components/ScheduleCalendar';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { AuthForm } from '@/components/AuthForm';
 import { useAuth } from '@/hooks/useAuth';
@@ -206,6 +207,14 @@ export default function Index() {
               </div>
               <AddScheduleDialog onAddGame={addScheduledGame} />
             </div>
+
+            {/* Calendar View */}
+            <section>
+              <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                Calendar View
+              </h2>
+              <ScheduleCalendar games={schedule} />
+            </section>
 
             {/* Upcoming Games */}
             <section>
