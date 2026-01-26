@@ -476,8 +476,8 @@ export function useCloudData() {
     }
   };
 
-  // Add clip (now with season_id)
-  const addClip = async (file: File, title: string, description?: string) => {
+  // Add clip (now with season_id and is_public)
+  const addClip = async (file: File, title: string, description?: string, isPublic?: boolean) => {
     if (!user) return null;
 
     try {
@@ -501,6 +501,7 @@ export function useCloudData() {
           description,
           file_path: filePath,
           date: new Date().toISOString(),
+          is_public: isPublic ?? false,
         })
         .select()
         .single();
@@ -518,6 +519,7 @@ export function useCloudData() {
         description: data.description || undefined,
         url: signedData?.signedUrl || '',
         date: data.date,
+        isPublic: data.is_public,
       };
 
       setClips(prev => [newClip, ...prev]);

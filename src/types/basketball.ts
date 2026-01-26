@@ -26,6 +26,9 @@ export interface VideoClip {
   thumbnail?: string;
   date: string;
   gameId?: string;
+  isPublic?: boolean;
+  playerName?: string;
+  playerTeam?: string;
 }
 
 export interface PlayerProfile {
