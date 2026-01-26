@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Video, Settings, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Calendar, Video, Settings, CalendarDays, MessageCircle } from 'lucide-react';
 
-export type Tab = 'dashboard' | 'games' | 'schedule' | 'clips' | 'settings';
+export type Tab = 'dashboard' | 'games' | 'schedule' | 'clips' | 'coach' | 'settings';
 
 interface NavigationProps {
   activeTab: Tab;
@@ -13,6 +13,7 @@ const tabs = [
   { id: 'games' as Tab, label: 'Games', icon: Calendar },
   { id: 'schedule' as Tab, label: 'Schedule', icon: CalendarDays },
   { id: 'clips' as Tab, label: 'Clips', icon: Video },
+  { id: 'coach' as Tab, label: 'Coach', icon: MessageCircle },
   { id: 'settings' as Tab, label: 'Settings', icon: Settings },
 ];
 

@@ -10,6 +10,7 @@ import { AddClipDialog } from '@/components/AddClipDialog';
 import { AddScheduleDialog } from '@/components/AddScheduleDialog';
 import { ScheduleCard } from '@/components/ScheduleCard';
 import { ScheduleCalendar } from '@/components/ScheduleCalendar';
+import { CoachChat } from '@/components/CoachChat';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { AuthForm } from '@/components/AuthForm';
 import { useAuth } from '@/hooks/useAuth';
@@ -288,6 +289,21 @@ export default function Index() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Coach Tab */}
+        {activeTab === 'coach' && (
+          <div className="space-y-6 animate-fade-in">
+            <div>
+              <h1 className="text-2xl font-bold">Coach AI</h1>
+              <p className="text-muted-foreground">
+                Get personalized feedback on your performance
+              </p>
+            </div>
+            <div className="max-w-2xl">
+              <CoachChat games={games} seasonStats={seasonStats} />
+            </div>
           </div>
         )}
 
