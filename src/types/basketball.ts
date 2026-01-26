@@ -51,3 +51,13 @@ export interface SeasonStats {
   threePtPercentage: number;
   ftPercentage: number;
 }
+
+export interface ScheduledGame {
+  id: string;
+  date: string;
+  time: string;
+  opponent: string;
+  location: string;
+  isHome: boolean;
+  notes?: string;
+}

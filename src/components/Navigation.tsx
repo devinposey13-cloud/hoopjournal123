@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Video, Settings } from 'lucide-react';
+import { LayoutDashboard, Calendar, Video, Settings, CalendarDays } from 'lucide-react';
 
-export type Tab = 'dashboard' | 'games' | 'clips' | 'settings';
+export type Tab = 'dashboard' | 'games' | 'schedule' | 'clips' | 'settings';
 
 interface NavigationProps {
   activeTab: Tab;
@@ -12,6 +11,7 @@ interface NavigationProps {
 const tabs = [
   { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard },
   { id: 'games' as Tab, label: 'Games', icon: Calendar },
+  { id: 'schedule' as Tab, label: 'Schedule', icon: CalendarDays },
   { id: 'clips' as Tab, label: 'Clips', icon: Video },
   { id: 'settings' as Tab, label: 'Settings', icon: Settings },
 ];

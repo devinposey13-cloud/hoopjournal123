@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { GameStats, VideoClip, PlayerProfile, SeasonStats } from '@/types/basketball';
+import { GameStats, VideoClip, PlayerProfile, SeasonStats, ScheduledGame } from '@/types/basketball';
 
 const STORAGE_KEYS = {
   GAMES: 'basketball_games',
   CLIPS: 'basketball_clips',
   PROFILE: 'basketball_profile',
+  SCHEDULE: 'basketball_schedule',
 };
 
 const defaultProfile: PlayerProfile = {
@@ -20,16 +21,19 @@ export function useBasketballData() {
   const [games, setGames] = useState<GameStats[]>([]);
   const [clips, setClips] = useState<VideoClip[]>([]);
   const [profile, setProfile] = useState<PlayerProfile>(defaultProfile);
+  const [schedule, setSchedule] = useState<ScheduledGame[]>([]);
 
   // Load data from localStorage on mount
   useEffect(() => {
     const savedGames = localStorage.getItem(STORAGE_KEYS.GAMES);
     const savedClips = localStorage.getItem(STORAGE_KEYS.CLIPS);
     const savedProfile = localStorage.getItem(STORAGE_KEYS.PROFILE);
+    const savedSchedule = localStorage.getItem(STORAGE_KEYS.SCHEDULE);
 
     if (savedGames) setGames(JSON.parse(savedGames));
     if (savedClips) setClips(JSON.parse(savedClips));
     if (savedProfile) setProfile(JSON.parse(savedProfile));
+    if (savedSchedule) setSchedule(JSON.parse(savedSchedule));
   }, []);
 
   // Save games to localStorage
@@ -46,6 +50,11 @@ export function useBasketballData() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(profile));
   }, [profile]);
+
+  // Save schedule to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SCHEDULE, JSON.stringify(schedule));
+  }, [schedule]);
 
   const addGame = (game: Omit<GameStats, 'id'>) => {
     const newGame: GameStats = {
@@ -81,6 +90,23 @@ export function useBasketballData() {
 
   const updateProfile = (updates: Partial<PlayerProfile>) => {
     setProfile((prev) => ({ ...prev, ...updates }));
+  };
+
+  const addScheduledGame = (game: Omit<ScheduledGame, 'id'>) => {
+    const newGame: ScheduledGame = {
+      ...game,
+      id: crypto.randomUUID(),
+    };
+    setSchedule((prev) => 
+      [...prev, newGame].sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      )
+    );
+    return newGame;
+  };
+
+  const deleteScheduledGame = (id: string) => {
+    setSchedule((prev) => prev.filter((game) => game.id !== id));
   };
 
   const calculateSeasonStats = (): SeasonStats => {
@@ -161,6 +187,7 @@ export function useBasketballData() {
     games,
     clips,
     profile,
+    schedule,
     seasonStats: calculateSeasonStats(),
     addGame,
     updateGame,
@@ -168,5 +195,7 @@ export function useBasketballData() {
     addClip,
     deleteClip,
     updateProfile,
+    addScheduledGame,
+    deleteScheduledGame,
   };
 }
