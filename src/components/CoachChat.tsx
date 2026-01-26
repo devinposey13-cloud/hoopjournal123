@@ -7,6 +7,7 @@ import { GameStats, SeasonStats } from '@/types/basketball';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -126,6 +127,7 @@ async function getVideoThumbnail(videoFile: File): Promise<string> {
 }
 
 export function CoachChat({ games, seasonStats }: CoachChatProps) {
+  const { session } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -232,11 +234,17 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
       // Prepare messages for API (strip videoThumbnail from messages)
       const apiMessages = [...messages, userMessage].map(({ role, content }) => ({ role, content }));
       
+      // Get the user's access token for authentication
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        throw new Error('You must be logged in to use Coach AI');
+      }
+
       const response = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           messages: apiMessages,
