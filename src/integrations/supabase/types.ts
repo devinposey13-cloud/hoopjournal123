@@ -85,6 +85,7 @@ export type Database = {
       }
       player_settings: {
         Row: {
+          avatar_url: string | null
           created_at: string
           grade: string
           height: string
@@ -97,6 +98,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           grade?: string
           height?: string
@@ -109,6 +111,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           grade?: string
           height?: string

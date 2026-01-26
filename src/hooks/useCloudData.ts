@@ -131,6 +131,7 @@ export function useCloudData() {
           number: settingsData.number,
           height: settingsData.height,
           grade: settingsData.grade,
+          avatar: settingsData.avatar_url || undefined,
         });
       }
     } catch (error) {
@@ -384,6 +385,7 @@ export function useCloudData() {
           number: updates.number ?? profile.number,
           height: updates.height ?? profile.height,
           grade: updates.grade ?? profile.grade,
+          avatar_url: updates.avatar ?? profile.avatar ?? null,
         });
 
       if (error) throw error;
@@ -393,6 +395,42 @@ export function useCloudData() {
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
+    }
+  };
+
+  // Upload avatar
+  const uploadAvatar = async (file: File) => {
+    if (!user) return null;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${fileExt}`;
+
+      // Delete old avatar if exists
+      await supabase.storage.from('avatars').remove([filePath]);
+
+      // Upload new avatar
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const avatarUrl = publicUrlData.publicUrl;
+
+      // Update profile with new avatar URL
+      await updateProfile({ avatar: avatarUrl });
+
+      return avatarUrl;
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Failed to upload avatar');
+      return null;
     }
   };
 
@@ -485,6 +523,7 @@ export function useCloudData() {
     addClip,
     deleteClip,
     updateProfile,
+    uploadAvatar,
     refetch: fetchData,
   };
 }
