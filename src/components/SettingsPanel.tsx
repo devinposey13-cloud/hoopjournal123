@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { PlayerProfile } from '@/types/basketball';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,103 +10,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Save, Camera, Loader2, User } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { toast } from 'sonner';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface SettingsPanelProps {
   profile: PlayerProfile;
   onUpdateProfile: (updates: Partial<PlayerProfile>) => void;
-  onUploadAvatar?: (file: File) => Promise<string | null>;
 }
 
 const positions = ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center', 'Guard', 'Forward'];
 const grades = ['6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
-export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: SettingsPanelProps) {
+export function SettingsPanel({ profile, onUpdateProfile }: SettingsPanelProps) {
   const [formData, setFormData] = useState(profile);
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
     onUpdateProfile(formData);
     toast.success('Profile updated successfully!');
   };
-
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !onUploadAvatar) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const avatarUrl = await onUploadAvatar(file);
-      if (avatarUrl) {
-        setFormData(prev => ({ ...prev, avatar: avatarUrl }));
-      }
-    } finally {
-      setIsUploading(false);
-      // Reset input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
   return (
     <div className="max-w-2xl mx-auto">
       <div className="stat-card">
         <h2 className="text-xl font-bold mb-6">Player Profile</h2>
         
         <div className="space-y-6">
-          {/* Avatar Upload */}
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative group">
-              <Avatar className="w-24 h-24 border-2 border-border">
-                <AvatarImage src={formData.avatar} alt={formData.name} />
-                <AvatarFallback className="gradient-primary text-2xl font-bold text-primary-foreground">
-                  {formData.number}
-                </AvatarFallback>
-              </Avatar>
-              <button
-                type="button"
-                onClick={handleAvatarClick}
-                disabled={isUploading}
-                className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-              >
-                {isUploading ? (
-                  <Loader2 className="w-6 h-6 text-white animate-spin" />
-                ) : (
-                  <Camera className="w-6 h-6 text-white" />
-                )}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Click to upload a profile photo
-            </p>
-          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

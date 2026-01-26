@@ -338,7 +338,7 @@ export default function Index() {
                 Sign Out
               </Button>
             </div>
-            <SettingsPanel profile={profile} onUpdateProfile={updateProfile} onUploadAvatar={uploadAvatar} />
+            <SettingsPanel profile={profile} onUpdateProfile={updateProfile} />
           </div>
         )}
       </main>
