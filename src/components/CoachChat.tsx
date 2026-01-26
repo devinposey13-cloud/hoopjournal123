@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Loader2, Sparkles, Video, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { GameStats, SeasonStats } from '@/types/basketball';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  videoThumbnail?: string;
 }
 
 interface CoachChatProps {
@@ -26,12 +28,113 @@ const suggestedPrompts = [
   "Analyze my season so far",
 ];
 
+// Extract frames from video at specific intervals
+async function extractVideoFrames(videoFile: File, numFrames: number = 5): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+    
+    const frames: string[] = [];
+    let currentFrame = 0;
+    
+    video.onloadedmetadata = () => {
+      const duration = video.duration;
+      const interval = duration / (numFrames + 1);
+      
+      // Set canvas size to match video (scaled down for efficiency)
+      const maxWidth = 640;
+      const scale = Math.min(1, maxWidth / video.videoWidth);
+      canvas.width = video.videoWidth * scale;
+      canvas.height = video.videoHeight * scale;
+      
+      const captureFrame = () => {
+        if (currentFrame >= numFrames) {
+          URL.revokeObjectURL(video.src);
+          resolve(frames);
+          return;
+        }
+        
+        const time = interval * (currentFrame + 1);
+        video.currentTime = time;
+      };
+      
+      video.onseeked = () => {
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          frames.push(dataUrl);
+        }
+        currentFrame++;
+        captureFrame();
+      };
+      
+      captureFrame();
+    };
+    
+    video.onerror = () => {
+      URL.revokeObjectURL(video.src);
+      reject(new Error('Failed to load video'));
+    };
+    
+    video.src = URL.createObjectURL(videoFile);
+  });
+}
+
+// Get video thumbnail
+async function getVideoThumbnail(videoFile: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+    
+    video.onloadedmetadata = () => {
+      video.currentTime = 1; // Get frame at 1 second
+    };
+    
+    video.onseeked = () => {
+      const maxWidth = 200;
+      const scale = Math.min(1, maxWidth / video.videoWidth);
+      canvas.width = video.videoWidth * scale;
+      canvas.height = video.videoHeight * scale;
+      
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        URL.revokeObjectURL(video.src);
+        resolve(dataUrl);
+      } else {
+        reject(new Error('Failed to get canvas context'));
+      }
+    };
+    
+    video.onerror = () => {
+      URL.revokeObjectURL(video.src);
+      reject(new Error('Failed to load video'));
+    };
+    
+    video.src = URL.createObjectURL(videoFile);
+  });
+}
+
 export function CoachChat({ games, seasonStats }: CoachChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
+  const [isExtractingFrames, setIsExtractingFrames] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const latestGame = games.length > 0 ? games[0] : null;
 
@@ -41,15 +144,92 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
     }
   }, [messages]);
 
-  const sendMessage = async (messageText: string) => {
-    if (!messageText.trim() || isLoading) return;
+  const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload a video file.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Validate file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Please upload a video under 50MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    try {
+      const thumbnail = await getVideoThumbnail(file);
+      setSelectedVideo(file);
+      setVideoThumbnail(thumbnail);
+    } catch (error) {
+      toast({
+        title: 'Error processing video',
+        description: 'Could not load video preview.',
+        variant: 'destructive',
+      });
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
-    const userMessage: Message = { role: 'user', content: messageText.trim() };
+  const removeVideo = () => {
+    setSelectedVideo(null);
+    setVideoThumbnail(null);
+  };
+
+  const sendMessage = async (messageText: string) => {
+    if ((!messageText.trim() && !selectedVideo) || isLoading) return;
+
+    const hasVideo = !!selectedVideo;
+    const currentVideoThumbnail = videoThumbnail;
+    const currentVideoFile = selectedVideo;
+    
+    // Clear video selection
+    setSelectedVideo(null);
+    setVideoThumbnail(null);
+
+    const userMessage: Message = { 
+      role: 'user', 
+      content: messageText.trim() || (hasVideo ? 'Please analyze this basketball video clip and provide feedback.' : ''),
+      videoThumbnail: currentVideoThumbnail || undefined,
+    };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     let assistantContent = '';
+    let videoFrames: string[] = [];
+
+    // Extract frames if video is attached
+    if (hasVideo && currentVideoFile) {
+      setIsExtractingFrames(true);
+      try {
+        videoFrames = await extractVideoFrames(currentVideoFile, 5);
+      } catch (error) {
+        console.error('Error extracting frames:', error);
+        toast({
+          title: 'Error processing video',
+          description: 'Could not extract frames from video.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsExtractingFrames(false);
+      }
+    }
 
     const updateAssistant = (chunk: string) => {
       assistantContent += chunk;
@@ -65,6 +245,9 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
     };
 
     try {
+      // Prepare messages for API (strip videoThumbnail from messages)
+      const apiMessages = [...messages, userMessage].map(({ role, content }) => ({ role, content }));
+      
       const response = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
@@ -72,9 +255,10 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage],
+          messages: apiMessages,
           playerStats: latestGame,
           seasonStats,
+          videoFrames: videoFrames.length > 0 ? videoFrames : undefined,
         }),
       });
 
@@ -159,7 +343,7 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
         <div>
           <h3 className="font-semibold">Coach AI</h3>
           <p className="text-xs text-muted-foreground">
-            Your personal basketball coach
+            Your personal basketball coach • Supports video analysis
           </p>
         </div>
       </div>
@@ -174,7 +358,7 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
             <h4 className="font-semibold mb-2">Ask Coach AI</h4>
             <p className="text-sm text-muted-foreground mb-6 max-w-sm">
               Get personalized feedback on your game, training tips, and advice
-              based on your stats.
+              based on your stats. <span className="text-primary font-medium">Upload a video clip for technique analysis!</span>
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
               {suggestedPrompts.map((prompt) => (
@@ -222,7 +406,26 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
                       : 'bg-muted rounded-tl-sm'
                   )}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  {message.videoThumbnail && (
+                    <div className="mb-2 rounded-lg overflow-hidden border border-border/50">
+                      <img 
+                        src={message.videoThumbnail} 
+                        alt="Video clip" 
+                        className="w-full max-w-[150px]"
+                      />
+                      <div className="flex items-center gap-1 px-2 py-1 bg-black/50 text-white text-xs">
+                        <Video className="w-3 h-3" />
+                        Video clip
+                      </div>
+                    </div>
+                  )}
+                  {message.role === 'assistant' ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  )}
                 </div>
               </div>
             ))}
@@ -232,7 +435,12 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
                   <Bot className="w-4 h-4 text-primary-foreground" />
                 </div>
                 <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      {isExtractingFrames ? 'Analyzing video...' : 'Thinking...'}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
@@ -240,15 +448,56 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
         )}
       </ScrollArea>
 
+      {/* Video Preview */}
+      {selectedVideo && videoThumbnail && (
+        <div className="px-2 pb-2">
+          <div className="relative inline-block">
+            <img 
+              src={videoThumbnail} 
+              alt="Selected video" 
+              className="h-20 rounded-lg border border-border"
+            />
+            <div className="absolute bottom-1 left-1 flex items-center gap-1 px-1.5 py-0.5 bg-black/60 rounded text-white text-xs">
+              <Video className="w-3 h-3" />
+              Video
+            </div>
+            <button
+              onClick={removeVideo}
+              className="absolute -top-2 -right-2 w-5 h-5 bg-destructive rounded-full flex items-center justify-center text-destructive-foreground"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <form onSubmit={handleSubmit} className="pt-4 border-t border-border">
         <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="video/*"
+            onChange={handleVideoSelect}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-11 w-11 flex-shrink-0"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            title="Upload video for analysis"
+          >
+            <Video className="w-4 h-4" />
+          </Button>
           <Textarea
             ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask Coach AI for feedback..."
+            placeholder={selectedVideo ? "Add a question about this video..." : "Ask Coach AI for feedback..."}
             className="min-h-[44px] max-h-32 resize-none"
             rows={1}
           />
@@ -256,7 +505,7 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
             type="submit"
             size="icon"
             className="gradient-primary h-11 w-11 flex-shrink-0"
-            disabled={!input.trim() || isLoading}
+            disabled={(!input.trim() && !selectedVideo) || isLoading}
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />

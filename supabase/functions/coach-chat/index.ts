@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, playerStats, seasonStats } = await req.json();
+    const { messages, playerStats, seasonStats, videoFrames } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -49,7 +49,47 @@ COACHING STYLE:
 - Provide 2-3 actionable drills or tips
 - Use basketball terminology naturally
 - Keep responses concise but helpful (under 200 words unless asked for more detail)
-- If asked about something unrelated to basketball, gently redirect to basketball topics`;
+- If asked about something unrelated to basketball, gently redirect to basketball topics
+
+VIDEO ANALYSIS (when frames are provided):
+- Analyze the player's form, positioning, and technique
+- Look for shooting mechanics, defensive stance, footwork, ball handling
+- Identify specific areas for improvement with actionable corrections
+- Be encouraging while providing constructive feedback
+- Reference what you see in the frames specifically`;
+
+    // Build the messages array for the API call
+    const apiMessages: any[] = [
+      { role: "system", content: systemPrompt },
+    ];
+
+    // Process messages, handling video frames for the latest user message
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+      
+      // If this is the last user message and we have video frames, include them
+      if (i === messages.length - 1 && msg.role === 'user' && videoFrames && videoFrames.length > 0) {
+        // Build multimodal content with images
+        const content: any[] = [
+          { type: "text", text: msg.content || "Please analyze this basketball video clip and provide feedback on my technique, form, and areas for improvement." }
+        ];
+        
+        // Add video frames as images (limit to 5 frames for efficiency)
+        const framesToAnalyze = videoFrames.slice(0, 5);
+        for (const frame of framesToAnalyze) {
+          content.push({
+            type: "image_url",
+            image_url: {
+              url: frame, // base64 data URL
+            }
+          });
+        }
+        
+        apiMessages.push({ role: "user", content });
+      } else {
+        apiMessages.push(msg);
+      }
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -58,11 +98,8 @@ COACHING STYLE:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
+        model: "google/gemini-2.5-flash", // Using model with vision capabilities
+        messages: apiMessages,
         stream: true,
       }),
     });
