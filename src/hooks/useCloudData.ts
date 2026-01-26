@@ -11,6 +11,8 @@ const defaultProfile: PlayerProfile = {
   number: 23,
   height: "5'8\"",
   grade: '8th Grade',
+  username: undefined,
+  isProfilePublic: false,
 };
 
 export function useCloudData() {
@@ -174,7 +176,7 @@ export function useCloudData() {
       setClips(clipsWithUrls);
 
       // Fetch player settings
-      const { data: settingsData, error: settingsError } = await supabase
+      const { data: settingsData, error: settingsError } = await (supabase as any)
         .from('player_settings')
         .select('*')
         .maybeSingle();
@@ -190,6 +192,8 @@ export function useCloudData() {
           height: settingsData.height,
           grade: settingsData.grade,
           avatar: settingsData.avatar_url || undefined,
+          username: settingsData.username || undefined,
+          isProfilePublic: settingsData.is_profile_public ?? false,
         });
       }
     } catch (error) {
@@ -568,7 +572,7 @@ export function useCloudData() {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('player_settings')
         .upsert(
           {
@@ -580,6 +584,8 @@ export function useCloudData() {
             height: updates.height ?? profile.height,
             grade: updates.grade ?? profile.grade,
             avatar_url: updates.avatar ?? profile.avatar ?? null,
+            username: updates.username ?? profile.username ?? null,
+            is_profile_public: updates.isProfilePublic ?? profile.isProfilePublic ?? false,
           },
           { onConflict: 'user_id' }
         );

@@ -101,6 +101,7 @@ export type Database = {
           grade: string
           height: string
           id: string
+          is_profile_public: boolean
           name: string
           number: number
           position: string
@@ -114,6 +115,7 @@ export type Database = {
           grade?: string
           height?: string
           id?: string
+          is_profile_public?: boolean
           name?: string
           number?: number
           position?: string
@@ -127,6 +129,7 @@ export type Database = {
           grade?: string
           height?: string
           id?: string
+          is_profile_public?: boolean
           name?: string
           number?: number
           position?: string

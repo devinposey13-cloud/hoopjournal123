@@ -39,6 +39,8 @@ export interface PlayerProfile {
   height: string;
   grade: string;
   avatar?: string;
+  username?: string;
+  isProfilePublic?: boolean;
 }
 
 export interface SeasonStats {
