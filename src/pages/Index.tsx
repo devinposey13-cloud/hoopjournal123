@@ -16,7 +16,7 @@ import { SettingsPanel } from '@/components/SettingsPanel';
 import { AuthForm } from '@/components/AuthForm';
 import { useAuth } from '@/hooks/useAuth';
 import { useCloudData } from '@/hooks/useCloudData';
-import { isAfter, isBefore, isToday, startOfDay } from 'date-fns';
+import { isAfter, isBefore, isToday, startOfDay, isSameDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { LogOut, Loader2 } from 'lucide-react';
 import {
@@ -73,6 +73,18 @@ export default function Index() {
   const pastScheduledGames = schedule.filter(
     (g) => isBefore(new Date(g.date), today) && !isToday(new Date(g.date))
   );
+
+  // Helper to find a linked played game for a scheduled game
+  const findLinkedGame = (scheduledGame: { opponent: string; date: string }) => {
+    const scheduleDate = new Date(scheduledGame.date);
+    return games.find((pg) => {
+      const playedDate = new Date(pg.date);
+      return (
+        pg.opponent.toLowerCase() === scheduledGame.opponent.toLowerCase() &&
+        isSameDay(scheduleDate, playedDate)
+      );
+    });
+  };
 
   if (dataLoading) {
     return (
@@ -231,7 +243,7 @@ export default function Index() {
               <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                 Calendar View
               </h2>
-              <ScheduleCalendar games={schedule} />
+              <ScheduleCalendar games={schedule} playedGames={games} />
             </section>
 
             {/* Upcoming Games */}
@@ -252,6 +264,7 @@ export default function Index() {
                     <ScheduleCard
                       key={game.id}
                       game={game}
+                      linkedGame={findLinkedGame(game)}
                       onDelete={deleteScheduledGame}
                     />
                   ))}
@@ -270,6 +283,7 @@ export default function Index() {
                     <ScheduleCard
                       key={game.id}
                       game={game}
+                      linkedGame={findLinkedGame(game)}
                       onDelete={deleteScheduledGame}
                     />
                   ))}
