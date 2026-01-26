@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, Calendar, Video, Settings, CalendarDays, MessageCircle } from 'lucide-react';
+import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 
 export type Tab = 'dashboard' | 'games' | 'schedule' | 'clips' | 'coach' | 'settings';
 
@@ -24,8 +25,8 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-              <span className="text-lg font-black text-primary-foreground">🏀</span>
+            <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center">
+              <img src={hoopJournalLogo} alt="Hoop Journal" className="w-full h-full object-cover" />
             </div>
             <span className="text-lg font-bold text-foreground hidden sm:block">
               Hoop Journal
