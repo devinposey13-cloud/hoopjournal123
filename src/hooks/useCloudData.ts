@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { GameStats, VideoClip, PlayerProfile, SeasonStats, ScheduledGame } from '@/types/basketball';
+import { GameStats, VideoClip, PlayerProfile, SeasonStats, ScheduledGame, Season } from '@/types/basketball';
 import { toast } from 'sonner';
 
 const defaultProfile: PlayerProfile = {
@@ -19,26 +19,72 @@ export function useCloudData() {
   const [clips, setClips] = useState<VideoClip[]>([]);
   const [schedule, setSchedule] = useState<ScheduledGame[]>([]);
   const [profile, setProfile] = useState<PlayerProfile>(defaultProfile);
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [activeSeason, setActiveSeason] = useState<Season | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch seasons
+  const fetchSeasons = useCallback(async () => {
+    if (!user) return [];
+    
+    const { data, error } = await supabase
+      .from('seasons')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching seasons:', error);
+      return [];
+    }
+    
+    const mappedSeasons: Season[] = (data || []).map(s => ({
+      id: s.id,
+      name: s.name,
+      startDate: s.start_date || undefined,
+      endDate: s.end_date || undefined,
+      isActive: s.is_active,
+      createdAt: s.created_at,
+    }));
+    
+    setSeasons(mappedSeasons);
+    
+    // Set active season
+    const active = mappedSeasons.find(s => s.isActive) || mappedSeasons[0] || null;
+    setActiveSeason(active);
+    
+    return mappedSeasons;
+  }, [user]);
+
   // Fetch all data when user is authenticated
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (seasonId?: string) => {
     if (!user) {
       setGames([]);
       setClips([]);
       setSchedule([]);
       setProfile(defaultProfile);
+      setSeasons([]);
+      setActiveSeason(null);
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      // Fetch games
-      const { data: gamesData, error: gamesError } = await supabase
+      // Fetch seasons first
+      const fetchedSeasons = await fetchSeasons();
+      const currentSeasonId = seasonId || fetchedSeasons.find(s => s.isActive)?.id || fetchedSeasons[0]?.id;
+
+      // Fetch games (filtered by season if one is active)
+      let gamesQuery = supabase
         .from('games')
         .select('*')
         .order('date', { ascending: false });
+      
+      if (currentSeasonId) {
+        gamesQuery = gamesQuery.eq('season_id', currentSeasonId);
+      }
+
+      const { data: gamesData, error: gamesError } = await gamesQuery;
 
       if (gamesError) throw gamesError;
       
@@ -62,11 +108,17 @@ export function useCloudData() {
         isWin: g.is_win,
       })) || []);
 
-      // Fetch scheduled games
-      const { data: scheduleData, error: scheduleError } = await supabase
+      // Fetch scheduled games (filtered by season)
+      let scheduleQuery = supabase
         .from('scheduled_games')
         .select('*')
         .order('date', { ascending: true });
+      
+      if (currentSeasonId) {
+        scheduleQuery = scheduleQuery.eq('season_id', currentSeasonId);
+      }
+
+      const { data: scheduleData, error: scheduleError } = await scheduleQuery;
 
       if (scheduleError) throw scheduleError;
       
@@ -80,11 +132,17 @@ export function useCloudData() {
         notes: s.notes || undefined,
       })) || []);
 
-      // Fetch video clips
-      const { data: clipsData, error: clipsError } = await supabase
+      // Fetch video clips (filtered by season)
+      let clipsQuery = supabase
         .from('video_clips')
         .select('*')
         .order('created_at', { ascending: false });
+      
+      if (currentSeasonId) {
+        clipsQuery = clipsQuery.eq('season_id', currentSeasonId);
+      }
+
+      const { data: clipsData, error: clipsError } = await clipsQuery;
 
       if (clipsError) throw clipsError;
       
@@ -140,13 +198,96 @@ export function useCloudData() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, fetchSeasons]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Add game
+  // Create season
+  const createSeason = async (name: string) => {
+    if (!user) return null;
+
+    try {
+      // Set all other seasons to inactive
+      await supabase
+        .from('seasons')
+        .update({ is_active: false })
+        .eq('user_id', user.id);
+
+      const { data, error } = await supabase
+        .from('seasons')
+        .insert({
+          user_id: user.id,
+          name,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newSeason: Season = {
+        id: data.id,
+        name: data.name,
+        startDate: data.start_date || undefined,
+        endDate: data.end_date || undefined,
+        isActive: data.is_active,
+        createdAt: data.created_at,
+      };
+
+      setSeasons(prev => [newSeason, ...prev.map(s => ({ ...s, isActive: false }))]);
+      setActiveSeason(newSeason);
+      
+      // Refetch data for the new season (will be empty)
+      await fetchData(newSeason.id);
+      
+      toast.success(`Season "${name}" created!`);
+      return newSeason;
+    } catch (error) {
+      console.error('Error creating season:', error);
+      toast.error('Failed to create season');
+      return null;
+    }
+  };
+
+  // Switch season
+  const switchSeason = async (seasonId: string) => {
+    if (!user) return;
+
+    try {
+      // Update active status in database
+      await supabase
+        .from('seasons')
+        .update({ is_active: false })
+        .eq('user_id', user.id);
+
+      await supabase
+        .from('seasons')
+        .update({ is_active: true })
+        .eq('id', seasonId);
+
+      // Update local state
+      const newActive = seasons.find(s => s.id === seasonId);
+      if (newActive) {
+        setSeasons(prev => prev.map(s => ({
+          ...s,
+          isActive: s.id === seasonId,
+        })));
+        setActiveSeason({ ...newActive, isActive: true });
+        
+        // Refetch data for the selected season
+        await fetchData(seasonId);
+        
+        toast.success(`Switched to ${newActive.name}`);
+      }
+    } catch (error) {
+      console.error('Error switching season:', error);
+      toast.error('Failed to switch season');
+    }
+  };
+
+  // Add game (now with season_id)
   const addGame = async (game: Omit<GameStats, 'id'>) => {
     if (!user) return null;
 
@@ -155,6 +296,7 @@ export function useCloudData() {
         .from('games')
         .insert({
           user_id: user.id,
+          season_id: activeSeason?.id || null,
           date: game.date,
           opponent: game.opponent,
           points: game.points,
@@ -225,7 +367,7 @@ export function useCloudData() {
     }
   };
 
-  // Add scheduled game
+  // Add scheduled game (now with season_id)
   const addScheduledGame = async (game: Omit<ScheduledGame, 'id'>) => {
     if (!user) return null;
 
@@ -234,6 +376,7 @@ export function useCloudData() {
         .from('scheduled_games')
         .insert({
           user_id: user.id,
+          season_id: activeSeason?.id || null,
           date: game.date,
           time: game.time,
           opponent: game.opponent,
@@ -286,7 +429,7 @@ export function useCloudData() {
     }
   };
 
-  // Add clip
+  // Add clip (now with season_id)
   const addClip = async (file: File, title: string, description?: string) => {
     if (!user) return null;
 
@@ -306,6 +449,7 @@ export function useCloudData() {
         .from('video_clips')
         .insert({
           user_id: user.id,
+          season_id: activeSeason?.id || null,
           title,
           description,
           file_path: filePath,
@@ -517,6 +661,8 @@ export function useCloudData() {
     clips,
     schedule,
     profile,
+    seasons,
+    activeSeason,
     loading,
     seasonStats: calculateSeasonStats(),
     addGame,
@@ -527,6 +673,8 @@ export function useCloudData() {
     deleteClip,
     updateProfile,
     uploadAvatar,
+    createSeason,
+    switchSeason,
     refetch: fetchData,
   };
 }

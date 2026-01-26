@@ -35,6 +35,8 @@ export default function Index() {
     clips,
     profile,
     schedule,
+    seasons,
+    activeSeason,
     loading: dataLoading,
     seasonStats,
     addGame,
@@ -45,6 +47,8 @@ export default function Index() {
     uploadAvatar,
     addScheduledGame,
     deleteScheduledGame,
+    createSeason,
+    switchSeason,
   } = useCloudData();
 
   // Show auth form if not logged in
@@ -81,7 +85,14 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <Navigation 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab}
+        seasons={seasons}
+        activeSeason={activeSeason}
+        onSeasonChange={switchSeason}
+        onCreateSeason={async (name) => { await createSeason(name); }}
+      />
 
       <main className="container mx-auto px-4 py-6">
         {/* Dashboard Tab */}

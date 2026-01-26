@@ -61,3 +61,12 @@ export interface ScheduledGame {
   isHome: boolean;
   notes?: string;
 }
+
+export interface Season {
+  id: string;
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  isActive: boolean;
+  createdAt: string;
+}
