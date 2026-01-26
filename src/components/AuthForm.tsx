@@ -43,7 +43,7 @@ export function AuthForm() {
             <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-glow">
               <span className="text-3xl">🏀</span>
             </div>
-            <h1 className="text-2xl font-bold text-foreground">HoopStats</h1>
+            <h1 className="text-2xl font-bold text-foreground">Hoop Journal</h1>
             <p className="text-muted-foreground mt-1">
               {isLogin ? 'Sign in to track your season' : 'Create your account'}
             </p>
