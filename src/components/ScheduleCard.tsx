@@ -22,10 +22,9 @@ export const ScheduleCard = forwardRef<HTMLDivElement, ScheduleCardProps>(
       <div
         ref={ref}
         className={cn(
-          'stat-card group relative',
+          'stat-card group relative hover:border-primary/50 cursor-pointer transition-colors',
           isPastGame && 'opacity-50',
-          isTodayGame && 'border-primary/50 shadow-glow',
-          linkedGame && 'hover:border-primary/50 cursor-pointer'
+          isTodayGame && 'border-primary/50 shadow-glow'
         )}
       >
         {isTodayGame && (
@@ -111,10 +110,11 @@ export const ScheduleCard = forwardRef<HTMLDivElement, ScheduleCardProps>(
       </div>
     );
 
-    if (linkedGame) {
-      return <Link to={`/game/${linkedGame.id}`}>{content}</Link>;
-    }
-
-    return content;
+    // Always link - to recorded game if available, otherwise to scheduled game
+    const linkTo = linkedGame 
+      ? `/game/${linkedGame.id}` 
+      : `/game/scheduled/${game.id}`;
+    
+    return <Link to={linkTo}>{content}</Link>;
   }
 );

@@ -2,61 +2,88 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { GameStats } from '@/types/basketball';
+import { GameStats, ScheduledGame } from '@/types/basketball';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, Clock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, Clock, AlertCircle, Calendar, MapPin, Home, Plane } from 'lucide-react';
 
 export default function GameDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id, scheduledId } = useParams<{ id?: string; scheduledId?: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [game, setGame] = useState<GameStats | null>(null);
+  const [scheduledGame, setScheduledGame] = useState<ScheduledGame | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchGame = async () => {
-      if (!user || !id) {
+    const fetchData = async () => {
+      if (!user) {
         setLoading(false);
         return;
       }
 
       try {
-        const { data, error: fetchError } = await supabase
-          .from('games')
-          .select('*')
-          .eq('id', id)
-          .maybeSingle();
+        // If we have a game ID, try to fetch recorded stats
+        if (id) {
+          const { data, error: fetchError } = await supabase
+            .from('games')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle();
 
-        if (fetchError) throw fetchError;
+          if (fetchError) throw fetchError;
 
-        if (!data) {
-          setError('Game not found');
-          setLoading(false);
-          return;
+          if (data) {
+            setGame({
+              id: data.id,
+              date: data.date,
+              opponent: data.opponent,
+              points: data.points,
+              rebounds: data.rebounds,
+              assists: data.assists,
+              steals: data.steals,
+              blocks: data.blocks,
+              turnovers: data.turnovers,
+              minutesPlayed: data.minutes_played,
+              fgMade: data.fg_made,
+              fgAttempted: data.fg_attempted,
+              threePtMade: data.three_pt_made,
+              threePtAttempted: data.three_pt_attempted,
+              ftMade: data.ft_made,
+              ftAttempted: data.ft_attempted,
+              isWin: data.is_win,
+            });
+          } else {
+            setError('Game not found');
+          }
         }
+        
+        // If we have a scheduled game ID, fetch scheduled game info
+        if (scheduledId) {
+          const { data, error: fetchError } = await supabase
+            .from('scheduled_games')
+            .select('*')
+            .eq('id', scheduledId)
+            .maybeSingle();
 
-        setGame({
-          id: data.id,
-          date: data.date,
-          opponent: data.opponent,
-          points: data.points,
-          rebounds: data.rebounds,
-          assists: data.assists,
-          steals: data.steals,
-          blocks: data.blocks,
-          turnovers: data.turnovers,
-          minutesPlayed: data.minutes_played,
-          fgMade: data.fg_made,
-          fgAttempted: data.fg_attempted,
-          threePtMade: data.three_pt_made,
-          threePtAttempted: data.three_pt_attempted,
-          ftMade: data.ft_made,
-          ftAttempted: data.ft_attempted,
-          isWin: data.is_win,
-        });
+          if (fetchError) throw fetchError;
+
+          if (data) {
+            setScheduledGame({
+              id: data.id,
+              date: data.date,
+              time: data.time,
+              opponent: data.opponent,
+              location: data.location,
+              isHome: data.is_home,
+              notes: data.notes || undefined,
+            });
+          } else {
+            setError('Scheduled game not found');
+          }
+        }
       } catch (err) {
         console.error('Error fetching game:', err);
         setError('Failed to load game');
@@ -66,9 +93,9 @@ export default function GameDetail() {
     };
 
     if (!authLoading) {
-      fetchGame();
+      fetchData();
     }
-  }, [id, user, authLoading]);
+  }, [id, scheduledId, user, authLoading]);
 
   if (authLoading || loading) {
     return (
@@ -81,6 +108,79 @@ export default function GameDetail() {
   if (!user) {
     navigate('/');
     return null;
+  }
+
+  // Show scheduled game view (no stats yet)
+  if (scheduledGame && !game) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center gap-4 mb-8">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-1">
+                <div
+                  className={cn(
+                    'px-3 py-1 rounded-full text-sm font-bold uppercase flex items-center gap-1',
+                    scheduledGame.isHome
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'bg-blue-500/20 text-blue-400'
+                  )}
+                >
+                  {scheduledGame.isHome ? (
+                    <>
+                      <Home className="w-3 h-3" /> Home
+                    </>
+                  ) : (
+                    <>
+                      <Plane className="w-3 h-3" /> Away
+                    </>
+                  )}
+                </div>
+                <span className="text-muted-foreground">
+                  {format(new Date(scheduledGame.date), 'EEEE, MMMM d, yyyy')}
+                </span>
+              </div>
+              <h1 className="text-3xl font-bold">vs {scheduledGame.opponent}</h1>
+            </div>
+          </div>
+
+          {/* Game Info */}
+          <div className="stat-card mb-6">
+            <h2 className="text-lg font-semibold mb-4">Game Details</h2>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <Calendar className="w-5 h-5" />
+                <span>{format(new Date(scheduledGame.date), 'EEEE, MMMM d, yyyy')} at {scheduledGame.time}</span>
+              </div>
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <MapPin className="w-5 h-5" />
+                <span>{scheduledGame.location}</span>
+              </div>
+            </div>
+            {scheduledGame.notes && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-sm text-muted-foreground">{scheduledGame.notes}</p>
+              </div>
+            )}
+          </div>
+
+          {/* No Stats Message */}
+          <div className="stat-card text-center py-12">
+            <AlertCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-xl font-semibold mb-2">No stats recorded yet</p>
+            <p className="text-muted-foreground mb-6">
+              Log your stats after playing this game to see your performance here!
+            </p>
+            <Link to="/">
+              <Button>Go to Dashboard</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error || !game) {
