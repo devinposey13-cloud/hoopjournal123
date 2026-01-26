@@ -7,8 +7,11 @@ import { ClipCard } from '@/components/ClipCard';
 import { StatsChart } from '@/components/StatsChart';
 import { AddGameDialog } from '@/components/AddGameDialog';
 import { AddClipDialog } from '@/components/AddClipDialog';
+import { AddScheduleDialog } from '@/components/AddScheduleDialog';
+import { ScheduleCard } from '@/components/ScheduleCard';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { useBasketballData } from '@/hooks/useBasketballData';
+import { isAfter, isBefore, isToday, startOfDay } from 'date-fns';
 import {
   Target,
   Repeat,
@@ -24,13 +27,24 @@ export default function Index() {
     games,
     clips,
     profile,
+    schedule,
     seasonStats,
     addGame,
     deleteGame,
     addClip,
     deleteClip,
     updateProfile,
+    addScheduledGame,
+    deleteScheduledGame,
   } = useBasketballData();
+
+  const today = startOfDay(new Date());
+  const upcomingGames = schedule.filter(
+    (g) => isAfter(new Date(g.date), today) || isToday(new Date(g.date))
+  );
+  const pastScheduledGames = schedule.filter(
+    (g) => isBefore(new Date(g.date), today) && !isToday(new Date(g.date))
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -146,6 +160,64 @@ export default function Index() {
                   <GameCard key={game.id} game={game} onDelete={deleteGame} />
                 ))}
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Schedule Tab */}
+        {activeTab === 'schedule' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold">Season Schedule</h1>
+                <p className="text-muted-foreground">
+                  {upcomingGames.length} upcoming games
+                </p>
+              </div>
+              <AddScheduleDialog onAddGame={addScheduledGame} />
+            </div>
+
+            {/* Upcoming Games */}
+            <section>
+              <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                Upcoming Games
+              </h2>
+              {upcomingGames.length === 0 ? (
+                <div className="stat-card text-center py-12">
+                  <p className="text-muted-foreground">No upcoming games scheduled.</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Add games to your schedule!
+                  </p>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {upcomingGames.map((game) => (
+                    <ScheduleCard
+                      key={game.id}
+                      game={game}
+                      onDelete={deleteScheduledGame}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Past Games */}
+            {pastScheduledGames.length > 0 && (
+              <section>
+                <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                  Past Scheduled Games
+                </h2>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {pastScheduledGames.map((game) => (
+                    <ScheduleCard
+                      key={game.id}
+                      game={game}
+                      onDelete={deleteScheduledGame}
+                    />
+                  ))}
+                </div>
+              </section>
             )}
           </div>
         )}
