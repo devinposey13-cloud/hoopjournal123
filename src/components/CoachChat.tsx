@@ -6,7 +6,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { GameStats, SeasonStats } from '@/types/basketball';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import ReactMarkdown from 'react-markdown';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -223,13 +222,7 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
                       : 'bg-muted rounded-tl-sm'
                   )}
                 >
-                  {message.role === 'assistant' ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown>{message.content}</ReactMarkdown>
-                    </div>
-                  ) : (
-                    <p className="text-sm">{message.content}</p>
-                  )}
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 </div>
               </div>
             ))}
