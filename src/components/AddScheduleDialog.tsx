@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { ScheduledGame } from '@/types/basketball';
 
 interface AddScheduleDialogProps {
-  onAddGame: (game: Omit<ScheduledGame, 'id'>) => void;
+  onAddGame: (game: Omit<ScheduledGame, 'id'>) => Promise<any> | any;
 }
 
 export function AddScheduleDialog({ onAddGame }: AddScheduleDialogProps) {

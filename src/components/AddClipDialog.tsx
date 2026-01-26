@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, Plus, Video } from 'lucide-react';
+import { Upload, Plus, Video, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,10 +11,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { VideoClip } from '@/types/basketball';
 
 interface AddClipDialogProps {
-  onAddClip: (clip: Omit<VideoClip, 'id'>) => void;
+  onAddClip: (file: File, title: string, description?: string) => Promise<any>;
 }
 
 export function AddClipDialog({ onAddClip }: AddClipDialogProps) {
@@ -22,33 +21,30 @@ export function AddClipDialog({ onAddClip }: AddClipDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoUrl, setVideoUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setVideoFile(file);
-      setVideoUrl(URL.createObjectURL(file));
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!videoUrl) return;
+    if (!videoFile) return;
 
-    onAddClip({
-      title: title || 'Untitled Clip',
-      description,
-      url: videoUrl,
-      date: new Date().toISOString(),
-    });
-
-    setOpen(false);
-    setTitle('');
-    setDescription('');
-    setVideoFile(null);
-    setVideoUrl('');
+    setUploading(true);
+    try {
+      await onAddClip(videoFile, title || 'Untitled Clip', description || undefined);
+      setOpen(false);
+      setTitle('');
+      setDescription('');
+      setVideoFile(null);
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -119,10 +115,17 @@ export function AddClipDialog({ onAddClip }: AddClipDialogProps) {
 
           <Button
             type="submit"
-            disabled={!videoUrl}
+            disabled={!videoFile || uploading}
             className="w-full gradient-primary font-semibold"
           >
-            Upload Clip
+            {uploading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              'Upload Clip'
+            )}
           </Button>
         </form>
       </DialogContent>

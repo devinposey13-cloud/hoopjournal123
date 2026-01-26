@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { GameStats } from '@/types/basketball';
 
 interface AddGameDialogProps {
-  onAddGame: (game: Omit<GameStats, 'id'>) => void;
+  onAddGame: (game: Omit<GameStats, 'id'>) => Promise<any> | any;
 }
 
 export function AddGameDialog({ onAddGame }: AddGameDialogProps) {
