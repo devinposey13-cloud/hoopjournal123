@@ -17,12 +17,20 @@ export function PlayerHeader({ profile, seasonStats, games }: PlayerHeaderProps)
   return (
     <div className="gradient-card rounded-2xl p-6 shadow-card border border-border/50">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-        {/* Jersey Number Badge */}
+        {/* Avatar */}
         <div className="relative">
-          <div className="w-24 h-24 rounded-2xl gradient-primary flex items-center justify-center shadow-glow animate-pulse-glow">
-            <span className="text-4xl font-black text-primary-foreground">
-              {profile.number}
-            </span>
+          <div className="w-24 h-24 rounded-2xl gradient-primary flex items-center justify-center shadow-glow animate-pulse-glow overflow-hidden">
+            {profile.avatar ? (
+              <img
+                src={profile.avatar}
+                alt={profile.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-4xl font-black text-primary-foreground">
+                {profile.number}
+              </span>
+            )}
           </div>
         </div>
 
