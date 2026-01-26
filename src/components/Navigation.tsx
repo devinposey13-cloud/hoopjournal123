@@ -28,7 +28,7 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
               <span className="text-lg font-black text-primary-foreground">🏀</span>
             </div>
             <span className="text-lg font-bold text-foreground hidden sm:block">
-              HoopStats
+              Hoop Journal
             </span>
           </div>
 
