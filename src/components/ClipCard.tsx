@@ -1,14 +1,16 @@
-import { Play, Trash2, Globe } from 'lucide-react';
+import { Play, Trash2, Globe, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { VideoClip } from '@/types/basketball';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { VideoInteractions, VideoLikeButton } from './VideoInteractions';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ClipCardProps {
   clip: VideoClip;
@@ -18,6 +20,21 @@ interface ClipCardProps {
 
 export function ClipCard({ clip, onDelete, showPlayerInfo }: ClipCardProps) {
   const [showVideo, setShowVideo] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
+
+  useEffect(() => {
+    if (showPlayerInfo) {
+      fetchCommentCount();
+    }
+  }, [clip.id, showPlayerInfo]);
+
+  const fetchCommentCount = async () => {
+    const { count } = await supabase
+      .from('video_comments')
+      .select('*', { count: 'exact', head: true })
+      .eq('video_id', clip.id);
+    setCommentCount(count || 0);
+  };
 
   return (
     <>
@@ -76,6 +93,16 @@ export function ClipCard({ clip, onDelete, showPlayerInfo }: ClipCardProps) {
               {clip.description}
             </p>
           )}
+          {/* Show like/comment counts for public clips */}
+          {showPlayerInfo && (
+            <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border">
+              <VideoLikeButton videoId={clip.id} />
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>{commentCount}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -92,6 +119,12 @@ export function ClipCard({ clip, onDelete, showPlayerInfo }: ClipCardProps) {
               className="w-full h-full rounded-lg"
             />
           </div>
+          {/* Show interactions for public clips */}
+          {showPlayerInfo && (
+            <div className="mt-4">
+              <VideoInteractions videoId={clip.id} showComments />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>
