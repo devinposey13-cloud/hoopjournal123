@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { LogIn, UserPlus, Loader2 } from 'lucide-react';
+import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 
 export function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
@@ -40,8 +41,8 @@ export function AuthForm() {
         <div className="stat-card">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-glow">
-              <span className="text-3xl">🏀</span>
+            <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-4 shadow-glow">
+              <img src={hoopJournalLogo} alt="Hoop Journal" className="w-full h-full object-cover" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">Hoop Journal</h1>
             <p className="text-muted-foreground mt-1">
