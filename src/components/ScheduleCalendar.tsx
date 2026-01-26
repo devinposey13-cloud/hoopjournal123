@@ -45,7 +45,7 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: Sche
     if (linkedGame) {
       navigate(`/game/${linkedGame.id}`);
     } else {
-      onSelectGame?.(game);
+      navigate(`/game/scheduled/${game.id}`);
     }
   };
 
