@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { GameStats, SeasonStats } from '@/types/basketball';
 import { cn } from '@/lib/utils';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 
 interface Message {
@@ -150,21 +150,13 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
     
     // Validate file type
     if (!file.type.startsWith('video/')) {
-      toast({
-        title: 'Invalid file type',
-        description: 'Please upload a video file.',
-        variant: 'destructive',
-      });
+      toast.error('Please upload a video file.');
       return;
     }
     
     // Validate file size (50MB limit)
     if (file.size > 50 * 1024 * 1024) {
-      toast({
-        title: 'File too large',
-        description: 'Please upload a video under 50MB.',
-        variant: 'destructive',
-      });
+      toast.error('Please upload a video under 50MB.');
       return;
     }
     
@@ -173,11 +165,7 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
       setSelectedVideo(file);
       setVideoThumbnail(thumbnail);
     } catch (error) {
-      toast({
-        title: 'Error processing video',
-        description: 'Could not load video preview.',
-        variant: 'destructive',
-      });
+      toast.error('Could not load video preview.');
     }
     
     // Reset file input
@@ -221,11 +209,7 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
         videoFrames = await extractVideoFrames(currentVideoFile, 5);
       } catch (error) {
         console.error('Error extracting frames:', error);
-        toast({
-          title: 'Error processing video',
-          description: 'Could not extract frames from video.',
-          variant: 'destructive',
-        });
+        toast.error('Could not extract frames from video.');
       } finally {
         setIsExtractingFrames(false);
       }
@@ -303,11 +287,7 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
       }
     } catch (error) {
       console.error('Chat error:', error);
-      toast({
-        title: 'Coach unavailable',
-        description: error instanceof Error ? error.message : 'Please try again later.',
-        variant: 'destructive',
-      });
+      toast.error(error instanceof Error ? error.message : 'Coach unavailable. Please try again later.');
       // Remove the empty assistant message if it was added
       setMessages((prev) => {
         const last = prev[prev.length - 1];
