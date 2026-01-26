@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { format, isSameDay } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { DayPicker } from 'react-day-picker';
 import { cn } from '@/lib/utils';
-import { ScheduledGame } from '@/types/basketball';
+import { ScheduledGame, GameStats } from '@/types/basketball';
 import { buttonVariants } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Home, Plane } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Plane, ChevronRight as ViewIcon } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -13,15 +14,39 @@ import {
 
 interface ScheduleCalendarProps {
   games: ScheduledGame[];
+  playedGames?: GameStats[];
   onSelectGame?: (game: ScheduledGame) => void;
 }
 
-export function ScheduleCalendar({ games, onSelectGame }: ScheduleCalendarProps) {
+export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: ScheduleCalendarProps) {
   const [month, setMonth] = useState<Date>(new Date());
+  const navigate = useNavigate();
 
   // Get games for a specific date
   const getGamesForDate = (date: Date) => {
     return games.filter((game) => isSameDay(new Date(game.date), date));
+  };
+
+  // Find a linked played game by matching opponent and approximate date
+  const findLinkedGame = (scheduledGame: ScheduledGame): GameStats | undefined => {
+    const scheduleDate = new Date(scheduledGame.date);
+    return playedGames.find((pg) => {
+      const playedDate = new Date(pg.date);
+      // Match by opponent name (case-insensitive) and same date
+      return (
+        pg.opponent.toLowerCase() === scheduledGame.opponent.toLowerCase() &&
+        isSameDay(scheduleDate, playedDate)
+      );
+    });
+  };
+
+  const handleGameClick = (game: ScheduledGame) => {
+    const linkedGame = findLinkedGame(game);
+    if (linkedGame) {
+      navigate(`/game/${linkedGame.id}`);
+    } else {
+      onSelectGame?.(game);
+    }
   };
 
   // Custom day content with game markers
@@ -39,7 +64,7 @@ export function ScheduleCalendar({ games, onSelectGame }: ScheduleCalendarProps)
           <button className="w-full h-full flex flex-col items-center justify-center relative">
             <span>{format(day, 'd')}</span>
             <div className="flex gap-0.5 mt-0.5">
-              {dayGames.slice(0, 3).map((game, idx) => (
+              {dayGames.slice(0, 3).map((game) => (
                 <div
                   key={game.id}
                   className={cn(
@@ -51,51 +76,71 @@ export function ScheduleCalendar({ games, onSelectGame }: ScheduleCalendarProps)
             </div>
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-2 bg-popover border-border z-50" align="center">
+        <PopoverContent className="w-72 p-2 bg-popover border-border z-50" align="center">
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground px-1">
               {format(day, 'EEEE, MMMM d')}
             </p>
-            {dayGames.map((game) => (
-              <button
-                key={game.id}
-                onClick={() => onSelectGame?.(game)}
-                className="w-full text-left p-2 rounded-md hover:bg-accent transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <div
-                    className={cn(
-                      'px-1.5 py-0.5 rounded text-[10px] font-bold uppercase flex items-center gap-1',
-                      game.isHome
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-blue-500/20 text-blue-400'
-                    )}
-                  >
-                    {game.isHome ? (
-                      <>
-                        <Home className="w-2.5 h-2.5" /> H
-                      </>
-                    ) : (
-                      <>
-                        <Plane className="w-2.5 h-2.5" /> A
-                      </>
+            {dayGames.map((game) => {
+              const linkedGame = findLinkedGame(game);
+              return (
+                <button
+                  key={game.id}
+                  onClick={() => handleGameClick(game)}
+                  className="w-full text-left p-2 rounded-md hover:bg-accent transition-colors group"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={cn(
+                          'px-1.5 py-0.5 rounded text-[10px] font-bold uppercase flex items-center gap-1',
+                          game.isHome
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-blue-500/20 text-blue-400'
+                        )}
+                      >
+                        {game.isHome ? (
+                          <>
+                            <Home className="w-2.5 h-2.5" /> H
+                          </>
+                        ) : (
+                          <>
+                            <Plane className="w-2.5 h-2.5" /> A
+                          </>
+                        )}
+                      </div>
+                      <span className="text-sm font-medium">vs {game.opponent}</span>
+                    </div>
+                    {linkedGame && (
+                      <div className="flex items-center gap-1">
+                        <span
+                          className={cn(
+                            'text-[10px] font-bold px-1.5 py-0.5 rounded',
+                            linkedGame.isWin
+                              ? 'bg-green-500/20 text-green-400'
+                              : 'bg-red-500/20 text-red-400'
+                          )}
+                        >
+                          {linkedGame.isWin ? 'W' : 'L'} - {linkedGame.points} pts
+                        </span>
+                        <ViewIcon className="w-4 h-4 text-muted-foreground" />
+                      </div>
                     )}
                   </div>
-                  <span className="text-sm font-medium">vs {game.opponent}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {game.time} • {game.location}
-                </p>
-              </button>
-            ))}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {game.time} • {game.location}
+                  </p>
+                  {linkedGame && (
+                    <p className="text-xs text-primary mt-1">Click to view game stats →</p>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </PopoverContent>
       </Popover>
     );
   };
-
-  // Get all dates that have games for modifiers
-  const gameDates = games.map((game) => new Date(game.date));
 
   return (
     <div className="stat-card">
