@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, Plus, Video, Loader2 } from 'lucide-react';
+import { Upload, Plus, Video, Loader2, Globe, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,9 +11,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 
 interface AddClipDialogProps {
-  onAddClip: (file: File, title: string, description?: string) => Promise<any>;
+  onAddClip: (file: File, title: string, description?: string, isPublic?: boolean) => Promise<any>;
 }
 
 export function AddClipDialog({ onAddClip }: AddClipDialogProps) {
@@ -22,6 +23,7 @@ export function AddClipDialog({ onAddClip }: AddClipDialogProps) {
   const [description, setDescription] = useState('');
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isPublic, setIsPublic] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,11 +39,12 @@ export function AddClipDialog({ onAddClip }: AddClipDialogProps) {
 
     setUploading(true);
     try {
-      await onAddClip(videoFile, title || 'Untitled Clip', description || undefined);
+      await onAddClip(videoFile, title || 'Untitled Clip', description || undefined, isPublic);
       setOpen(false);
       setTitle('');
       setDescription('');
       setVideoFile(null);
+      setIsPublic(false);
     } finally {
       setUploading(false);
     }
@@ -110,6 +113,29 @@ export function AddClipDialog({ onAddClip }: AddClipDialogProps) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add context about this clip..."
               rows={3}
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+            <div className="flex items-center gap-2">
+              {isPublic ? (
+                <Globe className="w-4 h-4 text-primary" />
+              ) : (
+                <Lock className="w-4 h-4 text-muted-foreground" />
+              )}
+              <div>
+                <Label htmlFor="public-toggle" className="text-sm font-medium cursor-pointer">
+                  {isPublic ? 'Public' : 'Private'}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {isPublic ? 'Anyone can see this clip in Explore' : 'Only you can see this clip'}
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="public-toggle"
+              checked={isPublic}
+              onCheckedChange={setIsPublic}
             />
           </div>
 

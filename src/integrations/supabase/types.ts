@@ -221,6 +221,7 @@ export type Database = {
           file_path: string
           game_id: string | null
           id: string
+          is_public: boolean
           season_id: string | null
           thumbnail_path: string | null
           title: string
@@ -233,6 +234,7 @@ export type Database = {
           file_path: string
           game_id?: string | null
           id?: string
+          is_public?: boolean
           season_id?: string | null
           thumbnail_path?: string | null
           title: string
@@ -245,6 +247,7 @@ export type Database = {
           file_path?: string
           game_id?: string | null
           id?: string
+          is_public?: boolean
           season_id?: string | null
           thumbnail_path?: string | null
           title?: string

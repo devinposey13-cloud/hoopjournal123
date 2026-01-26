@@ -14,11 +14,13 @@ import { ImportScheduleDialog } from '@/components/ImportScheduleDialog';
 import { CoachChat } from '@/components/CoachChat';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { AuthForm } from '@/components/AuthForm';
+import { ExploreClips } from '@/components/ExploreClips';
 import { useAuth } from '@/hooks/useAuth';
 import { useCloudData } from '@/hooks/useCloudData';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { LogOut, Loader2 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Target,
   Repeat,
@@ -306,20 +308,33 @@ export default function Index() {
               <AddClipDialog onAddClip={addClip} />
             </div>
 
-            {clips.length === 0 ? (
-              <div className="stat-card text-center py-16">
-                <p className="text-muted-foreground text-lg">No clips uploaded yet.</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Upload your best plays and highlights!
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {clips.map((clip) => (
-                  <ClipCard key={clip.id} clip={clip} onDelete={deleteClip} />
-                ))}
-              </div>
-            )}
+            <Tabs defaultValue="my-clips" className="w-full">
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="my-clips">My Clips</TabsTrigger>
+                <TabsTrigger value="explore">Explore</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="my-clips" className="mt-6">
+                {clips.length === 0 ? (
+                  <div className="stat-card text-center py-16">
+                    <p className="text-muted-foreground text-lg">No clips uploaded yet.</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Upload your best plays and highlights!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {clips.map((clip) => (
+                      <ClipCard key={clip.id} clip={clip} onDelete={deleteClip} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="explore" className="mt-6">
+                <ExploreClips />
+              </TabsContent>
+            </Tabs>
           </div>
         )}
 

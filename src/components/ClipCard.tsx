@@ -1,4 +1,4 @@
-import { Play, Trash2 } from 'lucide-react';
+import { Play, Trash2, Globe } from 'lucide-react';
 import { format } from 'date-fns';
 import { VideoClip } from '@/types/basketball';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,10 @@ import {
 interface ClipCardProps {
   clip: VideoClip;
   onDelete?: (id: string) => void;
+  showPlayerInfo?: boolean;
 }
 
-export function ClipCard({ clip, onDelete }: ClipCardProps) {
+export function ClipCard({ clip, onDelete, showPlayerInfo }: ClipCardProps) {
   const [showVideo, setShowVideo] = useState(false);
 
   return (
@@ -41,17 +42,26 @@ export function ClipCard({ clip, onDelete }: ClipCardProps) {
         </div>
         <div className="p-3">
           <div className="flex items-start justify-between">
-            <div>
+            <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-sm line-clamp-1">{clip.title}</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {format(new Date(clip.date), 'MMM d, yyyy')}
-              </p>
+              {showPlayerInfo && clip.playerName ? (
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Globe className="w-3 h-3 text-primary" />
+                  <p className="text-xs text-muted-foreground truncate">
+                    {clip.playerName} • {clip.playerTeam}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {format(new Date(clip.date), 'MMM d, yyyy')}
+                </p>
+              )}
             </div>
             {onDelete && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 text-muted-foreground hover:text-destructive"
+                className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(clip.id);
