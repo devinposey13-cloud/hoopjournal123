@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Save, Camera, Loader2 } from 'lucide-react';
+import { Save, Camera, Loader2, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
@@ -76,8 +76,8 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
             <div className="relative group">
               <Avatar className="w-24 h-24 border-2 border-border">
                 <AvatarImage src={formData.avatar} alt={formData.name} />
-                <AvatarFallback className="gradient-primary text-2xl font-bold text-primary-foreground">
-                  {formData.number}
+                <AvatarFallback className="bg-muted">
+                  <User className="w-10 h-10 text-muted-foreground" />
                 </AvatarFallback>
               </Avatar>
               <button
