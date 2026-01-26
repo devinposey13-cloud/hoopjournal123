@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Save, Camera, Loader2, User } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Save, Camera, Loader2, User, Copy, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
@@ -104,6 +105,62 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
               Click to upload a profile photo
             </p>
           </div>
+
+          {/* Username & Public Profile */}
+          {formData.username && (
+            <div className="stat-card bg-secondary/30 p-4 rounded-lg space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Your Profile URL</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <code className="text-sm bg-muted px-2 py-1 rounded">
+                      hoopjournal.me/{formData.username}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/${formData.username}`);
+                        toast.success('Link copied!');
+                      }}
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
+                    {formData.isProfilePublic && (
+                      <a 
+                        href={`/${formData.username}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >
+                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Button>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="public-profile" className="text-sm font-medium">
+                    Public Profile
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Allow others to view your stats and public highlights
+                  </p>
+                </div>
+                <Switch
+                  id="public-profile"
+                  checked={formData.isProfilePublic ?? false}
+                  onCheckedChange={(checked) => 
+                    setFormData({ ...formData, isProfilePublic: checked })
+                  }
+                />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
