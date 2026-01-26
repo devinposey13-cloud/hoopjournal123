@@ -10,6 +10,7 @@ import { AddClipDialog } from '@/components/AddClipDialog';
 import { AddScheduleDialog } from '@/components/AddScheduleDialog';
 import { ScheduleCard } from '@/components/ScheduleCard';
 import { ScheduleCalendar } from '@/components/ScheduleCalendar';
+import { ImportScheduleDialog } from '@/components/ImportScheduleDialog';
 import { CoachChat } from '@/components/CoachChat';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { AuthForm } from '@/components/AuthForm';
@@ -47,6 +48,7 @@ export default function Index() {
     uploadAvatar,
     addScheduledGame,
     deleteScheduledGame,
+    bulkImportScheduledGames,
     createSeason,
     switchSeason,
   } = useCloudData();
@@ -218,7 +220,10 @@ export default function Index() {
                   {upcomingGames.length} upcoming games
                 </p>
               </div>
-              <AddScheduleDialog onAddGame={addScheduledGame} />
+              <div className="flex gap-2">
+                <ImportScheduleDialog onImport={bulkImportScheduledGames} />
+                <AddScheduleDialog onAddGame={addScheduledGame} />
+              </div>
             </div>
 
             {/* Calendar View */}

@@ -411,6 +411,53 @@ export function useCloudData() {
     }
   };
 
+  // Bulk import scheduled games (for RSS import)
+  const bulkImportScheduledGames = async (games: Omit<ScheduledGame, 'id'>[]) => {
+    if (!user || games.length === 0) return [];
+
+    try {
+      const inserts = games.map((game) => ({
+        user_id: user.id,
+        season_id: activeSeason?.id || null,
+        date: game.date,
+        time: game.time,
+        opponent: game.opponent,
+        location: game.location,
+        is_home: game.isHome,
+        notes: game.notes,
+      }));
+
+      const { data, error } = await supabase
+        .from('scheduled_games')
+        .insert(inserts)
+        .select();
+
+      if (error) throw error;
+
+      const newGames: ScheduledGame[] = (data || []).map((g) => ({
+        id: g.id,
+        date: g.date,
+        time: g.time,
+        opponent: g.opponent,
+        location: g.location,
+        isHome: g.is_home,
+        notes: g.notes || undefined,
+      }));
+
+      setSchedule((prev) =>
+        [...prev, ...newGames].sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        )
+      );
+
+      return newGames;
+    } catch (error) {
+      console.error('Error bulk importing games:', error);
+      toast.error('Failed to import games');
+      return [];
+    }
+  };
+
   // Delete scheduled game
   const deleteScheduledGame = async (id: string) => {
     try {
@@ -669,6 +716,7 @@ export function useCloudData() {
     deleteGame,
     addScheduledGame,
     deleteScheduledGame,
+    bulkImportScheduledGames,
     addClip,
     deleteClip,
     updateProfile,
