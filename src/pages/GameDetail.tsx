@@ -6,7 +6,15 @@ import { GameStats, ScheduledGame } from '@/types/basketball';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, Clock, AlertCircle, Calendar, MapPin, Home, Plane } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { GameStatsForm } from '@/components/GameStatsForm';
+import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, Clock, AlertCircle, Calendar, MapPin, Home, Plane, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function GameDetail() {
   const { id, scheduledId } = useParams<{ id?: string; scheduledId?: string }>();
@@ -16,6 +24,8 @@ export default function GameDetail() {
   const [scheduledGame, setScheduledGame] = useState<ScheduledGame | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAddStatsDialog, setShowAddStatsDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -97,6 +107,52 @@ export default function GameDetail() {
     }
   }, [id, scheduledId, user, authLoading]);
 
+  const handleAddGame = async (gameData: Omit<GameStats, 'id'>) => {
+    if (!user) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { data, error: insertError } = await supabase
+        .from('games')
+        .insert({
+          user_id: user.id,
+          date: gameData.date,
+          opponent: gameData.opponent,
+          points: gameData.points,
+          rebounds: gameData.rebounds,
+          assists: gameData.assists,
+          steals: gameData.steals,
+          blocks: gameData.blocks,
+          turnovers: gameData.turnovers,
+          minutes_played: gameData.minutesPlayed,
+          fg_made: gameData.fgMade,
+          fg_attempted: gameData.fgAttempted,
+          three_pt_made: gameData.threePtMade,
+          three_pt_attempted: gameData.threePtAttempted,
+          ft_made: gameData.ftMade,
+          ft_attempted: gameData.ftAttempted,
+          is_win: gameData.isWin,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      toast.success('Game stats saved!');
+      setShowAddStatsDialog(false);
+      
+      // Navigate to the new game detail page
+      if (data) {
+        navigate(`/game/${data.id}`, { replace: true });
+      }
+    } catch (err) {
+      console.error('Error adding game:', err);
+      toast.error('Failed to save game stats');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -174,10 +230,35 @@ export default function GameDetail() {
             <p className="text-muted-foreground mb-6">
               Log your stats after playing this game to see your performance here!
             </p>
-            <Link to="/">
-              <Button>Go to Dashboard</Button>
-            </Link>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => setShowAddStatsDialog(true)} className="gradient-primary">
+                <Plus className="w-4 h-4 mr-2" />
+                Log Stats
+              </Button>
+              <Link to="/">
+                <Button variant="outline">Go to Dashboard</Button>
+              </Link>
+            </div>
           </div>
+
+          {/* Add Stats Dialog */}
+          <Dialog open={showAddStatsDialog} onOpenChange={setShowAddStatsDialog}>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-card border-border">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold">Log Game Stats</DialogTitle>
+              </DialogHeader>
+              <div className="mt-4">
+                <GameStatsForm
+                  onSubmit={handleAddGame}
+                  initialData={{
+                    date: new Date(scheduledGame.date),
+                    opponent: scheduledGame.opponent,
+                  }}
+                  submitLabel={isSubmitting ? 'Saving...' : 'Save Stats'}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     );
