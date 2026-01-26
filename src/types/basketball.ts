@@ -1,0 +1,53 @@
+export interface GameStats {
+  id: string;
+  date: string;
+  opponent: string;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  minutesPlayed: number;
+  fgMade: number;
+  fgAttempted: number;
+  threePtMade: number;
+  threePtAttempted: number;
+  ftMade: number;
+  ftAttempted: number;
+  isWin: boolean;
+}
+
+export interface VideoClip {
+  id: string;
+  title: string;
+  description?: string;
+  url: string;
+  thumbnail?: string;
+  date: string;
+  gameId?: string;
+}
+
+export interface PlayerProfile {
+  name: string;
+  team: string;
+  position: string;
+  number: number;
+  height: string;
+  grade: string;
+  avatar?: string;
+}
+
+export interface SeasonStats {
+  gamesPlayed: number;
+  wins: number;
+  losses: number;
+  avgPoints: number;
+  avgRebounds: number;
+  avgAssists: number;
+  avgSteals: number;
+  avgBlocks: number;
+  fgPercentage: number;
+  threePtPercentage: number;
+  ftPercentage: number;
+}

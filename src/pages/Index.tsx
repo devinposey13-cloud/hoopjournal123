@@ -1,14 +1,198 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { Navigation, Tab } from '@/components/Navigation';
+import { PlayerHeader } from '@/components/PlayerHeader';
+import { StatCard } from '@/components/StatCard';
+import { GameCard } from '@/components/GameCard';
+import { ClipCard } from '@/components/ClipCard';
+import { StatsChart } from '@/components/StatsChart';
+import { AddGameDialog } from '@/components/AddGameDialog';
+import { AddClipDialog } from '@/components/AddClipDialog';
+import { SettingsPanel } from '@/components/SettingsPanel';
+import { useBasketballData } from '@/hooks/useBasketballData';
+import {
+  Target,
+  Repeat,
+  Zap,
+  Shield,
+  HandMetal,
+  Percent,
+} from 'lucide-react';
 
-const Index = () => {
+export default function Index() {
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const {
+    games,
+    clips,
+    profile,
+    seasonStats,
+    addGame,
+    deleteGame,
+    addClip,
+    deleteClip,
+    updateProfile,
+  } = useBasketballData();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+
+      <main className="container mx-auto px-4 py-6">
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6 animate-fade-in">
+            <PlayerHeader profile={profile} seasonStats={seasonStats} />
+
+            {/* Season Averages */}
+            <section>
+              <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                Season Averages
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <StatCard
+                  label="Points"
+                  value={seasonStats.avgPoints}
+                  icon={Target}
+                />
+                <StatCard
+                  label="Rebounds"
+                  value={seasonStats.avgRebounds}
+                  icon={Repeat}
+                />
+                <StatCard
+                  label="Assists"
+                  value={seasonStats.avgAssists}
+                  icon={Zap}
+                />
+                <StatCard
+                  label="Steals"
+                  value={seasonStats.avgSteals}
+                  icon={Shield}
+                />
+                <StatCard
+                  label="Blocks"
+                  value={seasonStats.avgBlocks}
+                  icon={HandMetal}
+                />
+                <StatCard
+                  label="FG%"
+                  value={seasonStats.fgPercentage}
+                  suffix="%"
+                  icon={Percent}
+                />
+              </div>
+            </section>
+
+            {/* Performance Charts */}
+            <section>
+              <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                Performance Trends
+              </h2>
+              <div className="grid md:grid-cols-3 gap-4">
+                <StatsChart games={games} stat="points" />
+                <StatsChart games={games} stat="rebounds" />
+                <StatsChart games={games} stat="assists" />
+              </div>
+            </section>
+
+            {/* Recent Games */}
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider">
+                  Recent Games
+                </h2>
+                <AddGameDialog onAddGame={addGame} />
+              </div>
+              {games.length === 0 ? (
+                <div className="stat-card text-center py-12">
+                  <p className="text-muted-foreground">No games recorded yet.</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Click "Add Game" to log your first game!
+                  </p>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {games.slice(0, 6).map((game) => (
+                    <GameCard key={game.id} game={game} onDelete={deleteGame} />
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+
+        {/* Games Tab */}
+        {activeTab === 'games' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold">Game Log</h1>
+                <p className="text-muted-foreground">
+                  {games.length} games recorded
+                </p>
+              </div>
+              <AddGameDialog onAddGame={addGame} />
+            </div>
+
+            {games.length === 0 ? (
+              <div className="stat-card text-center py-16">
+                <p className="text-muted-foreground text-lg">No games recorded yet.</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Start tracking your season by adding your first game!
+                </p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {games.map((game) => (
+                  <GameCard key={game.id} game={game} onDelete={deleteGame} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Clips Tab */}
+        {activeTab === 'clips' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold">Video Clips</h1>
+                <p className="text-muted-foreground">
+                  {clips.length} clips uploaded
+                </p>
+              </div>
+              <AddClipDialog onAddClip={addClip} />
+            </div>
+
+            {clips.length === 0 ? (
+              <div className="stat-card text-center py-16">
+                <p className="text-muted-foreground text-lg">No clips uploaded yet.</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Upload your best plays and highlights!
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {clips.map((clip) => (
+                  <ClipCard key={clip.id} clip={clip} onDelete={deleteClip} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="animate-fade-in">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold">Settings</h1>
+              <p className="text-muted-foreground">
+                Manage your player profile
+              </p>
+            </div>
+            <SettingsPanel profile={profile} onUpdateProfile={updateProfile} />
+          </div>
+        )}
+      </main>
     </div>
   );
-};
-
-export default Index;
+}
