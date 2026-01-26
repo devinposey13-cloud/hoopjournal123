@@ -30,6 +30,7 @@ export type Database = {
           opponent: string
           points: number
           rebounds: number
+          season_id: string | null
           steals: number
           three_pt_attempted: number
           three_pt_made: number
@@ -52,6 +53,7 @@ export type Database = {
           opponent: string
           points?: number
           rebounds?: number
+          season_id?: string | null
           steals?: number
           three_pt_attempted?: number
           three_pt_made?: number
@@ -74,6 +76,7 @@ export type Database = {
           opponent?: string
           points?: number
           rebounds?: number
+          season_id?: string | null
           steals?: number
           three_pt_attempted?: number
           three_pt_made?: number
@@ -81,7 +84,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "games_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       player_settings: {
         Row: {
@@ -134,6 +145,7 @@ export type Database = {
           location: string
           notes: string | null
           opponent: string
+          season_id: string | null
           time: string
           user_id: string
         }
@@ -145,6 +157,7 @@ export type Database = {
           location: string
           notes?: string | null
           opponent: string
+          season_id?: string | null
           time: string
           user_id: string
         }
@@ -156,7 +169,46 @@ export type Database = {
           location?: string
           notes?: string | null
           opponent?: string
+          season_id?: string | null
           time?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_games_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seasons: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          name: string
+          start_date: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          start_date?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          start_date?: string | null
           user_id?: string
         }
         Relationships: []
@@ -169,6 +221,7 @@ export type Database = {
           file_path: string
           game_id: string | null
           id: string
+          season_id: string | null
           thumbnail_path: string | null
           title: string
           user_id: string
@@ -180,6 +233,7 @@ export type Database = {
           file_path: string
           game_id?: string | null
           id?: string
+          season_id?: string | null
           thumbnail_path?: string | null
           title: string
           user_id: string
@@ -191,6 +245,7 @@ export type Database = {
           file_path?: string
           game_id?: string | null
           id?: string
+          season_id?: string | null
           thumbnail_path?: string | null
           title?: string
           user_id?: string
@@ -201,6 +256,13 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_clips_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
             referencedColumns: ["id"]
           },
         ]

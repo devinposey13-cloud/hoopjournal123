@@ -1,12 +1,18 @@
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, Calendar, Video, Settings, CalendarDays, MessageCircle } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
+import { SeasonSelector } from './SeasonSelector';
+import { Season } from '@/types/basketball';
 
 export type Tab = 'dashboard' | 'games' | 'schedule' | 'clips' | 'coach' | 'settings';
 
 interface NavigationProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
+  seasons: Season[];
+  activeSeason: Season | null;
+  onSeasonChange: (seasonId: string) => void;
+  onCreateSeason: (name: string) => Promise<void>;
 }
 
 const tabs = [
@@ -18,7 +24,14 @@ const tabs = [
   { id: 'settings' as Tab, label: 'Settings', icon: Settings },
 ];
 
-export function Navigation({ activeTab, onTabChange }: NavigationProps) {
+export function Navigation({ 
+  activeTab, 
+  onTabChange,
+  seasons,
+  activeSeason,
+  onSeasonChange,
+  onCreateSeason,
+}: NavigationProps) {
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto px-4">
@@ -51,6 +64,14 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
               </button>
             ))}
           </div>
+
+          {/* Season Selector */}
+          <SeasonSelector
+            seasons={seasons}
+            activeSeason={activeSeason}
+            onSeasonChange={onSeasonChange}
+            onCreateSeason={onCreateSeason}
+          />
         </div>
       </div>
     </nav>
