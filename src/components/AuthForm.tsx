@@ -122,7 +122,7 @@ export function AuthForm() {
                     type="text"
                     value={username}
                     onChange={(e) => validateUsername(e.target.value)}
-                    placeholder="devinposey"
+                    placeholder="username"
                     className="pl-9"
                     required={!isLogin}
                     maxLength={20}
