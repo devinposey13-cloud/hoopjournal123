@@ -67,15 +67,16 @@ export function VideoInteractions({ videoId, showComments = true }: VideoInterac
         .order('created_at', { ascending: true });
 
       if (commentsData && commentsData.length > 0) {
-        // Get user names for comments
+        // Get user names for comments - prefer display_name over name for privacy
         const userIds = [...new Set(commentsData.map(c => c.user_id))];
         const { data: playersData } = await supabase
           .from('player_settings')
-          .select('user_id, name')
+          .select('user_id, name, display_name')
           .in('user_id', userIds);
 
         const nameMap = (playersData || []).reduce((acc, p) => {
-          acc[p.user_id] = p.name;
+          // Use display_name if set, otherwise fall back to name
+          acc[p.user_id] = p.display_name || p.name;
           return acc;
         }, {} as Record<string, string>);
 
@@ -150,17 +151,17 @@ export function VideoInteractions({ videoId, showComments = true }: VideoInterac
 
       if (error) throw error;
 
-      // Get user's name
+      // Get user's display name (prefer display_name over name)
       const { data: playerData } = await supabase
         .from('player_settings')
-        .select('name')
+        .select('name, display_name')
         .eq('user_id', user.id)
         .maybeSingle();
 
       setComments(prev => [...prev, {
         id: data.id,
         userId: data.user_id,
-        userName: playerData?.name || 'You',
+        userName: playerData?.display_name || playerData?.name || 'You',
         content: data.content,
         createdAt: data.created_at,
       }]);

@@ -12,6 +12,7 @@ const defaultProfile: PlayerProfile = {
   height: "5'8\"",
   grade: '8th Grade',
   username: undefined,
+  displayName: undefined,
   isProfilePublic: false,
 };
 
@@ -193,6 +194,7 @@ export function useCloudData() {
           grade: settingsData.grade,
           avatar: settingsData.avatar_url || undefined,
           username: settingsData.username || undefined,
+          displayName: settingsData.display_name || undefined,
           isProfilePublic: settingsData.is_profile_public ?? false,
         });
       }
@@ -585,6 +587,7 @@ export function useCloudData() {
             grade: updates.grade ?? profile.grade,
             avatar_url: updates.avatar ?? profile.avatar ?? null,
             username: updates.username ?? profile.username ?? null,
+            display_name: updates.displayName ?? profile.displayName ?? null,
             is_profile_public: updates.isProfilePublic ?? profile.isProfilePublic ?? false,
           },
           { onConflict: 'user_id' }
