@@ -162,6 +162,24 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
             </div>
           )}
 
+          {/* Display Name for Privacy */}
+          <div className="space-y-2">
+            <Label htmlFor="displayName">
+              Display Name
+              <span className="text-muted-foreground text-xs ml-1">(shown on comments)</span>
+            </Label>
+            <Input
+              id="displayName"
+              value={formData.displayName || ''}
+              onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+              placeholder="e.g., HoopStar23"
+              maxLength={30}
+            />
+            <p className="text-xs text-muted-foreground">
+              This name will be displayed instead of your real name when you comment on videos.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Player Name</Label>

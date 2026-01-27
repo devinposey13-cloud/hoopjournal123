@@ -40,6 +40,7 @@ export interface PlayerProfile {
   grade: string;
   avatar?: string;
   username?: string;
+  displayName?: string;
   isProfilePublic?: boolean;
 }
 
