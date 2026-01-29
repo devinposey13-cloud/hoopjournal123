@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FireCelebration } from './FireCelebration';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 interface LiveStats {
   points: number;
@@ -71,6 +72,7 @@ export function LiveStatCapture({
   const [history, setHistory] = useState<StatAction[]>([]);
   const [lastAction, setLastAction] = useState<string | null>(null);
   const [showFireCelebration, setShowFireCelebration] = useState(false);
+  const { playSound } = useSoundEffects();
 
   // Auto-hide fire celebration after delay
   useEffect(() => {
@@ -83,6 +85,24 @@ export function LiveStatCapture({
   const recordStat = useCallback((action: StatAction) => {
     // Check if this is a made shot to trigger fire celebration
     const isMadeShot = action.type === 'fgMade' || action.type === 'threePtMade' || action.type === 'ftMade';
+    const isMiss = action.type === 'fgAttempted' || action.type === 'threePtAttempted' || action.type === 'ftAttempted';
+    
+    // Play appropriate sound effect
+    if (isMadeShot) {
+      playSound('make');
+    } else if (isMiss) {
+      playSound('miss');
+    } else if (action.type === 'rebounds') {
+      playSound('rebound');
+    } else if (action.type === 'assists') {
+      playSound('assist');
+    } else if (action.type === 'steals') {
+      playSound('steal');
+    } else if (action.type === 'blocks') {
+      playSound('block');
+    } else if (action.type === 'turnovers') {
+      playSound('turnover');
+    }
     
     setStats(prev => {
       const newStats = { ...prev };
@@ -124,7 +144,7 @@ export function LiveStatCapture({
     
     // Clear the last action indicator after a moment
     setTimeout(() => setLastAction(null), 1500);
-  }, []);
+  }, [playSound]);
 
   const undoLast = useCallback(() => {
     if (history.length === 0) return;
