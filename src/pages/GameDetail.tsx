@@ -406,38 +406,43 @@ export default function GameDetail() {
             )}
           </div>
 
-          {/* Pregame Widgets */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Pregame Talk - Coach AI */}
+          {/* Game Actions - Primary CTA */}
+          <div className="stat-card mb-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <p className="text-lg font-semibold">Ready for game time?</p>
+                <p className="text-sm text-muted-foreground">
+                  Track your stats live during the game
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button onClick={() => setShowLiveCapture(true)} className="gradient-primary" size="lg">
+                  <Radio className="w-4 h-4 mr-2" />
+                  Live Stat Capture
+                </Button>
+                <Button onClick={() => setShowAddStatsDialog(true)} variant="outline" size="sm">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Manual
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Pregame Content */}
+          <div className="space-y-6">
+            {/* Pregame Talk - Coach AI - Full Width Primary */}
             <PregameTalk 
               opponent={scheduledGame.opponent}
               gameDate={scheduledGame.date}
               isHome={scheduledGame.isHome}
             />
             
-            {/* Stats Predictor */}
+            {/* Stats Predictor - Compact Secondary */}
             <PregamePredictor 
               scheduledGameId={scheduledGame.id}
               opponent={scheduledGame.opponent}
+              compact
             />
-          </div>
-
-          {/* Game Actions */}
-          <div className="stat-card text-center py-8">
-            <p className="text-lg font-semibold mb-2">Ready for game time?</p>
-            <p className="text-muted-foreground mb-6">
-              Start live capture during the game or log stats after!
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={() => setShowLiveCapture(true)} className="gradient-primary">
-                <Radio className="w-4 h-4 mr-2" />
-                Live Stat Capture
-              </Button>
-              <Button onClick={() => setShowAddStatsDialog(true)} variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
-                Log Stats Manually
-              </Button>
-            </div>
           </div>
 
           {/* Add Stats Dialog */}

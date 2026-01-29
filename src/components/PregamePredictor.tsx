@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 interface PregamePredictorProps {
   scheduledGameId: string;
   opponent: string;
+  compact?: boolean;
 }
 
 interface Prediction {
@@ -19,7 +20,7 @@ interface Prediction {
   predicted_assists: number;
 }
 
-export function PregamePredictor({ scheduledGameId, opponent }: PregamePredictorProps) {
+export function PregamePredictor({ scheduledGameId, opponent, compact = false }: PregamePredictorProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -126,14 +127,85 @@ export function PregamePredictor({ scheduledGameId, opponent }: PregamePredictor
 
   if (loading) {
     return (
-      <div className="stat-card">
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div className={compact ? "bg-muted/30 rounded-lg p-3" : "stat-card"}>
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         </div>
       </div>
     );
   }
 
+  // Compact mode - inline horizontal layout
+  if (compact) {
+    return (
+      <div className="bg-muted/30 rounded-lg p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          {/* Label */}
+          <div className="flex items-center gap-2 sm:min-w-[140px]">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-green-500" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">Stats Predictor</p>
+              {existingPrediction && (
+                <p className="text-xs text-green-500 flex items-center gap-1">
+                  <Check className="w-3 h-3" /> Saved
+                </p>
+              )}
+            </div>
+          </div>
+          
+          {/* Inputs */}
+          <div className="flex items-center gap-2 flex-1">
+            <div className="flex-1 max-w-[80px]">
+              <Input
+                type="number"
+                min="0"
+                placeholder="PTS"
+                value={predictions.points}
+                onChange={(e) => setPredictions({ ...predictions, points: e.target.value })}
+                className="h-9 text-center text-sm font-medium"
+              />
+            </div>
+            <div className="flex-1 max-w-[80px]">
+              <Input
+                type="number"
+                min="0"
+                placeholder="REB"
+                value={predictions.rebounds}
+                onChange={(e) => setPredictions({ ...predictions, rebounds: e.target.value })}
+                className="h-9 text-center text-sm font-medium"
+              />
+            </div>
+            <div className="flex-1 max-w-[80px]">
+              <Input
+                type="number"
+                min="0"
+                placeholder="AST"
+                value={predictions.assists}
+                onChange={(e) => setPredictions({ ...predictions, assists: e.target.value })}
+                className="h-9 text-center text-sm font-medium"
+              />
+            </div>
+            <Button 
+              size="sm"
+              onClick={handleSubmit}
+              disabled={saving}
+              className="bg-green-500 hover:bg-green-600 text-white h-9 px-3"
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Target className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Full mode - original layout
   return (
     <div className="stat-card">
       {/* Header */}
