@@ -62,6 +62,7 @@ export interface PlayerProfile {
   username?: string;
   displayName?: string;
   isProfilePublic?: boolean;
+  themeMusicUrl?: string;
 }
 
 export interface SeasonStats {

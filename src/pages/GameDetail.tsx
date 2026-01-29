@@ -20,6 +20,7 @@ import { PregameTalk } from '@/components/PregameTalk';
 import { PregamePredictor } from '@/components/PregamePredictor';
 import { GameCountdown } from '@/components/GameCountdown';
 import { DailyQuote } from '@/components/DailyQuote';
+import { SpotifyPlayer } from '@/components/SpotifyPlayer';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
@@ -447,6 +448,11 @@ export default function GameDetail() {
 
           {/* Pregame Content */}
           <div className="space-y-6">
+            {/* Spotify Player - Theme Music */}
+            {profile?.themeMusicUrl && (
+              <SpotifyPlayer url={profile.themeMusicUrl} compact />
+            )}
+
             {/* Pregame Talk - Coach AI - Full Width Primary */}
             <PregameTalk 
               opponent={scheduledGame.opponent}
