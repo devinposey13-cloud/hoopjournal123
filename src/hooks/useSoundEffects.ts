@@ -4,6 +4,7 @@ type SoundType = 'make' | 'miss' | 'assist' | 'rebound' | 'steal' | 'block' | 't
 
 const SOUND_PATHS: Partial<Record<SoundType, string>> = {
   assist: '/sounds/assist.mp3',
+  block: '/sounds/block.mp3',
 };
 
 export function useSoundEffects() {
