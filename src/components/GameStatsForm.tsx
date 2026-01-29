@@ -31,6 +31,7 @@ const defaultFormData = {
   steals: 0,
   blocks: 0,
   turnovers: 0,
+  fouls: 0,
   minutesPlayed: 0,
   fgMade: 0,
   fgAttempted: 0,
@@ -178,6 +179,11 @@ export function GameStatsForm({ onSubmit, initialData, submitLabel = 'Save Game'
             label="Turnovers"
             value={formData.turnovers}
             onChange={(v) => updateField('turnovers', v)}
+          />
+          <NumberInput
+            label="Fouls (PF)"
+            value={formData.fouls}
+            onChange={(v) => updateField('fouls', v)}
           />
           <NumberInput
             label="Minutes"

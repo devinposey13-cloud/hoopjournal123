@@ -8,6 +8,7 @@ export interface GameStats {
   steals: number;
   blocks: number;
   turnovers: number;
+  fouls: number;
   minutesPlayed: number;
   fgMade: number;
   fgAttempted: number;
@@ -36,6 +37,7 @@ export interface HalfStats {
   steals: number;
   blocks: number;
   turnovers: number;
+  fouls: number;
 }
 
 export interface VideoClip {

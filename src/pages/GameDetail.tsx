@@ -78,6 +78,7 @@ export default function GameDetail() {
               steals: data.steals,
               blocks: data.blocks,
               turnovers: data.turnovers,
+              fouls: data.fouls ?? 0,
               minutesPlayed: data.minutes_played,
               fgMade: data.fg_made,
               fgAttempted: data.fg_attempted,
@@ -209,6 +210,7 @@ export default function GameDetail() {
       steals: number;
       blocks: number;
       turnovers: number;
+      fouls: number;
     },
     saveData?: LiveStatsSaveData,
     isGameOver?: boolean
@@ -227,6 +229,7 @@ export default function GameDetail() {
       steals: liveStats.steals,
       blocks: liveStats.blocks,
       turnovers: liveStats.turnovers,
+      fouls: liveStats.fouls ?? 0,
       minutesPlayed: 0, // Can be updated later
       fgMade: liveStats.fgMade,
       fgAttempted: liveStats.fgAttempted,
@@ -259,6 +262,7 @@ export default function GameDetail() {
             steals: gameData.steals,
             blocks: gameData.blocks,
             turnovers: gameData.turnovers,
+            fouls: gameData.fouls ?? 0,
             minutes_played: gameData.minutesPlayed,
             fg_made: gameData.fgMade,
             fg_attempted: gameData.fgAttempted,
@@ -289,6 +293,7 @@ export default function GameDetail() {
             steals: data.steals,
             blocks: data.blocks,
             turnovers: data.turnovers,
+            fouls: data.fouls ?? 0,
             minutesPlayed: data.minutes_played,
             fgMade: data.fg_made,
             fgAttempted: data.fg_attempted,

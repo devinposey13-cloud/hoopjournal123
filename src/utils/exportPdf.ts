@@ -188,7 +188,7 @@ export async function exportSeasonStatsPdf(
 
     autoTable(doc, {
       startY: tableEndY + 20,
-      head: [['Date', 'Opponent', 'Result', 'PTS', 'REB', 'AST', 'STL', 'BLK']],
+      head: [['Date', 'Opponent', 'Result', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'PF']],
       body: games.map((game) => [
         format(new Date(game.date), 'MM/dd/yy'),
         game.opponent,
@@ -198,6 +198,7 @@ export async function exportSeasonStatsPdf(
         game.assists.toString(),
         game.steals.toString(),
         game.blocks.toString(),
+        (game.fouls ?? 0).toString(),
       ]),
       theme: 'striped',
       headStyles: { fillColor: [59, 130, 246] },
@@ -299,7 +300,7 @@ export async function exportGameBoxScorePdf(
         (game.offensiveRebounds || 0).toString(),
         (game.defensiveRebounds || 0).toString(),
         game.rebounds.toString(),
-        '0', // Personal fouls - not tracked
+        (game.fouls ?? 0).toString(),
         game.points.toString(),
         game.assists.toString(),
         game.turnovers.toString(),
@@ -316,7 +317,7 @@ export async function exportGameBoxScorePdf(
       (game.offensiveRebounds || 0).toString(),
       (game.defensiveRebounds || 0).toString(),
       game.rebounds.toString(),
-      '0',
+      (game.fouls ?? 0).toString(),
       game.points.toString(),
       game.assists.toString(),
       game.turnovers.toString(),
@@ -453,8 +454,14 @@ export async function exportGameBoxScorePdf(
       14, shootingY + 23
     );
 
+    // Fouls breakdown
+    doc.text(
+      `Fouls (PF): 1st Half: ${firstHalf.fouls ?? 0}    2nd half: ${secondHalf.fouls ?? 0}    Game: ${game.fouls ?? 0}`,
+      14, shootingY + 28
+    );
+
     // Score by periods table
-    const periodsY = shootingY + 32;
+    const periodsY = shootingY + 38;
     doc.setFont('helvetica', 'bold');
     doc.text('Score by periods', 14, periodsY);
 
