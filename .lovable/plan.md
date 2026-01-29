@@ -1,115 +1,110 @@
 
-## Add Phone Number or Email Authentication
 
-Allow users to sign up and log in using either their phone number or email address, both with a regular password. This provides flexibility for users (especially younger players) who may not have email addresses.
+## Password Reset Request System for Phone Users
+
+Enable phone users to request password resets directly from the Forgot Password dialog, which will send a notification to admins in the Admin tab.
 
 ---
 
 ### How It Will Work
 
-**Sign Up Flow:**
-1. User picks their preferred method: "Email" or "Phone Number"
-2. Enters their chosen identifier (email or phone) + password + username
-3. Account is created and they can log in immediately
+**User Flow:**
+1. Phone user clicks "Forgot Password?" on login screen
+2. Selects "Phone" tab and enters their phone number
+3. Clicks "Request Password Reset"
+4. Sees confirmation message that their request has been sent to an admin
+5. Admin handles the reset from their dashboard
 
-**Login Flow:**
-1. User picks "Email" or "Phone Number" 
-2. Enters their identifier + password
-3. Signs in normally
+**Admin Flow:**
+1. Admin sees a new "Password Requests" tab in the Admin Panel (with badge showing pending count)
+2. Views list of pending reset requests with user info and phone number
+3. Clicks to approve - generates a temporary password and sets it for the user
+4. User is notified of their new temporary password (displayed to admin to share with user)
 
 ---
 
 ### What Will Change
 
-**Login Screen Updates:**
-- Add toggle buttons to switch between "Email" and "Phone Number" modes
-- Phone input with formatting (e.g., +1 555-123-4567)
-- Same password-based authentication for both methods
+**Database:**
+- New `password_reset_requests` table to store requests from phone users
 
-**Database Changes:**
-- Add `phone` column to `player_settings` table to store user's phone number for display/contact purposes
+**Admin Panel Updates:**
+- New "Password Requests" tab showing pending requests
+- Badge counter for pending requests (similar to Content Reports)
+- Ability to approve/deny requests
+- Direct password reset functionality for phone users
+
+**Forgot Password Dialog:**
+- Add phone number input field in Phone tab
+- Submit button to create reset request
+- Success confirmation message
 
 ---
 
 ### Technical Details
 
-**Files to Modify:**
+**Database Migration:**
+```sql
+CREATE TABLE password_reset_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  phone text NOT NULL,
+  player_name text,
+  status text NOT NULL DEFAULT 'pending',
+  admin_notes text,
+  reviewed_by uuid,
+  reviewed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-1. **`src/components/AuthForm.tsx`**
-   - Add `authMethod` state: `'email' | 'phone'`
-   - Add toggle buttons/tabs at the top of the form
-   - Conditionally render email input OR phone input based on selection
-   - Add phone number validation (format: +1XXXXXXXXXX)
-   - Update `handleSubmit` to use phone-based auth when phone is selected
+ALTER TABLE password_reset_requests ENABLE ROW LEVEL SECURITY;
 
-2. **`src/hooks/useAuth.tsx`**
-   - Update `signUp` function signature to accept either email or phone
-   - Update `signIn` function signature to accept either email or phone
-   - Use Supabase's phone field in auth calls:
-     ```typescript
-     // For phone signup
-     supabase.auth.signUp({
-       phone: '+15551234567',
-       password: 'password123'
-     })
-     
-     // For phone login
-     supabase.auth.signInWithPassword({
-       phone: '+15551234567',
-       password: 'password123'
-     })
-     ```
+-- Users can create requests (for their own account)
+CREATE POLICY "Anyone can create reset requests"
+ON password_reset_requests FOR INSERT
+WITH CHECK (true);
 
-3. **Database Migration**
-   - Add optional `phone` column to `player_settings` table:
-     ```sql
-     ALTER TABLE player_settings 
-     ADD COLUMN phone text;
-     ```
+-- Admins can view all requests
+CREATE POLICY "Admins can view all requests"
+ON password_reset_requests FOR SELECT
+USING (has_role(auth.uid(), 'admin'));
 
-**Phone Number Validation:**
-- Accept formats like: (555) 123-4567, 555-123-4567, 5551234567
-- Normalize to E.164 format (+1XXXXXXXXXX) before sending to Supabase
-- Show helpful formatting hints to users
+-- Admins can update requests
+CREATE POLICY "Admins can update requests"
+ON password_reset_requests FOR UPDATE
+USING (has_role(auth.uid(), 'admin'));
 
----
-
-### User Experience
-
-The auth form will look like this:
-
-```text
-┌─────────────────────────────────────┐
-│         [Hoop Journal Logo]         │
-│      Sign in to track your season   │
-│                                     │
-│   ┌──────────┐ ┌──────────────┐    │
-│   │  Email   │ │ Phone Number │    │
-│   └──────────┘ └──────────────┘    │
-│                                     │
-│   Email / Phone Number              │
-│   ┌─────────────────────────────┐   │
-│   │ you@example.com             │   │
-│   └─────────────────────────────┘   │
-│                                     │
-│   Password                          │
-│   ┌─────────────────────────────┐   │
-│   │ ••••••••                    │   │
-│   └─────────────────────────────┘   │
-│                                     │
-│   ┌─────────────────────────────┐   │
-│   │          Sign In            │   │
-│   └─────────────────────────────┘   │
-│                                     │
-│   Don't have an account? Sign up    │
-└─────────────────────────────────────┘
+-- Admins can delete requests
+CREATE POLICY "Admins can delete requests"
+ON password_reset_requests FOR DELETE
+USING (has_role(auth.uid(), 'admin'));
 ```
 
+**Files to Modify:**
+
+1. **`src/components/ForgotPasswordDialog.tsx`**
+   - Add state for phone number input and request submission
+   - Add form for phone users to enter their phone number
+   - Submit creates a record in `password_reset_requests` table
+   - Show success message after submission
+
+2. **`src/components/AdminPanel.tsx`**
+   - Add new state for password reset requests
+   - Fetch `password_reset_requests` data alongside users and reports
+   - Add new "Password Requests" tab with badge counter
+   - Add UI to view requests and take action
+   - Add function to directly set a new password via the admin-password-reset edge function
+
+3. **`supabase/functions/admin-password-reset/index.ts`**
+   - Add support for directly setting a password (for phone users without email)
+   - Accept optional `newPassword` parameter
+   - Use `updateUserById` to set password directly when provided
+
 ---
 
-### Important Notes
+### Security Considerations
 
-- Phone auth with password (no SMS OTP) is fully supported by the authentication system
-- No additional costs - this uses password authentication, not SMS verification
-- Users who sign up with phone cannot use "Forgot Password" email feature - they would need admin reset
-- The admin password reset feature will continue to work for all users
+- The new password will be generated on the admin side and must be communicated to the user out-of-band (phone call, in person, etc.)
+- RLS ensures only admins can view/modify reset requests
+- The edge function already verifies admin role before allowing password operations
+
