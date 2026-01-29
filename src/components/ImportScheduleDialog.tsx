@@ -40,12 +40,53 @@ export function ImportScheduleDialog({ onImport }: ImportScheduleDialogProps) {
   const [parsedGames, setParsedGames] = useState<ParsedGame[]>([]);
   const [futureOnly, setFutureOnly] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const [step, setStep] = useState<'input' | 'preview'>('input');
   const [formatTab, setFormatTab] = useState<'auto' | 'rss' | 'ical'>('auto');
+
+  // Detect if input is a URL and fetch content
+  const isUrl = (text: string) => {
+    const trimmed = text.trim();
+    return trimmed.startsWith('http://') || trimmed.startsWith('https://');
+  };
+
+  const fetchFromUrl = async (url: string) => {
+    setIsFetching(true);
+    try {
+      // Use a CORS proxy for fetching external URLs
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.status}`);
+      }
+      const content = await response.text();
+      setFeedContent(content);
+      toast.success('Schedule fetched successfully');
+    } catch (error) {
+      console.error('Fetch error:', error);
+      // If direct fetch fails, show instructions
+      toast.error('Could not fetch URL directly. Please copy the file content and paste it here instead.');
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const handleContentChange = (value: string) => {
+    setFeedContent(value);
+    // Auto-detect and fetch if it's a URL
+    if (isUrl(value) && value.trim().split('\n').length === 1) {
+      fetchFromUrl(value.trim());
+    }
+  };
 
   const handleParse = () => {
     if (!feedContent.trim()) {
       toast.error('Please paste the schedule content');
+      return;
+    }
+
+    // Check if user pasted a URL but we couldn't fetch it
+    if (isUrl(feedContent.trim()) && !feedContent.includes('BEGIN:')) {
+      toast.error('Please paste the actual iCal/RSS content, not the URL. Open the URL in your browser and copy its contents.');
       return;
     }
 
@@ -186,18 +227,25 @@ export function ImportScheduleDialog({ onImport }: ImportScheduleDialogProps) {
             </Tabs>
 
             <div className="space-y-2">
-              <Label htmlFor="feed-content">Schedule Content</Label>
+              <Label htmlFor="feed-content">Schedule Content or URL</Label>
               <Textarea
                 id="feed-content"
                 placeholder={formatTab === 'ical' 
-                  ? "BEGIN:VCALENDAR\nVERSION:2.0\n..." 
+                  ? "Paste URL (https://...) or iCal content:\nBEGIN:VCALENDAR\nVERSION:2.0\n..." 
                   : formatTab === 'rss'
-                  ? "<?xml version=\"1.0\"?>\n<rss>..."
-                  : "Paste your RSS or iCal content here..."}
+                  ? "Paste URL (https://...) or RSS content:\n<?xml version=\"1.0\"?>\n<rss>..."
+                  : "Paste a URL or schedule content here..."}
                 value={feedContent}
-                onChange={(e) => setFeedContent(e.target.value)}
+                onChange={(e) => handleContentChange(e.target.value)}
                 className="min-h-[200px] font-mono text-xs"
+                disabled={isFetching}
               />
+              {isFetching && (
+                <p className="text-xs text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Fetching schedule from URL...
+                </p>
+              )}
             </div>
 
             <div className="flex items-center justify-between">
