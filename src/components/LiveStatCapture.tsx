@@ -474,7 +474,10 @@ export function LiveStatCapture({
           <div className="flex gap-2 justify-center">
             <Button
               variant={isWin === true ? "default" : "outline"}
-              onClick={() => setIsWin(true)}
+              onClick={() => {
+                if (navigator.vibrate) navigator.vibrate(50);
+                setIsWin(true);
+              }}
               className={cn(
                 "flex-1 max-w-[120px] font-semibold",
                 isWin === true && "bg-green-500 hover:bg-green-600 text-white"
@@ -484,7 +487,10 @@ export function LiveStatCapture({
             </Button>
             <Button
               variant={isWin === false ? "default" : "outline"}
-              onClick={() => setIsWin(false)}
+              onClick={() => {
+                if (navigator.vibrate) navigator.vibrate(50);
+                setIsWin(false);
+              }}
               className={cn(
                 "flex-1 max-w-[120px] font-semibold",
                 isWin === false && "bg-red-500 hover:bg-red-600 text-white"
