@@ -1,95 +1,115 @@
 
-# Grade-Based Coaching Style for Coach AI
+## Add Phone Number or Email Authentication
 
-## Overview
-Implement dynamic coaching feedback based on the player's grade level. Players in 8th grade and below will receive encouraging, positive reinforcement focused on improvement areas. Players in 9th grade and above will receive honest, direct, and critical feedback about their performance.
+Allow users to sign up and log in using either their phone number or email address, both with a regular password. This provides flexibility for users (especially younger players) who may not have email addresses.
 
-## How It Will Work
+---
 
-| Grade Level | Coaching Style |
-|-------------|----------------|
-| 6th - 8th Grade | Positive reinforcement, encouraging tone, focus on "areas to work on" rather than criticism |
-| 9th - 12th Grade | Direct, honest feedback, constructive criticism, no sugar-coating |
+### How It Will Work
 
-## Implementation Steps
+**Sign Up Flow:**
+1. User picks their preferred method: "Email" or "Phone Number"
+2. Enters their chosen identifier (email or phone) + password + username
+3. Account is created and they can log in immediately
 
-### 1. Pass Profile to CoachChat Component
-Update the Index page to pass the player profile (which contains grade) to the CoachChat component.
+**Login Flow:**
+1. User picks "Email" or "Phone Number" 
+2. Enters their identifier + password
+3. Signs in normally
 
-### 2. Send Grade to Edge Function
-Modify the CoachChat component to include the player's grade in the API request payload.
+---
 
-### 3. Server-Side Grade Verification (Security)
-For added security, the edge function will:
-- Accept the grade from the client as a hint
-- Optionally verify against the `player_settings` table using the authenticated user's ID
-- This prevents users from spoofing their grade to get different responses
+### What Will Change
 
-### 4. Dynamic System Prompt
-The edge function will use a different coaching persona based on grade:
+**Login Screen Updates:**
+- Add toggle buttons to switch between "Email" and "Phone Number" modes
+- Phone input with formatting (e.g., +1 555-123-4567)
+- Same password-based authentication for both methods
 
-**For 8th Grade and Below:**
+**Database Changes:**
+- Add `phone` column to `player_settings` table to store user's phone number for display/contact purposes
+
+---
+
+### Technical Details
+
+**Files to Modify:**
+
+1. **`src/components/AuthForm.tsx`**
+   - Add `authMethod` state: `'email' | 'phone'`
+   - Add toggle buttons/tabs at the top of the form
+   - Conditionally render email input OR phone input based on selection
+   - Add phone number validation (format: +1XXXXXXXXXX)
+   - Update `handleSubmit` to use phone-based auth when phone is selected
+
+2. **`src/hooks/useAuth.tsx`**
+   - Update `signUp` function signature to accept either email or phone
+   - Update `signIn` function signature to accept either email or phone
+   - Use Supabase's phone field in auth calls:
+     ```typescript
+     // For phone signup
+     supabase.auth.signUp({
+       phone: '+15551234567',
+       password: 'password123'
+     })
+     
+     // For phone login
+     supabase.auth.signInWithPassword({
+       phone: '+15551234567',
+       password: 'password123'
+     })
+     ```
+
+3. **Database Migration**
+   - Add optional `phone` column to `player_settings` table:
+     ```sql
+     ALTER TABLE player_settings 
+     ADD COLUMN phone text;
+     ```
+
+**Phone Number Validation:**
+- Accept formats like: (555) 123-4567, 555-123-4567, 5551234567
+- Normalize to E.164 format (+1XXXXXXXXXX) before sending to Supabase
+- Show helpful formatting hints to users
+
+---
+
+### User Experience
+
+The auth form will look like this:
+
 ```text
-COACHING STYLE:
-- Always start with something positive
-- Frame areas for improvement as "things to work on" 
-- Use encouraging language ("You're getting better at...", "Keep practicing...")
-- Focus on effort and growth, not just results
-- Celebrate progress, no matter how small
-- Be a supportive mentor who believes in their potential
-```
-
-**For 9th Grade and Above:**
-```text
-COACHING STYLE:
-- Be direct and honest - players need truth, not flattery
-- Call out poor performance and bad habits directly
-- Provide specific, actionable criticism
-- Don't soften feedback - serious players want real coaching
-- It's okay to be tough when the stats warrant it
-- Treat them like athletes preparing for the next level
+┌─────────────────────────────────────┐
+│         [Hoop Journal Logo]         │
+│      Sign in to track your season   │
+│                                     │
+│   ┌──────────┐ ┌──────────────┐    │
+│   │  Email   │ │ Phone Number │    │
+│   └──────────┘ └──────────────┘    │
+│                                     │
+│   Email / Phone Number              │
+│   ┌─────────────────────────────┐   │
+│   │ you@example.com             │   │
+│   └─────────────────────────────┘   │
+│                                     │
+│   Password                          │
+│   ┌─────────────────────────────┐   │
+│   │ ••••••••                    │   │
+│   └─────────────────────────────┘   │
+│                                     │
+│   ┌─────────────────────────────┐   │
+│   │          Sign In            │   │
+│   └─────────────────────────────┘   │
+│                                     │
+│   Don't have an account? Sign up    │
+└─────────────────────────────────────┘
 ```
 
 ---
 
-## Technical Details
+### Important Notes
 
-### File Changes
-
-#### 1. `src/pages/Index.tsx`
-- Pass `profile` prop to `CoachChat` component
-
-#### 2. `src/components/CoachChat.tsx`
-- Add `profile` to component props
-- Include `playerGrade` in the API request body
-
-#### 3. `supabase/functions/coach-chat/index.ts`
-- Add helper function to determine if grade is "young" (8th and below)
-- Fetch grade from `player_settings` table for verified grade
-- Create two distinct coaching style prompts
-- Select appropriate prompt based on grade level
-
-### Grade Detection Logic
-```typescript
-function isYoungPlayer(grade: string): boolean {
-  const youngGrades = ['6th grade', '7th grade', '8th grade'];
-  return youngGrades.includes(grade.toLowerCase());
-}
-```
-
-### Example Responses
-
-**Same stats, different grades:**
-
-*8th Grader (12 points, 5 turnovers):*
-> "Nice job getting 12 points! You're showing confidence in taking shots. I noticed you had 5 turnovers - that's something we can work on together. Try this drill: practice keeping your dribble low and protecting the ball with your off-hand. You're improving every game!"
-
-*10th Grader (12 points, 5 turnovers):*
-> "12 points is decent but 5 turnovers is a problem. That's nearly a 1:2 assist-to-turnover ratio which won't cut it at the varsity level. You're giving away possessions that could be points. Focus on: 1) Making the simple pass, 2) Not forcing plays in traffic. Your decision-making needs work."
-
----
-
-## Security Considerations
-- Grade is verified server-side using the authenticated user's ID
-- The `player_settings` table already has RLS policies protecting user data
-- Client-provided grade is only used as a fallback if database lookup fails
+- Phone auth with password (no SMS OTP) is fully supported by the authentication system
+- No additional costs - this uses password authentication, not SMS verification
+- Users who sign up with phone cannot use "Forgot Password" email feature - they would need admin reset
+- The admin password reset feature will continue to work for all users
