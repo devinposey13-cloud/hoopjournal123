@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   ArrowLeft, 
@@ -11,12 +11,17 @@ import {
   Shield,
   HandMetal,
   AlertCircle,
-  X
+  X,
+  Camera,
+  ImageIcon,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FireCelebration } from './FireCelebration';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { HalfStats } from '@/types/basketball';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface LiveStats {
   points: number;
@@ -46,6 +51,7 @@ export interface LiveStatsSaveData {
   total: LiveStats;
   firstHalf: HalfStats;
   secondHalf: HalfStats;
+  gamePhotoUrl?: string;
 }
 
 interface LiveStatCaptureProps {
@@ -54,6 +60,7 @@ interface LiveStatCaptureProps {
   onSave: (stats: LiveStats, halfData?: LiveStatsSaveData) => void;
   onCancel: () => void;
   isSaving?: boolean;
+  onPhotoCapture?: (photoUrl: string) => void;
 }
 
 const defaultStats: LiveStats = {
@@ -78,7 +85,8 @@ export function LiveStatCapture({
   initialStats, 
   onSave, 
   onCancel,
-  isSaving = false 
+  isSaving = false,
+  onPhotoCapture
 }: LiveStatCaptureProps) {
   const [currentHalf, setCurrentHalf] = useState<1 | 2>(1);
   const [firstHalfStats, setFirstHalfStats] = useState<LiveStats>({ ...defaultStats });
@@ -86,6 +94,9 @@ export function LiveStatCapture({
   const [history, setHistory] = useState<StatAction[]>([]);
   const [lastAction, setLastAction] = useState<string | null>(null);
   const [showFireCelebration, setShowFireCelebration] = useState(false);
+  const [gamePhoto, setGamePhoto] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { playSound } = useSoundEffects();
 
   // Initialize with any passed initial stats (goes to first half)
@@ -241,11 +252,62 @@ export function LiveStatCapture({
     setHistory(prev => prev.slice(0, -1));
   }, [history]);
 
+  const handlePhotoCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingPhoto(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        throw new Error('Please sign in to upload photos');
+      }
+
+      // Create a unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars') // Reusing avatars bucket for game photos
+        .upload(`game-photos/${fileName}`, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(`game-photos/${fileName}`);
+
+      setGamePhoto(publicUrl);
+      onPhotoCapture?.(publicUrl);
+      toast.success('Game photo captured!');
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast.error('Failed to upload photo');
+    } finally {
+      setIsUploadingPhoto(false);
+      // Reset the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removePhoto = () => {
+    setGamePhoto(null);
+    onPhotoCapture?.('');
+  };
+
   const handleSave = () => {
     const saveData: LiveStatsSaveData = {
       total: totalStats,
       firstHalf: firstHalfStats,
       secondHalf: secondHalfStats,
+      gamePhotoUrl: gamePhoto || undefined,
     };
     onSave(totalStats, saveData);
   };
@@ -268,10 +330,57 @@ export function LiveStatCapture({
           <p className="text-xs text-muted-foreground uppercase tracking-wider">Live Capture</p>
           <p className="font-semibold">vs {opponent}</p>
         </div>
-        <Button variant="ghost" size="icon" onClick={undoLast} disabled={history.length === 0}>
-          <Undo2 className="w-5 h-5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoCapture}
+            className="hidden"
+          />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploadingPhoto}
+            className={cn(gamePhoto && "text-green-400")}
+          >
+            {isUploadingPhoto ? (
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            ) : gamePhoto ? (
+              <ImageIcon className="w-5 h-5" />
+            ) : (
+              <Camera className="w-5 h-5" />
+            )}
+          </Button>
+          <Button variant="ghost" size="icon" onClick={undoLast} disabled={history.length === 0}>
+            <Undo2 className="w-5 h-5" />
+          </Button>
+        </div>
       </div>
+
+      {/* Photo Preview */}
+      {gamePhoto && (
+        <div className="relative">
+          <img 
+            src={gamePhoto} 
+            alt="Game photo" 
+            className="w-full h-32 object-cover"
+          />
+          <Button
+            variant="destructive"
+            size="icon"
+            className="absolute top-2 right-2 w-8 h-8"
+            onClick={removePhoto}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+          <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+            📸 Game Day Photo
+          </div>
+        </div>
+      )}
 
       {/* Last Action Indicator */}
       {lastAction && (

@@ -18,6 +18,7 @@ export interface GameStats {
   isWin: boolean;
   offensiveRebounds?: number;
   defensiveRebounds?: number;
+  gamePhotoUrl?: string;
 }
 
 export interface HalfStats {

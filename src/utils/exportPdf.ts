@@ -147,16 +147,33 @@ interface GameBoxScoreData {
   firstHalf?: HalfStats;
   secondHalf?: HalfStats;
   coachRecap?: string | null;
+  gamePhotoUrl?: string;
 }
 
-export function exportGameBoxScorePdf(
+export async function exportGameBoxScorePdf(
   profile: PlayerProfile,
   gameData: GameBoxScoreData
 ) {
   const doc = new jsPDF({ orientation: 'landscape' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const { game, firstHalf, secondHalf, coachRecap } = gameData;
+  const { game, firstHalf, secondHalf, coachRecap, gamePhotoUrl } = gameData;
+
+  // Helper function to load image as base64
+  const loadImageAsBase64 = async (url: string): Promise<string | null> => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  };
 
   // Title Header
   doc.setFontSize(12);
@@ -393,6 +410,35 @@ export function exportGameBoxScorePdf(
     doc.text(`FG %: ${game.fgMade}-${game.fgAttempted}  ${fgPct}%`, 14, shootingY);
     doc.text(`3FG %: ${game.threePtMade}-${game.threePtAttempted}  ${threePct}%`, 14, shootingY + 5);
     doc.text(`FT %: ${game.ftMade}-${game.ftAttempted}  ${ftPct}%`, 14, shootingY + 10);
+  }
+
+  // Add Game Photo if available
+  if (gamePhotoUrl || game.gamePhotoUrl) {
+    const photoUrl = gamePhotoUrl || game.gamePhotoUrl;
+    if (photoUrl) {
+      doc.addPage();
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Game Day Photo', pageWidth / 2, 20, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${profile.team} vs ${game.opponent} - ${format(new Date(game.date), 'MMMM d, yyyy')}`, pageWidth / 2, 28, { align: 'center' });
+
+      try {
+        const imageData = await loadImageAsBase64(photoUrl);
+        if (imageData) {
+          // Add image centered on page, max width 200, maintain aspect ratio
+          const imgWidth = 180;
+          const imgHeight = 120;
+          const x = (pageWidth - imgWidth) / 2;
+          doc.addImage(imageData, 'JPEG', x, 40, imgWidth, imgHeight);
+        }
+      } catch (e) {
+        console.error('Failed to add game photo to PDF:', e);
+      }
+    }
   }
 
   // Add Coach AI Recap if included
