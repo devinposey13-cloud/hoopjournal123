@@ -62,6 +62,7 @@ export interface LiveStatsSaveData {
   firstHalf: HalfStats;
   secondHalf: HalfStats;
   gamePhotoUrl?: string;
+  isWin?: boolean;
 }
 
 interface LiveStatCaptureProps {
@@ -107,6 +108,7 @@ export function LiveStatCapture({
   const [gamePhoto, setGamePhoto] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
+  const [isWin, setIsWin] = useState<boolean | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { playSound } = useSoundEffects();
 
@@ -323,6 +325,7 @@ export function LiveStatCapture({
       firstHalf: firstHalfStats,
       secondHalf: secondHalfStats,
       gamePhotoUrl: gamePhoto || undefined,
+      isWin: isWin ?? undefined,
     };
     setShowGameOverDialog(false);
     onSave(totalStats, saveData, isGameOver);
@@ -465,7 +468,33 @@ export function LiveStatCapture({
           </Button>
         </div>
 
-        {/* Current Half Stats Summary */}
+        {/* Game Result Selection */}
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider text-center">Game Result</p>
+          <div className="flex gap-2 justify-center">
+            <Button
+              variant={isWin === true ? "default" : "outline"}
+              onClick={() => setIsWin(true)}
+              className={cn(
+                "flex-1 max-w-[120px] font-semibold",
+                isWin === true && "bg-green-500 hover:bg-green-600 text-white"
+              )}
+            >
+              ✓ Win
+            </Button>
+            <Button
+              variant={isWin === false ? "default" : "outline"}
+              onClick={() => setIsWin(false)}
+              className={cn(
+                "flex-1 max-w-[120px] font-semibold",
+                isWin === false && "bg-red-500 hover:bg-red-600 text-white"
+              )}
+            >
+              ✗ Loss
+            </Button>
+          </div>
+        </div>
+
         <div className="bg-muted/50 rounded-lg p-3 text-center">
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">
             {currentHalf === 1 ? '1st' : '2nd'} Half Stats
