@@ -59,12 +59,11 @@ export default function PublicProfile() {
       }
 
       try {
-        // Fetch profile by username
+        // Fetch profile by username using the safe public view (excludes phone)
         const { data: profileData, error: profileError } = await (supabase as any)
-          .from('player_settings')
+          .from('public_player_profiles')
           .select('*')
           .eq('username', username.toLowerCase())
-          .eq('is_profile_public', true)
           .maybeSingle();
 
         if (profileError) throw profileError;
