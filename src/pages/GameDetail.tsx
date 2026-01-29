@@ -13,7 +13,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { GameStatsForm } from '@/components/GameStatsForm';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, Clock, AlertCircle, Calendar, MapPin, Home, Plane, Plus } from 'lucide-react';
+import { LiveStatCapture } from '@/components/LiveStatCapture';
+import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, Clock, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function GameDetail() {
@@ -25,6 +26,7 @@ export default function GameDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddStatsDialog, setShowAddStatsDialog] = useState(false);
+  const [showLiveCapture, setShowLiveCapture] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -148,6 +150,7 @@ export default function GameDetail() {
     } catch (err) {
       console.error('Error adding game:', err);
       toast.error('Failed to save game stats');
+      setShowLiveCapture(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -164,6 +167,70 @@ export default function GameDetail() {
   if (!user) {
     navigate('/');
     return null;
+  }
+
+  // Handle live stat capture save
+  const handleLiveCaptureSave = async (liveStats: {
+    points: number;
+    fgMade: number;
+    fgAttempted: number;
+    threePtMade: number;
+    threePtAttempted: number;
+    ftMade: number;
+    ftAttempted: number;
+    rebounds: number;
+    assists: number;
+    steals: number;
+    blocks: number;
+    turnovers: number;
+  }) => {
+    const gameData: Omit<GameStats, 'id'> = {
+      date: scheduledGame?.date || new Date().toISOString(),
+      opponent: scheduledGame?.opponent || game?.opponent || 'Unknown',
+      points: liveStats.points,
+      rebounds: liveStats.rebounds,
+      assists: liveStats.assists,
+      steals: liveStats.steals,
+      blocks: liveStats.blocks,
+      turnovers: liveStats.turnovers,
+      minutesPlayed: 0, // Can be updated later
+      fgMade: liveStats.fgMade,
+      fgAttempted: liveStats.fgAttempted,
+      threePtMade: liveStats.threePtMade,
+      threePtAttempted: liveStats.threePtAttempted,
+      ftMade: liveStats.ftMade,
+      ftAttempted: liveStats.ftAttempted,
+      isWin: false, // Can be updated later
+    };
+    
+    await handleAddGame(gameData);
+  };
+
+  // Show Live Stat Capture fullscreen
+  if (showLiveCapture) {
+    const opponent = scheduledGame?.opponent || game?.opponent || 'Unknown';
+    return (
+      <LiveStatCapture
+        opponent={opponent}
+        initialStats={game ? {
+          points: game.points,
+          fgMade: game.fgMade,
+          fgAttempted: game.fgAttempted,
+          threePtMade: game.threePtMade,
+          threePtAttempted: game.threePtAttempted,
+          ftMade: game.ftMade,
+          ftAttempted: game.ftAttempted,
+          rebounds: game.rebounds,
+          assists: game.assists,
+          steals: game.steals,
+          blocks: game.blocks,
+          turnovers: game.turnovers,
+        } : undefined}
+        onSave={handleLiveCaptureSave}
+        onCancel={() => setShowLiveCapture(false)}
+        isSaving={isSubmitting}
+      />
+    );
   }
 
   // Show scheduled game view (no stats yet)
@@ -228,16 +295,17 @@ export default function GameDetail() {
             <AlertCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-xl font-semibold mb-2">No stats recorded yet</p>
             <p className="text-muted-foreground mb-6">
-              Log your stats after playing this game to see your performance here!
+              Start live capture during the game or log stats after!
             </p>
-            <div className="flex gap-3 justify-center">
-              <Button onClick={() => setShowAddStatsDialog(true)} className="gradient-primary">
-                <Plus className="w-4 h-4 mr-2" />
-                Log Stats
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button onClick={() => setShowLiveCapture(true)} className="gradient-primary">
+                <Radio className="w-4 h-4 mr-2" />
+                Live Stat Capture
               </Button>
-              <Link to="/">
-                <Button variant="outline">Go to Dashboard</Button>
-              </Link>
+              <Button onClick={() => setShowAddStatsDialog(true)} variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                Log Stats Manually
+              </Button>
             </div>
           </div>
 
