@@ -42,41 +42,38 @@ export function parseICalSchedule(icalString: string, teamName?: string): ICalGa
       let opponent = summary;
       let isHome = true;
       
-      // Common patterns: "vs Team", "@ Team", "Team (Home)", "Team (Away)", "at Team"
-      if (summary.toLowerCase().startsWith('vs ') || summary.toLowerCase().startsWith('vs. ')) {
-        opponent = summary.replace(/^vs\.?\s+/i, '').trim();
-        isHome = true;
-      } else if (summary.toLowerCase().startsWith('@ ') || summary.toLowerCase().startsWith('at ')) {
-        opponent = summary.replace(/^@\s+|^at\s+/i, '').trim();
-        isHome = false;
-      } else if (summary.includes(' vs ') || summary.includes(' vs. ')) {
-        // Format: "Our Team vs Opponent" or "Opponent vs Our Team"
-        const parts = summary.split(/\s+vs\.?\s+/i);
-        if (parts.length === 2) {
-          // If we know our team name, use it to determine which side is opponent
-          if (teamName && parts[0].toLowerCase().includes(teamName.toLowerCase())) {
-            opponent = parts[1].trim();
-            isHome = true;
-          } else if (teamName && parts[1].toLowerCase().includes(teamName.toLowerCase())) {
-            opponent = parts[0].trim();
-            isHome = false;
-          } else {
-            // Default: assume second part is opponent
-            opponent = parts[1].trim();
-            isHome = true;
-          }
-        }
-      } else if (summary.includes(' @ ')) {
+      // First, check for (Home) or (Away) suffix - this is the most reliable indicator
+      // Format: "Varsity Boys Basketball vs. Gonzaga College High School (Home)"
+      const homeAwayMatch = summary.match(/\((Home|Away)\)\s*$/i);
+      if (homeAwayMatch) {
+        isHome = homeAwayMatch[1].toLowerCase() === 'home';
+        // Remove the (Home) or (Away) suffix
+        opponent = summary.replace(/\s*\((Home|Away)\)\s*$/i, '').trim();
+      }
+      
+      // Now extract the opponent name from common patterns
+      // Pattern: "Team Name vs. Opponent" or "Event vs. Opponent"
+      // Handle both "vs " and "vs. " (with or without period)
+      const vsMatch = opponent.match(/\s+vs\.?\s+(.+)$/i);
+      if (vsMatch) {
+        opponent = vsMatch[1].trim();
+      } else if (opponent.toLowerCase().startsWith('vs ') || opponent.toLowerCase().startsWith('vs. ')) {
+        opponent = opponent.replace(/^vs\.?\s+/i, '').trim();
+        if (!homeAwayMatch) isHome = true;
+      } else if (opponent.toLowerCase().startsWith('@ ') || opponent.toLowerCase().startsWith('at ')) {
+        opponent = opponent.replace(/^@\s+|^at\s+/i, '').trim();
+        if (!homeAwayMatch) isHome = false;
+      } else if (opponent.includes(' @ ')) {
         // Format: "Our Team @ Opponent"
-        const parts = summary.split(/\s+@\s+/);
+        const parts = opponent.split(/\s+@\s+/);
         if (parts.length === 2) {
           opponent = parts[1].trim();
-          isHome = false;
+          if (!homeAwayMatch) isHome = false;
         }
       }
 
-      // Check description for additional home/away indicators
-      if (description) {
+      // Check description for additional home/away indicators (only if not already determined)
+      if (!homeAwayMatch && description) {
         const descLower = description.toLowerCase();
         if (descLower.includes('home game') || descLower.includes('(home)')) {
           isHome = true;
@@ -87,7 +84,8 @@ export function parseICalSchedule(icalString: string, teamName?: string): ICalGa
 
       // Clean up opponent name - remove score if present
       opponent = opponent.replace(/\s*\d+\s*-\s*\d+\s*$/, '').trim();
-      opponent = opponent.replace(/\s*\(.*\)\s*$/, '').trim();
+      // Remove any remaining parenthetical notes (but keep the name clean)
+      opponent = opponent.replace(/\s*\([^)]*\)\s*$/, '').trim();
       
       if (!opponent) return;
 
@@ -116,9 +114,12 @@ export function parseICalSchedule(icalString: string, teamName?: string): ICalGa
 
 /**
  * Extract a property value from an iCal event block
+ * Handles properties with parameters like DTSTART;TZID=America/New_York:20240101T190000
+ * or DTSTART;VALUE=DATE:20240101
  */
 function extractProperty(eventBlock: string, property: string): string | null {
   // Handle property with parameters (e.g., DTSTART;TZID=America/New_York:20240101T190000)
+  // or DTSTART;VALUE=DATE:20240101
   const regex = new RegExp(`${property}(?:;[^:]*)?:([^\\r\\n]+)`, 'i');
   const match = eventBlock.match(regex);
   
@@ -139,36 +140,42 @@ function extractProperty(eventBlock: string, property: string): string | null {
 
 /**
  * Parse iCal date format
- * Supports: 20240101, 20240101T190000, 20240101T190000Z
+ * Supports: 20240101, 20240101T190000, 20240101T190000Z, VALUE=DATE:20240101
  */
 function parseICalDate(dateStr: string): Date | null {
   if (!dateStr) return null;
 
   // Remove timezone identifier if present
-  const cleanDate = dateStr.replace(/Z$/, '');
+  let cleanDate = dateStr.replace(/Z$/, '');
+  
+  // Handle VALUE=DATE format (e.g., from DTSTART;VALUE=DATE:20240101)
+  // The property extraction already handles this, but clean up just in case
+  cleanDate = cleanDate.replace(/^VALUE=DATE:/i, '');
 
   try {
-    // Format: YYYYMMDD
-    if (cleanDate.length === 8) {
+    // Format: YYYYMMDD (8 digits, no time component)
+    if (/^\d{8}$/.test(cleanDate)) {
       const year = parseInt(cleanDate.slice(0, 4));
       const month = parseInt(cleanDate.slice(4, 6)) - 1;
       const day = parseInt(cleanDate.slice(6, 8));
-      return new Date(year, month, day);
+      return new Date(year, month, day, 12, 0, 0); // Default to noon for all-day events
     }
     
-    // Format: YYYYMMDDTHHMMSS
-    if (cleanDate.length >= 15 && cleanDate.includes('T')) {
+    // Format: YYYYMMDDTHHMMSS (with time)
+    if (cleanDate.includes('T')) {
       const datePart = cleanDate.split('T')[0];
       const timePart = cleanDate.split('T')[1];
       
-      const year = parseInt(datePart.slice(0, 4));
-      const month = parseInt(datePart.slice(4, 6)) - 1;
-      const day = parseInt(datePart.slice(6, 8));
-      const hour = parseInt(timePart.slice(0, 2));
-      const minute = parseInt(timePart.slice(2, 4));
-      const second = parseInt(timePart.slice(4, 6)) || 0;
-      
-      return new Date(year, month, day, hour, minute, second);
+      if (datePart.length >= 8) {
+        const year = parseInt(datePart.slice(0, 4));
+        const month = parseInt(datePart.slice(4, 6)) - 1;
+        const day = parseInt(datePart.slice(6, 8));
+        const hour = timePart ? parseInt(timePart.slice(0, 2)) : 12;
+        const minute = timePart ? parseInt(timePart.slice(2, 4)) : 0;
+        const second = timePart && timePart.length >= 6 ? parseInt(timePart.slice(4, 6)) : 0;
+        
+        return new Date(year, month, day, hour, minute, second);
+      }
     }
 
     return null;
