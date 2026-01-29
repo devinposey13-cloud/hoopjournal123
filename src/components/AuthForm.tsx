@@ -159,9 +159,10 @@ export function AuthForm() {
                   <Mail className="w-4 h-4" />
                   Email
                 </TabsTrigger>
-                <TabsTrigger value="phone" className="flex items-center gap-2">
+                <TabsTrigger value="phone" disabled className="flex items-center gap-2 opacity-50 cursor-not-allowed" title="Coming soon">
                   <Phone className="w-4 h-4" />
                   Phone
+                  <span className="text-[10px] text-muted-foreground">(Soon)</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
