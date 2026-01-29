@@ -47,6 +47,7 @@ export function useMilestones(seasonId?: string) {
       checkType: d.check_type,
       threshold: d.threshold,
       secondaryThreshold: d.secondary_threshold || undefined,
+      isRepeatable: (d as any).is_repeatable ?? false,
     }));
 
     setDefinitions(mapped);
@@ -114,12 +115,18 @@ export function useMilestones(seasonId?: string) {
 
     const defs = definitions.length > 0 ? definitions : await fetchDefinitions();
     const earned = earnedMilestones.length > 0 ? earnedMilestones : await fetchEarnedMilestones();
-    const earnedIds = new Set(earned.map(e => e.milestoneId));
+    
+    // For repeatable milestones, check if earned in THIS game specifically
+    // For non-repeatable, check if ever earned
+    const earnedIdsForGame = new Set(
+      earned.filter(e => e.gameId === newGame.id).map(e => e.milestoneId)
+    );
+    const earnedIdsEver = new Set(earned.map(e => e.milestoneId));
 
-    // Check all milestone types
-    const singleGameResults = checkSingleGameMilestones(newGame, defs, earnedIds);
-    const multiGameResults = checkMultiGameMilestones(allGames, defs, earnedIds);
-    const seasonResults = checkSeasonMilestones(seasonStats, allGames, defs, earnedIds);
+    // Check all milestone types, passing both sets
+    const singleGameResults = checkSingleGameMilestones(newGame, defs, earnedIdsForGame, earnedIdsEver);
+    const multiGameResults = checkMultiGameMilestones(allGames, defs, earnedIdsEver);
+    const seasonResults = checkSeasonMilestones(seasonStats, allGames, defs, earnedIdsEver);
 
     const allResults = [...singleGameResults, ...multiGameResults, ...seasonResults];
 

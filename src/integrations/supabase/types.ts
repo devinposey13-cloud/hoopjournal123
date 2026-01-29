@@ -249,6 +249,7 @@ export type Database = {
           description: string
           icon: string
           id: string
+          is_repeatable: boolean
           name: string
           rarity: string
           secondary_threshold: number | null
@@ -261,6 +262,7 @@ export type Database = {
           description: string
           icon: string
           id?: string
+          is_repeatable?: boolean
           name: string
           rarity: string
           secondary_threshold?: number | null
@@ -273,6 +275,7 @@ export type Database = {
           description?: string
           icon?: string
           id?: string
+          is_repeatable?: boolean
           name?: string
           rarity?: string
           secondary_threshold?: number | null

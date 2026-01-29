@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCloudData } from '@/hooks/useCloudData';
+import { useMilestones } from '@/hooks/useMilestones';
 import { GameStats, ScheduledGame } from '@/types/basketball';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -30,7 +31,8 @@ export default function GameDetail() {
   const { id, scheduledId } = useParams<{ id?: string; scheduledId?: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { profile, seasonStats } = useCloudData();
+  const { profile, seasonStats, activeSeason } = useCloudData();
+  const { earnedMilestones } = useMilestones(activeSeason?.id);
   const [game, setGame] = useState<GameStats | null>(null);
   const [scheduledGame, setScheduledGame] = useState<ScheduledGame | null>(null);
   const [loading, setLoading] = useState(true);
@@ -670,7 +672,15 @@ export default function GameDetail() {
         </div>
 
         {/* Post Game Recap from Coach AI */}
-        <PostGameRecap game={game} onRecapChange={handleRecapChange} />
+        <PostGameRecap 
+          game={game} 
+          earnedMilestones={
+            earnedMilestones
+              .filter(m => m.gameId === game.id)
+              .map(m => ({ name: m.milestone?.name || '', rarity: m.milestone?.rarity || 'common' }))
+          }
+          onRecapChange={handleRecapChange} 
+        />
       </div>
     </div>
   );
