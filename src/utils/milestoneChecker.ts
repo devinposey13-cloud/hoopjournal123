@@ -7,18 +7,26 @@ interface GameWithId extends GameStats {
 
 /**
  * Check single-game milestones for a newly logged game
+ * @param earnedIdsForGame - IDs of milestones already earned for THIS specific game
+ * @param earnedIdsEver - IDs of all milestones ever earned
  */
 export function checkSingleGameMilestones(
   game: GameWithId,
   definitions: MilestoneDefinition[],
-  earnedMilestoneIds: Set<string>
+  earnedIdsForGame: Set<string>,
+  earnedIdsEver: Set<string>
 ): NewMilestoneResult[] {
   const results: NewMilestoneResult[] = [];
   const singleGameDefs = definitions.filter(d => d.category === 'single_game');
 
   for (const def of singleGameDefs) {
-    // Skip if already earned (for "first" type milestones)
-    if (isFirstTypeMilestone(def.checkType) && earnedMilestoneIds.has(def.id)) {
+    // Skip if already earned for this game
+    if (earnedIdsForGame.has(def.id)) {
+      continue;
+    }
+    
+    // For non-repeatable milestones, skip if ever earned
+    if (!def.isRepeatable && earnedIdsEver.has(def.id)) {
       continue;
     }
 
@@ -169,14 +177,11 @@ export function checkSeasonMilestones(
 
 // Helper functions
 
-function isFirstTypeMilestone(checkType: string): boolean {
-  return ['points_gte', 'assists_gte', 'rebounds_gte', 'steals_gte', 'blocks_gte'].includes(checkType) 
-    && checkType.includes('1');
-}
-
 function checkMilestoneCondition(def: MilestoneDefinition, game: GameStats): boolean {
   const fgPct = game.fgAttempted > 0 ? (game.fgMade / game.fgAttempted) * 100 : 0;
   const ftPct = game.ftAttempted > 0 ? (game.ftMade / game.ftAttempted) * 100 : 0;
+  const doubleDigitCount = countDoubleDigitStats(game);
+  const highDoubleCount = countHighStats(game, 15);
 
   switch (def.checkType) {
     case 'points_gte':
@@ -192,13 +197,29 @@ function checkMilestoneCondition(def: MilestoneDefinition, game: GameStats): boo
     case 'three_pt_made_gte':
       return game.threePtMade >= def.threshold;
     case 'double_double':
-      return countDoubleDigitStats(game) >= 2;
+      return doubleDigitCount >= 2;
     case 'triple_double':
-      return countDoubleDigitStats(game) >= 3;
+      return doubleDigitCount >= 3;
+    case 'quadruple_double':
+      return doubleDigitCount >= 4;
     case 'perfect_ft':
       return game.ftMade >= def.threshold && ftPct === 100;
     case 'efficient_scorer':
       return fgPct >= def.threshold && game.points >= 10;
+    case 'zero_turnovers':
+      return game.turnovers === 0;
+    case 'perfect_fg':
+      return fgPct === 100 && game.fgMade >= def.threshold;
+    case 'ft_master':
+      return game.ftMade >= def.threshold && ftPct >= 90;
+    case 'high_double_double':
+      return highDoubleCount >= 2;
+    case 'perfect_game':
+      return game.points >= def.threshold && fgPct >= 60 && game.turnovers === 0 && game.isWin;
+    case 'defensive_monster':
+      return game.steals >= def.threshold && game.blocks >= 3;
+    case 'all_around':
+      return game.points >= 10 && game.rebounds >= 10 && game.assists >= 5 && game.steals >= 2 && game.blocks >= 2;
     default:
       return false;
   }
@@ -211,6 +232,16 @@ function countDoubleDigitStats(game: GameStats): number {
   if (game.assists >= 10) count++;
   if (game.steals >= 10) count++;
   if (game.blocks >= 10) count++;
+  return count;
+}
+
+function countHighStats(game: GameStats, threshold: number): number {
+  let count = 0;
+  if (game.points >= threshold) count++;
+  if (game.rebounds >= threshold) count++;
+  if (game.assists >= threshold) count++;
+  if (game.steals >= threshold) count++;
+  if (game.blocks >= threshold) count++;
   return count;
 }
 
