@@ -11,6 +11,7 @@ export interface MilestoneDefinition {
   checkType: string;
   threshold: number;
   secondaryThreshold?: number;
+  isRepeatable?: boolean; // If true, can be earned multiple times per season
 }
 
 export interface PlayerMilestone {

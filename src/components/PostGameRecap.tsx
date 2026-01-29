@@ -9,12 +9,18 @@ import ReactMarkdown from 'react-markdown';
 import { useCoachVoice } from '@/hooks/useCoachVoice';
 import { cn } from '@/lib/utils';
 
+interface EarnedMilestone {
+  name: string;
+  rarity: string;
+}
+
 interface PostGameRecapProps {
   game: GameStats;
+  earnedMilestones?: EarnedMilestone[];
   onRecapChange?: (recap: string | null, includeInPdf: boolean) => void;
 }
 
-export function PostGameRecap({ game, onRecapChange }: PostGameRecapProps) {
+export function PostGameRecap({ game, earnedMilestones, onRecapChange }: PostGameRecapProps) {
   const [recap, setRecap] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
@@ -41,7 +47,7 @@ export function PostGameRecap({ game, onRecapChange }: PostGameRecapProps) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ gameStats: game }),
+        body: JSON.stringify({ gameStats: game, earnedMilestones }),
       });
 
       if (!response.ok) {
