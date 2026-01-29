@@ -16,6 +16,25 @@ export interface GameStats {
   ftMade: number;
   ftAttempted: number;
   isWin: boolean;
+  offensiveRebounds?: number;
+  defensiveRebounds?: number;
+}
+
+export interface HalfStats {
+  points: number;
+  fgMade: number;
+  fgAttempted: number;
+  threePtMade: number;
+  threePtAttempted: number;
+  ftMade: number;
+  ftAttempted: number;
+  rebounds: number;
+  offensiveRebounds: number;
+  defensiveRebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
 }
 
 export interface VideoClip {
