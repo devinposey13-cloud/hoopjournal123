@@ -116,4 +116,78 @@
     @apply border-primary/50;
     transform: scale(1.02);
   }
+
+  /* Journal theme styles */
+  .journal-page {
+    background-image: url('@/assets/paper-texture.avif');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+  }
+
+  .journal-page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 251, 235, 0.85) 0%, rgba(254, 243, 199, 0.9) 100%);
+    pointer-events: none;
+  }
+
+  .journal-page > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .journal-page h1,
+  .journal-page .journal-heading {
+    color: #2d1810;
+  }
+
+  .journal-page p {
+    color: #4a3728;
+  }
+
+  .journal-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #5c4033;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(139, 90, 43, 0.2);
+  }
+
+  .journal-section {
+    padding: 1rem 0;
+  }
+
+  .journal-card {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(139, 90, 43, 0.15);
+    box-shadow: 0 2px 8px rgba(139, 90, 43, 0.08);
+    backdrop-filter: blur(4px);
+  }
+
+  .journal-card:hover {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(139, 90, 43, 0.25);
+    box-shadow: 0 4px 12px rgba(139, 90, 43, 0.12);
+  }
+
+  /* Override text colors inside journal cards */
+  .journal-card .text-foreground,
+  .journal-card .text-2xl {
+    color: #2d1810 !important;
+  }
+
+  .journal-card .text-muted-foreground,
+  .journal-card .text-xs {
+    color: #6b5344 !important;
+  }
+
+  .journal-card .text-primary,
+  .journal-card .bg-primary\/10 {
+    color: #b45309;
+  }
 }

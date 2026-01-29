@@ -114,87 +114,84 @@ export default function Index() {
       <main className="container mx-auto px-4 py-6">
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
-          <div className="space-y-6 animate-fade-in">
-            {/* Journal-style header mockup */}
-            <JournalHeader playerName={profile.name} />
-            
-            <PlayerHeader profile={profile} seasonStats={seasonStats} games={games} />
-
-            {/* Season Averages */}
-            <section>
-              <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                Season Averages
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <StatCard
-                  label="Points"
-                  value={seasonStats.avgPoints}
-                  icon={Target}
-                />
-                <StatCard
-                  label="Rebounds"
-                  value={seasonStats.avgRebounds}
-                  icon={Repeat}
-                />
-                <StatCard
-                  label="Assists"
-                  value={seasonStats.avgAssists}
-                  icon={Zap}
-                />
-                <StatCard
-                  label="Steals"
-                  value={seasonStats.avgSteals}
-                  icon={Shield}
-                />
-                <StatCard
-                  label="Blocks"
-                  value={seasonStats.avgBlocks}
-                  icon={HandMetal}
-                />
-                <StatCard
-                  label="FG%"
-                  value={seasonStats.fgPercentage}
-                  suffix="%"
-                  icon={Percent}
-                />
-              </div>
-            </section>
-
-            {/* Performance Charts */}
-            <section>
-              <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                Performance Trends
-              </h2>
-              <div className="grid md:grid-cols-3 gap-4">
-                <StatsChart games={games} stat="points" />
-                <StatsChart games={games} stat="rebounds" />
-                <StatsChart games={games} stat="assists" />
-              </div>
-            </section>
-
-            {/* Recent Games */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider">
-                  Recent Games
-                </h2>
-                <AddGameDialog onAddGame={addGame} />
-              </div>
-              {games.length === 0 ? (
-                <div className="stat-card text-center py-12">
-                  <p className="text-muted-foreground">No games recorded yet.</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Click "Add Game" to log your first game!
+          <div className="animate-fade-in">
+            {/* Full journal page wrapper */}
+            <div className="journal-page rounded-2xl overflow-hidden">
+              <div className="px-6 md:px-10 py-8 space-y-8">
+                {/* Journal-style header */}
+                <div className="text-center pb-6 border-b border-amber-800/20">
+                  <h1 
+                    className="text-4xl md:text-5xl lg:text-6xl mb-2"
+                    style={{ fontFamily: "'Dancing Script', cursive" }}
+                  >
+                    Dear Basketball,
+                  </h1>
+                  <div className="w-32 h-0.5 bg-amber-800/30 mx-auto my-4" />
+                  <p 
+                    className="text-lg md:text-xl opacity-80"
+                    style={{ fontFamily: "'Dancing Script', cursive" }}
+                  >
+                    {profile.name ? `${profile.name}'s Journey` : 'My Basketball Journey'}
                   </p>
                 </div>
-              ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {games.slice(0, 6).map((game) => (
-                    <GameCard key={game.id} game={game} onDelete={deleteGame} />
-                  ))}
+
+                {/* Player Header - styled for journal */}
+                <div className="journal-section">
+                  <PlayerHeader profile={profile} seasonStats={seasonStats} games={games} />
                 </div>
-              )}
-            </section>
+
+                {/* Season Averages */}
+                <section className="journal-section">
+                  <h2 className="journal-heading">Season Averages</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <StatCard label="Points" value={seasonStats.avgPoints} icon={Target} className="journal-card" />
+                    <StatCard label="Rebounds" value={seasonStats.avgRebounds} icon={Repeat} className="journal-card" />
+                    <StatCard label="Assists" value={seasonStats.avgAssists} icon={Zap} className="journal-card" />
+                    <StatCard label="Steals" value={seasonStats.avgSteals} icon={Shield} className="journal-card" />
+                    <StatCard label="Blocks" value={seasonStats.avgBlocks} icon={HandMetal} className="journal-card" />
+                    <StatCard label="FG%" value={seasonStats.fgPercentage} suffix="%" icon={Percent} className="journal-card" />
+                  </div>
+                </section>
+
+                {/* Performance Charts */}
+                <section className="journal-section">
+                  <h2 className="journal-heading">Performance Trends</h2>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="journal-card p-4 rounded-xl">
+                      <StatsChart games={games} stat="points" />
+                    </div>
+                    <div className="journal-card p-4 rounded-xl">
+                      <StatsChart games={games} stat="rebounds" />
+                    </div>
+                    <div className="journal-card p-4 rounded-xl">
+                      <StatsChart games={games} stat="assists" />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Recent Games */}
+                <section className="journal-section">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="journal-heading mb-0">Recent Games</h2>
+                    <AddGameDialog onAddGame={addGame} />
+                  </div>
+                  {games.length === 0 ? (
+                    <div className="journal-card text-center py-12 rounded-xl">
+                      <p className="text-amber-900/70">No games recorded yet.</p>
+                      <p className="text-sm text-amber-800/50 mt-1">
+                        Click "Add Game" to log your first game!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {games.slice(0, 6).map((game) => (
+                        <GameCard key={game.id} game={game} onDelete={deleteGame} />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </div>
+            </div>
           </div>
         )}
 
