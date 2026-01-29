@@ -3,7 +3,7 @@ import { Send, Bot, User, Loader2, Sparkles, Video, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { GameStats, SeasonStats } from '@/types/basketball';
+import { GameStats, SeasonStats, PlayerProfile } from '@/types/basketball';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
@@ -18,6 +18,7 @@ interface Message {
 interface CoachChatProps {
   games: GameStats[];
   seasonStats: SeasonStats;
+  profile: PlayerProfile;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/coach-chat`;
@@ -126,7 +127,7 @@ async function getVideoThumbnail(videoFile: File): Promise<string> {
   });
 }
 
-export function CoachChat({ games, seasonStats }: CoachChatProps) {
+export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
   const { session } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -250,6 +251,7 @@ export function CoachChat({ games, seasonStats }: CoachChatProps) {
           messages: apiMessages,
           playerStats: latestGame,
           seasonStats,
+          playerGrade: profile.grade,
           videoFrames: videoFrames.length > 0 ? videoFrames : undefined,
         }),
       });
