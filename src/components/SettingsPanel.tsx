@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { PlayerProfile } from '@/types/basketball';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,11 +11,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Save, Camera, Loader2, User, Copy, ExternalLink } from 'lucide-react';
+import { Save, Camera, Loader2, User, Copy, ExternalLink, AtSign, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
 import { Separator } from '@/components/ui/separator';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SettingsPanelProps {
   profile: PlayerProfile;
@@ -29,7 +30,85 @@ const grades = ['1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade',
 export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: SettingsPanelProps) {
   const [formData, setFormData] = useState(profile);
   const [isUploading, setIsUploading] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [isClaimingUsername, setIsClaimingUsername] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setUserId(user.id);
+    };
+    getUser();
+  }, []);
+
+  const validateUsername = (value: string) => {
+    const cleaned = value.toLowerCase().replace(/[^a-z0-9]/g, '');
+    setNewUsername(cleaned);
+    
+    if (cleaned.length === 0) {
+      setUsernameError('');
+    } else if (cleaned.length < 3) {
+      setUsernameError('Username must be at least 3 characters');
+    } else if (cleaned.length > 20) {
+      setUsernameError('Username must be 20 characters or less');
+    } else {
+      setUsernameError('');
+    }
+  };
+
+  const checkUsernameAvailable = async (usernameToCheck: string): Promise<boolean> => {
+    const { data } = await (supabase as any)
+      .from('player_settings')
+      .select('username')
+      .eq('username', usernameToCheck)
+      .maybeSingle();
+    return !data;
+  };
+
+  const handleClaimUsername = async () => {
+    if (newUsername.length < 3) {
+      setUsernameError('Username must be at least 3 characters');
+      return;
+    }
+
+    if (!userId) {
+      toast.error('Please log in to claim a username');
+      return;
+    }
+
+    setIsCheckingUsername(true);
+    try {
+      const isAvailable = await checkUsernameAvailable(newUsername);
+      if (!isAvailable) {
+        setUsernameError('Username is already taken');
+        return;
+      }
+
+      setIsClaimingUsername(true);
+      // Update the username in the database
+      const { error } = await (supabase as any)
+        .from('player_settings')
+        .update({ username: newUsername })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      // Update local state
+      setFormData(prev => ({ ...prev, username: newUsername }));
+      onUpdateProfile({ username: newUsername });
+      setNewUsername('');
+      toast.success('Username claimed successfully!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to claim username');
+    } finally {
+      setIsCheckingUsername(false);
+      setIsClaimingUsername(false);
+    }
+  };
 
   const handleSave = () => {
     onUpdateProfile(formData);
@@ -109,11 +188,35 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
           </div>
 
           {/* Username & Public Profile */}
-          {formData.username && (
-            <div className="stat-card bg-secondary/30 p-4 rounded-lg space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-sm font-medium">Your Profile URL</Label>
+          <div className="stat-card bg-secondary/30 p-4 rounded-lg space-y-4">
+            {/* Public/Private Toggle - Always show */}
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="public-profile" className="text-sm font-medium">
+                  Public Profile
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {formData.isProfilePublic 
+                    ? "Your stats and highlights are visible to others"
+                    : "Your profile is private and not accessible to others"
+                  }
+                </p>
+              </div>
+              <Switch
+                id="public-profile"
+                checked={formData.isProfilePublic ?? false}
+                onCheckedChange={(checked) => 
+                  setFormData({ ...formData, isProfilePublic: checked })
+                }
+              />
+            </div>
+
+            {/* Username Section */}
+            {formData.username ? (
+              // User has a username - show their URL if public
+              <div>
+                <Label className="text-sm font-medium">Your Profile URL</Label>
+                {formData.isProfilePublic ? (
                   <div className="flex items-center gap-2 mt-1">
                     <code className="text-sm bg-muted px-2 py-1 rounded">
                       hoopjournal.me/{formData.username}
@@ -129,40 +232,71 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
                     >
                       <Copy className="w-3.5 h-3.5" />
                     </Button>
-                    {formData.isProfilePublic && (
-                      <a 
-                        href={`/${formData.username}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                      >
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </Button>
-                      </a>
-                    )}
+                    <a 
+                      href={`/${formData.username}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </Button>
+                    </a>
                   </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="public-profile" className="text-sm font-medium">
-                    Public Profile
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Allow others to view your stats and public highlights
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your username is <strong>{formData.username}</strong>, but your profile is private. 
+                    Enable "Public Profile" above to make it accessible.
                   </p>
-                </div>
-                <Switch
-                  id="public-profile"
-                  checked={formData.isProfilePublic ?? false}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, isProfilePublic: checked })
-                  }
-                />
+                )}
               </div>
-            </div>
-          )}
+            ) : (
+              // User doesn't have a username - let them claim one
+              <div className="space-y-2">
+                <Label htmlFor="claim-username" className="text-sm font-medium">
+                  Claim Your Profile URL
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Choose a unique username to create your public profile page
+                </p>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="claim-username"
+                      type="text"
+                      value={newUsername}
+                      onChange={(e) => validateUsername(e.target.value)}
+                      placeholder="username"
+                      className="pl-9"
+                      maxLength={20}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleClaimUsername}
+                    disabled={newUsername.length < 3 || !!usernameError || isCheckingUsername || isClaimingUsername}
+                    size="sm"
+                  >
+                    {isCheckingUsername || isClaimingUsername ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                {usernameError && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <X className="w-3 h-3" />
+                    {usernameError}
+                  </p>
+                )}
+                {newUsername.length >= 3 && !usernameError && (
+                  <p className="text-xs text-muted-foreground">
+                    Your profile will be: hoopjournal.me/{newUsername}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Display Name for Privacy */}
           <div className="space-y-2">
