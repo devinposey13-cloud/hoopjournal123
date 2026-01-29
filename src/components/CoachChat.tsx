@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Sparkles, Video, X, Volume2, VolumeX } from 'lucide-react';
+import { Send, Bot, User, Loader2, Sparkles, Video, X, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown';
 import { useAuth } from '@/hooks/useAuth';
 import { ReportContentButton } from './ReportContentButton';
 import { useCoachVoice } from '@/hooks/useCoachVoice';
+import { useVoiceInput } from '@/hooks/useVoiceInput';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -143,6 +144,9 @@ export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
   
   // Voice playback hook
   const { playingIndex, isLoadingAudio, playVoice, stopVoice } = useCoachVoice();
+  
+  // Voice input hook
+  const { isRecording, isTranscribing, startRecording, stopRecording, cancelRecording } = useVoiceInput();
 
   const latestGame = games.length > 0 ? games[0] : null;
 
@@ -511,25 +515,55 @@ export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
             size="icon"
             className="h-11 w-11 flex-shrink-0"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
+            disabled={isLoading || isRecording || isTranscribing}
             title="Upload video for analysis"
           >
             <Video className="w-4 h-4" />
           </Button>
           <Textarea
             ref={textareaRef}
-            value={input}
+            value={isTranscribing ? 'Transcribing...' : input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={selectedVideo ? "Add a question about this video..." : "Ask Coach AI for feedback..."}
             className="min-h-[44px] max-h-32 resize-none"
             rows={1}
+            disabled={isTranscribing}
           />
+          <Button
+            type="button"
+            variant={isRecording ? "destructive" : "outline"}
+            size="icon"
+            className={cn(
+              "h-11 w-11 flex-shrink-0 transition-all",
+              isRecording && "animate-pulse"
+            )}
+            onClick={async () => {
+              if (isRecording) {
+                const transcript = await stopRecording();
+                if (transcript) {
+                  setInput(transcript);
+                }
+              } else {
+                await startRecording();
+              }
+            }}
+            disabled={isLoading || isTranscribing}
+            title={isRecording ? "Stop recording" : "Record voice message"}
+          >
+            {isTranscribing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : isRecording ? (
+              <MicOff className="w-4 h-4" />
+            ) : (
+              <Mic className="w-4 h-4" />
+            )}
+          </Button>
           <Button
             type="submit"
             size="icon"
             className="gradient-primary h-11 w-11 flex-shrink-0"
-            disabled={(!input.trim() && !selectedVideo) || isLoading}
+            disabled={(!input.trim() && !selectedVideo) || isLoading || isRecording || isTranscribing}
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />

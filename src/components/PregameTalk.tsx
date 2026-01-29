@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { Send, Bot, User, Loader2, Sparkles, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { useAuth } from '@/hooks/useAuth';
 import { useCoachVoice } from '@/hooks/useCoachVoice';
+import { useVoiceInput } from '@/hooks/useVoiceInput';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -53,6 +54,9 @@ export function PregameTalk({ opponent, gameDate, isHome }: PregameTalkProps) {
   
   // Voice playback hook
   const { playingIndex, isLoadingAudio, playVoice, stopVoice } = useCoachVoice();
+  
+  // Voice input hook
+  const { isRecording, isTranscribing, startRecording, stopRecording, cancelRecording } = useVoiceInput();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -306,18 +310,47 @@ export function PregameTalk({ opponent, gameDate, isHome }: PregameTalkProps) {
         <div className="flex gap-2">
           <Textarea
             ref={textareaRef}
-            value={input}
+            value={isTranscribing ? 'Transcribing...' : input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="How are you feeling about the game?"
-            disabled={isLoading}
+            disabled={isLoading || isTranscribing}
             className="min-h-[40px] max-h-[80px] resize-none text-sm"
             rows={1}
           />
           <Button
+            type="button"
+            variant={isRecording ? "destructive" : "outline"}
+            size="icon"
+            className={cn(
+              "h-10 w-10 flex-shrink-0 transition-all",
+              isRecording && "animate-pulse"
+            )}
+            onClick={async () => {
+              if (isRecording) {
+                const transcript = await stopRecording();
+                if (transcript) {
+                  setInput(transcript);
+                }
+              } else {
+                await startRecording();
+              }
+            }}
+            disabled={isLoading || isTranscribing}
+            title={isRecording ? "Stop recording" : "Record voice message"}
+          >
+            {isTranscribing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : isRecording ? (
+              <MicOff className="w-4 h-4" />
+            ) : (
+              <Mic className="w-4 h-4" />
+            )}
+          </Button>
+          <Button
             type="submit"
             size="icon"
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || !input.trim() || isRecording || isTranscribing}
             className="h-10 w-10 flex-shrink-0 bg-gradient-to-br from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
           >
             {isLoading ? (
