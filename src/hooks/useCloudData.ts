@@ -176,10 +176,11 @@ export function useCloudData() {
       
       setClips(clipsWithUrls);
 
-      // Fetch player settings
+      // Fetch player settings for the current user
       const { data: settingsData, error: settingsError } = await (supabase as any)
         .from('player_settings')
         .select('*')
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (settingsError) throw settingsError;
