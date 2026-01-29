@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const STT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-stt`;
 
@@ -199,6 +200,15 @@ export function useVoiceInput(): UseVoiceInputReturn {
         setIsTranscribing(true);
         
         try {
+          // Get the current session for authentication
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (!session?.access_token) {
+            toast.error('Please sign in to use voice input');
+            resolve(null);
+            return;
+          }
+          
           const formData = new FormData();
           const extension = mediaRecorder.mimeType.includes('webm') ? 'webm' 
             : mediaRecorder.mimeType.includes('mp4') ? 'mp4' 
@@ -209,6 +219,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
             method: 'POST',
             headers: {
               'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              'Authorization': `Bearer ${session.access_token}`,
             },
             body: formData,
           });
