@@ -8,6 +8,7 @@ import { FloatingHomeButton } from "@/components/FloatingHomeButton";
 import Index from "./pages/Index";
 import GameDetail from "./pages/GameDetail";
 import PublicProfile from "./pages/PublicProfile";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/game/:id" element={<GameDetail />} />
             <Route path="/game/scheduled/:scheduledId" element={<GameDetail />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/:username" element={<PublicProfile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
