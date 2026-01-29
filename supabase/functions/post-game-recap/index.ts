@@ -46,7 +46,7 @@ serve(async (req) => {
       });
     }
 
-    const { gameStats } = await req.json();
+    const { gameStats, earnedMilestones } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -64,6 +64,18 @@ serve(async (req) => {
       ? Math.round((gameStats.ftMade / gameStats.ftAttempted) * 100) 
       : 0;
 
+    // Build milestone section for the prompt
+    let milestoneSection = '';
+    if (earnedMilestones && earnedMilestones.length > 0) {
+      const milestoneNames = earnedMilestones.map((m: any) => `${m.name} (${m.rarity})`).join(', ');
+      milestoneSection = `
+
+MILESTONES UNLOCKED THIS GAME:
+${milestoneNames}
+
+IMPORTANT: Make sure to celebrate these achievements specifically! Mention each milestone by name and explain why it's impressive.`;
+    }
+
     const systemPrompt = `You are Coach AI, an incredibly supportive and encouraging youth basketball coach. Your job is to give a post-game recap that makes young players feel proud of their efforts while gently suggesting ways to improve.
 
 CRITICAL GUIDELINES:
@@ -73,14 +85,14 @@ CRITICAL GUIDELINES:
 - Frame ALL feedback positively - never criticize, only suggest "ways to get even better"
 - End with motivation and encouragement to keep working hard
 - Keep the tone fun, supportive, and like a friendly coach talking to their player after the game
+- If the player unlocked any milestones, celebrate them enthusiastically! These are special achievements.
 
 STRUCTURE YOUR RESPONSE:
 1. **Great Job Today!** - Start with 2-3 specific things the player did well based on their stats
 2. **Highlight Reel** - Call out their best stat or achievement from this game
-3. **Level Up Tips** - 1-2 friendly suggestions for improvement (frame as exciting opportunities, not weaknesses)
-4. **Keep Going!** - End with encouragement and motivation
+${earnedMilestones && earnedMilestones.length > 0 ? '3. **🏆 Milestones Unlocked!** - Celebrate each milestone they earned with specific praise\n4. **Level Up Tips** - 1-2 friendly suggestions for improvement\n5. **Keep Going!** - End with encouragement and motivation' : '3. **Level Up Tips** - 1-2 friendly suggestions for improvement (frame as exciting opportunities, not weaknesses)\n4. **Keep Going!** - End with encouragement and motivation'}
 
-Keep the response under 250 words but make every word count!`;
+Keep the response under 300 words but make every word count!`;
 
     const userMessage = `Here are the game stats for my post-game recap:
 
@@ -97,7 +109,7 @@ OTHER STATS:
 - Assists: ${gameStats.assists}
 - Steals: ${gameStats.steals}
 - Blocks: ${gameStats.blocks}
-- Turnovers: ${gameStats.turnovers}
+- Turnovers: ${gameStats.turnovers}${milestoneSection}
 
 Please give me an encouraging post-game recap!`;
 

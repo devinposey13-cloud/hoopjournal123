@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MilestoneCard } from './MilestoneCard';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 import type { MilestoneDefinition, MilestoneStatsSnapshot, MilestoneRarity } from '@/types/milestone';
 import { cn } from '@/lib/utils';
 
@@ -94,14 +95,31 @@ export function MilestoneReveal({ milestones, onComplete, onViewCollection }: Mi
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
   const [showCard, setShowCard] = useState(false);
+  const { playSound } = useSoundEffects();
 
   const currentMilestone = milestones[currentIndex];
   const hasMore = currentIndex < milestones.length - 1;
+
+  // Play sound when card is revealed
+  const playCelebrationSound = useCallback((rarity: MilestoneRarity) => {
+    const soundMap: Record<MilestoneRarity, 'milestone_common' | 'milestone_uncommon' | 'milestone_rare' | 'milestone_epic' | 'milestone_legendary'> = {
+      common: 'milestone_common',
+      uncommon: 'milestone_uncommon',
+      rare: 'milestone_rare',
+      epic: 'milestone_epic',
+      legendary: 'milestone_legendary',
+    };
+    playSound(soundMap[rarity]);
+  }, [playSound]);
 
   // Start reveal animation
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsRevealed(true);
+      // Play sound when card flips
+      if (currentMilestone) {
+        playCelebrationSound(currentMilestone.milestone.rarity);
+      }
     }, 500);
 
     const cardTimer = setTimeout(() => {
@@ -112,7 +130,7 @@ export function MilestoneReveal({ milestones, onComplete, onViewCollection }: Mi
       clearTimeout(timer);
       clearTimeout(cardTimer);
     };
-  }, [currentIndex]);
+  }, [currentIndex, currentMilestone, playCelebrationSound]);
 
   const handleNext = useCallback(() => {
     if (hasMore) {

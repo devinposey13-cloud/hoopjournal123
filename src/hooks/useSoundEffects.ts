@@ -1,6 +1,9 @@
 import { useCallback, useRef, useEffect } from 'react';
 
-type SoundType = 'make' | 'miss' | 'assist' | 'rebound' | 'steal' | 'block' | 'turnover' | 'crowd_cheer' | 'crowd_groan';
+type SoundType = 
+  | 'make' | 'miss' | 'assist' | 'rebound' | 'steal' | 'block' | 'turnover' 
+  | 'crowd_cheer' | 'crowd_groan'
+  | 'milestone_common' | 'milestone_uncommon' | 'milestone_rare' | 'milestone_epic' | 'milestone_legendary';
 
 const SOUND_PATHS: Partial<Record<SoundType, string>> = {
   make: '/sounds/make.mp3',
@@ -159,6 +162,26 @@ export function useSoundEffects() {
         createCrowdGroan(ctx, now);
         return; // Early return since we handle this separately
         
+      case 'milestone_common':
+        createMilestoneSound(ctx, now, 'common');
+        return;
+        
+      case 'milestone_uncommon':
+        createMilestoneSound(ctx, now, 'uncommon');
+        return;
+        
+      case 'milestone_rare':
+        createMilestoneSound(ctx, now, 'rare');
+        return;
+        
+      case 'milestone_epic':
+        createMilestoneSound(ctx, now, 'epic');
+        return;
+        
+      case 'milestone_legendary':
+        createMilestoneSound(ctx, now, 'legendary');
+        return;
+        
       default:
         // Default click
         oscillator.type = 'sine';
@@ -279,5 +302,117 @@ function createCrowdGroan(ctx: AudioContext, now: number) {
     
     osc.start(now + i * 0.03);
     osc.stop(now + 0.5);
+  }
+}
+
+// Create milestone celebration sounds based on rarity
+function createMilestoneSound(ctx: AudioContext, now: number, rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary') {
+  const baseConfigs = {
+    common: { 
+      notes: [523, 659], // C5, E5
+      duration: 0.4,
+      volume: 0.2,
+    },
+    uncommon: { 
+      notes: [523, 659, 784], // C5, E5, G5
+      duration: 0.5,
+      volume: 0.25,
+    },
+    rare: { 
+      notes: [523, 659, 784, 1047], // C5, E5, G5, C6
+      duration: 0.7,
+      volume: 0.3,
+    },
+    epic: { 
+      notes: [392, 523, 659, 784, 1047], // G4, C5, E5, G5, C6
+      duration: 0.9,
+      volume: 0.35,
+    },
+    legendary: { 
+      notes: [392, 494, 587, 698, 784, 988, 1175], // G4, B4, D5, F5, G5, B5, D6
+      duration: 1.2,
+      volume: 0.4,
+    },
+  };
+
+  const config = baseConfigs[rarity];
+  
+  // Create arpeggio effect
+  config.notes.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = rarity === 'legendary' ? 'sine' : 'triangle';
+    osc.frequency.setValueAtTime(freq, now);
+    
+    // Add slight vibrato for epic/legendary
+    if (rarity === 'epic' || rarity === 'legendary') {
+      const vibrato = ctx.createOscillator();
+      const vibratoGain = ctx.createGain();
+      vibrato.frequency.value = 5;
+      vibratoGain.gain.value = freq * 0.02;
+      vibrato.connect(vibratoGain);
+      vibratoGain.connect(osc.frequency);
+      vibrato.start(now);
+      vibrato.stop(now + config.duration);
+    }
+    
+    const startTime = now + i * 0.08;
+    const noteLength = config.duration - i * 0.06;
+    
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(config.volume, startTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.01, startTime + Math.max(0.1, noteLength));
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start(startTime);
+    osc.stop(startTime + Math.max(0.1, noteLength));
+  });
+
+  // Add shimmer effect for rare and above
+  if (rarity === 'rare' || rarity === 'epic' || rarity === 'legendary') {
+    const shimmerCount = rarity === 'legendary' ? 6 : rarity === 'epic' ? 4 : 2;
+    
+    for (let i = 0; i < shimmerCount; i++) {
+      const shimmer = ctx.createOscillator();
+      const shimmerGain = ctx.createGain();
+      
+      shimmer.type = 'sine';
+      const shimmerFreq = 2000 + Math.random() * 2000;
+      shimmer.frequency.setValueAtTime(shimmerFreq, now);
+      shimmer.frequency.exponentialRampToValueAtTime(shimmerFreq * 1.5, now + 0.3);
+      
+      const shimmerStart = now + 0.2 + i * 0.1;
+      shimmerGain.gain.setValueAtTime(0, shimmerStart);
+      shimmerGain.gain.linearRampToValueAtTime(0.08, shimmerStart + 0.03);
+      shimmerGain.gain.exponentialRampToValueAtTime(0.001, shimmerStart + 0.2);
+      
+      shimmer.connect(shimmerGain);
+      shimmerGain.connect(ctx.destination);
+      
+      shimmer.start(shimmerStart);
+      shimmer.stop(shimmerStart + 0.25);
+    }
+  }
+
+  // Add bass impact for epic and legendary
+  if (rarity === 'epic' || rarity === 'legendary') {
+    const bass = ctx.createOscillator();
+    const bassGain = ctx.createGain();
+    
+    bass.type = 'sine';
+    bass.frequency.setValueAtTime(rarity === 'legendary' ? 80 : 100, now);
+    bass.frequency.exponentialRampToValueAtTime(40, now + 0.2);
+    
+    bassGain.gain.setValueAtTime(0.3, now);
+    bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    
+    bass.connect(bassGain);
+    bassGain.connect(ctx.destination);
+    
+    bass.start(now);
+    bass.stop(now + 0.3);
   }
 }
