@@ -136,6 +136,42 @@ export type Database = {
           },
         ]
       }
+      password_reset_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          id: string
+          phone: string
+          player_name: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          phone: string
+          player_name?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          phone?: string
+          player_name?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       player_settings: {
         Row: {
           avatar_url: string | null
