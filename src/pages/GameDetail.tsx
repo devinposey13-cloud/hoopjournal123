@@ -2,6 +2,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useCloudData } from '@/hooks/useCloudData';
 import { GameStats, ScheduledGame } from '@/types/basketball';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -13,14 +14,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { GameStatsForm } from '@/components/GameStatsForm';
-import { LiveStatCapture } from '@/components/LiveStatCapture';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, Clock, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio } from 'lucide-react';
+import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
+import { exportGameBoxScorePdf } from '@/utils/exportPdf';
+import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, Clock, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function GameDetail() {
   const { id, scheduledId } = useParams<{ id?: string; scheduledId?: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { profile } = useCloudData();
   const [game, setGame] = useState<GameStats | null>(null);
   const [scheduledGame, setScheduledGame] = useState<ScheduledGame | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +31,7 @@ export default function GameDetail() {
   const [showAddStatsDialog, setShowAddStatsDialog] = useState(false);
   const [showLiveCapture, setShowLiveCapture] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [halfData, setHalfData] = useState<LiveStatsSaveData | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -170,20 +174,30 @@ export default function GameDetail() {
   }
 
   // Handle live stat capture save
-  const handleLiveCaptureSave = async (liveStats: {
-    points: number;
-    fgMade: number;
-    fgAttempted: number;
-    threePtMade: number;
-    threePtAttempted: number;
-    ftMade: number;
-    ftAttempted: number;
-    rebounds: number;
-    assists: number;
-    steals: number;
-    blocks: number;
-    turnovers: number;
-  }) => {
+  const handleLiveCaptureSave = async (
+    liveStats: {
+      points: number;
+      fgMade: number;
+      fgAttempted: number;
+      threePtMade: number;
+      threePtAttempted: number;
+      ftMade: number;
+      ftAttempted: number;
+      rebounds: number;
+      offensiveRebounds: number;
+      defensiveRebounds: number;
+      assists: number;
+      steals: number;
+      blocks: number;
+      turnovers: number;
+    },
+    saveData?: LiveStatsSaveData
+  ) => {
+    // Store half data for PDF export
+    if (saveData) {
+      setHalfData(saveData);
+    }
+    
     const gameData: Omit<GameStats, 'id'> = {
       date: scheduledGame?.date || new Date().toISOString(),
       opponent: scheduledGame?.opponent || game?.opponent || 'Unknown',
@@ -201,9 +215,26 @@ export default function GameDetail() {
       ftMade: liveStats.ftMade,
       ftAttempted: liveStats.ftAttempted,
       isWin: false, // Can be updated later
+      offensiveRebounds: liveStats.offensiveRebounds,
+      defensiveRebounds: liveStats.defensiveRebounds,
     };
     
     await handleAddGame(gameData);
+  };
+
+  // Handle PDF export
+  const handleExportPdf = () => {
+    if (!game || !profile) {
+      toast.error('Cannot export: missing game or profile data');
+      return;
+    }
+    
+    exportGameBoxScorePdf(profile, {
+      game,
+      firstHalf: halfData?.firstHalf,
+      secondHalf: halfData?.secondHalf,
+    });
+    toast.success('Box score PDF exported!');
   };
 
   // Show Live Stat Capture fullscreen
@@ -385,6 +416,10 @@ export default function GameDetail() {
             </div>
             <h1 className="text-3xl font-bold">vs {game.opponent}</h1>
           </div>
+          <Button variant="outline" onClick={handleExportPdf}>
+            <FileDown className="w-4 h-4 mr-2" />
+            Export PDF
+          </Button>
         </div>
 
         {/* Points Highlight */}
