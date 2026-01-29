@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.generate-trading-card]
 verify_jwt = false
+
+[functions.password-reset-request]
+verify_jwt = false
