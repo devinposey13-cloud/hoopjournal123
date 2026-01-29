@@ -416,6 +416,22 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
             </p>
           </div>
 
+          {/* Instagram URL */}
+          <div className="space-y-2">
+            <Label htmlFor="instagramUrl">
+              Instagram Profile
+            </Label>
+            <Input
+              id="instagramUrl"
+              value={formData.instagramUrl || ''}
+              onChange={(e) => setFormData({ ...formData, instagramUrl: e.target.value })}
+              placeholder="https://instagram.com/username"
+            />
+            <p className="text-xs text-muted-foreground">
+              Link your Instagram profile to display on your dashboard.
+            </p>
+          </div>
+
           <Button onClick={handleSave} className="w-full gradient-primary font-semibold mt-6">
             <Save className="w-4 h-4 mr-2" />
             Save Profile

@@ -198,6 +198,7 @@ export function useCloudData() {
           displayName: settingsData.display_name || undefined,
           isProfilePublic: settingsData.is_profile_public ?? false,
           themeMusicUrl: settingsData.theme_music_url || undefined,
+          instagramUrl: settingsData.instagram_url || undefined,
         });
       }
     } catch (error) {
@@ -665,6 +666,7 @@ export function useCloudData() {
             display_name: updates.displayName ?? profile.displayName ?? null,
             is_profile_public: updates.isProfilePublic ?? profile.isProfilePublic ?? false,
             theme_music_url: updates.themeMusicUrl ?? profile.themeMusicUrl ?? null,
+            instagram_url: updates.instagramUrl ?? profile.instagramUrl ?? null,
           },
           { onConflict: 'user_id' }
         );

@@ -420,6 +420,7 @@ export type Database = {
           grade: string
           height: string
           id: string
+          instagram_url: string | null
           is_profile_public: boolean
           name: string
           number: number
@@ -438,6 +439,7 @@ export type Database = {
           grade?: string
           height?: string
           id?: string
+          instagram_url?: string | null
           is_profile_public?: boolean
           name?: string
           number?: number
@@ -456,6 +458,7 @@ export type Database = {
           grade?: string
           height?: string
           id?: string
+          instagram_url?: string | null
           is_profile_public?: boolean
           name?: string
           number?: number

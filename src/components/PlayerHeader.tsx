@@ -1,5 +1,5 @@
 import { PlayerProfile, SeasonStats, GameStats } from '@/types/basketball';
-import { Trophy, TrendingUp, FileDown } from 'lucide-react';
+import { Trophy, TrendingUp, FileDown, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { exportSeasonStatsPdf } from '@/utils/exportPdf';
 
@@ -48,6 +48,17 @@ export function PlayerHeader({ profile, seasonStats, games }: PlayerHeaderProps)
             <span>{profile.team}</span>
             <span>•</span>
             <span>{profile.grade}</span>
+            {profile.instagramUrl && (
+              <a
+                href={profile.instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-1 text-primary hover:text-primary/80 transition-colors"
+                title="Instagram"
+              >
+                <Instagram className="w-4 h-4" />
+              </a>
+            )}
           </div>
         </div>
 

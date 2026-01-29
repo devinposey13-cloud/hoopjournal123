@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Loader2, ArrowLeft, Target, Repeat, Zap, Shield, HandMetal, Percent } from 'lucide-react';
+import { User, Loader2, ArrowLeft, Target, Repeat, Zap, Shield, HandMetal, Percent, Instagram } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
 import { ClipCard } from '@/components/ClipCard';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
@@ -18,6 +18,7 @@ interface PublicProfileData {
   grade: string;
   avatar_url: string | null;
   user_id: string;
+  instagram_url: string | null;
 }
 
 interface PublicClip {
@@ -83,6 +84,7 @@ export default function PublicProfile() {
           grade: profileData.grade,
           avatar_url: profileData.avatar_url,
           user_id: profileData.user_id,
+          instagram_url: profileData.instagram_url,
         });
 
         // Fetch public clips for this user
@@ -230,9 +232,22 @@ export default function PublicProfile() {
           <p className="text-muted-foreground text-lg">
             #{profile.number} • {profile.position}
           </p>
-          <p className="text-muted-foreground">
-            {profile.team} • {profile.grade} • {profile.height}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-muted-foreground">
+              {profile.team} • {profile.grade} • {profile.height}
+            </p>
+            {profile.instagram_url && (
+              <a
+                href={profile.instagram_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 transition-colors"
+                title="Instagram"
+              >
+                <Instagram className="w-4 h-4" />
+              </a>
+            )}
+          </div>
         </div>
 
         {/* Tabs for Stats and Highlights */}
