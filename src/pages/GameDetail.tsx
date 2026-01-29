@@ -156,6 +156,7 @@ export default function GameDetail() {
 
       toast.success('Game stats saved!');
       setShowAddStatsDialog(false);
+      setShowLiveCapture(false);
       
       // Navigate to the new game detail page
       if (data) {
