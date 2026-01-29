@@ -146,6 +146,7 @@ interface GameBoxScoreData {
   game: GameStats;
   firstHalf?: HalfStats;
   secondHalf?: HalfStats;
+  coachRecap?: string | null;
 }
 
 export function exportGameBoxScorePdf(
@@ -154,7 +155,8 @@ export function exportGameBoxScorePdf(
 ) {
   const doc = new jsPDF({ orientation: 'landscape' });
   const pageWidth = doc.internal.pageSize.getWidth();
-  const { game, firstHalf, secondHalf } = gameData;
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const { game, firstHalf, secondHalf, coachRecap } = gameData;
 
   // Title Header
   doc.setFontSize(12);
@@ -391,6 +393,30 @@ export function exportGameBoxScorePdf(
     doc.text(`FG %: ${game.fgMade}-${game.fgAttempted}  ${fgPct}%`, 14, shootingY);
     doc.text(`3FG %: ${game.threePtMade}-${game.threePtAttempted}  ${threePct}%`, 14, shootingY + 5);
     doc.text(`FT %: ${game.ftMade}-${game.ftAttempted}  ${ftPct}%`, 14, shootingY + 10);
+  }
+
+  // Add Coach AI Recap if included
+  if (coachRecap) {
+    doc.addPage();
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Post-Game Recap from Coach AI', pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${profile.team} vs ${game.opponent} - ${format(new Date(game.date), 'MMMM d, yyyy')}`, pageWidth / 2, 28, { align: 'center' });
+
+    // Clean up markdown formatting for PDF
+    const cleanRecap = coachRecap
+      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markers
+      .replace(/\*(.*?)\*/g, '$1') // Remove italic markers
+      .replace(/#{1,6}\s*/g, '') // Remove heading markers
+      .replace(/- /g, '• '); // Replace dashes with bullets
+    
+    doc.setFontSize(11);
+    const splitText = doc.splitTextToSize(cleanRecap, pageWidth - 28);
+    doc.text(splitText, 14, 40);
   }
 
   // Save the PDF

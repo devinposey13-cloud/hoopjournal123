@@ -1,5 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCloudData } from '@/hooks/useCloudData';
@@ -15,8 +15,9 @@ import {
 } from '@/components/ui/dialog';
 import { GameStatsForm } from '@/components/GameStatsForm';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
+import { PostGameRecap } from '@/components/PostGameRecap';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, Clock, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function GameDetail() {
@@ -32,6 +33,13 @@ export default function GameDetail() {
   const [showLiveCapture, setShowLiveCapture] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [halfData, setHalfData] = useState<LiveStatsSaveData | null>(null);
+  const [coachRecap, setCoachRecap] = useState<string | null>(null);
+  const [includeRecapInPdf, setIncludeRecapInPdf] = useState(false);
+
+  const handleRecapChange = useCallback((recap: string | null, includeInPdf: boolean) => {
+    setCoachRecap(recap);
+    setIncludeRecapInPdf(includeInPdf);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -233,6 +241,7 @@ export default function GameDetail() {
       game,
       firstHalf: halfData?.firstHalf,
       secondHalf: halfData?.secondHalf,
+      coachRecap: includeRecapInPdf ? coachRecap : undefined,
     });
     toast.success('Box score PDF exported!');
   };
@@ -521,6 +530,9 @@ export default function GameDetail() {
             </div>
           </div>
         </div>
+
+        {/* Post Game Recap from Coach AI */}
+        <PostGameRecap game={game} onRecapChange={handleRecapChange} />
       </div>
     </div>
   );
