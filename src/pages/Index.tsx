@@ -12,6 +12,8 @@ import { ScheduleCard } from '@/components/ScheduleCard';
 import { ScheduleCalendar } from '@/components/ScheduleCalendar';
 import { ImportScheduleDialog } from '@/components/ImportScheduleDialog';
 import { CoachChat } from '@/components/CoachChat';
+import { BasketballKnowledge } from '@/components/BasketballKnowledge';
+import { PlayerComparison } from '@/components/PlayerComparison';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { AuthForm } from '@/components/AuthForm';
 import { ExploreClips } from '@/components/ExploreClips';
@@ -364,12 +366,34 @@ export default function Index() {
             <div>
               <h1 className="text-2xl font-bold">Coach AI</h1>
               <p className="text-muted-foreground">
-                Get personalized feedback on your performance
+                Get personalized feedback, basketball knowledge, and player comparisons
               </p>
             </div>
-            <div className="max-w-2xl">
-              <CoachChat games={games} seasonStats={seasonStats} profile={profile} />
-            </div>
+            <Tabs defaultValue="chat" className="w-full">
+              <TabsList className="grid w-full max-w-lg grid-cols-3">
+                <TabsTrigger value="chat">Coach Chat</TabsTrigger>
+                <TabsTrigger value="knowledge">BB Knowledge</TabsTrigger>
+                <TabsTrigger value="compare">Player Compare</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="chat" className="mt-6">
+                <div className="max-w-2xl">
+                  <CoachChat games={games} seasonStats={seasonStats} profile={profile} />
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="knowledge" className="mt-6">
+                <div className="max-w-3xl">
+                  <BasketballKnowledge />
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="compare" className="mt-6">
+                <div className="max-w-3xl">
+                  <PlayerComparison seasonStats={seasonStats} profile={profile} />
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
 
