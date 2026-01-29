@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { Navigation, Tab } from '@/components/Navigation';
 import { PlayerHeader } from '@/components/PlayerHeader';
 import { StatCard } from '@/components/StatCard';
@@ -21,8 +22,9 @@ import { JournalHeader } from '@/components/JournalHeader';
 import { AdminPanel } from '@/components/AdminPanel';
 import { GamesHub } from '@/components/games/GamesHub';
 import { PersistentMusicBar } from '@/components/PersistentMusicBar';
+import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
 import { useAuth } from '@/hooks/useAuth';
-import { useCloudData } from '@/hooks/useCloudData';
+import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
 import { useAdmin } from '@/hooks/useAdmin';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -61,7 +63,11 @@ export default function Index() {
     bulkImportScheduledGames,
     createSeason,
     switchSeason,
-  } = useCloudData();
+    // Milestone-related
+    pendingMilestones,
+    showReveal,
+    closeReveal,
+  } = useGameWithMilestones();
 
   // Show auth form if not logged in
   if (authLoading) {
@@ -436,6 +442,16 @@ export default function Index() {
 
       {/* Persistent music bar - OUTSIDE tab switching */}
       <PersistentMusicBar url={profile.themeMusicUrl} />
+      
+      {/* Milestone Reveal Modal */}
+      <AnimatePresence>
+        {showReveal && pendingMilestones.length > 0 && (
+          <MilestoneReveal
+            milestones={pendingMilestones}
+            onComplete={closeReveal}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
