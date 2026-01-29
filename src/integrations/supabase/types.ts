@@ -871,7 +871,63 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_player_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          grade: string | null
+          height: string | null
+          id: string | null
+          instagram_url: string | null
+          is_profile_public: boolean | null
+          name: string | null
+          number: number | null
+          position: string | null
+          team: string | null
+          theme_music_url: string | null
+          updated_at: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          grade?: string | null
+          height?: string | null
+          id?: string | null
+          instagram_url?: string | null
+          is_profile_public?: boolean | null
+          name?: string | null
+          number?: number | null
+          position?: string | null
+          team?: string | null
+          theme_music_url?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          grade?: string | null
+          height?: string | null
+          id?: string | null
+          instagram_url?: string | null
+          is_profile_public?: boolean | null
+          name?: string | null
+          number?: number | null
+          position?: string | null
+          team?: string | null
+          theme_music_url?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
