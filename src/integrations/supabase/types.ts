@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          name: string
+          points: number
+          requirement_type: string
+          requirement_value: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description: string
+          icon: string
+          id?: string
+          name: string
+          points?: number
+          requirement_type: string
+          requirement_value?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          points?: number
+          requirement_type?: string
+          requirement_value?: number
+        }
+        Relationships: []
+      }
       content_reports: {
         Row: {
           admin_notes: string | null
@@ -50,6 +86,36 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      game_scores: {
+        Row: {
+          created_at: string
+          game_type: string
+          id: string
+          metadata: Json | null
+          played_at: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_type: string
+          id?: string
+          metadata?: Json | null
+          played_at?: string
+          score?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          game_type?: string
+          id?: string
+          metadata?: Json | null
+          played_at?: string
+          score?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -300,6 +366,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_feedback: {
         Row: {
           admin_notes: string | null
@@ -332,6 +427,57 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_game_stats: {
+        Row: {
+          current_streak: number | null
+          free_throw_high_score: number | null
+          games_played: number
+          id: string
+          last_played_at: string | null
+          longest_streak: number | null
+          memory_match_best_time: number | null
+          prediction_accuracy: number | null
+          predictions_made: number | null
+          reaction_best_time: number | null
+          total_points: number
+          trivia_accuracy: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number | null
+          free_throw_high_score?: number | null
+          games_played?: number
+          id?: string
+          last_played_at?: string | null
+          longest_streak?: number | null
+          memory_match_best_time?: number | null
+          prediction_accuracy?: number | null
+          predictions_made?: number | null
+          reaction_best_time?: number | null
+          total_points?: number
+          trivia_accuracy?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number | null
+          free_throw_high_score?: number | null
+          games_played?: number
+          id?: string
+          last_played_at?: string | null
+          longest_streak?: number | null
+          memory_match_best_time?: number | null
+          prediction_accuracy?: number | null
+          predictions_made?: number | null
+          reaction_best_time?: number | null
+          total_points?: number
+          trivia_accuracy?: number | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

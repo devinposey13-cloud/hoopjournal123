@@ -1,10 +1,10 @@
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Video, Settings, CalendarDays, MessageCircle, Shield } from 'lucide-react';
+import { LayoutDashboard, Calendar, Video, Settings, CalendarDays, MessageCircle, Shield, Gamepad2 } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 import { SeasonSelector } from './SeasonSelector';
 import { Season } from '@/types/basketball';
 
-export type Tab = 'dashboard' | 'games' | 'schedule' | 'clips' | 'coach' | 'settings' | 'admin';
+export type Tab = 'dashboard' | 'games' | 'schedule' | 'clips' | 'minigames' | 'coach' | 'settings' | 'admin';
 
 interface NavigationProps {
   activeTab: Tab;
@@ -21,6 +21,7 @@ const baseTabs = [
   { id: 'games' as Tab, label: 'Games', icon: Calendar },
   { id: 'schedule' as Tab, label: 'Schedule', icon: CalendarDays },
   { id: 'clips' as Tab, label: 'Clips', icon: Video },
+  { id: 'minigames' as Tab, label: 'Play', icon: Gamepad2 },
   { id: 'coach' as Tab, label: 'Coach', icon: MessageCircle },
   { id: 'settings' as Tab, label: 'Settings', icon: Settings },
 ];
