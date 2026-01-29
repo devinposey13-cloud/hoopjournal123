@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown';
 import { useAuth } from '@/hooks/useAuth';
 import { useCoachVoice } from '@/hooks/useCoachVoice';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
+import { AudioWaveform } from './AudioWaveform';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -56,7 +57,11 @@ export function PregameTalk({ opponent, gameDate, isHome }: PregameTalkProps) {
   const { playingIndex, isLoadingAudio, playVoice, stopVoice } = useCoachVoice();
   
   // Voice input hook
-  const { isRecording, isTranscribing, startRecording, stopRecording, cancelRecording } = useVoiceInput();
+  const { isRecording, isTranscribing, audioData, startRecording, stopRecording, cancelRecording } = useVoiceInput();
+  
+  // Track if message was voice-initiated for auto-play
+  const isVoiceMessageRef = useRef(false);
+  const pendingAutoPlayRef = useRef(false);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -154,9 +159,15 @@ export function PregameTalk({ opponent, gameDate, isHome }: PregameTalkProps) {
           }
         }
       }
+      // Auto-play AI response if message was voice-initiated
+      if (isVoiceMessageRef.current && assistantContent) {
+        pendingAutoPlayRef.current = true;
+        isVoiceMessageRef.current = false;
+      }
     } catch (error) {
       console.error('Chat error:', error);
       toast.error(error instanceof Error ? error.message : 'Coach unavailable. Please try again later.');
+      isVoiceMessageRef.current = false;
       setMessages((prev) => {
         const last = prev[prev.length - 1];
         if (last?.role === 'assistant' && !last.content) {
@@ -168,6 +179,20 @@ export function PregameTalk({ opponent, gameDate, isHome }: PregameTalkProps) {
       setIsLoading(false);
     }
   };
+  
+  // Auto-play effect when streaming completes
+  useEffect(() => {
+    if (pendingAutoPlayRef.current && !isLoading && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage?.role === 'assistant' && lastMessage.content) {
+        pendingAutoPlayRef.current = false;
+        // Small delay to ensure UI is updated
+        setTimeout(() => {
+          playVoice(lastMessage.content, messages.length - 1);
+        }, 100);
+      }
+    }
+  }, [isLoading, messages, playVoice]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -318,35 +343,47 @@ export function PregameTalk({ opponent, gameDate, isHome }: PregameTalkProps) {
             className="min-h-[40px] max-h-[80px] resize-none text-sm"
             rows={1}
           />
-          <Button
-            type="button"
-            variant={isRecording ? "destructive" : "outline"}
-            size="icon"
-            className={cn(
-              "h-10 w-10 flex-shrink-0 transition-all",
-              isRecording && "animate-pulse"
+          <div className="flex flex-col gap-1">
+            {isRecording && (
+              <AudioWaveform audioData={audioData} isRecording={isRecording} />
             )}
-            onClick={async () => {
-              if (isRecording) {
-                const transcript = await stopRecording();
-                if (transcript) {
-                  setInput(transcript);
+            <Button
+              type="button"
+              variant={isRecording ? "destructive" : "outline"}
+              size="icon"
+              className={cn(
+                "h-10 w-10 flex-shrink-0 transition-all",
+                isRecording && "animate-pulse"
+              )}
+              onClick={async () => {
+                if (isRecording) {
+                  // Stop any playing audio first
+                  stopVoice();
+                  const transcript = await stopRecording();
+                  if (transcript) {
+                    // Mark as voice message for auto-play
+                    isVoiceMessageRef.current = true;
+                    // Auto-send the message
+                    sendMessage(transcript);
+                  }
+                } else {
+                  // Stop any playing audio before recording
+                  stopVoice();
+                  await startRecording();
                 }
-              } else {
-                await startRecording();
-              }
-            }}
-            disabled={isLoading || isTranscribing}
-            title={isRecording ? "Stop recording" : "Record voice message"}
-          >
-            {isTranscribing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : isRecording ? (
-              <MicOff className="w-4 h-4" />
-            ) : (
-              <Mic className="w-4 h-4" />
-            )}
-          </Button>
+              }}
+              disabled={isLoading || isTranscribing}
+              title={isRecording ? "Stop recording" : "Record voice message"}
+            >
+              {isTranscribing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : isRecording ? (
+                <MicOff className="w-4 h-4" />
+              ) : (
+                <Mic className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
           <Button
             type="submit"
             size="icon"
