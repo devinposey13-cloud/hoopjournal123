@@ -20,7 +20,6 @@ import { PregameTalk } from '@/components/PregameTalk';
 import { PregamePredictor } from '@/components/PregamePredictor';
 import { GameCountdown } from '@/components/GameCountdown';
 import { DailyQuote } from '@/components/DailyQuote';
-import { SeasonAveragesCard } from '@/components/SeasonAveragesCard';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
@@ -448,9 +447,6 @@ export default function GameDetail() {
 
           {/* Pregame Content */}
           <div className="space-y-6">
-            {/* Season Averages - Compact */}
-            <SeasonAveragesCard stats={seasonStats} compact />
-            
             {/* Pregame Talk - Coach AI - Full Width Primary */}
             <PregameTalk 
               opponent={scheduledGame.opponent}
@@ -458,11 +454,12 @@ export default function GameDetail() {
               isHome={scheduledGame.isHome}
             />
             
-            {/* Stats Predictor - Compact Secondary */}
+            {/* Stats Predictor with Season Averages */}
             <PregamePredictor 
               scheduledGameId={scheduledGame.id}
               opponent={scheduledGame.opponent}
               compact
+              seasonStats={seasonStats}
             />
           </div>
 

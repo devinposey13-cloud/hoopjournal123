@@ -6,11 +6,13 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { SeasonStats } from '@/types/basketball';
 
 interface PregamePredictorProps {
   scheduledGameId: string;
   opponent: string;
   compact?: boolean;
+  seasonStats?: SeasonStats;
 }
 
 interface Prediction {
@@ -20,7 +22,7 @@ interface Prediction {
   predicted_assists: number;
 }
 
-export function PregamePredictor({ scheduledGameId, opponent, compact = false }: PregamePredictorProps) {
+export function PregamePredictor({ scheduledGameId, opponent, compact = false, seasonStats }: PregamePredictorProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -155,9 +157,12 @@ export function PregamePredictor({ scheduledGameId, opponent, compact = false }:
             </div>
           </div>
           
-          {/* Inputs */}
+          {/* Inputs with Season Averages */}
           <div className="flex items-center gap-2 flex-1">
             <div className="flex-1 max-w-[80px]">
+              {seasonStats && seasonStats.gamesPlayed > 0 && (
+                <p className="text-[10px] text-muted-foreground text-center mb-0.5">Avg: {seasonStats.avgPoints}</p>
+              )}
               <Input
                 type="number"
                 min="0"
@@ -168,6 +173,9 @@ export function PregamePredictor({ scheduledGameId, opponent, compact = false }:
               />
             </div>
             <div className="flex-1 max-w-[80px]">
+              {seasonStats && seasonStats.gamesPlayed > 0 && (
+                <p className="text-[10px] text-muted-foreground text-center mb-0.5">Avg: {seasonStats.avgRebounds}</p>
+              )}
               <Input
                 type="number"
                 min="0"
@@ -178,6 +186,9 @@ export function PregamePredictor({ scheduledGameId, opponent, compact = false }:
               />
             </div>
             <div className="flex-1 max-w-[80px]">
+              {seasonStats && seasonStats.gamesPlayed > 0 && (
+                <p className="text-[10px] text-muted-foreground text-center mb-0.5">Avg: {seasonStats.avgAssists}</p>
+              )}
               <Input
                 type="number"
                 min="0"
@@ -226,6 +237,27 @@ export function PregamePredictor({ scheduledGameId, opponent, compact = false }:
           </div>
         )}
       </div>
+
+      {/* Season Averages Reference */}
+      {seasonStats && seasonStats.gamesPlayed > 0 && (
+        <div className="pt-4 pb-2 border-b border-border">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Your Season Averages</p>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-muted/30 rounded-lg py-2">
+              <div className="text-lg font-bold text-primary">{seasonStats.avgPoints}</div>
+              <div className="text-[10px] text-muted-foreground uppercase">PPG</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg py-2">
+              <div className="text-lg font-bold">{seasonStats.avgRebounds}</div>
+              <div className="text-[10px] text-muted-foreground uppercase">RPG</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg py-2">
+              <div className="text-lg font-bold">{seasonStats.avgAssists}</div>
+              <div className="text-[10px] text-muted-foreground uppercase">APG</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Prediction Form */}
       <div className="pt-4 space-y-4">
