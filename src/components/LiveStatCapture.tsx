@@ -22,6 +22,16 @@ import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { HalfStats } from '@/types/basketball';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface LiveStats {
   points: number;
@@ -57,7 +67,7 @@ export interface LiveStatsSaveData {
 interface LiveStatCaptureProps {
   opponent: string;
   initialStats?: Partial<LiveStats>;
-  onSave: (stats: LiveStats, halfData?: LiveStatsSaveData) => void;
+  onSave: (stats: LiveStats, halfData?: LiveStatsSaveData, isGameOver?: boolean) => void;
   onCancel: () => void;
   isSaving?: boolean;
   onPhotoCapture?: (photoUrl: string) => void;
@@ -96,6 +106,7 @@ export function LiveStatCapture({
   const [showFireCelebration, setShowFireCelebration] = useState(false);
   const [gamePhoto, setGamePhoto] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [showGameOverDialog, setShowGameOverDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { playSound } = useSoundEffects();
 
@@ -302,14 +313,19 @@ export function LiveStatCapture({
     onPhotoCapture?.('');
   };
 
-  const handleSave = () => {
+  const handleSaveClick = () => {
+    setShowGameOverDialog(true);
+  };
+
+  const handleSave = (isGameOver: boolean) => {
     const saveData: LiveStatsSaveData = {
       total: totalStats,
       firstHalf: firstHalfStats,
       secondHalf: secondHalfStats,
       gamePhotoUrl: gamePhoto || undefined,
     };
-    onSave(totalStats, saveData);
+    setShowGameOverDialog(false);
+    onSave(totalStats, saveData, isGameOver);
   };
 
   const fgPct = currentStats.fgAttempted > 0 ? Math.round((currentStats.fgMade / currentStats.fgAttempted) * 100) : 0;
@@ -623,11 +639,43 @@ export function LiveStatCapture({
           <X className="w-4 h-4 mr-2" />
           Cancel
         </Button>
-        <Button onClick={handleSave} disabled={isSaving} className="flex-1 gradient-primary">
+        <Button onClick={handleSaveClick} disabled={isSaving} className="flex-1 gradient-primary">
           <Save className="w-4 h-4 mr-2" />
           {isSaving ? 'Saving...' : 'Save Stats'}
         </Button>
       </div>
+
+      {/* Game Over Confirmation Dialog */}
+      <AlertDialog open={showGameOverDialog} onOpenChange={setShowGameOverDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Is the game over?</AlertDialogTitle>
+            <AlertDialogDescription>
+              If the game is over, we'll save your final stats and take you to the game recap. 
+              If not, your stats will be saved so you can resume later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={() => setShowGameOverDialog(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <Button 
+              variant="outline" 
+              onClick={() => handleSave(false)}
+              disabled={isSaving}
+            >
+              No, Save & Continue Later
+            </Button>
+            <AlertDialogAction 
+              onClick={() => handleSave(true)}
+              disabled={isSaving}
+              className="gradient-primary"
+            >
+              Yes, Game Over
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

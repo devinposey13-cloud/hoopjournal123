@@ -201,7 +201,8 @@ export default function GameDetail() {
       blocks: number;
       turnovers: number;
     },
-    saveData?: LiveStatsSaveData
+    saveData?: LiveStatsSaveData,
+    isGameOver?: boolean
   ) => {
     // Store half data for PDF export
     if (saveData) {
@@ -230,7 +231,75 @@ export default function GameDetail() {
       gamePhotoUrl: saveData?.gamePhotoUrl,
     };
     
-    await handleAddGame(gameData);
+    if (isGameOver) {
+      // Game is over - save and navigate to game recap
+      await handleAddGame(gameData);
+    } else {
+      // Game not over - save stats but stay in live capture or allow resuming later
+      setIsSubmitting(true);
+      try {
+        const { data, error: insertError } = await supabase
+          .from('games')
+          .insert({
+            user_id: user!.id,
+            date: gameData.date,
+            opponent: gameData.opponent,
+            points: gameData.points,
+            rebounds: gameData.rebounds,
+            assists: gameData.assists,
+            steals: gameData.steals,
+            blocks: gameData.blocks,
+            turnovers: gameData.turnovers,
+            minutes_played: gameData.minutesPlayed,
+            fg_made: gameData.fgMade,
+            fg_attempted: gameData.fgAttempted,
+            three_pt_made: gameData.threePtMade,
+            three_pt_attempted: gameData.threePtAttempted,
+            ft_made: gameData.ftMade,
+            ft_attempted: gameData.ftAttempted,
+            is_win: gameData.isWin,
+            game_photo_url: gameData.gamePhotoUrl,
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        toast.success('Stats saved! You can resume tracking later.');
+        setShowLiveCapture(false);
+        
+        // Update the game state to reflect saved stats
+        if (data) {
+          setGame({
+            id: data.id,
+            date: data.date,
+            opponent: data.opponent,
+            points: data.points,
+            rebounds: data.rebounds,
+            assists: data.assists,
+            steals: data.steals,
+            blocks: data.blocks,
+            turnovers: data.turnovers,
+            minutesPlayed: data.minutes_played,
+            fgMade: data.fg_made,
+            fgAttempted: data.fg_attempted,
+            threePtMade: data.three_pt_made,
+            threePtAttempted: data.three_pt_attempted,
+            ftMade: data.ft_made,
+            ftAttempted: data.ft_attempted,
+            isWin: data.is_win,
+            gamePhotoUrl: data.game_photo_url,
+          });
+          // Update URL to reflect the saved game
+          navigate(`/game/${data.id}`, { replace: true });
+        }
+      } catch (err) {
+        console.error('Error saving game:', err);
+        toast.error('Failed to save stats');
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
   };
 
   // Handle PDF export
