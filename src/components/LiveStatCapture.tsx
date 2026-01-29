@@ -343,13 +343,23 @@ export function LiveStatCapture({
 
         {/* Current Half Stats Summary */}
         <div className="bg-muted/50 rounded-lg p-3 text-center">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">
             {currentHalf === 1 ? '1st' : '2nd'} Half Stats
           </p>
-          <div className="flex justify-center gap-4 text-sm">
+          <div className="flex justify-center gap-4 text-sm flex-wrap">
             <span>{currentStats.points} PTS</span>
             <span>{currentStats.rebounds} REB</span>
             <span>{currentStats.assists} AST</span>
+            <span>{currentStats.steals} STL</span>
+            <span>{currentStats.blocks} BLK</span>
+          </div>
+          <div className="flex justify-center gap-4 text-xs text-muted-foreground mt-1">
+            <span>2PT: {currentStats.fgAttempted - currentStats.threePtAttempted > 0 
+              ? Math.round(((currentStats.fgMade - currentStats.threePtMade) / (currentStats.fgAttempted - currentStats.threePtAttempted)) * 100) 
+              : 0}%</span>
+            <span>3PT: {currentStats.threePtAttempted > 0 
+              ? Math.round((currentStats.threePtMade / currentStats.threePtAttempted) * 100) 
+              : 0}%</span>
           </div>
         </div>
 
