@@ -74,6 +74,17 @@ Deno.serve(async (req) => {
     // Create admin client with service role key
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Verify the target user exists in auth.users
+    const { data: targetUser, error: targetUserError } = await adminClient.auth.admin.getUserById(targetUserId);
+    if (targetUserError || !targetUser?.user) {
+      return new Response(
+        JSON.stringify({ error: "Target user not found in auth system" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Deleting user: ${targetUser.user.email} (${targetUserId})`);
+
     // Delete all user data from application tables first
     // Delete in order to respect foreign key constraints
     const tablesToClean = [
