@@ -453,12 +453,49 @@ export async function exportGameBoxScorePdf(
     doc.setFont('helvetica', 'normal');
     doc.text(`${profile.team} vs ${game.opponent} - ${format(new Date(game.date), 'MMMM d, yyyy')}`, pageWidth / 2, 28, { align: 'center' });
 
-    // Clean up markdown formatting for PDF
+    // Clean up markdown formatting and remove emojis/icons for PDF
     const cleanRecap = coachRecap
       .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markers
       .replace(/\*(.*?)\*/g, '$1') // Remove italic markers
       .replace(/#{1,6}\s*/g, '') // Remove heading markers
-      .replace(/- /g, '• '); // Replace dashes with bullets
+      .replace(/- /g, '• ') // Replace dashes with bullets
+      // Remove emojis and special unicode characters that don't render in PDF
+      .replace(/[\u{1F300}-\u{1F9FF}]/gu, '') // Emojis
+      .replace(/[\u{2600}-\u{26FF}]/gu, '') // Misc symbols
+      .replace(/[\u{2700}-\u{27BF}]/gu, '') // Dingbats
+      .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // Emoticons
+      .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // Transport symbols
+      .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // Flags
+      .replace(/[\u{2300}-\u{23FF}]/gu, '') // Technical symbols
+      .replace(/[\u{2B50}]/gu, '') // Star
+      .replace(/[\u{1F4A5}-\u{1F4FF}]/gu, '') // Various symbols
+      .replace(/[\u{1F900}-\u{1F9FF}]/gu, '') // Supplemental symbols
+      .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '') // Chess symbols and extended-A
+      .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '') // Symbols extended-A
+      .replace(/[\u{231A}-\u{231B}]/gu, '') // Watch, hourglass
+      .replace(/[\u{23E9}-\u{23F3}]/gu, '') // Media control symbols
+      .replace(/[\u{23F8}-\u{23FA}]/gu, '') // Media control symbols
+      .replace(/[\u{25AA}-\u{25AB}]/gu, '') // Small squares
+      .replace(/[\u{25B6}]/gu, '') // Play button
+      .replace(/[\u{25C0}]/gu, '') // Reverse button
+      .replace(/[\u{25FB}-\u{25FE}]/gu, '') // Squares
+      .replace(/[\u{2614}-\u{2615}]/gu, '') // Umbrella, hot beverage
+      .replace(/[\u{2648}-\u{2653}]/gu, '') // Zodiac
+      .replace(/[\u{267F}]/gu, '') // Wheelchair
+      .replace(/[\u{2693}]/gu, '') // Anchor
+      .replace(/[\u{26A1}]/gu, '') // High voltage
+      .replace(/[\u{26AA}-\u{26AB}]/gu, '') // Circles
+      .replace(/[\u{26BD}-\u{26BE}]/gu, '') // Sports balls
+      .replace(/[\u{26C4}-\u{26C5}]/gu, '') // Weather
+      .replace(/[\u{26CE}]/gu, '') // Ophiuchus
+      .replace(/[\u{26D4}]/gu, '') // No entry
+      .replace(/[\u{26EA}]/gu, '') // Church
+      .replace(/[\u{26F2}-\u{26F3}]/gu, '') // Fountain, golf
+      .replace(/[\u{26F5}]/gu, '') // Sailboat
+      .replace(/[\u{26FA}]/gu, '') // Tent
+      .replace(/[\u{26FD}]/gu, '') // Fuel pump
+      .replace(/\s{2,}/g, ' ') // Clean up multiple spaces
+      .trim();
     
     doc.setFontSize(11);
     const splitText = doc.splitTextToSize(cleanRecap, pageWidth - 28);
