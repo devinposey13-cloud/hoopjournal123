@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,28 @@ import { toast } from 'sonner';
 import { Loader2, Mail, Phone, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
+// Cloudflare Turnstile site key (public)
+const TURNSTILE_SITE_KEY = '0x4AAAAAABfDNkOl_G_eo8Y5';
+
 interface ForgotPasswordDialogProps {
   trigger: React.ReactNode;
+}
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: string | HTMLElement, options: {
+        sitekey: string;
+        callback: (token: string) => void;
+        'error-callback'?: () => void;
+        'expired-callback'?: () => void;
+        theme?: 'light' | 'dark' | 'auto';
+        size?: 'normal' | 'compact';
+      }) => string;
+      reset: (widgetId: string) => void;
+      remove: (widgetId: string) => void;
+    };
+  }
 }
 
 export function ForgotPasswordDialog({ trigger }: ForgotPasswordDialogProps) {
@@ -21,6 +41,72 @@ export function ForgotPasswordDialog({ trigger }: ForgotPasswordDialogProps) {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileLoaded, setTurnstileLoaded] = useState(false);
+  const turnstileContainerRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetId = useRef<string | null>(null);
+
+  // Load Turnstile script
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.turnstile) {
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      script.async = true;
+      script.onload = () => setTurnstileLoaded(true);
+      document.head.appendChild(script);
+    } else if (window.turnstile) {
+      setTurnstileLoaded(true);
+    }
+  }, []);
+
+  // Render Turnstile widget when phone tab is active and dialog is open
+  useEffect(() => {
+    if (open && method === 'phone' && turnstileLoaded && turnstileContainerRef.current && !requestSent) {
+      // Clear any existing widget
+      if (turnstileWidgetId.current && window.turnstile) {
+        try {
+          window.turnstile.remove(turnstileWidgetId.current);
+        } catch (e) {
+          // Widget might already be removed
+        }
+      }
+      
+      // Small delay to ensure container is mounted
+      const timeout = setTimeout(() => {
+        if (window.turnstile && turnstileContainerRef.current) {
+          turnstileWidgetId.current = window.turnstile.render(turnstileContainerRef.current, {
+            sitekey: TURNSTILE_SITE_KEY,
+            callback: (token: string) => {
+              setTurnstileToken(token);
+            },
+            'error-callback': () => {
+              setTurnstileToken(null);
+              toast.error('CAPTCHA verification failed. Please try again.');
+            },
+            'expired-callback': () => {
+              setTurnstileToken(null);
+            },
+            theme: 'auto',
+            size: 'normal',
+          });
+        }
+      }, 100);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [open, method, turnstileLoaded, requestSent]);
+
+  // Cleanup widget on close
+  useEffect(() => {
+    if (!open && turnstileWidgetId.current && window.turnstile) {
+      try {
+        window.turnstile.remove(turnstileWidgetId.current);
+        turnstileWidgetId.current = null;
+      } catch (e) {
+        // Widget might already be removed
+      }
+    }
+  }, [open]);
 
   const handleEmailReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,51 +128,44 @@ export function ForgotPasswordDialog({ trigger }: ForgotPasswordDialogProps) {
     }
   };
 
-  const normalizePhoneNumber = (input: string): string => {
-    const digits = input.replace(/\D/g, '');
-    if (digits.length === 10) {
-      return `+1${digits}`;
-    }
-    if (digits.length === 11 && digits.startsWith('1')) {
-      return `+${digits}`;
-    }
-    if (input.startsWith('+')) {
-      return `+${digits}`;
-    }
-    return input;
-  };
-
   const handlePhoneResetRequest = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!turnstileToken) {
+      toast.error('Please complete the CAPTCHA verification');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const normalizedPhone = normalizePhoneNumber(phone);
-      
-      // Look up the user by phone number in player_settings
-      const { data: playerData } = await supabase
-        .from('player_settings')
-        .select('user_id, name')
-        .eq('phone', normalizedPhone)
-        .maybeSingle();
+      const response = await supabase.functions.invoke('password-reset-request', {
+        body: {
+          phone,
+          playerName: playerName || undefined,
+          turnstileToken,
+        },
+      });
 
-      // Create a password reset request
-      const { error } = await supabase
-        .from('password_reset_requests')
-        .insert({
-          user_id: playerData?.user_id || null,
-          phone: normalizedPhone,
-          player_name: playerData?.name || playerName || null,
-          status: 'pending'
-        });
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to submit reset request');
+      }
 
-      if (error) throw error;
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
 
       setRequestSent(true);
       toast.success('Password reset request sent to admin!');
     } catch (error: any) {
       console.error('Error creating reset request:', error);
       toast.error(error.message || 'Failed to submit reset request');
+      
+      // Reset Turnstile on error
+      if (turnstileWidgetId.current && window.turnstile) {
+        window.turnstile.reset(turnstileWidgetId.current);
+        setTurnstileToken(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -101,6 +180,7 @@ export function ForgotPasswordDialog({ trigger }: ForgotPasswordDialogProps) {
       setPlayerName('');
       setEmailSent(false);
       setRequestSent(false);
+      setTurnstileToken(null);
       setMethod('email');
     }, 200);
   };
@@ -203,12 +283,23 @@ export function ForgotPasswordDialog({ trigger }: ForgotPasswordDialogProps) {
                     value={playerName}
                     onChange={(e) => setPlayerName(e.target.value)}
                     placeholder="Player name"
+                    maxLength={100}
                   />
                   <p className="text-xs text-muted-foreground">
                     Helps the admin identify your account
                   </p>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                
+                {/* Turnstile CAPTCHA Widget */}
+                <div className="flex justify-center">
+                  <div ref={turnstileContainerRef} />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading || !turnstileToken}
+                >
                   {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Request Password Reset
                 </Button>
