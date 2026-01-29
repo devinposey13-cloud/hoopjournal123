@@ -1,43 +1,43 @@
 
 
-## Password Reset Request System for Phone Users
+## Add User Feedback System
 
-Enable phone users to request password resets directly from the Forgot Password dialog, which will send a notification to admins in the Admin tab.
+Create a feedback button in the Settings tab that allows all users to submit feedback about Hoop Journal, which will appear in a new "Feedback" tab in the Admin Panel.
 
 ---
 
 ### How It Will Work
 
 **User Flow:**
-1. Phone user clicks "Forgot Password?" on login screen
-2. Selects "Phone" tab and enters their phone number
-3. Clicks "Request Password Reset"
-4. Sees confirmation message that their request has been sent to an admin
-5. Admin handles the reset from their dashboard
+1. User goes to Settings tab
+2. Clicks "Send Feedback" button
+3. A dialog opens where they can type their feedback and optionally select a category
+4. Submits feedback and sees a success confirmation
+5. Feedback is stored in the database for admin review
 
 **Admin Flow:**
-1. Admin sees a new "Password Requests" tab in the Admin Panel (with badge showing pending count)
-2. Views list of pending reset requests with user info and phone number
-3. Clicks to approve - generates a temporary password and sets it for the user
-4. User is notified of their new temporary password (displayed to admin to share with user)
+1. Admin sees a new "Feedback" tab in the Admin Panel (with badge showing unread count)
+2. Views list of user feedback with user info, category, and timestamp
+3. Can mark feedback as "read" or "addressed"
+4. Can add admin notes for internal tracking
 
 ---
 
 ### What Will Change
 
 **Database:**
-- New `password_reset_requests` table to store requests from phone users
+- New `user_feedback` table to store feedback submissions
 
-**Admin Panel Updates:**
-- New "Password Requests" tab showing pending requests
-- Badge counter for pending requests (similar to Content Reports)
-- Ability to approve/deny requests
-- Direct password reset functionality for phone users
+**Settings Panel:**
+- Add a "Send Feedback" button at the bottom
+- Trigger a dialog for submitting feedback
 
-**Forgot Password Dialog:**
-- Add phone number input field in Phone tab
-- Submit button to create reset request
-- Success confirmation message
+**Admin Panel:**
+- New "Feedback" tab with badge counter for unread items
+- UI to view and manage feedback submissions
+
+**New Component:**
+- `FeedbackDialog.tsx` - reusable feedback form dialog
 
 ---
 
@@ -45,66 +45,151 @@ Enable phone users to request password resets directly from the Forgot Password 
 
 **Database Migration:**
 ```sql
-CREATE TABLE password_reset_requests (
+CREATE TABLE public.user_feedback (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  phone text NOT NULL,
-  player_name text,
-  status text NOT NULL DEFAULT 'pending',
+  user_id uuid NOT NULL,
+  category text DEFAULT 'general',
+  message text NOT NULL,
+  status text NOT NULL DEFAULT 'unread',
   admin_notes text,
   reviewed_by uuid,
   reviewed_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
-ALTER TABLE password_reset_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_feedback ENABLE ROW LEVEL SECURITY;
 
--- Users can create requests (for their own account)
-CREATE POLICY "Anyone can create reset requests"
-ON password_reset_requests FOR INSERT
-WITH CHECK (true);
+-- Users can create their own feedback
+CREATE POLICY "Users can create feedback"
+ON public.user_feedback FOR INSERT
+WITH CHECK (auth.uid() = user_id);
 
--- Admins can view all requests
-CREATE POLICY "Admins can view all requests"
-ON password_reset_requests FOR SELECT
+-- Users can view their own feedback
+CREATE POLICY "Users can view their own feedback"
+ON public.user_feedback FOR SELECT
+USING (auth.uid() = user_id);
+
+-- Admins can view all feedback
+CREATE POLICY "Admins can view all feedback"
+ON public.user_feedback FOR SELECT
 USING (has_role(auth.uid(), 'admin'));
 
--- Admins can update requests
-CREATE POLICY "Admins can update requests"
-ON password_reset_requests FOR UPDATE
+-- Admins can update feedback
+CREATE POLICY "Admins can update feedback"
+ON public.user_feedback FOR UPDATE
 USING (has_role(auth.uid(), 'admin'));
 
--- Admins can delete requests
-CREATE POLICY "Admins can delete requests"
-ON password_reset_requests FOR DELETE
+-- Admins can delete feedback
+CREATE POLICY "Admins can delete feedback"
+ON public.user_feedback FOR DELETE
 USING (has_role(auth.uid(), 'admin'));
 ```
 
+**Files to Create:**
+
+1. **`src/components/FeedbackDialog.tsx`**
+   - Dialog with category select (Bug Report, Feature Request, General Feedback, Other)
+   - Textarea for message (with character limit guidance)
+   - Submit button that inserts into `user_feedback` table
+   - Success confirmation toast
+
 **Files to Modify:**
 
-1. **`src/components/ForgotPasswordDialog.tsx`**
-   - Add state for phone number input and request submission
-   - Add form for phone users to enter their phone number
-   - Submit creates a record in `password_reset_requests` table
-   - Show success message after submission
+2. **`src/components/SettingsPanel.tsx`**
+   - Import and render `FeedbackDialog` component
+   - Add a styled "Send Feedback" button section below the Save Profile button
+   - Include icon and descriptive text encouraging feedback
 
-2. **`src/components/AdminPanel.tsx`**
-   - Add new state for password reset requests
-   - Fetch `password_reset_requests` data alongside users and reports
-   - Add new "Password Requests" tab with badge counter
-   - Add UI to view requests and take action
-   - Add function to directly set a new password via the admin-password-reset edge function
-
-3. **`supabase/functions/admin-password-reset/index.ts`**
-   - Add support for directly setting a password (for phone users without email)
-   - Accept optional `newPassword` parameter
-   - Use `updateUserById` to set password directly when provided
+3. **`src/components/AdminPanel.tsx`**
+   - Add `userFeedback` state and fetch from database
+   - Add new "Feedback" tab to TabsList with MessageSquare icon
+   - Add badge counter showing unread feedback count
+   - Create Feedback tab content with cards for each submission
+   - Add ability to update status (unread/read/addressed) and add notes
+   - Update stats overview to include feedback metrics
 
 ---
 
-### Security Considerations
+### User Interface Preview
 
-- The new password will be generated on the admin side and must be communicated to the user out-of-band (phone call, in person, etc.)
-- RLS ensures only admins can view/modify reset requests
-- The edge function already verifies admin role before allowing password operations
+**Settings Panel - Feedback Section:**
+```text
+┌─────────────────────────────────────────────────┐
+│  [Save Profile Button]                          │
+│                                                 │
+│  ────────────────────────────────────────────── │
+│                                                 │
+│  💬 Have feedback?                              │
+│  Help us improve Hoop Journal by sharing your   │
+│  thoughts, ideas, or reporting bugs.            │
+│                                                 │
+│  ┌───────────────────────────────────────────┐  │
+│  │          📝 Send Feedback                 │  │
+│  └───────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────┘
+```
+
+**Feedback Dialog:**
+```text
+┌─────────────────────────────────────────────────┐
+│  Share Your Feedback                        [X] │
+│  ─────────────────────────────────────────────  │
+│  Help us make Hoop Journal better!              │
+│                                                 │
+│  Category                                       │
+│  ┌─────────────────────────────────────────┐    │
+│  │ General Feedback                    ▼   │    │
+│  └─────────────────────────────────────────┘    │
+│                                                 │
+│  Your Feedback                                  │
+│  ┌─────────────────────────────────────────┐    │
+│  │                                         │    │
+│  │                                         │    │
+│  │                                         │    │
+│  └─────────────────────────────────────────┘    │
+│                                                 │
+│  ┌─────────────┐ ┌───────────────────────────┐  │
+│  │   Cancel    │ │     Submit Feedback       │  │
+│  └─────────────┘ └───────────────────────────┘  │
+└─────────────────────────────────────────────────┘
+```
+
+**Admin Panel - Feedback Tab:**
+```text
+┌─────────────────────────────────────────────────┐
+│ [Users] [Reports] [Password] [Feedback 3] [...] │
+│                                                 │
+│ ┌───────────────────────────────────────────┐   │
+│ │ 🔵 UNREAD │ Jan 29, 2026                  │   │
+│ │───────────────────────────────────────────│   │
+│ │ Category: Feature Request                 │   │
+│ │ User: Johnny Basketball                   │   │
+│ │───────────────────────────────────────────│   │
+│ │ "It would be cool to have a way to        │   │
+│ │  compare my stats with friends!"          │   │
+│ │───────────────────────────────────────────│   │
+│ │ [Mark as Read] [Mark as Addressed]        │   │
+│ └───────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+### Feedback Categories
+
+Users can choose from these categories when submitting feedback:
+- **General Feedback** - Overall thoughts about the app
+- **Feature Request** - Ideas for new features
+- **Bug Report** - Something isn't working correctly
+- **Other** - Anything else
+
+---
+
+### Validation & Security
+
+- Message is required and limited to 1000 characters
+- Category defaults to "general" if not selected
+- RLS ensures users can only create/view their own feedback
+- Only admins can view all feedback and update status
+- Input is validated before database insertion
 
