@@ -8,6 +8,7 @@ import { LogIn, UserPlus, Loader2, AtSign, Mail, Phone } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 
 // Normalize phone number to E.164 format (+1XXXXXXXXXX)
 const normalizePhoneNumber = (phone: string): string => {
@@ -253,8 +254,24 @@ export function AuthForm() {
             </Button>
           </form>
 
+          {/* Forgot Password - only show on login */}
+          {isLogin && (
+            <div className="mt-4 text-center">
+              <ForgotPasswordDialog
+                trigger={
+                  <button
+                    type="button"
+                    className="text-sm text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Forgot your password?
+                  </button>
+                }
+              />
+            </div>
+          )}
+
           {/* Toggle */}
-          <div className="mt-6 text-center">
+          <div className="mt-4 text-center">
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
