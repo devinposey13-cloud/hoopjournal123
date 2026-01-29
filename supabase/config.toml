@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.elevenlabs-stt]
 verify_jwt = false
+
+[functions.generate-trading-card]
+verify_jwt = false

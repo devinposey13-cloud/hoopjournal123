@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Gamepad2, Target, Brain, Zap, HelpCircle, TrendingUp, Trophy, Medal } from 'lucide-react';
+import { Gamepad2, Target, Brain, Zap, HelpCircle, TrendingUp, Trophy, Medal, CreditCard } from 'lucide-react';
 import { GameCard } from './GameCard';
 import { FreeThrowGame } from './FreeThrowGame';
 import { MemoryMatchGame } from './MemoryMatchGame';
@@ -8,6 +8,7 @@ import { TriviaGame } from './TriviaGame';
 import { StatsPredictorGame } from './StatsPredictorGame';
 import { Leaderboard } from './Leaderboard';
 import { AchievementsList } from './AchievementsList';
+import { CardCollection } from '@/components/trading-cards/CardCollection';
 import { useGameData } from '@/hooks/useGameData';
 import { useAchievements } from '@/hooks/useAchievements';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -131,8 +132,9 @@ export function GamesHub() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="games">Games</TabsTrigger>
+          <TabsTrigger value="cards">Cards</TabsTrigger>
           <TabsTrigger value="achievements">Achievements</TabsTrigger>
           <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
         </TabsList>
@@ -153,6 +155,10 @@ export function GamesHub() {
               />
             ))}
           </div>
+        </TabsContent>
+
+        <TabsContent value="cards" className="mt-6">
+          <CardCollection />
         </TabsContent>
 
         <TabsContent value="achievements" className="mt-6">
