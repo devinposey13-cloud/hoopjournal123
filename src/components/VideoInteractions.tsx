@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 interface Comment {
   id: string;
-  userId: string;
+  isOwner: boolean; // Only track ownership, not raw user ID
   userName: string;
   content: string;
   createdAt: string;
@@ -82,8 +82,8 @@ export function VideoInteractions({ videoId, showComments = true }: VideoInterac
 
         setComments(commentsData.map(c => ({
           id: c.id,
-          userId: c.user_id,
-          userName: nameMap[c.user_id] || 'Unknown',
+          isOwner: user?.id === c.user_id, // Convert to boolean ownership check
+          userName: nameMap[c.user_id] || 'Anonymous',
           content: c.content,
           createdAt: c.created_at,
         })));
@@ -160,7 +160,7 @@ export function VideoInteractions({ videoId, showComments = true }: VideoInterac
 
       setComments(prev => [...prev, {
         id: data.id,
-        userId: data.user_id,
+        isOwner: true, // User's own comment
         userName: playerData?.display_name || playerData?.name || 'You',
         content: data.content,
         createdAt: data.created_at,
@@ -245,7 +245,7 @@ export function VideoInteractions({ videoId, showComments = true }: VideoInterac
                       </div>
                       <p className="text-sm text-foreground/90 break-words">{comment.content}</p>
                     </div>
-                    {user?.id === comment.userId && (
+                    {comment.isOwner && (
                       <Button
                         variant="ghost"
                         size="icon"
