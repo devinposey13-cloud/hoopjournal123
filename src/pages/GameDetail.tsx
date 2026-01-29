@@ -16,6 +16,8 @@ import {
 import { GameStatsForm } from '@/components/GameStatsForm';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { PostGameRecap } from '@/components/PostGameRecap';
+import { PregameTalk } from '@/components/PregameTalk';
+import { PregamePredictor } from '@/components/PregamePredictor';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
@@ -404,10 +406,25 @@ export default function GameDetail() {
             )}
           </div>
 
-          {/* No Stats Message */}
-          <div className="stat-card text-center py-12">
-            <AlertCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-xl font-semibold mb-2">No stats recorded yet</p>
+          {/* Pregame Widgets */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Pregame Talk - Coach AI */}
+            <PregameTalk 
+              opponent={scheduledGame.opponent}
+              gameDate={scheduledGame.date}
+              isHome={scheduledGame.isHome}
+            />
+            
+            {/* Stats Predictor */}
+            <PregamePredictor 
+              scheduledGameId={scheduledGame.id}
+              opponent={scheduledGame.opponent}
+            />
+          </div>
+
+          {/* Game Actions */}
+          <div className="stat-card text-center py-8">
+            <p className="text-lg font-semibold mb-2">Ready for game time?</p>
             <p className="text-muted-foreground mb-6">
               Start live capture during the game or log stats after!
             </p>

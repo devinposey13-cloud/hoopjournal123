@@ -102,7 +102,7 @@ serve(async (req) => {
       });
     }
 
-    const { messages, playerStats, seasonStats, playerGrade, videoFrames } = await req.json();
+    const { messages, playerStats, seasonStats, playerGrade, videoFrames, pregameContext } = await req.json();
     
     // Validate the latest user message for inappropriate content
     const latestUserMessage = messages[messages.length - 1];
@@ -143,7 +143,24 @@ serve(async (req) => {
     const isYoung = isYoungPlayer(verifiedGrade);
     const coachingStyle = getCoachingStyle(isYoung);
 
-    const systemPrompt = `You are Coach AI, an experienced basketball coach with decades of experience developing players at all levels.
+    // Use pregame-specific system prompt if provided
+    let systemPrompt: string;
+    
+    if (pregameContext?.systemPrompt) {
+      // Pregame Talk mode - use the focused pregame system prompt
+      systemPrompt = `${pregameContext.systemPrompt}
+
+GAME CONTEXT:
+- Opponent: ${pregameContext.opponent || 'Unknown'}
+- Game Date: ${pregameContext.gameDate || 'Unknown'}
+- Location: ${pregameContext.isHome ? 'Home Game' : 'Away Game'}
+
+${coachingStyle}
+
+Remember: Focus on mental preparation, controlling what the player can control (effort, attitude, hustle, communication), and playing hard. Do not discuss opponent scouting or specific game strategies.`;
+    } else {
+      // Regular Coach AI mode
+      systemPrompt = `You are Coach AI, an experienced basketball coach with decades of experience developing players at all levels.
 
 IDENTITY & BOUNDARIES:
 - You are ONLY a basketball coach. You discuss basketball, training, performance, and directly related sports topics.
@@ -189,6 +206,7 @@ VIDEO ANALYSIS (when frames are provided):
 - Look for shooting mechanics, defensive stance, footwork, ball handling
 - Identify specific areas for improvement with actionable corrections
 - Reference what you see in the frames specifically`;
+    }
 
     // Build the messages array for the API call
     const apiMessages: any[] = [
