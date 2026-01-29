@@ -45,7 +45,7 @@ function addWatermarkToPage(doc: jsPDF, logoData: string) {
   const y = (pageHeight - watermarkSize) / 2;
   
   // Save current graphics state
-  const currentGState = doc.saveGraphicsState();
+  doc.saveGraphicsState();
   
   // Set low opacity for watermark effect
   doc.setGState(doc.GState({ opacity: 0.08 }));
@@ -60,6 +60,18 @@ function addWatermarkToPage(doc: jsPDF, logoData: string) {
   doc.restoreGraphicsState();
 }
 
+// Add small header logo in top-left corner
+function addHeaderLogo(doc: jsPDF, logoData: string) {
+  const logoSize = 15; // Small logo size
+  const margin = 8;
+  
+  try {
+    doc.addImage(logoData, 'PNG', margin, margin, logoSize, logoSize);
+  } catch (e) {
+    console.error('Failed to add header logo:', e);
+  }
+}
+
 export async function exportSeasonStatsPdf(
   profile: PlayerProfile,
   seasonStats: SeasonStats,
@@ -68,10 +80,11 @@ export async function exportSeasonStatsPdf(
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
 
-  // Load and add watermark
+  // Load and add watermark + header logo
   const logoData = await getLogoBase64();
   if (logoData) {
     addWatermarkToPage(doc, logoData);
+    addHeaderLogo(doc, logoData);
   }
 
   // Title
@@ -222,10 +235,11 @@ export async function exportGameBoxScorePdf(
   const pageHeight = doc.internal.pageSize.getHeight();
   const { game, firstHalf, secondHalf, coachRecap, gamePhotoUrl } = gameData;
 
-  // Load and add watermark to first page
+  // Load and add watermark + header logo to first page
   const logoData = await getLogoBase64();
   if (logoData) {
     addWatermarkToPage(doc, logoData);
+    addHeaderLogo(doc, logoData);
   }
 
   // Helper function to load image as base64
@@ -487,9 +501,10 @@ export async function exportGameBoxScorePdf(
     if (photoUrl) {
       doc.addPage();
       
-      // Add watermark to this page
+      // Add watermark and header logo to this page
       if (logoData) {
         addWatermarkToPage(doc, logoData);
+        addHeaderLogo(doc, logoData);
       }
       
       doc.setFontSize(14);
@@ -519,9 +534,10 @@ export async function exportGameBoxScorePdf(
   if (coachRecap) {
     doc.addPage();
     
-    // Add watermark to this page
+    // Add watermark and header logo to this page
     if (logoData) {
       addWatermarkToPage(doc, logoData);
+      addHeaderLogo(doc, logoData);
     }
     
     doc.setFontSize(14);
