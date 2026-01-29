@@ -17,9 +17,12 @@ export function GameCountdown({ gameDate, gameTime }: GameCountdownProps) {
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      // Parse game date - extract year, month, day to avoid UTC issues
-      const dateParts = gameDate.split('T')[0].split('-').map(Number);
-      const [year, month, day] = dateParts;
+      // Parse the date - use the Date object to get local date components
+      // This handles UTC offset correctly for calendar dates
+      const parsedDate = new Date(gameDate);
+      const year = parsedDate.getFullYear();
+      const month = parsedDate.getMonth();
+      const day = parsedDate.getDate();
       
       // Parse time like "7:30 PM" or "19:30"
       let hours = 0;
@@ -39,7 +42,7 @@ export function GameCountdown({ gameDate, gameTime }: GameCountdownProps) {
       }
       
       // Create local date with parsed components
-      const gameDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+      const gameDateTime = new Date(year, month, day, hours, minutes, 0, 0);
 
       const now = new Date();
       const difference = gameDateTime.getTime() - now.getTime();
