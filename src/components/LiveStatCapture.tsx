@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   ArrowLeft, 
@@ -14,6 +14,7 @@ import {
   X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FireCelebration } from './FireCelebration';
 
 interface LiveStats {
   points: number;
@@ -69,8 +70,20 @@ export function LiveStatCapture({
   const [stats, setStats] = useState<LiveStats>({ ...defaultStats, ...initialStats });
   const [history, setHistory] = useState<StatAction[]>([]);
   const [lastAction, setLastAction] = useState<string | null>(null);
+  const [showFireCelebration, setShowFireCelebration] = useState(false);
+
+  // Auto-hide fire celebration after delay
+  useEffect(() => {
+    if (showFireCelebration) {
+      const timer = setTimeout(() => setShowFireCelebration(false), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [showFireCelebration]);
 
   const recordStat = useCallback((action: StatAction) => {
+    // Check if this is a made shot to trigger fire celebration
+    const isMadeShot = action.type === 'fgMade' || action.type === 'threePtMade' || action.type === 'ftMade';
+    
     setStats(prev => {
       const newStats = { ...prev };
       
@@ -103,6 +116,11 @@ export function LiveStatCapture({
     
     setHistory(prev => [...prev, action]);
     setLastAction(action.label);
+    
+    // Trigger fire celebration for made shots
+    if (isMadeShot) {
+      setShowFireCelebration(true);
+    }
     
     // Clear the last action indicator after a moment
     setTimeout(() => setLastAction(null), 1500);
@@ -155,6 +173,9 @@ export function LiveStatCapture({
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Fire Celebration Overlay */}
+      <FireCelebration show={showFireCelebration} />
+      
       {/* Header */}
       <div className="bg-card border-b border-border p-4 flex items-center justify-between sticky top-0 z-10">
         <Button variant="ghost" size="icon" onClick={onCancel}>
