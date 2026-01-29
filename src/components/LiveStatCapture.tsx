@@ -684,6 +684,13 @@ export function LiveStatCapture({
               If not, your stats will be saved so you can resume later.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {isWin === null && (
+            <div className="bg-orange-500/20 border border-orange-500/30 rounded-lg p-3 text-center">
+              <p className="text-sm text-orange-400 font-medium">
+                Please select Win or Loss above before marking the game as over
+              </p>
+            </div>
+          )}
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel onClick={() => setShowGameOverDialog(false)}>
               Cancel
@@ -697,7 +704,7 @@ export function LiveStatCapture({
             </Button>
             <AlertDialogAction 
               onClick={() => handleSave(true)}
-              disabled={isSaving}
+              disabled={isSaving || isWin === null}
               className="gradient-primary"
             >
               Yes, Game Over
