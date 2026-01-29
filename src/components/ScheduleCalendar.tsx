@@ -6,11 +6,6 @@ import { cn } from '@/lib/utils';
 import { ScheduledGame, GameStats } from '@/types/basketball';
 import { buttonVariants } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Home, Plane, ChevronRight as ViewIcon } from 'lucide-react';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 
 interface ScheduleCalendarProps {
   games: ScheduledGame[];
@@ -20,6 +15,7 @@ interface ScheduleCalendarProps {
 
 export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: ScheduleCalendarProps) {
   const [month, setMonth] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const navigate = useNavigate();
 
   // Get games for a specific date
@@ -32,7 +28,6 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: Sche
     const scheduleDate = new Date(scheduledGame.date);
     return playedGames.find((pg) => {
       const playedDate = new Date(pg.date);
-      // Match by opponent name (case-insensitive) and same date
       return (
         pg.opponent.toLowerCase() === scheduledGame.opponent.toLowerCase() &&
         isSameDay(scheduleDate, playedDate)
@@ -49,98 +44,57 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: Sche
     }
   };
 
+  const handleDayClick = (day: Date) => {
+    const dayGames = getGamesForDate(day);
+    if (dayGames.length > 0) {
+      // Toggle selection - if same date clicked, close it
+      if (selectedDate && isSameDay(selectedDate, day)) {
+        setSelectedDate(null);
+      } else {
+        setSelectedDate(day);
+      }
+    } else {
+      setSelectedDate(null);
+    }
+  };
+
   // Custom day content with game markers
   const renderDay = (day: Date) => {
     const dayGames = getGamesForDate(day);
     const hasGames = dayGames.length > 0;
-
-    if (!hasGames) {
-      return <span>{format(day, 'd')}</span>;
-    }
+    const isSelected = selectedDate && isSameDay(selectedDate, day);
 
     return (
-      <Popover>
-        <PopoverTrigger asChild>
-          <button className="w-full h-full flex flex-col items-center justify-center relative">
-            <span>{format(day, 'd')}</span>
-            <div className="flex gap-0.5 mt-0.5">
-              {dayGames.slice(0, 3).map((game) => (
-                <div
-                  key={game.id}
-                  className={cn(
-                    'w-1.5 h-1.5 rounded-full',
-                    game.isHome ? 'bg-green-500' : 'bg-blue-500'
-                  )}
-                />
-              ))}
-            </div>
-          </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-72 p-2 bg-popover border-border z-50" align="center">
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground px-1">
-              {format(day, 'EEEE, MMMM d')}
-            </p>
-            {dayGames.map((game) => {
-              const linkedGame = findLinkedGame(game);
-              return (
-                <button
-                  key={game.id}
-                  onClick={() => handleGameClick(game)}
-                  className="w-full text-left p-2 rounded-md hover:bg-accent transition-colors group"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={cn(
-                          'px-1.5 py-0.5 rounded text-[10px] font-bold uppercase flex items-center gap-1',
-                          game.isHome
-                            ? 'bg-green-500/20 text-green-400'
-                            : 'bg-blue-500/20 text-blue-400'
-                        )}
-                      >
-                        {game.isHome ? (
-                          <>
-                            <Home className="w-2.5 h-2.5" /> H
-                          </>
-                        ) : (
-                          <>
-                            <Plane className="w-2.5 h-2.5" /> A
-                          </>
-                        )}
-                      </div>
-                      <span className="text-sm font-medium">vs {game.opponent}</span>
-                    </div>
-                    {linkedGame && (
-                      <div className="flex items-center gap-1">
-                        <span
-                          className={cn(
-                            'text-[10px] font-bold px-1.5 py-0.5 rounded',
-                            linkedGame.isWin
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-red-500/20 text-red-400'
-                          )}
-                        >
-                          {linkedGame.isWin ? 'W' : 'L'} - {linkedGame.points} pts
-                        </span>
-                        <ViewIcon className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {game.time} • {game.location}
-                  </p>
-                  {linkedGame && (
-                    <p className="text-xs text-primary mt-1">Click to view game stats →</p>
-                  )}
-                </button>
-              );
-            })}
+      <button 
+        onClick={(e) => {
+          e.stopPropagation();
+          handleDayClick(day);
+        }}
+        className={cn(
+          "w-full h-full flex flex-col items-center justify-center relative rounded-md transition-colors",
+          hasGames && "cursor-pointer",
+          isSelected && hasGames && "bg-primary text-primary-foreground"
+        )}
+      >
+        <span>{format(day, 'd')}</span>
+        {hasGames && (
+          <div className="flex gap-0.5 mt-0.5">
+            {dayGames.slice(0, 3).map((game) => (
+              <div
+                key={game.id}
+                className={cn(
+                  'w-1.5 h-1.5 rounded-full',
+                  isSelected ? 'bg-primary-foreground' : (game.isHome ? 'bg-green-500' : 'bg-blue-500')
+                )}
+              />
+            ))}
           </div>
-        </PopoverContent>
-      </Popover>
+        )}
+      </button>
     );
   };
+
+  const selectedGames = selectedDate ? getGamesForDate(selectedDate) : [];
 
   return (
     <div className="stat-card">
@@ -169,9 +123,6 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: Sche
           row: "flex w-full mt-1",
           cell: cn(
             "flex-1 aspect-square text-center text-sm p-0.5 relative",
-            "[&:has([aria-selected])]:bg-accent",
-            "first:[&:has([aria-selected])]:rounded-l-md",
-            "last:[&:has([aria-selected])]:rounded-r-md",
             "focus-within:relative focus-within:z-20"
           ),
           day: cn(
@@ -193,6 +144,69 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: Sche
           DayContent: ({ date }) => renderDay(date),
         }}
       />
+
+      {/* Selected Date Game Details */}
+      {selectedDate && selectedGames.length > 0 && (
+        <div className="border-t border-border mt-4 pt-4 space-y-3 animate-fade-in">
+          <p className="text-sm font-medium text-muted-foreground px-2">
+            {format(selectedDate, 'EEEE, MMMM d')}
+          </p>
+          {selectedGames.map((game) => {
+            const linkedGame = findLinkedGame(game);
+            return (
+              <button
+                key={game.id}
+                onClick={() => handleGameClick(game)}
+                className="w-full text-left p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors border border-border/50 hover:border-primary/30"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        'px-2 py-1 rounded text-xs font-bold uppercase flex items-center gap-1',
+                        game.isHome
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-blue-500/20 text-blue-400'
+                      )}
+                    >
+                      {game.isHome ? (
+                        <>
+                          <Home className="w-3 h-3" /> Home
+                        </>
+                      ) : (
+                        <>
+                          <Plane className="w-3 h-3" /> Away
+                        </>
+                      )}
+                    </div>
+                    <span className="text-base font-semibold">vs {game.opponent}</span>
+                  </div>
+                  {linkedGame && (
+                    <span
+                      className={cn(
+                        'text-xs font-bold px-2 py-1 rounded',
+                        linkedGame.isWin
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-red-500/20 text-red-400'
+                      )}
+                    >
+                      {linkedGame.isWin ? 'W' : 'L'} - {linkedGame.points} pts
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-sm text-muted-foreground">
+                    {game.time} • {game.location}
+                  </p>
+                  <div className="flex items-center gap-1 text-primary text-sm font-medium">
+                    View Details <ViewIcon className="w-4 h-4" />
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
       
       {/* Legend */}
       <div className="flex items-center justify-center gap-6 pt-4 border-t border-border mt-4">
