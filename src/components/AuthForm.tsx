@@ -107,9 +107,9 @@ export function AuthForm() {
             name: 'Player Name',
             team: 'Team Name',
             position: 'Guard',
-            number: 23,
+            number: 0,
             height: "5'8\"",
-            grade: '8th Grade',
+            grade: '1st Grade',
           };
           
           // Store phone number in player_settings if using phone auth
