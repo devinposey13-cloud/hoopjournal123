@@ -252,6 +252,7 @@ export type Database = {
           phone: string | null
           position: string
           team: string
+          theme_music_url: string | null
           updated_at: string
           user_id: string
         }
@@ -268,6 +269,7 @@ export type Database = {
           phone?: string | null
           position?: string
           team?: string
+          theme_music_url?: string | null
           updated_at?: string
           user_id: string
         }
@@ -284,6 +286,7 @@ export type Database = {
           phone?: string | null
           position?: string
           team?: string
+          theme_music_url?: string | null
           updated_at?: string
           user_id?: string
         }

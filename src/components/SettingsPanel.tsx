@@ -399,6 +399,23 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
             </div>
           </div>
 
+          {/* Theme Music URL */}
+          <div className="space-y-2">
+            <Label htmlFor="themeMusicUrl">
+              Pregame Music
+              <span className="text-muted-foreground text-xs ml-1">(Spotify URL)</span>
+            </Label>
+            <Input
+              id="themeMusicUrl"
+              value={formData.themeMusicUrl || ''}
+              onChange={(e) => setFormData({ ...formData, themeMusicUrl: e.target.value })}
+              placeholder="https://open.spotify.com/playlist/..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Paste a Spotify track, album, or playlist URL to play on your pregame page.
+            </p>
+          </div>
+
           <Button onClick={handleSave} className="w-full gradient-primary font-semibold mt-6">
             <Save className="w-4 h-4 mr-2" />
             Save Profile
