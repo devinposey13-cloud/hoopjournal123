@@ -26,6 +26,8 @@ interface LiveStats {
   ftMade: number;
   ftAttempted: number;
   rebounds: number;
+  offensiveRebounds: number;
+  defensiveRebounds: number;
   assists: number;
   steals: number;
   blocks: number;
@@ -55,6 +57,8 @@ const defaultStats: LiveStats = {
   ftMade: 0,
   ftAttempted: 0,
   rebounds: 0,
+  offensiveRebounds: 0,
+  defensiveRebounds: 0,
   assists: 0,
   steals: 0,
   blocks: 0,
@@ -92,7 +96,7 @@ export function LiveStatCapture({
       playSound('make');
     } else if (isMiss) {
       playSound('miss');
-    } else if (action.type === 'rebounds') {
+    } else if (action.type === 'offensiveRebounds' || action.type === 'defensiveRebounds') {
       playSound('rebound');
     } else if (action.type === 'assists') {
       playSound('assist');
@@ -127,6 +131,12 @@ export function LiveStatCapture({
         newStats.threePtAttempted += 1;
       } else if (action.type === 'ftAttempted') {
         newStats.ftAttempted += 1;
+      } else if (action.type === 'offensiveRebounds') {
+        newStats.offensiveRebounds += 1;
+        newStats.rebounds += 1; // Also increment total
+      } else if (action.type === 'defensiveRebounds') {
+        newStats.defensiveRebounds += 1;
+        newStats.rebounds += 1; // Also increment total
       } else {
         newStats[action.type] += action.value;
       }
@@ -173,6 +183,12 @@ export function LiveStatCapture({
         newStats.threePtAttempted -= 1;
       } else if (lastAction.type === 'ftAttempted') {
         newStats.ftAttempted -= 1;
+      } else if (lastAction.type === 'offensiveRebounds') {
+        newStats.offensiveRebounds -= 1;
+        newStats.rebounds -= 1;
+      } else if (lastAction.type === 'defensiveRebounds') {
+        newStats.defensiveRebounds -= 1;
+        newStats.rebounds -= 1;
       } else {
         newStats[lastAction.type] -= lastAction.value;
       }
@@ -224,10 +240,11 @@ export function LiveStatCapture({
       </div>
 
       {/* Quick Stats Bar */}
-      <div className="grid grid-cols-4 gap-1 p-2 bg-card border-b border-border">
+      <div className="grid grid-cols-5 gap-1 p-2 bg-card border-b border-border">
         <div className="text-center py-2">
           <p className="text-lg font-bold">{stats.rebounds}</p>
           <p className="text-[10px] text-muted-foreground uppercase">REB</p>
+          <p className="text-[9px] text-muted-foreground">{stats.offensiveRebounds}O / {stats.defensiveRebounds}D</p>
         </div>
         <div className="text-center py-2">
           <p className="text-lg font-bold">{stats.assists}</p>
@@ -240,6 +257,10 @@ export function LiveStatCapture({
         <div className="text-center py-2">
           <p className="text-lg font-bold">{stats.blocks}</p>
           <p className="text-[10px] text-muted-foreground uppercase">BLK</p>
+        </div>
+        <div className="text-center py-2">
+          <p className="text-lg font-bold">{stats.turnovers}</p>
+          <p className="text-[10px] text-muted-foreground uppercase">TO</p>
         </div>
       </div>
 
@@ -329,14 +350,34 @@ export function LiveStatCapture({
         <div className="space-y-3">
           <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Other Stats</h3>
           
+          {/* Rebounds Section */}
+          <div className="bg-card rounded-xl p-3 border border-border">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Repeat className="w-4 h-4 text-primary" />
+                <span className="font-medium">Rebounds</span>
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {stats.rebounds} ({stats.offensiveRebounds}O / {stats.defensiveRebounds}D)
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <StatButton 
+                label="Offensive" 
+                count={stats.offensiveRebounds}
+                variant="success"
+                onPress={() => recordStat({ type: 'offensiveRebounds', value: 1, label: 'Off. Rebound' })}
+              />
+              <StatButton 
+                label="Defensive" 
+                count={stats.defensiveRebounds}
+                variant="primary"
+                onPress={() => recordStat({ type: 'defensiveRebounds', value: 1, label: 'Def. Rebound' })}
+              />
+            </div>
+          </div>
+          
           <div className="grid grid-cols-2 gap-3">
-            <StatButton 
-              label="Rebound" 
-              icon={Repeat}
-              count={stats.rebounds}
-              variant="primary"
-              onPress={() => recordStat({ type: 'rebounds', value: 1, label: 'Rebound' })}
-            />
             <StatButton 
               label="Assist" 
               icon={Zap}
