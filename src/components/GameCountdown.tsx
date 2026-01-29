@@ -17,10 +17,29 @@ export function GameCountdown({ gameDate, gameTime }: GameCountdownProps) {
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      // Parse game date and time
-      const [hours, minutes] = gameTime.split(':').map(Number);
-      const gameDateTime = new Date(gameDate);
-      gameDateTime.setHours(hours || 0, minutes || 0, 0, 0);
+      // Parse game date - extract year, month, day to avoid UTC issues
+      const dateParts = gameDate.split('T')[0].split('-').map(Number);
+      const [year, month, day] = dateParts;
+      
+      // Parse time like "7:30 PM" or "19:30"
+      let hours = 0;
+      let minutes = 0;
+      
+      const timeMatch = gameTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (timeMatch) {
+        hours = parseInt(timeMatch[1], 10);
+        minutes = parseInt(timeMatch[2], 10);
+        const period = timeMatch[3]?.toUpperCase();
+        
+        if (period === 'PM' && hours !== 12) {
+          hours += 12;
+        } else if (period === 'AM' && hours === 12) {
+          hours = 0;
+        }
+      }
+      
+      // Create local date with parsed components
+      const gameDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
 
       const now = new Date();
       const difference = gameDateTime.getTime() - now.getTime();
