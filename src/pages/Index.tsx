@@ -349,7 +349,7 @@ export default function Index() {
               </p>
             </div>
             <div className="max-w-2xl">
-              <CoachChat games={games} seasonStats={seasonStats} />
+              <CoachChat games={games} seasonStats={seasonStats} profile={profile} />
             </div>
           </div>
         )}
