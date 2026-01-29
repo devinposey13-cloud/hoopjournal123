@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ImportScheduleDialogProps {
   onImport: (games: Omit<ScheduledGame, 'id'>[]) => Promise<ScheduledGame[] | void>;
@@ -53,18 +54,28 @@ export function ImportScheduleDialog({ onImport }: ImportScheduleDialogProps) {
   const fetchFromUrl = async (url: string) => {
     setIsFetching(true);
     try {
-      // Use a CORS proxy for fetching external URLs
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch: ${response.status}`);
+      // Use edge function to bypass CORS
+      const { data, error } = await supabase.functions.invoke('fetch-schedule', {
+        body: { url },
+      });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch schedule');
       }
-      const content = await response.text();
-      setFeedContent(content);
-      toast.success('Schedule fetched successfully');
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+      
+      if (data?.content) {
+        setFeedContent(data.content);
+        toast.success('Schedule fetched successfully');
+      } else {
+        throw new Error('No content returned');
+      }
     } catch (error) {
       console.error('Fetch error:', error);
-      // If direct fetch fails, show instructions
-      toast.error('Could not fetch URL directly. Please copy the file content and paste it here instead.');
+      toast.error('Could not fetch URL. Please copy the file content and paste it here instead.');
     } finally {
       setIsFetching(false);
     }
