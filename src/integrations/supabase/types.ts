@@ -50,6 +50,45 @@ export type Database = {
         }
         Relationships: []
       }
+      badge_definitions: {
+        Row: {
+          bronze_threshold: Json
+          category: string
+          created_at: string
+          description: string
+          gold_threshold: Json
+          hof_threshold: Json
+          icon: string
+          id: string
+          name: string
+          silver_threshold: Json
+        }
+        Insert: {
+          bronze_threshold?: Json
+          category: string
+          created_at?: string
+          description: string
+          gold_threshold?: Json
+          hof_threshold?: Json
+          icon: string
+          id?: string
+          name: string
+          silver_threshold?: Json
+        }
+        Update: {
+          bronze_threshold?: Json
+          category?: string
+          created_at?: string
+          description?: string
+          gold_threshold?: Json
+          hof_threshold?: Json
+          icon?: string
+          id?: string
+          name?: string
+          silver_threshold?: Json
+        }
+        Relationships: []
+      }
       content_reports: {
         Row: {
           admin_notes: string | null
@@ -237,6 +276,44 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      player_badges: {
+        Row: {
+          badge_category: string
+          badge_name: string
+          earned_at: string
+          id: string
+          season_id: string | null
+          tier: string
+          user_id: string
+        }
+        Insert: {
+          badge_category: string
+          badge_name: string
+          earned_at?: string
+          id?: string
+          season_id?: string | null
+          tier: string
+          user_id: string
+        }
+        Update: {
+          badge_category?: string
+          badge_name?: string
+          earned_at?: string
+          id?: string
+          season_id?: string | null
+          tier?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_badges_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       player_settings: {
         Row: {
@@ -427,6 +504,71 @@ export type Database = {
             columns: ["scheduled_game_id"]
             isOneToOne: false
             referencedRelation: "scheduled_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trading_cards: {
+        Row: {
+          athleticism_rating: number
+          badges_earned: Json
+          created_at: string
+          defense_rating: number
+          games_played: number
+          id: string
+          iq_rating: number
+          offense_rating: number
+          overall_rating: number
+          player_title: string | null
+          playmaking_rating: number
+          rarity: string
+          scouting_report: string | null
+          season_id: string | null
+          stats_snapshot: Json
+          user_id: string
+        }
+        Insert: {
+          athleticism_rating?: number
+          badges_earned?: Json
+          created_at?: string
+          defense_rating?: number
+          games_played?: number
+          id?: string
+          iq_rating?: number
+          offense_rating?: number
+          overall_rating?: number
+          player_title?: string | null
+          playmaking_rating?: number
+          rarity?: string
+          scouting_report?: string | null
+          season_id?: string | null
+          stats_snapshot?: Json
+          user_id: string
+        }
+        Update: {
+          athleticism_rating?: number
+          badges_earned?: Json
+          created_at?: string
+          defense_rating?: number
+          games_played?: number
+          id?: string
+          iq_rating?: number
+          offense_rating?: number
+          overall_rating?: number
+          player_title?: string | null
+          playmaking_rating?: number
+          rarity?: string
+          scouting_report?: string | null
+          season_id?: string | null
+          stats_snapshot?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trading_cards_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
             referencedColumns: ["id"]
           },
         ]
