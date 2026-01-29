@@ -278,11 +278,22 @@ export function exportGameBoxScorePdf(
 
   // Half-by-half shooting breakdown
   if (firstHalf && secondHalf) {
-    const first1HFgPct = firstHalf.fgAttempted > 0 
-      ? ((firstHalf.fgMade / firstHalf.fgAttempted) * 100).toFixed(1) 
+    // Calculate 2PT stats (FG minus 3PT)
+    const first1H2PtMade = firstHalf.fgMade - firstHalf.threePtMade;
+    const first1H2PtAttempted = firstHalf.fgAttempted - firstHalf.threePtAttempted;
+    const second2H2PtMade = secondHalf.fgMade - secondHalf.threePtMade;
+    const second2H2PtAttempted = secondHalf.fgAttempted - secondHalf.threePtAttempted;
+    const game2PtMade = game.fgMade - game.threePtMade;
+    const game2PtAttempted = game.fgAttempted - game.threePtAttempted;
+
+    const first1H2PtPct = first1H2PtAttempted > 0 
+      ? ((first1H2PtMade / first1H2PtAttempted) * 100).toFixed(1) 
       : '0.0';
-    const second2HFgPct = secondHalf.fgAttempted > 0 
-      ? ((secondHalf.fgMade / secondHalf.fgAttempted) * 100).toFixed(1) 
+    const second2H2PtPct = second2H2PtAttempted > 0 
+      ? ((second2H2PtMade / second2H2PtAttempted) * 100).toFixed(1) 
+      : '0.0';
+    const game2PtPct = game2PtAttempted > 0 
+      ? ((game2PtMade / game2PtAttempted) * 100).toFixed(1) 
       : '0.0';
     
     const first1H3Pct = firstHalf.threePtAttempted > 0 
@@ -304,17 +315,17 @@ export function exportGameBoxScorePdf(
     
     const shootingY = tableEndY + 8;
     
-    // FG% breakdown
+    // 2PT FG% breakdown
     doc.text(
-      `FG % 1st Half: ${firstHalf.fgMade}-${firstHalf.fgAttempted}  ${first1HFgPct}%    ` +
-      `2nd half: ${secondHalf.fgMade}-${secondHalf.fgAttempted}  ${second2HFgPct}%    ` +
-      `Game: ${game.fgMade}-${game.fgAttempted}  ${fgPct}%`,
+      `2PT % 1st Half: ${first1H2PtMade}-${first1H2PtAttempted}  ${first1H2PtPct}%    ` +
+      `2nd half: ${second2H2PtMade}-${second2H2PtAttempted}  ${second2H2PtPct}%    ` +
+      `Game: ${game2PtMade}-${game2PtAttempted}  ${game2PtPct}%`,
       14, shootingY
     );
 
     // 3FG% breakdown
     doc.text(
-      `3FG % 1st Half: ${firstHalf.threePtMade}-${firstHalf.threePtAttempted}  ${first1H3Pct}%    ` +
+      `3PT % 1st Half: ${firstHalf.threePtMade}-${firstHalf.threePtAttempted}  ${first1H3Pct}%    ` +
       `2nd half: ${secondHalf.threePtMade}-${secondHalf.threePtAttempted}  ${second2H3Pct}%    ` +
       `Game: ${game.threePtMade}-${game.threePtAttempted}  ${threePct}%`,
       14, shootingY + 5
@@ -328,8 +339,20 @@ export function exportGameBoxScorePdf(
       14, shootingY + 10
     );
 
+    // Blocks breakdown
+    doc.text(
+      `Blocks: 1st Half: ${firstHalf.blocks}    2nd half: ${secondHalf.blocks}    Game: ${game.blocks}`,
+      14, shootingY + 18
+    );
+
+    // Steals breakdown
+    doc.text(
+      `Steals: 1st Half: ${firstHalf.steals}    2nd half: ${secondHalf.steals}    Game: ${game.steals}`,
+      14, shootingY + 23
+    );
+
     // Score by periods table
-    const periodsY = shootingY + 20;
+    const periodsY = shootingY + 32;
     doc.setFont('helvetica', 'bold');
     doc.text('Score by periods', 14, periodsY);
 
