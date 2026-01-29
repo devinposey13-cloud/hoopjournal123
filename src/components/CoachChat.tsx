@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Sparkles, Video, X } from 'lucide-react';
+import { Send, Bot, User, Loader2, Sparkles, Video, X, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { useAuth } from '@/hooks/useAuth';
 import { ReportContentButton } from './ReportContentButton';
+import { useCoachVoice } from '@/hooks/useCoachVoice';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -139,6 +140,9 @@ export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Voice playback hook
+  const { playingIndex, isLoadingAudio, playVoice, stopVoice } = useCoachVoice();
 
   const latestGame = games.length > 0 ? games[0] : null;
 
@@ -416,7 +420,26 @@ export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
                         <ReactMarkdown>{message.content}</ReactMarkdown>
                       </div>
                       {message.content && (
-                        <div className="mt-2 pt-2 border-t border-border/50">
+                        <div className="mt-2 pt-2 border-t border-border/50 flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "h-7 px-2 text-xs gap-1",
+                              playingIndex === index && "text-primary animate-pulse"
+                            )}
+                            onClick={() => playVoice(message.content, index)}
+                            disabled={isLoadingAudio && playingIndex !== index}
+                          >
+                            {isLoadingAudio && playingIndex === null ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : playingIndex === index ? (
+                              <VolumeX className="w-3 h-3" />
+                            ) : (
+                              <Volume2 className="w-3 h-3" />
+                            )}
+                            {playingIndex === index ? 'Stop' : 'Listen'}
+                          </Button>
                           <ReportContentButton 
                             userMessage={messages[index - 1]?.content || ''} 
                             aiResponse={message.content} 

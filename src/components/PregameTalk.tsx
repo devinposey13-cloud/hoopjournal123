@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Loader2, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { useAuth } from '@/hooks/useAuth';
+import { useCoachVoice } from '@/hooks/useCoachVoice';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -49,6 +50,9 @@ export function PregameTalk({ opponent, gameDate, isHome }: PregameTalkProps) {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Voice playback hook
+  const { playingIndex, isLoadingAudio, playVoice, stopVoice } = useCoachVoice();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -246,8 +250,33 @@ export function PregameTalk({ opponent, gameDate, isHome }: PregameTalkProps) {
                   )}
                 >
                   {message.role === 'assistant' ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    <div>
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      </div>
+                      {message.content && (
+                        <div className="mt-2 pt-2 border-t border-border/30">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "h-6 px-2 text-xs gap-1",
+                              playingIndex === index && "text-orange-500 animate-pulse"
+                            )}
+                            onClick={() => playVoice(message.content, index)}
+                            disabled={isLoadingAudio && playingIndex !== index}
+                          >
+                            {isLoadingAudio && playingIndex === null ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : playingIndex === index ? (
+                              <VolumeX className="w-3 h-3" />
+                            ) : (
+                              <Volume2 className="w-3 h-3" />
+                            )}
+                            {playingIndex === index ? 'Stop' : 'Listen'}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <p className="whitespace-pre-wrap">{message.content}</p>
