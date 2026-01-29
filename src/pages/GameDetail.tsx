@@ -226,7 +226,7 @@ export default function GameDetail() {
       threePtAttempted: liveStats.threePtAttempted,
       ftMade: liveStats.ftMade,
       ftAttempted: liveStats.ftAttempted,
-      isWin: false, // Can be updated later
+      isWin: saveData?.isWin ?? false,
       offensiveRebounds: liveStats.offensiveRebounds,
       defensiveRebounds: liveStats.defensiveRebounds,
       gamePhotoUrl: saveData?.gamePhotoUrl,
