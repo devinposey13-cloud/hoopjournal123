@@ -78,6 +78,7 @@ export default function GameDetail() {
               ftMade: data.ft_made,
               ftAttempted: data.ft_attempted,
               isWin: data.is_win,
+              gamePhotoUrl: data.game_photo_url,
             });
           } else {
             setError('Game not found');
@@ -146,6 +147,7 @@ export default function GameDetail() {
           ft_made: gameData.ftMade,
           ft_attempted: gameData.ftAttempted,
           is_win: gameData.isWin,
+          game_photo_url: gameData.gamePhotoUrl,
         })
         .select()
         .single();
@@ -225,19 +227,21 @@ export default function GameDetail() {
       isWin: false, // Can be updated later
       offensiveRebounds: liveStats.offensiveRebounds,
       defensiveRebounds: liveStats.defensiveRebounds,
+      gamePhotoUrl: saveData?.gamePhotoUrl,
     };
     
     await handleAddGame(gameData);
   };
 
   // Handle PDF export
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     if (!game || !profile) {
       toast.error('Cannot export: missing game or profile data');
       return;
     }
     
-    exportGameBoxScorePdf(profile, {
+    toast.info('Generating PDF...');
+    await exportGameBoxScorePdf(profile, {
       game,
       firstHalf: halfData?.firstHalf,
       secondHalf: halfData?.secondHalf,
@@ -430,6 +434,20 @@ export default function GameDetail() {
             Export PDF
           </Button>
         </div>
+
+        {/* Game Photo */}
+        {game.gamePhotoUrl && (
+          <div className="stat-card mb-6 p-0 overflow-hidden">
+            <img 
+              src={game.gamePhotoUrl} 
+              alt={`Game vs ${game.opponent}`}
+              className="w-full h-48 md:h-64 object-cover"
+            />
+            <div className="p-3 text-center text-sm text-muted-foreground">
+              📸 Game Day Photo
+            </div>
+          </div>
+        )}
 
         {/* Points Highlight */}
         <div className="stat-card mb-6 text-center py-8 gradient-primary rounded-xl">

@@ -24,6 +24,7 @@ export type Database = {
           fg_made: number
           ft_attempted: number
           ft_made: number
+          game_photo_url: string | null
           id: string
           is_win: boolean
           minutes_played: number
@@ -47,6 +48,7 @@ export type Database = {
           fg_made?: number
           ft_attempted?: number
           ft_made?: number
+          game_photo_url?: string | null
           id?: string
           is_win?: boolean
           minutes_played?: number
@@ -70,6 +72,7 @@ export type Database = {
           fg_made?: number
           ft_attempted?: number
           ft_made?: number
+          game_photo_url?: string | null
           id?: string
           is_win?: boolean
           minutes_played?: number
