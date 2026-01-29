@@ -14,6 +14,8 @@ import { Switch } from '@/components/ui/switch';
 import { Save, Camera, Loader2, User, Copy, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { FeedbackDialog } from '@/components/FeedbackDialog';
+import { Separator } from '@/components/ui/separator';
 
 interface SettingsPanelProps {
   profile: PlayerProfile;
@@ -267,6 +269,19 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
             <Save className="w-4 h-4 mr-2" />
             Save Profile
           </Button>
+
+          {/* Feedback Section */}
+          <Separator className="my-6" />
+          
+          <div className="space-y-3">
+            <div className="text-center">
+              <p className="text-sm font-medium">💬 Have feedback?</p>
+              <p className="text-xs text-muted-foreground">
+                Help us improve Hoop Journal by sharing your thoughts, ideas, or reporting bugs.
+              </p>
+            </div>
+            <FeedbackDialog />
+          </div>
         </div>
       </div>
     </div>
