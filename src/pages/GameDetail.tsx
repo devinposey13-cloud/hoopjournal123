@@ -18,6 +18,8 @@ import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture
 import { PostGameRecap } from '@/components/PostGameRecap';
 import { PregameTalk } from '@/components/PregameTalk';
 import { PregamePredictor } from '@/components/PregamePredictor';
+import { GameCountdown } from '@/components/GameCountdown';
+import { DailyQuote } from '@/components/DailyQuote';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
@@ -384,6 +386,21 @@ export default function GameDetail() {
               </div>
               <h1 className="text-3xl font-bold">vs {scheduledGame.opponent}</h1>
             </div>
+          </div>
+
+          {/* Countdown Timer */}
+          <div className="stat-card mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-center sm:text-left">
+              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                Time Until Tipoff
+              </h2>
+            </div>
+            <GameCountdown gameDate={scheduledGame.date} gameTime={scheduledGame.time} />
+          </div>
+
+          {/* Daily Motivational Quote */}
+          <div className="mb-6">
+            <DailyQuote />
           </div>
 
           {/* Game Info */}
