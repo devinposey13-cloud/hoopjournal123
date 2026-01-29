@@ -3,13 +3,76 @@ import autoTable from 'jspdf-autotable';
 import { SeasonStats, PlayerProfile, GameStats, HalfStats } from '@/types/basketball';
 import { format } from 'date-fns';
 
-export function exportSeasonStatsPdf(
+// Logo as base64 - will be loaded dynamically
+let logoBase64Cache: string | null = null;
+
+// Load the logo image and convert to base64
+async function getLogoBase64(): Promise<string | null> {
+  if (logoBase64Cache) return logoBase64Cache;
+  
+  try {
+    // Import the logo from assets
+    const logoModule = await import('@/assets/hoop-journal-logo.png');
+    const logoUrl = logoModule.default;
+    
+    const response = await fetch(logoUrl);
+    const blob = await response.blob();
+    
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        logoBase64Cache = reader.result as string;
+        resolve(logoBase64Cache);
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.error('Failed to load logo for PDF:', e);
+    return null;
+  }
+}
+
+// Add watermark logo to a PDF page
+function addWatermarkToPage(doc: jsPDF, logoData: string) {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  
+  // Large centered watermark - size based on page orientation
+  const isLandscape = pageWidth > pageHeight;
+  const watermarkSize = isLandscape ? 100 : 80;
+  const x = (pageWidth - watermarkSize) / 2;
+  const y = (pageHeight - watermarkSize) / 2;
+  
+  // Save current graphics state
+  const currentGState = doc.saveGraphicsState();
+  
+  // Set low opacity for watermark effect
+  doc.setGState(doc.GState({ opacity: 0.08 }));
+  
+  try {
+    doc.addImage(logoData, 'PNG', x, y, watermarkSize, watermarkSize);
+  } catch (e) {
+    console.error('Failed to add watermark:', e);
+  }
+  
+  // Restore graphics state
+  doc.restoreGraphicsState();
+}
+
+export async function exportSeasonStatsPdf(
   profile: PlayerProfile,
   seasonStats: SeasonStats,
   games: GameStats[]
 ) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
+
+  // Load and add watermark
+  const logoData = await getLogoBase64();
+  if (logoData) {
+    addWatermarkToPage(doc, logoData);
+  }
 
   // Title
   doc.setFontSize(24);
@@ -158,6 +221,12 @@ export async function exportGameBoxScorePdf(
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const { game, firstHalf, secondHalf, coachRecap, gamePhotoUrl } = gameData;
+
+  // Load and add watermark to first page
+  const logoData = await getLogoBase64();
+  if (logoData) {
+    addWatermarkToPage(doc, logoData);
+  }
 
   // Helper function to load image as base64
   const loadImageAsBase64 = async (url: string): Promise<string | null> => {
@@ -418,6 +487,11 @@ export async function exportGameBoxScorePdf(
     if (photoUrl) {
       doc.addPage();
       
+      // Add watermark to this page
+      if (logoData) {
+        addWatermarkToPage(doc, logoData);
+      }
+      
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('Game Day Photo', pageWidth / 2, 20, { align: 'center' });
@@ -444,6 +518,11 @@ export async function exportGameBoxScorePdf(
   // Add Coach AI Recap if included
   if (coachRecap) {
     doc.addPage();
+    
+    // Add watermark to this page
+    if (logoData) {
+      addWatermarkToPage(doc, logoData);
+    }
     
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
