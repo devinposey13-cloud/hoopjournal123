@@ -119,8 +119,8 @@
 
   /* Journal theme styles */
   .journal-page {
-    background-color: #fefcf3;
-    background-image: url('@/assets/notebook-lines.png');
+    background-color: hsl(220 20% 10%);
+    background-image: url('@/assets/notebook-lines-dark.png');
     background-repeat: repeat;
     background-size: auto;
     position: relative;
@@ -130,7 +130,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(254, 252, 243, 0.3) 0%, rgba(254, 252, 243, 0.5) 100%);
+    background: linear-gradient(180deg, hsl(220 20% 10% / 0.3) 0%, hsl(220 20% 8% / 0.5) 100%);
     pointer-events: none;
   }
 
@@ -139,13 +139,12 @@
     z-index: 1;
   }
 
-  .journal-page h1,
-  .journal-page .journal-heading {
-    color: #2d1810;
+  .journal-page h1 {
+    color: hsl(0 0% 98%);
   }
 
   .journal-page p {
-    color: #4a3728;
+    color: hsl(220 10% 70%);
   }
 
   .journal-heading {
@@ -153,10 +152,10 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #5c4033;
+    color: hsl(24 80% 60%);
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(139, 90, 43, 0.2);
+    border-bottom: 1px solid hsl(24 100% 50% / 0.2);
   }
 
   .journal-section {
@@ -164,31 +163,30 @@
   }
 
   .journal-card {
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(139, 90, 43, 0.15);
-    box-shadow: 0 2px 8px rgba(139, 90, 43, 0.08);
-    backdrop-filter: blur(4px);
+    background: hsl(220 18% 13% / 0.9);
+    border: 1px solid hsl(220 15% 25%);
+    box-shadow: 0 2px 8px hsl(0 0% 0% / 0.3);
+    backdrop-filter: blur(8px);
   }
 
   .journal-card:hover {
-    background: rgba(255, 255, 255, 0.8);
-    border-color: rgba(139, 90, 43, 0.25);
-    box-shadow: 0 4px 12px rgba(139, 90, 43, 0.12);
+    background: hsl(220 18% 15% / 0.95);
+    border-color: hsl(24 100% 50% / 0.3);
+    box-shadow: 0 4px 12px hsl(24 100% 50% / 0.1);
   }
 
   /* Override text colors inside journal cards */
   .journal-card .text-foreground,
   .journal-card .text-2xl {
-    color: #2d1810 !important;
+    color: hsl(0 0% 98%) !important;
   }
 
   .journal-card .text-muted-foreground,
   .journal-card .text-xs {
-    color: #6b5344 !important;
+    color: hsl(220 10% 60%) !important;
   }
 
-  .journal-card .text-primary,
-  .journal-card .bg-primary\/10 {
-    color: #b45309;
+  .journal-card .text-primary {
+    color: hsl(24 100% 50%);
   }
 }
