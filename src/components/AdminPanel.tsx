@@ -11,8 +11,20 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy } from 'lucide-react';
+import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
+
+interface UserFeedback {
+  id: string;
+  user_id: string;
+  category: string;
+  message: string;
+  status: string;
+  admin_notes: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
 
 interface UserProfile {
   id: string;
@@ -59,6 +71,7 @@ export function AdminPanel() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [reports, setReports] = useState<ContentReport[]>([]);
   const [passwordRequests, setPasswordRequests] = useState<PasswordResetRequest[]>([]);
+  const [userFeedback, setUserFeedback] = useState<UserFeedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
@@ -68,6 +81,8 @@ export function AdminPanel() {
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
   const [resettingPassword, setResettingPassword] = useState<string | null>(null);
+  const [selectedFeedback, setSelectedFeedback] = useState<UserFeedback | null>(null);
+  const [feedbackNotes, setFeedbackNotes] = useState('');
 
   // Fetch users and reports
   useEffect(() => {
@@ -103,6 +118,15 @@ export function AdminPanel() {
 
       if (requestsError) throw requestsError;
       setPasswordRequests(requestsData || []);
+
+      // Fetch user feedback
+      const { data: feedbackData, error: feedbackError } = await supabase
+        .from('user_feedback')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (feedbackError) throw feedbackError;
+      setUserFeedback(feedbackData || []);
     } catch (error) {
       console.error('Error fetching admin data:', error);
       toast.error('Failed to load admin data');
@@ -304,8 +328,59 @@ export function AdminPanel() {
   // Stats
   const pendingReports = reports.filter(r => r.status === 'pending').length;
   const pendingPasswordRequests = passwordRequests.filter(r => r.status === 'pending').length;
+  const unreadFeedback = userFeedback.filter(f => f.status === 'unread').length;
   const totalUsers = users.length;
   const publicProfiles = users.filter(u => u.is_profile_public).length;
+
+  // Get user name for feedback display
+  const getUserName = (userId: string) => {
+    const user = users.find(u => u.user_id === userId);
+    return user?.name || 'Unknown User';
+  };
+
+  // Handle feedback status update
+  async function handleUpdateFeedback(feedbackId: string, status: string) {
+    try {
+      const { error } = await supabase
+        .from('user_feedback')
+        .update({ 
+          status, 
+          admin_notes: feedbackNotes || null,
+          reviewed_by: session?.user?.id,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', feedbackId);
+
+      if (error) throw error;
+
+      setUserFeedback(prev => prev.map(f => 
+        f.id === feedbackId ? { 
+          ...f, 
+          status, 
+          admin_notes: feedbackNotes || null,
+          reviewed_by: session?.user?.id || null,
+          reviewed_at: new Date().toISOString()
+        } : f
+      ));
+      toast.success('Feedback updated');
+      setSelectedFeedback(null);
+      setFeedbackNotes('');
+    } catch (error) {
+      console.error('Error updating feedback:', error);
+      toast.error('Failed to update feedback');
+    }
+  }
+
+  // Get category label
+  const getCategoryLabel = (category: string) => {
+    const labels: Record<string, string> = {
+      general: 'General Feedback',
+      feature: 'Feature Request',
+      bug: 'Bug Report',
+      other: 'Other',
+    };
+    return labels[category] || category;
+  };
 
   if (loading) {
     return (
@@ -363,6 +438,13 @@ export function AdminPanel() {
             Password Requests
             {pendingPasswordRequests > 0 && (
               <Badge variant="destructive" className="ml-1">{pendingPasswordRequests}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="feedback" className="gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Feedback
+            {unreadFeedback > 0 && (
+              <Badge variant="destructive" className="ml-1">{unreadFeedback}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="metrics" className="gap-2">
@@ -737,6 +819,124 @@ export function AdminPanel() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+        </TabsContent>
+
+        {/* Feedback Tab */}
+        <TabsContent value="feedback" className="space-y-4">
+          {userFeedback.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No user feedback yet</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {userFeedback.map((feedback) => (
+                <Card key={feedback.id} className={feedback.status === 'unread' ? 'border-primary/50' : ''}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={
+                          feedback.status === 'unread' ? 'default' :
+                          feedback.status === 'read' ? 'secondary' :
+                          feedback.status === 'addressed' ? 'outline' : 'outline'
+                        }>
+                          {feedback.status}
+                        </Badge>
+                        <Badge variant="outline">
+                          {getCategoryLabel(feedback.category)}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {format(new Date(feedback.created_at), 'MMM d, yyyy h:mm a')}
+                        </span>
+                      </div>
+                      {feedback.status === 'unread' && (
+                        <div className="w-2 h-2 rounded-full bg-primary" />
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">From</Label>
+                      <p className="text-sm font-medium">{getUserName(feedback.user_id)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Message</Label>
+                      <p className="text-sm bg-muted p-3 rounded mt-1">{feedback.message}</p>
+                    </div>
+                    {feedback.admin_notes && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Admin Notes</Label>
+                        <p className="text-sm">{feedback.admin_notes}</p>
+                      </div>
+                    )}
+
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setSelectedFeedback(feedback);
+                            setFeedbackNotes(feedback.admin_notes || '');
+                          }}
+                        >
+                          {feedback.status === 'unread' ? 'Review Feedback' : 'Update Status'}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Review Feedback</DialogTitle>
+                          <DialogDescription>
+                            Update the status and add notes for this feedback.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Category</Label>
+                            <p className="text-sm font-medium">{getCategoryLabel(feedback.category)}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Message</Label>
+                            <p className="text-sm bg-muted p-2 rounded mt-1">{feedback.message}</p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Admin Notes</Label>
+                            <Textarea
+                              value={feedbackNotes}
+                              onChange={(e) => setFeedbackNotes(e.target.value)}
+                              placeholder="Add notes about this feedback..."
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Action</Label>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => handleUpdateFeedback(feedback.id, 'read')}
+                              >
+                                <Check className="w-4 h-4 mr-2" />
+                                Mark as Read
+                              </Button>
+                              <Button
+                                variant="default"
+                                className="flex-1"
+                                onClick={() => handleUpdateFeedback(feedback.id, 'addressed')}
+                              >
+                                <Check className="w-4 h-4 mr-2" />
+                                Mark as Addressed
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* Metrics Tab */}
