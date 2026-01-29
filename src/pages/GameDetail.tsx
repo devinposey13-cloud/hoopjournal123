@@ -148,6 +148,7 @@ export default function GameDetail() {
           steals: gameData.steals,
           blocks: gameData.blocks,
           turnovers: gameData.turnovers,
+          fouls: gameData.fouls ?? 0,
           minutes_played: gameData.minutesPlayed,
           fg_made: gameData.fgMade,
           fg_attempted: gameData.fgAttempted,
