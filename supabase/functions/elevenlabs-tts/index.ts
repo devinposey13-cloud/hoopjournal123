@@ -1,0 +1,82 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Brian voice - confident, energetic male voice perfect for coaching
+const DEFAULT_VOICE_ID = 'nPczCjzI2devNBz1zQrb';
+
+serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
+    if (!ELEVENLABS_API_KEY) {
+      throw new Error('ELEVENLABS_API_KEY is not configured');
+    }
+
+    const { text, voiceId } = await req.json();
+
+    if (!text || typeof text !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Text is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Truncate text if too long (ElevenLabs has a 5000 char limit)
+    const truncatedText = text.slice(0, 5000);
+    const selectedVoiceId = voiceId || DEFAULT_VOICE_ID;
+
+    console.log(`Generating TTS for ${truncatedText.length} characters with voice ${selectedVoiceId}`);
+
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}?output_format=mp3_44100_128`,
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': ELEVENLABS_API_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: truncatedText,
+          model_id: 'eleven_turbo_v2_5', // Fast, high quality for real-time
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0.6,
+            use_speaker_boost: true,
+            speed: 1.0,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`ElevenLabs API error: ${response.status} - ${errorText}`);
+      throw new Error(`ElevenLabs API error: ${response.status}`);
+    }
+
+    const audioBuffer = await response.arrayBuffer();
+
+    return new Response(audioBuffer, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'audio/mpeg',
+      },
+    });
+  } catch (error: unknown) {
+    console.error('TTS error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate speech';
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
