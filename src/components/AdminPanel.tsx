@@ -39,6 +39,7 @@ interface UserProfile {
   display_name: string | null;
   is_profile_public: boolean;
   created_at: string;
+  username?: string | null;
 }
 
 interface ContentReport {
@@ -76,6 +77,10 @@ export function AdminPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [editName, setEditName] = useState('');
+  const [editTeam, setEditTeam] = useState('');
+  const [editGrade, setEditGrade] = useState('');
+  const [editUsername, setEditUsername] = useState('');
+  const [savingUser, setSavingUser] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ContentReport | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
@@ -142,28 +147,68 @@ export function AdminPanel() {
     (user.display_name?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
-  // Update user name
-  async function handleUpdateUserName() {
+  // Update user profile
+  async function handleUpdateUser() {
     if (!editingUser || !editName.trim()) return;
 
+    // Validate username format if provided
+    const trimmedUsername = editUsername.trim().toLowerCase();
+    if (trimmedUsername && !/^[a-z0-9]+$/.test(trimmedUsername)) {
+      toast.error('Username can only contain lowercase letters and numbers');
+      return;
+    }
+
+    setSavingUser(true);
     try {
-      const { error } = await supabase
+      // Check if username is taken by another user
+      if (trimmedUsername && trimmedUsername !== editingUser.username) {
+        const { data: existingUser, error: checkError } = await (supabase as any)
+          .from('player_settings')
+          .select('id')
+          .eq('username', trimmedUsername)
+          .neq('id', editingUser.id)
+          .maybeSingle();
+
+        if (checkError) throw checkError;
+        if (existingUser) {
+          toast.error('This username is already taken');
+          setSavingUser(false);
+          return;
+        }
+      }
+
+      const { error } = await (supabase as any)
         .from('player_settings')
-        .update({ name: editName.trim() })
+        .update({
+          name: editName.trim(),
+          team: editTeam.trim(),
+          grade: editGrade,
+          username: trimmedUsername || null,
+        })
         .eq('id', editingUser.id);
 
       if (error) throw error;
 
       setUsers(prev => prev.map(u => 
-        u.id === editingUser.id ? { ...u, name: editName.trim() } : u
+        u.id === editingUser.id ? { 
+          ...u, 
+          name: editName.trim(),
+          team: editTeam.trim(),
+          grade: editGrade,
+          username: trimmedUsername || null
+        } : u
       ));
-      toast.success('User name updated');
+      toast.success('User profile updated');
       setEditingUser(null);
     } catch (error) {
       console.error('Error updating user:', error);
-      toast.error('Failed to update user name');
+      toast.error('Failed to update user profile');
+    } finally {
+      setSavingUser(false);
     }
   }
+
+  const grades = ['1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
   // Delete user profile
   async function handleDeleteUser(userId: string) {
@@ -512,6 +557,9 @@ export function AdminPanel() {
                               onClick={() => {
                                 setEditingUser(user);
                                 setEditName(user.name);
+                                setEditTeam(user.team);
+                                setEditGrade(user.grade);
+                                setEditUsername(user.username || '');
                               }}
                             >
                               <Edit2 className="w-4 h-4" />
@@ -519,9 +567,9 @@ export function AdminPanel() {
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Edit User Name</DialogTitle>
+                              <DialogTitle>Edit User Profile</DialogTitle>
                               <DialogDescription>
-                                Update the display name for this user.
+                                Update profile details for this user.
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
@@ -530,12 +578,58 @@ export function AdminPanel() {
                                 <Input
                                   value={editName}
                                   onChange={(e) => setEditName(e.target.value)}
+                                  placeholder="Player Name"
                                 />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Team</Label>
+                                <Input
+                                  value={editTeam}
+                                  onChange={(e) => setEditTeam(e.target.value)}
+                                  placeholder="Team Name"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Grade</Label>
+                                <Select value={editGrade} onValueChange={setEditGrade}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select grade" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {grades.map((grade) => (
+                                      <SelectItem key={grade} value={grade}>
+                                        {grade}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Profile URL</Label>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-muted-foreground">hoopjournal.me/</span>
+                                  <Input
+                                    value={editUsername}
+                                    onChange={(e) => setEditUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+                                    placeholder="username"
+                                    className="flex-1"
+                                  />
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  Only lowercase letters and numbers allowed
+                                </p>
                               </div>
                             </div>
                             <DialogFooter>
-                              <Button onClick={handleUpdateUserName}>
-                                Save Changes
+                              <Button onClick={handleUpdateUser} disabled={savingUser}>
+                                {savingUser ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Saving...
+                                  </>
+                                ) : (
+                                  'Save Changes'
+                                )}
                               </Button>
                             </DialogFooter>
                           </DialogContent>
