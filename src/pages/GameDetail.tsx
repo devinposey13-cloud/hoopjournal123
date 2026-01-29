@@ -21,6 +21,7 @@ import { PregamePredictor } from '@/components/PregamePredictor';
 import { GameCountdown } from '@/components/GameCountdown';
 import { DailyQuote } from '@/components/DailyQuote';
 import { SpotifyPlayer } from '@/components/SpotifyPlayer';
+import { SeasonAveragesCard } from '@/components/SeasonAveragesCard';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
@@ -460,7 +461,10 @@ export default function GameDetail() {
               isHome={scheduledGame.isHome}
             />
             
-            {/* Stats Predictor with Season Averages */}
+            {/* Season Averages Card - Prominent Display */}
+            <SeasonAveragesCard stats={seasonStats} compact />
+            
+            {/* Stats Predictor */}
             <PregamePredictor 
               scheduledGameId={scheduledGame.id}
               opponent={scheduledGame.opponent}
