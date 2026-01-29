@@ -1,144 +1,151 @@
 
-# Perplexity AI Integration for Basketball Knowledge & Player Comparison
+# Speech-to-Text for Coach AI Voice Memos
 
 ## Overview
-Add two new AI-powered features to the Coach tab: **Basketball Knowledge Search** (search for drills, techniques, NBA player comparisons) and **Player Comparison** (compare user stats against real NBA/WNBA players and legends). Both features leverage Perplexity AI for grounded, real-time web search results.
+Add a microphone button to Coach AI and Pregame Talk that allows users to speak their questions instead of typing. The audio will be transcribed in real-time using ElevenLabs Scribe STT, then sent to Coach AI as a regular text message.
 
 ## Architecture
 
 ```text
 +------------------+     +--------------------+     +------------------+
-|   Coach Tab      | --> | perplexity-search  | --> | Perplexity API   |
-| (3 sub-tabs)     |     | (Edge Function)    |     | (AI Search)      |
+|   Mic Button     | --> | Browser MediaRecorder | --> | Audio Blob     |
+|   (CoachChat)    |     | (Record audio)       |     | (webm/mp3)     |
 +------------------+     +--------------------+     +------------------+
-| - Coach Chat     |             |
-| - BB Knowledge   |     +--------------------+     +------------------+
-| - Player Compare |---->| perplexity-compare | --> | Perplexity API   |
-+------------------+     | (Edge Function)    |     | (Grounded Search)|
+                                    |
+                                    v
                          +--------------------+     +------------------+
+                         | elevenlabs-stt     | --> | ElevenLabs API   |
+                         | (Edge Function)    |     | (Scribe STT)     |
+                         +--------------------+     +------------------+
+                                    |
+                                    v
+                         +--------------------+
+                         | Transcribed text   |
+                         | -> Send to chat    |
+                         +--------------------+
 ```
-
-## New Features
-
-### 1. Basketball Knowledge Search
-- Search for drills, training tips, basketball techniques
-- Get AI-powered answers grounded in real basketball content
-- Suggested searches: "How to improve my crossover", "Defensive drills for guards", "NBA shooting form tips"
-- Results include citations to real sources
-
-### 2. Player Comparison
-- Enter user's stats (or use season averages automatically)
-- AI finds similar NBA/WNBA players based on statistical profile
-- Provides insights on play style, strengths to emulate, and areas to develop
-- Example: "Your scoring profile is similar to Steph Curry's early career - high 3PT%, good assists"
 
 ## Implementation Steps
 
-### Step 1: Connect Perplexity API
-Use the Perplexity connector to securely store the API key.
+### Step 1: Create STT Edge Function
+Create `supabase/functions/elevenlabs-stt/index.ts` that:
+- Accepts audio file via FormData
+- Calls ElevenLabs Scribe API (`scribe_v2` model)
+- Returns transcribed text
+- Uses existing `ELEVENLABS_API_KEY` secret
 
-### Step 2: Create Edge Functions
-Create two new edge functions:
+### Step 2: Create Voice Input Hook
+Create `src/hooks/useVoiceInput.ts` to encapsulate:
+- MediaRecorder setup and audio capture
+- Recording state management (idle, recording, transcribing)
+- Microphone permission handling
+- Audio blob to FormData conversion
+- Error handling with user-friendly messages
 
-**`perplexity-search`** - For basketball knowledge queries
-- Accepts a search query
-- Calls Perplexity API with basketball-focused system prompt
-- Returns AI response with citations
+### Step 3: Update CoachChat Component
+Add voice input to `src/components/CoachChat.tsx`:
+- Add microphone button next to the send button
+- Show recording indicator (pulsing red dot)
+- Display "Transcribing..." state while processing
+- Auto-populate input field with transcription OR auto-send
+- Handle microphone permission requests gracefully
 
-**`perplexity-compare`** - For player comparison
-- Accepts user stats (points, rebounds, assists, etc.)
-- Builds a search query to find similar NBA/WNBA players
-- Returns comparison analysis with player matches
-
-### Step 3: Create UI Components
-
-**`BasketballKnowledge.tsx`**
-- Search input with suggested topics
-- Loading state with basketball-themed animation
-- Results display with markdown rendering
-- Citations/sources section
-
-**`PlayerComparison.tsx`**
-- Auto-populated stats from user's season averages
-- "Compare My Stats" button
-- Results showing matched players with similarity breakdown
-- Voice playback support (reuse existing hook)
-
-### Step 4: Update Coach Tab Layout
-Transform the Coach tab to use sub-tabs:
-- **Chat** - Existing CoachChat component
-- **Knowledge** - New BasketballKnowledge component
-- **Compare** - New PlayerComparison component
+### Step 4: Update PregameTalk Component
+Apply same voice input to `src/components/PregameTalk.tsx`:
+- Matching microphone button UI
+- Same hook integration
 
 ## User Experience
 
-### Basketball Knowledge
-1. User clicks "Knowledge" tab
-2. Sees search bar with suggested topics like "Shooting drills", "Post moves", "Basketball conditioning"
-3. Types query or clicks suggestion
-4. Gets AI-grounded answer with real sources
-5. Can listen to response with voice playback
+1. User taps/clicks the microphone button
+2. First-time users see permission request for microphone access
+3. Button changes to recording state (pulsing red indicator)
+4. User speaks their question
+5. User taps again to stop recording (or auto-stop after silence)
+6. "Transcribing..." indicator shows while processing
+7. Transcribed text appears in input field
+8. User can edit if needed, then send OR auto-send immediately
+9. Coach AI responds normally
 
-### Player Comparison
-1. User clicks "Compare" tab
-2. Sees their season averages pre-filled
-3. Clicks "Find Similar Players"
-4. Gets analysis like: "Based on your 15 PPG, 5 RPG, 3 APG profile, you have a similar stat line to..."
-5. Shows 2-3 matched players with insights on what to learn from each
+## Edge Function: elevenlabs-stt
+
+```typescript
+// Key implementation:
+// - POST with FormData containing audio file
+// - Uses scribe_v2 model for batch transcription
+// - Returns { text: string, words: Word[] }
+// - Error handling for failed transcriptions
+```
+
+### API Request Format
+```typescript
+const formData = new FormData();
+formData.append("file", audioFile);
+formData.append("model_id", "scribe_v2");
+formData.append("language_code", "eng");
+```
+
+## Voice Input Hook: useVoiceInput
+
+```typescript
+interface UseVoiceInputReturn {
+  isRecording: boolean;
+  isTranscribing: boolean;
+  startRecording: () => Promise<void>;
+  stopRecording: () => Promise<string | null>; // Returns transcription
+  cancelRecording: () => void;
+  permissionStatus: 'granted' | 'denied' | 'prompt';
+}
+```
+
+## UI Updates
+
+### Microphone Button States
+| State | Icon | Color | Animation |
+|-------|------|-------|-----------|
+| Idle | Mic | Default | None |
+| Recording | MicOff | Red | Pulsing |
+| Transcribing | Loader | Default | Spinning |
+| Error | Mic | Red | None |
+
+### Input Area Layout
+```text
++---------------------------------------+--------+--------+
+|  [Text input / "Transcribing..."]    | [Mic]  | [Send] |
++---------------------------------------+--------+--------+
+```
 
 ## Files to Create/Modify
 
 | File | Action | Description |
 |------|--------|-------------|
-| `supabase/functions/perplexity-search/index.ts` | Create | Basketball knowledge search endpoint |
-| `supabase/functions/perplexity-compare/index.ts` | Create | Player comparison endpoint |
-| `src/components/BasketballKnowledge.tsx` | Create | Knowledge search UI component |
-| `src/components/PlayerComparison.tsx` | Create | Player comparison UI component |
-| `src/pages/Index.tsx` | Modify | Update Coach tab to use sub-tabs |
-| `supabase/config.toml` | Modify | Add new function configs |
+| `supabase/functions/elevenlabs-stt/index.ts` | Create | Batch STT edge function |
+| `src/hooks/useVoiceInput.ts` | Create | Voice recording and transcription hook |
+| `src/components/CoachChat.tsx` | Modify | Add mic button and voice input |
+| `src/components/PregameTalk.tsx` | Modify | Add mic button and voice input |
+| `supabase/config.toml` | Modify | Add function config |
 
 ## Technical Details
 
-### Edge Function: perplexity-search
-```typescript
-// Key implementation:
-// - POST with { query: string }
-// - Uses sonar model for fast grounded search
-// - Basketball-focused system prompt
-// - Returns { answer: string, citations: string[] }
-```
+### Audio Recording
+- Use MediaRecorder API with `audio/webm` format (best browser support)
+- Max recording duration: 60 seconds (to prevent huge files)
+- Auto-stop on silence detection (optional enhancement)
+- Fallback to `audio/mp4` for Safari compatibility
 
-### Edge Function: perplexity-compare
-```typescript
-// Key implementation:
-// - POST with { stats: SeasonStats }
-// - Builds comparison query from user stats
-// - Uses sonar-pro for deeper analysis
-// - Returns { comparison: string, matchedPlayers: string[], citations: string[] }
-```
-
-### Coach Tab Sub-tabs
-```typescript
-// Updated Coach tab structure:
-<Tabs defaultValue="chat">
-  <TabsList>
-    <TabsTrigger value="chat">Coach Chat</TabsTrigger>
-    <TabsTrigger value="knowledge">BB Knowledge</TabsTrigger>
-    <TabsTrigger value="compare">Player Compare</TabsTrigger>
-  </TabsList>
-  <TabsContent value="chat">
-    <CoachChat ... />
-  </TabsContent>
-  <TabsContent value="knowledge">
-    <BasketballKnowledge />
-  </TabsContent>
-  <TabsContent value="compare">
-    <PlayerComparison seasonStats={seasonStats} />
-  </TabsContent>
-</Tabs>
-```
+### Error Handling
+- Microphone permission denied → Clear message with instructions
+- Recording fails → Toast with retry option
+- Transcription fails → Toast with error, keep recorded audio for retry
+- Empty transcription → Toast suggesting to speak louder/clearer
 
 ## Dependencies
-- Perplexity API key (via connector - already available in workspace)
-- No new npm packages required
-- Reuses existing voice hook for audio playback
+- Uses existing `ELEVENLABS_API_KEY` secret (already configured)
+- No new npm packages required (uses native MediaRecorder API)
+- Works on modern browsers (Chrome, Firefox, Safari, Edge)
+
+## Mobile Considerations
+- Touch-friendly button size (at least 44x44px)
+- Clear visual feedback for recording state
+- Haptic feedback on iOS/Android if supported
+- Handle audio focus and interruptions gracefully
