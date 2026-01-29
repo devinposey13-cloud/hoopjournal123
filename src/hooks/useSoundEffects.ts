@@ -3,6 +3,7 @@ import { useCallback, useRef, useEffect } from 'react';
 type SoundType = 'make' | 'miss' | 'assist' | 'rebound' | 'steal' | 'block' | 'turnover';
 
 const SOUND_PATHS: Partial<Record<SoundType, string>> = {
+  make: '/sounds/make.mp3',
   assist: '/sounds/assist.mp3',
   block: '/sounds/block.mp3',
 };
