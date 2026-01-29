@@ -210,23 +210,33 @@ export function AdminPanel() {
 
   const grades = ['1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
-  // Delete user profile
-  async function handleDeleteUser(userId: string) {
-    if (!confirm('Are you sure you want to delete this user profile? This cannot be undone.')) return;
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
 
+  // Delete user completely (including auth.users entry)
+  async function handleDeleteUser(userId: string, authUserId: string) {
+    if (!confirm('Are you sure you want to COMPLETELY delete this user? This will remove their account, all games, clips, and data. They will be able to sign up again with the same email. This cannot be undone.')) return;
+
+    setDeletingUser(userId);
     try {
-      const { error } = await supabase
-        .from('player_settings')
-        .delete()
-        .eq('id', userId);
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ targetUserId: authUserId }),
+      });
 
-      if (error) throw error;
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to delete user');
 
       setUsers(prev => prev.filter(u => u.id !== userId));
-      toast.success('User profile deleted');
+      toast.success('User completely deleted - they can now sign up again');
     } catch (error) {
       console.error('Error deleting user:', error);
-      toast.error('Failed to delete user profile');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete user');
+    } finally {
+      setDeletingUser(null);
     }
   }
 
@@ -652,9 +662,14 @@ export function AdminPanel() {
                           variant="ghost"
                           size="icon"
                           className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteUser(user.id)}
+                          onClick={() => handleDeleteUser(user.id, user.user_id)}
+                          disabled={deletingUser === user.id}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {deletingUser === user.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
                         </Button>
                       </div>
                     </td>
