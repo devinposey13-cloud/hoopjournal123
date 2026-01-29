@@ -1,11 +1,12 @@
 import { useRef, useMemo, useEffect, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 interface BasketballHoop3DProps {
   gameState: 'ready' | 'playing' | 'shooting' | 'result' | 'finished';
   shotResult: 'made' | 'missed' | null;
   power: number;
+  onRimHit?: () => void;
 }
 
 // Basketball component with animation
@@ -231,13 +232,62 @@ function Backboard() {
   );
 }
 
+// Camera shake component
+function CameraShake({ isShaking }: { isShaking: boolean }) {
+  const { camera } = useThree();
+  const originalPosition = useRef(new THREE.Vector3(0, 1, 6));
+  const [shakeIntensity, setShakeIntensity] = useState(0);
+
+  useEffect(() => {
+    if (isShaking) {
+      setShakeIntensity(1);
+    }
+  }, [isShaking]);
+
+  useFrame((_, delta) => {
+    if (shakeIntensity > 0) {
+      // Apply shake
+      const shakeX = (Math.random() - 0.5) * 0.15 * shakeIntensity;
+      const shakeY = (Math.random() - 0.5) * 0.1 * shakeIntensity;
+      
+      camera.position.x = originalPosition.current.x + shakeX;
+      camera.position.y = originalPosition.current.y + shakeY;
+      
+      // Decay shake
+      setShakeIntensity(Math.max(0, shakeIntensity - delta * 4));
+    } else {
+      // Return to original position
+      camera.position.x = originalPosition.current.x;
+      camera.position.y = originalPosition.current.y;
+    }
+  });
+
+  return null;
+}
+
 // Main scene component
-function HoopScene({ gameState, shotResult, power }: BasketballHoop3DProps) {
+function HoopScene({ gameState, shotResult, power, onRimHit }: BasketballHoop3DProps & { onRimHit?: () => void }) {
   const isShooting = gameState === 'shooting' || gameState === 'result';
   const isSwishing = gameState === 'result' && shotResult === 'made';
+  const isMissed = gameState === 'result' && shotResult === 'missed';
+  const hasTriggeredRimHit = useRef(false);
+
+  // Trigger rim hit callback once when miss is detected
+  useEffect(() => {
+    if (isMissed && !hasTriggeredRimHit.current) {
+      hasTriggeredRimHit.current = true;
+      onRimHit?.();
+    }
+    if (gameState === 'playing') {
+      hasTriggeredRimHit.current = false;
+    }
+  }, [isMissed, gameState, onRimHit]);
 
   return (
     <>
+      {/* Camera shake on miss */}
+      <CameraShake isShaking={isMissed} />
+      
       {/* Lighting */}
       <ambientLight intensity={0.5} />
       <spotLight 
@@ -275,7 +325,7 @@ function HoopScene({ gameState, shotResult, power }: BasketballHoop3DProps) {
   );
 }
 
-export function BasketballHoop3D({ gameState, shotResult, power }: BasketballHoop3DProps) {
+export function BasketballHoop3D({ gameState, shotResult, power, onRimHit }: BasketballHoop3DProps) {
   const [hasError, setHasError] = useState(false);
 
   if (hasError) {
@@ -292,7 +342,7 @@ export function BasketballHoop3D({ gameState, shotResult, power }: BasketballHoo
         gl={{ antialias: true, alpha: true }}
         style={{ background: 'transparent' }}
       >
-        <HoopScene gameState={gameState} shotResult={shotResult} power={power} />
+        <HoopScene gameState={gameState} shotResult={shotResult} power={power} onRimHit={onRimHit} />
       </Canvas>
     </div>
   );
