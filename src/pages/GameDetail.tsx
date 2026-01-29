@@ -430,12 +430,11 @@ export default function GameDetail() {
         </div>
 
         {/* Main Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <StatBox icon={Repeat} label="Rebounds" value={game.rebounds} />
           <StatBox icon={Zap} label="Assists" value={game.assists} />
           <StatBox icon={Shield} label="Steals" value={game.steals} />
           <StatBox icon={HandMetal} label="Blocks" value={game.blocks} />
-          <StatBox icon={Clock} label="Minutes" value={game.minutesPlayed} />
         </div>
 
         {/* Shooting Stats */}
@@ -501,7 +500,7 @@ export default function GameDetail() {
         </div>
         <div className="stat-card">
           <h2 className="text-lg font-semibold mb-4">Game Summary</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Turnovers</p>
               <p className="text-2xl font-bold">{game.turnovers}</p>
@@ -518,12 +517,6 @@ export default function GameDetail() {
                 {game.fgAttempted + (0.44 * game.ftAttempted) > 0
                   ? Math.round((game.points / (2 * (game.fgAttempted + 0.44 * game.ftAttempted))) * 100)
                   : 0}%
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Points/Min</p>
-              <p className="text-2xl font-bold">
-                {game.minutesPlayed > 0 ? (game.points / game.minutesPlayed).toFixed(1) : '0.0'}
               </p>
             </div>
           </div>
