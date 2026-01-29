@@ -13,6 +13,7 @@ interface NavigationProps {
   activeSeason: Season | null;
   onSeasonChange: (seasonId: string) => void;
   onCreateSeason: (name: string) => Promise<void>;
+  onDeleteSeason?: (seasonId: string) => Promise<boolean>;
   isAdmin?: boolean;
 }
 
@@ -33,6 +34,7 @@ export function Navigation({
   activeSeason,
   onSeasonChange,
   onCreateSeason,
+  onDeleteSeason,
   isAdmin = false,
 }: NavigationProps) {
   const tabs = isAdmin 
@@ -77,6 +79,7 @@ export function Navigation({
             activeSeason={activeSeason}
             onSeasonChange={onSeasonChange}
             onCreateSeason={onCreateSeason}
+            onDeleteSeason={onDeleteSeason}
           />
         </div>
       </div>
