@@ -140,6 +140,7 @@ export default function GameDetail() {
         .from('games')
         .insert({
           user_id: user.id,
+          season_id: activeSeason?.id || null,
           date: gameData.date,
           opponent: gameData.opponent,
           points: gameData.points,
@@ -255,6 +256,7 @@ export default function GameDetail() {
           .from('games')
           .insert({
             user_id: user!.id,
+            season_id: activeSeason?.id || null,
             date: gameData.date,
             opponent: gameData.opponent,
             points: gameData.points,
