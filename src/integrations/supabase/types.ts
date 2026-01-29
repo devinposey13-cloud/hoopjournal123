@@ -366,6 +366,65 @@ export type Database = {
         }
         Relationships: []
       }
+      stats_predictions: {
+        Row: {
+          accuracy_score: number | null
+          actual_assists: number | null
+          actual_points: number | null
+          actual_rebounds: number | null
+          created_at: string
+          id: string
+          is_resolved: boolean
+          points_earned: number | null
+          predicted_assists: number
+          predicted_points: number
+          predicted_rebounds: number
+          resolved_at: string | null
+          scheduled_game_id: string
+          user_id: string
+        }
+        Insert: {
+          accuracy_score?: number | null
+          actual_assists?: number | null
+          actual_points?: number | null
+          actual_rebounds?: number | null
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          points_earned?: number | null
+          predicted_assists?: number
+          predicted_points?: number
+          predicted_rebounds?: number
+          resolved_at?: string | null
+          scheduled_game_id: string
+          user_id: string
+        }
+        Update: {
+          accuracy_score?: number | null
+          actual_assists?: number | null
+          actual_points?: number | null
+          actual_rebounds?: number | null
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          points_earned?: number | null
+          predicted_assists?: number
+          predicted_points?: number
+          predicted_rebounds?: number
+          resolved_at?: string | null
+          scheduled_game_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stats_predictions_scheduled_game_id_fkey"
+            columns: ["scheduled_game_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_achievements: {
         Row: {
           achievement_id: string
