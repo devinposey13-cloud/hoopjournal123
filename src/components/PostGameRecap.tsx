@@ -4,8 +4,10 @@ import { GameStats } from '@/types/basketball';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
+import { Loader2, Sparkles, RefreshCw, Volume2, VolumeX } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { useCoachVoice } from '@/hooks/useCoachVoice';
+import { cn } from '@/lib/utils';
 
 interface PostGameRecapProps {
   game: GameStats;
@@ -18,6 +20,9 @@ export function PostGameRecap({ game, onRecapChange }: PostGameRecapProps) {
   const [hasGenerated, setHasGenerated] = useState(false);
   const [includeInPdf, setIncludeInPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Voice playback
+  const { playingIndex, isLoadingAudio, playVoice, stopVoice } = useCoachVoice();
 
   const generateRecap = async () => {
     setIsLoading(true);
@@ -167,21 +172,46 @@ export function PostGameRecap({ game, onRecapChange }: PostGameRecapProps) {
       )}
 
       {recap && (
-        <div className="prose prose-sm dark:prose-invert max-w-none">
-          <ReactMarkdown
-            components={{
-              p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
-              strong: ({ children }) => <strong className="text-primary font-semibold">{children}</strong>,
-              ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
-              ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
-              li: ({ children }) => <li className="text-foreground">{children}</li>,
-              h1: ({ children }) => <h3 className="text-lg font-bold mb-2 text-foreground">{children}</h3>,
-              h2: ({ children }) => <h3 className="text-lg font-bold mb-2 text-foreground">{children}</h3>,
-              h3: ({ children }) => <h4 className="font-semibold mb-2 text-foreground">{children}</h4>,
-            }}
-          >
-            {recap}
-          </ReactMarkdown>
+        <div>
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
+                strong: ({ children }) => <strong className="text-primary font-semibold">{children}</strong>,
+                ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
+                li: ({ children }) => <li className="text-foreground">{children}</li>,
+                h1: ({ children }) => <h3 className="text-lg font-bold mb-2 text-foreground">{children}</h3>,
+                h2: ({ children }) => <h3 className="text-lg font-bold mb-2 text-foreground">{children}</h3>,
+                h3: ({ children }) => <h4 className="font-semibold mb-2 text-foreground">{children}</h4>,
+              }}
+            >
+              {recap}
+            </ReactMarkdown>
+          </div>
+          
+          {/* Voice playback button */}
+          <div className="mt-4 pt-4 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                "gap-2",
+                playingIndex === 0 && "text-primary border-primary animate-pulse"
+              )}
+              onClick={() => playVoice(recap, 0)}
+              disabled={isLoadingAudio && playingIndex !== 0}
+            >
+              {isLoadingAudio && playingIndex === null ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : playingIndex === 0 ? (
+                <VolumeX className="w-4 h-4" />
+              ) : (
+                <Volume2 className="w-4 h-4" />
+              )}
+              {playingIndex === 0 ? 'Stop Playback' : 'Listen to Recap'}
+            </Button>
+          </div>
         </div>
       )}
     </div>
