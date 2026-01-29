@@ -15,6 +15,7 @@ import { CoachChat } from '@/components/CoachChat';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { AuthForm } from '@/components/AuthForm';
 import { ExploreClips } from '@/components/ExploreClips';
+import { JournalHeader } from '@/components/JournalHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { useCloudData } from '@/hooks/useCloudData';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay } from 'date-fns';
@@ -114,6 +115,9 @@ export default function Index() {
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6 animate-fade-in">
+            {/* Journal-style header mockup */}
+            <JournalHeader playerName={profile.name} />
+            
             <PlayerHeader profile={profile} seasonStats={seasonStats} games={games} />
 
             {/* Season Averages */}
