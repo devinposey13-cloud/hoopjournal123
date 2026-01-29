@@ -1,117 +1,144 @@
 
-# ElevenLabs Voice Integration for Coach AI
+# Perplexity AI Integration for Basketball Knowledge & Player Comparison
 
 ## Overview
-Add a text-to-speech feature to Coach AI that allows users to listen to coaching advice with a motivational sports voice. Each AI response will include a speaker button that converts the text to speech using ElevenLabs.
+Add two new AI-powered features to the Coach tab: **Basketball Knowledge Search** (search for drills, techniques, NBA player comparisons) and **Player Comparison** (compare user stats against real NBA/WNBA players and legends). Both features leverage Perplexity AI for grounded, real-time web search results.
 
 ## Architecture
 
 ```text
 +------------------+     +--------------------+     +------------------+
-|   CoachChat.tsx  | --> | elevenlabs-tts     | --> | ElevenLabs API   |
-|   PregameTalk.tsx|     | (Edge Function)    |     |                  |
+|   Coach Tab      | --> | perplexity-search  | --> | Perplexity API   |
+| (3 sub-tabs)     |     | (Edge Function)    |     | (AI Search)      |
 +------------------+     +--------------------+     +------------------+
-        |                         |
-        |  1. Click speaker icon  |
-        |  2. Send text to edge   |
-        |  3. Return audio blob   |
-        |  4. Play in browser     |
-        v                         v
-+------------------+     +--------------------+
-| Audio playback   |     | ELEVENLABS_API_KEY |
-| via HTML5 Audio  |     | (Secret)           |
-+------------------+     +--------------------+
+| - Coach Chat     |             |
+| - BB Knowledge   |     +--------------------+     +------------------+
+| - Player Compare |---->| perplexity-compare | --> | Perplexity API   |
++------------------+     | (Edge Function)    |     | (Grounded Search)|
+                         +--------------------+     +------------------+
 ```
+
+## New Features
+
+### 1. Basketball Knowledge Search
+- Search for drills, training tips, basketball techniques
+- Get AI-powered answers grounded in real basketball content
+- Suggested searches: "How to improve my crossover", "Defensive drills for guards", "NBA shooting form tips"
+- Results include citations to real sources
+
+### 2. Player Comparison
+- Enter user's stats (or use season averages automatically)
+- AI finds similar NBA/WNBA players based on statistical profile
+- Provides insights on play style, strengths to emulate, and areas to develop
+- Example: "Your scoring profile is similar to Steph Curry's early career - high 3PT%, good assists"
 
 ## Implementation Steps
 
-### Step 1: Connect ElevenLabs
-Use the ElevenLabs connector to securely store the API key. This will prompt you to set up the connection and provide your ElevenLabs API key.
+### Step 1: Connect Perplexity API
+Use the Perplexity connector to securely store the API key.
 
-### Step 2: Create TTS Edge Function
-Create a new edge function `supabase/functions/elevenlabs-tts/index.ts` that:
-- Accepts text and optional voice parameters
-- Calls ElevenLabs TTS API with a motivational sports coach voice
-- Returns audio as binary MP3 data
-- Uses the "Brian" voice (nPczCjzI2devNBz1zQrb) - a confident, energetic male voice perfect for coaching
+### Step 2: Create Edge Functions
+Create two new edge functions:
 
-### Step 3: Update CoachChat Component
-Add voice playback capability to `src/components/CoachChat.tsx`:
-- Add a speaker/volume icon button next to each AI response
-- Create state for tracking which message is playing and loading state
-- Implement `playVoice()` function that calls the TTS edge function
-- Add visual feedback (pulsing animation while playing)
-- Include stop/pause functionality
+**`perplexity-search`** - For basketball knowledge queries
+- Accepts a search query
+- Calls Perplexity API with basketball-focused system prompt
+- Returns AI response with citations
 
-### Step 4: Update PregameTalk Component
-Apply the same voice feature to `src/components/PregameTalk.tsx`:
-- Add speaker button to pregame coaching responses
-- Share the same TTS logic pattern
+**`perplexity-compare`** - For player comparison
+- Accepts user stats (points, rebounds, assists, etc.)
+- Builds a search query to find similar NBA/WNBA players
+- Returns comparison analysis with player matches
 
-### Step 5: Create Shared Voice Hook (Optional Enhancement)
-Create `src/hooks/useCoachVoice.ts` to encapsulate:
-- Audio playback state management
-- Loading/playing/stopped states
-- Reusable across both chat components
+### Step 3: Create UI Components
 
-## Voice Selection
-Using "Brian" voice (ID: `nPczCjzI2devNBz1zQrb`) - an energetic, confident male voice ideal for sports coaching. Voice settings optimized for motivation:
-- Stability: 0.5 (expressive but consistent)
-- Similarity boost: 0.75 
-- Style: 0.6 (slightly stylized for energy)
-- Speed: 1.0 (normal pace for clarity)
+**`BasketballKnowledge.tsx`**
+- Search input with suggested topics
+- Loading state with basketball-themed animation
+- Results display with markdown rendering
+- Citations/sources section
+
+**`PlayerComparison.tsx`**
+- Auto-populated stats from user's season averages
+- "Compare My Stats" button
+- Results showing matched players with similarity breakdown
+- Voice playback support (reuse existing hook)
+
+### Step 4: Update Coach Tab Layout
+Transform the Coach tab to use sub-tabs:
+- **Chat** - Existing CoachChat component
+- **Knowledge** - New BasketballKnowledge component
+- **Compare** - New PlayerComparison component
 
 ## User Experience
-- Speaker icon appears next to each Coach AI response
-- Click to play - icon changes to indicate playing state
-- Click again to stop playback
-- Visual pulsing animation during audio playback
-- Loading spinner while audio is being generated
-- Graceful error handling with toast notifications
 
----
+### Basketball Knowledge
+1. User clicks "Knowledge" tab
+2. Sees search bar with suggested topics like "Shooting drills", "Post moves", "Basketball conditioning"
+3. Types query or clicks suggestion
+4. Gets AI-grounded answer with real sources
+5. Can listen to response with voice playback
 
-## Technical Details
-
-### Edge Function: `elevenlabs-tts`
-```typescript
-// Key implementation details:
-- POST endpoint accepting { text, voiceId? }
-- output_format as query param (mp3_44100_128)
-- Returns binary audio/mpeg response
-- Uses ELEVENLABS_API_KEY from secrets
-```
-
-### Component Updates
-```typescript
-// New state in CoachChat/PregameTalk:
-const [playingMessageIndex, setPlayingMessageIndex] = useState<number | null>(null);
-const [isLoadingAudio, setIsLoadingAudio] = useState(false);
-const audioRef = useRef<HTMLAudioElement | null>(null);
-
-// New speaker button per message:
-<Button onClick={() => playVoice(message.content, index)}>
-  {playingMessageIndex === index ? <VolumeX /> : <Volume2 />}
-</Button>
-```
-
-### Audio Playback Flow
-1. User clicks speaker icon on AI response
-2. Component calls edge function with message text
-3. Edge function returns audio blob
-4. Create object URL and play via HTML5 Audio
-5. Track playing state for visual feedback
-6. Cleanup object URL on completion
+### Player Comparison
+1. User clicks "Compare" tab
+2. Sees their season averages pre-filled
+3. Clicks "Find Similar Players"
+4. Gets analysis like: "Based on your 15 PPG, 5 RPG, 3 APG profile, you have a similar stat line to..."
+5. Shows 2-3 matched players with insights on what to learn from each
 
 ## Files to Create/Modify
 
 | File | Action | Description |
 |------|--------|-------------|
-| `supabase/functions/elevenlabs-tts/index.ts` | Create | New edge function for TTS |
-| `src/components/CoachChat.tsx` | Modify | Add voice playback UI and logic |
-| `src/components/PregameTalk.tsx` | Modify | Add voice playback UI and logic |
-| `supabase/config.toml` | Modify | Add function config with verify_jwt=false |
+| `supabase/functions/perplexity-search/index.ts` | Create | Basketball knowledge search endpoint |
+| `supabase/functions/perplexity-compare/index.ts` | Create | Player comparison endpoint |
+| `src/components/BasketballKnowledge.tsx` | Create | Knowledge search UI component |
+| `src/components/PlayerComparison.tsx` | Create | Player comparison UI component |
+| `src/pages/Index.tsx` | Modify | Update Coach tab to use sub-tabs |
+| `supabase/config.toml` | Modify | Add new function configs |
+
+## Technical Details
+
+### Edge Function: perplexity-search
+```typescript
+// Key implementation:
+// - POST with { query: string }
+// - Uses sonar model for fast grounded search
+// - Basketball-focused system prompt
+// - Returns { answer: string, citations: string[] }
+```
+
+### Edge Function: perplexity-compare
+```typescript
+// Key implementation:
+// - POST with { stats: SeasonStats }
+// - Builds comparison query from user stats
+// - Uses sonar-pro for deeper analysis
+// - Returns { comparison: string, matchedPlayers: string[], citations: string[] }
+```
+
+### Coach Tab Sub-tabs
+```typescript
+// Updated Coach tab structure:
+<Tabs defaultValue="chat">
+  <TabsList>
+    <TabsTrigger value="chat">Coach Chat</TabsTrigger>
+    <TabsTrigger value="knowledge">BB Knowledge</TabsTrigger>
+    <TabsTrigger value="compare">Player Compare</TabsTrigger>
+  </TabsList>
+  <TabsContent value="chat">
+    <CoachChat ... />
+  </TabsContent>
+  <TabsContent value="knowledge">
+    <BasketballKnowledge />
+  </TabsContent>
+  <TabsContent value="compare">
+    <PlayerComparison seasonStats={seasonStats} />
+  </TabsContent>
+</Tabs>
+```
 
 ## Dependencies
-- ElevenLabs API key (via connector)
-- No new npm packages required (uses native fetch and Audio API)
+- Perplexity API key (via connector - already available in workspace)
+- No new npm packages required
+- Reuses existing voice hook for audio playback
