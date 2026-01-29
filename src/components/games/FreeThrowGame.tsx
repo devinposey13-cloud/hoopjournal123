@@ -6,6 +6,7 @@ import { useGameData } from '@/hooks/useGameData';
 import { useAchievements } from '@/hooks/useAchievements';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { GameResults } from './GameResults';
+import { BasketballHoop3D } from './BasketballHoop3D';
 import { cn } from '@/lib/utils';
 
 interface FreeThrowGameProps {
@@ -218,7 +219,14 @@ export function FreeThrowGame({ onBack }: FreeThrowGameProps) {
               </Button>
             </div>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-6">
+              {/* 3D Basketball Hoop */}
+              <BasketballHoop3D 
+                gameState={gameState} 
+                shotResult={lastShot} 
+                power={power} 
+              />
+
               {/* Power Bar */}
               <div className="relative">
                 <div className="h-12 bg-secondary rounded-full overflow-hidden relative">
