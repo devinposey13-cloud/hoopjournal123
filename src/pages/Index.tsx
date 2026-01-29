@@ -17,6 +17,7 @@ import { AuthForm } from '@/components/AuthForm';
 import { ExploreClips } from '@/components/ExploreClips';
 import { JournalHeader } from '@/components/JournalHeader';
 import { AdminPanel } from '@/components/AdminPanel';
+import { GamesHub } from '@/components/games/GamesHub';
 import { useAuth } from '@/hooks/useAuth';
 import { useCloudData } from '@/hooks/useCloudData';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -340,6 +341,19 @@ export default function Index() {
                 <ExploreClips />
               </TabsContent>
             </Tabs>
+          </div>
+        )}
+
+        {/* Mini Games Tab */}
+        {activeTab === 'minigames' && (
+          <div className="space-y-6 animate-fade-in">
+            <div>
+              <h1 className="text-2xl font-bold">Games & Challenges</h1>
+              <p className="text-muted-foreground">
+                Play mini-games, earn achievements, and climb the leaderboard
+              </p>
+            </div>
+            <GamesHub />
           </div>
         )}
 
