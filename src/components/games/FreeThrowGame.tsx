@@ -96,6 +96,7 @@ export function FreeThrowGame({ onBack }: FreeThrowGameProps) {
     setTimeout(() => {
       if (made) {
         playSound('make');
+        playSound('crowd_cheer');
         const points = Math.max(1, Math.floor(10 - (distance / 5))) * difficulty;
         setScore((prev) => prev + points);
         setStreak((prev) => prev + 1);
@@ -108,6 +109,7 @@ export function FreeThrowGame({ onBack }: FreeThrowGameProps) {
         }
       } else {
         playSound('block');
+        playSound('crowd_groan');
         setStreak(0);
         setLastShot('missed');
       }
