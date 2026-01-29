@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle } from 'lucide-react';
+import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface UserProfile {
@@ -42,16 +42,31 @@ interface ContentReport {
   created_at: string;
 }
 
+interface PasswordResetRequest {
+  id: string;
+  user_id: string | null;
+  phone: string;
+  player_name: string | null;
+  status: string;
+  admin_notes: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
 export function AdminPanel() {
   const { session } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [reports, setReports] = useState<ContentReport[]>([]);
+  const [passwordRequests, setPasswordRequests] = useState<PasswordResetRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [editName, setEditName] = useState('');
   const [selectedReport, setSelectedReport] = useState<ContentReport | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
+  const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
   const [resettingPassword, setResettingPassword] = useState<string | null>(null);
 
   // Fetch users and reports
@@ -79,6 +94,15 @@ export function AdminPanel() {
 
       if (reportsError) throw reportsError;
       setReports(reportsData || []);
+
+      // Fetch password reset requests
+      const { data: requestsData, error: requestsError } = await supabase
+        .from('password_reset_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (requestsError) throw requestsError;
+      setPasswordRequests(requestsData || []);
     } catch (error) {
       console.error('Error fetching admin data:', error);
       toast.error('Failed to load admin data');
@@ -195,8 +219,91 @@ export function AdminPanel() {
     }
   }
 
+  // Generate a random password
+  function generateRandomPassword(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    let password = '';
+    for (let i = 0; i < 10; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  }
+
+  // Handle password reset request approval
+  async function handleApprovePasswordRequest(request: PasswordResetRequest) {
+    if (!request.user_id) {
+      toast.error('Cannot reset password: No user account found for this phone number');
+      return;
+    }
+
+    setProcessingRequest(request.id);
+    const newPassword = generateRandomPassword();
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-password-reset`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ 
+          targetUserId: request.user_id,
+          newPassword: newPassword
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to reset password');
+
+      // Update the request status
+      await supabase
+        .from('password_reset_requests')
+        .update({ 
+          status: 'approved',
+          reviewed_by: session?.user?.id,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', request.id);
+
+      setPasswordRequests(prev => prev.map(r => 
+        r.id === request.id ? { ...r, status: 'approved', reviewed_at: new Date().toISOString() } : r
+      ));
+      
+      setGeneratedPassword(newPassword);
+      toast.success('Password reset successful! Copy the new password to share with the user.');
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to reset password');
+    } finally {
+      setProcessingRequest(null);
+    }
+  }
+
+  // Dismiss password reset request
+  async function handleDismissPasswordRequest(requestId: string) {
+    try {
+      await supabase
+        .from('password_reset_requests')
+        .update({ 
+          status: 'dismissed',
+          reviewed_by: session?.user?.id,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+
+      setPasswordRequests(prev => prev.map(r => 
+        r.id === requestId ? { ...r, status: 'dismissed', reviewed_at: new Date().toISOString() } : r
+      ));
+      toast.success('Request dismissed');
+    } catch (error) {
+      console.error('Error dismissing request:', error);
+      toast.error('Failed to dismiss request');
+    }
+  }
+
   // Stats
   const pendingReports = reports.filter(r => r.status === 'pending').length;
+  const pendingPasswordRequests = passwordRequests.filter(r => r.status === 'pending').length;
   const totalUsers = users.length;
   const publicProfiles = users.filter(u => u.is_profile_public).length;
 
@@ -249,6 +356,13 @@ export function AdminPanel() {
             Content Reports
             {pendingReports > 0 && (
               <Badge variant="destructive" className="ml-1">{pendingReports}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="password-requests" className="gap-2">
+            <Phone className="w-4 h-4" />
+            Password Requests
+            {pendingPasswordRequests > 0 && (
+              <Badge variant="destructive" className="ml-1">{pendingPasswordRequests}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="metrics" className="gap-2">
@@ -498,6 +612,131 @@ export function AdminPanel() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* Password Requests Tab */}
+        <TabsContent value="password-requests" className="space-y-4">
+          {passwordRequests.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <Phone className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No password reset requests yet</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {passwordRequests.map((request) => (
+                <Card key={request.id} className={request.status === 'pending' ? 'border-amber-500/50' : ''}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={
+                          request.status === 'pending' ? 'secondary' :
+                          request.status === 'approved' ? 'default' : 'outline'
+                        } className={request.status === 'pending' ? 'bg-amber-500/20 text-amber-700 dark:text-amber-400' : ''}>
+                          {request.status}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {format(new Date(request.created_at), 'MMM d, yyyy h:mm a')}
+                        </span>
+                      </div>
+                      {request.status === 'pending' && (
+                        <Key className="w-5 h-5 text-amber-500" />
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Phone Number</Label>
+                        <p className="text-sm font-medium">{request.phone}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Player Name</Label>
+                        <p className="text-sm font-medium">{request.player_name || 'Not provided'}</p>
+                      </div>
+                    </div>
+                    {request.user_id && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Account Status</Label>
+                        <p className="text-sm text-primary">✓ User account found</p>
+                      </div>
+                    )}
+                    {!request.user_id && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Account Status</Label>
+                        <p className="text-sm text-destructive">✗ No account found with this phone number</p>
+                      </div>
+                    )}
+
+                    {request.status === 'pending' && (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => handleDismissPasswordRequest(request.id)}
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Dismiss
+                        </Button>
+                        <Button
+                          onClick={() => handleApprovePasswordRequest(request)}
+                          disabled={!request.user_id || processingRequest === request.id}
+                        >
+                          {processingRequest === request.id ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Check className="w-4 h-4 mr-2" />
+                          )}
+                          Reset Password
+                        </Button>
+                      </div>
+                    )}
+
+                    {request.status === 'approved' && (
+                      <div className="text-sm text-muted-foreground">
+                        Password was reset on {request.reviewed_at && format(new Date(request.reviewed_at), 'MMM d, yyyy h:mm a')}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Generated Password Dialog */}
+          <Dialog open={!!generatedPassword} onOpenChange={(open) => !open && setGeneratedPassword(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Password Reset Successful</DialogTitle>
+                <DialogDescription>
+                  Share this temporary password with the user. They should change it after logging in.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <div className="flex items-center gap-2 bg-muted p-3 rounded-lg">
+                  <code className="flex-1 font-mono text-lg">{generatedPassword}</code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedPassword || '');
+                      toast.success('Password copied to clipboard');
+                    }}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  ⚠️ This password will not be shown again. Make sure to share it with the user now.
+                </p>
+              </div>
+              <DialogFooter>
+                <Button onClick={() => setGeneratedPassword(null)}>
+                  Done
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* Metrics Tab */}

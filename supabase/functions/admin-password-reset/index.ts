@@ -62,8 +62,8 @@ serve(async (req) => {
       });
     }
 
-    // Get target user ID from request
-    const { targetUserId } = await req.json();
+    // Get target user ID and optional new password from request
+    const { targetUserId, newPassword } = await req.json();
     if (!targetUserId) {
       return new Response(JSON.stringify({ error: 'Target user ID required' }), {
         status: 400,
@@ -77,11 +77,33 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // If a new password is provided, set it directly (for phone users)
+    if (newPassword) {
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        targetUserId,
+        { password: newPassword }
+      );
+
+      if (updateError) {
+        console.error('Password update error:', updateError);
+        return new Response(JSON.stringify({ error: 'Failed to update password' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, message: 'Password updated successfully' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Otherwise, send password reset email (for email users)
     // Get user's email
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
     
     if (userError || !userData?.user?.email) {
-      return new Response(JSON.stringify({ error: 'User not found' }), {
+      return new Response(JSON.stringify({ error: 'User not found or has no email' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
