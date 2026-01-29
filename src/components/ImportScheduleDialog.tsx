@@ -11,12 +11,14 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Upload, Rss, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, Calendar, CheckCircle2, Loader2, FileText } from 'lucide-react';
 import { parseRSSSchedule, filterFutureGames } from '@/utils/rssParser';
+import { parseICalSchedule, filterFutureICalGames, detectScheduleFormat } from '@/utils/icalParser';
 import { ScheduledGame } from '@/types/basketball';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface ImportScheduleDialogProps {
   onImport: (games: Omit<ScheduledGame, 'id'>[]) => Promise<ScheduledGame[] | void>;
@@ -34,27 +36,51 @@ interface ParsedGame {
 
 export function ImportScheduleDialog({ onImport }: ImportScheduleDialogProps) {
   const [open, setOpen] = useState(false);
-  const [rssContent, setRssContent] = useState('');
+  const [feedContent, setFeedContent] = useState('');
   const [parsedGames, setParsedGames] = useState<ParsedGame[]>([]);
   const [futureOnly, setFutureOnly] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'input' | 'preview'>('input');
+  const [formatTab, setFormatTab] = useState<'auto' | 'rss' | 'ical'>('auto');
 
   const handleParse = () => {
-    if (!rssContent.trim()) {
-      toast.error('Please paste the RSS feed content');
+    if (!feedContent.trim()) {
+      toast.error('Please paste the schedule content');
       return;
     }
 
     try {
-      let games = parseRSSSchedule(rssContent);
+      let games: { opponent: string; date: string; time: string; location: string; isHome: boolean; notes?: string }[] = [];
+      
+      // Detect format or use selected format
+      let format = formatTab === 'auto' ? detectScheduleFormat(feedContent) : formatTab;
+      
+      if (format === 'unknown' && formatTab === 'auto') {
+        // Try both parsers
+        try {
+          games = parseICalSchedule(feedContent);
+          format = 'ical';
+        } catch {
+          try {
+            games = parseRSSSchedule(feedContent);
+            format = 'rss';
+          } catch {
+            toast.error('Could not detect format. Please select RSS or iCal manually.');
+            return;
+          }
+        }
+      } else if (format === 'ical' || formatTab === 'ical') {
+        games = parseICalSchedule(feedContent);
+      } else {
+        games = parseRSSSchedule(feedContent);
+      }
       
       if (futureOnly) {
-        games = filterFutureGames(games);
+        games = format === 'ical' ? filterFutureICalGames(games) : filterFutureGames(games);
       }
 
       if (games.length === 0) {
-        toast.error('No games found in the RSS feed');
+        toast.error('No games found in the schedule');
         return;
       }
 
@@ -63,7 +89,7 @@ export function ImportScheduleDialog({ onImport }: ImportScheduleDialogProps) {
       toast.success(`Found ${games.length} games`);
     } catch (error) {
       console.error('Parse error:', error);
-      toast.error('Failed to parse RSS feed. Please check the format.');
+      toast.error('Failed to parse schedule. Please check the format.');
     }
   };
 
@@ -102,9 +128,10 @@ export function ImportScheduleDialog({ onImport }: ImportScheduleDialogProps) {
 
   const handleClose = () => {
     setOpen(false);
-    setRssContent('');
+    setFeedContent('');
     setParsedGames([]);
     setStep('input');
+    setFormatTab('auto');
   };
 
   const selectedCount = parsedGames.filter((g) => g.selected).length;
@@ -113,37 +140,64 @@ export function ImportScheduleDialog({ onImport }: ImportScheduleDialogProps) {
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(o) : handleClose())}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <Rss className="w-4 h-4 mr-2" />
-          Import RSS
+          <Calendar className="w-4 h-4 mr-2" />
+          Import Schedule
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Rss className="w-5 h-5" />
-            Import Schedule from RSS
+            <FileText className="w-5 h-5" />
+            Import Schedule
           </DialogTitle>
           <DialogDescription>
             {step === 'input'
-              ? 'Paste an RSS feed from your league website (WCAC, PrestoSports, etc.)'
+              ? 'Paste an RSS feed or iCal (.ics) file content from your league website'
               : `Select games to import (${selectedCount} of ${parsedGames.length} selected)`}
           </DialogDescription>
         </DialogHeader>
 
         {step === 'input' ? (
           <div className="space-y-4">
+            <Tabs value={formatTab} onValueChange={(v) => setFormatTab(v as typeof formatTab)}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="auto">Auto-Detect</TabsTrigger>
+                <TabsTrigger value="rss">RSS Feed</TabsTrigger>
+                <TabsTrigger value="ical">iCal (.ics)</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="auto" className="mt-4">
+                <p className="text-xs text-muted-foreground">
+                  Paste any schedule content and we'll detect the format automatically.
+                </p>
+              </TabsContent>
+              
+              <TabsContent value="rss" className="mt-4">
+                <p className="text-xs text-muted-foreground">
+                  Paste RSS XML content from PrestoSports, WCAC, or similar league feeds.
+                </p>
+              </TabsContent>
+              
+              <TabsContent value="ical" className="mt-4">
+                <p className="text-xs text-muted-foreground">
+                  Paste iCal (.ics) content. You can export this from Google Calendar, Outlook, or team management apps.
+                </p>
+              </TabsContent>
+            </Tabs>
+
             <div className="space-y-2">
-              <Label htmlFor="rss-content">RSS Feed Content</Label>
+              <Label htmlFor="feed-content">Schedule Content</Label>
               <Textarea
-                id="rss-content"
-                placeholder="Paste the RSS XML content here..."
-                value={rssContent}
-                onChange={(e) => setRssContent(e.target.value)}
+                id="feed-content"
+                placeholder={formatTab === 'ical' 
+                  ? "BEGIN:VCALENDAR\nVERSION:2.0\n..." 
+                  : formatTab === 'rss'
+                  ? "<?xml version=\"1.0\"?>\n<rss>..."
+                  : "Paste your RSS or iCal content here..."}
+                value={feedContent}
+                onChange={(e) => setFeedContent(e.target.value)}
                 className="min-h-[200px] font-mono text-xs"
               />
-              <p className="text-xs text-muted-foreground">
-                Copy the RSS feed source from your league website and paste it here.
-              </p>
             </div>
 
             <div className="flex items-center justify-between">
@@ -165,7 +219,7 @@ export function ImportScheduleDialog({ onImport }: ImportScheduleDialogProps) {
               </Button>
               <Button onClick={handleParse}>
                 <Upload className="w-4 h-4 mr-2" />
-                Parse Feed
+                Parse Schedule
               </Button>
             </div>
           </div>
@@ -226,7 +280,7 @@ export function ImportScheduleDialog({ onImport }: ImportScheduleDialogProps) {
                           at {game.time}
                         </p>
                         {game.notes && (
-                          <p className="text-xs text-muted-foreground/70 mt-0.5">
+                          <p className="text-xs text-muted-foreground/70 mt-0.5 truncate">
                             {game.notes}
                           </p>
                         )}

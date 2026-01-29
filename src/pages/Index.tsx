@@ -63,6 +63,7 @@ export default function Index() {
     bulkImportScheduledGames,
     createSeason,
     switchSeason,
+    deleteSeason,
     // Milestone-related
     pendingMilestones,
     showReveal,
@@ -122,6 +123,7 @@ export default function Index() {
         activeSeason={activeSeason}
         onSeasonChange={switchSeason}
         onCreateSeason={async (name) => { await createSeason(name); }}
+        onDeleteSeason={deleteSeason}
         isAdmin={isAdmin}
       />
 

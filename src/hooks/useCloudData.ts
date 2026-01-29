@@ -295,6 +295,79 @@ export function useCloudData() {
     }
   };
 
+  // Delete season and all associated data
+  const deleteSeason = async (seasonId: string) => {
+    if (!user) return false;
+
+    try {
+      const seasonToDelete = seasons.find(s => s.id === seasonId);
+      if (!seasonToDelete) return false;
+
+      // Delete all associated data first (due to foreign key constraints)
+      // Delete scheduled games
+      await supabase
+        .from('scheduled_games')
+        .delete()
+        .eq('season_id', seasonId);
+
+      // Delete games
+      await supabase
+        .from('games')
+        .delete()
+        .eq('season_id', seasonId);
+
+      // Delete video clips
+      await supabase
+        .from('video_clips')
+        .delete()
+        .eq('season_id', seasonId);
+
+      // Delete player milestones
+      await supabase
+        .from('player_milestones')
+        .delete()
+        .eq('season_id', seasonId);
+
+      // Delete player badges
+      await supabase
+        .from('player_badges')
+        .delete()
+        .eq('season_id', seasonId);
+
+      // Finally delete the season itself
+      const { error } = await supabase
+        .from('seasons')
+        .delete()
+        .eq('id', seasonId);
+
+      if (error) throw error;
+
+      // Update local state
+      const remainingSeasons = seasons.filter(s => s.id !== seasonId);
+      setSeasons(remainingSeasons);
+
+      // If we deleted the active season, switch to another one
+      if (activeSeason?.id === seasonId) {
+        const newActive = remainingSeasons[0] || null;
+        if (newActive) {
+          await switchSeason(newActive.id);
+        } else {
+          setActiveSeason(null);
+          setGames([]);
+          setSchedule([]);
+          setClips([]);
+        }
+      }
+
+      toast.success(`Season "${seasonToDelete.name}" deleted`);
+      return true;
+    } catch (error) {
+      console.error('Error deleting season:', error);
+      toast.error('Failed to delete season');
+      return false;
+    }
+  };
+
   // Add game (now with season_id)
   const addGame = async (game: Omit<GameStats, 'id'>) => {
     if (!user) return null;
@@ -737,6 +810,7 @@ export function useCloudData() {
     uploadAvatar,
     createSeason,
     switchSeason,
+    deleteSeason,
     refetch: fetchData,
   };
 }
