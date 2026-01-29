@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 
 const STT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-stt`;
@@ -6,6 +6,7 @@ const STT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-st
 interface UseVoiceInputReturn {
   isRecording: boolean;
   isTranscribing: boolean;
+  audioData: number[];
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<string | null>;
   cancelRecording: () => void;
@@ -14,13 +15,32 @@ interface UseVoiceInputReturn {
 export function useVoiceInput(): UseVoiceInputReturn {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [audioData, setAudioData] = useState<number[]>([]);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const maxDurationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Audio analysis refs
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   const cleanup = useCallback(() => {
+    // Stop animation frame
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    // Close audio context
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    
     // Stop all tracks
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -35,7 +55,40 @@ export function useVoiceInput(): UseVoiceInputReturn {
     
     mediaRecorderRef.current = null;
     audioChunksRef.current = [];
+    setAudioData([]);
   }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+  }, [cleanup]);
+
+  const updateAudioData = useCallback(() => {
+    if (!analyserRef.current || !isRecording) return;
+    
+    const analyser = analyserRef.current;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(dataArray);
+    
+    // Sample 24 bars from the frequency data
+    const barCount = 24;
+    const step = Math.floor(dataArray.length / barCount);
+    const sampledData: number[] = [];
+    
+    for (let i = 0; i < barCount; i++) {
+      // Average a range of frequencies for each bar
+      let sum = 0;
+      for (let j = 0; j < step; j++) {
+        sum += dataArray[i * step + j];
+      }
+      sampledData.push(sum / step);
+    }
+    
+    setAudioData(sampledData);
+    animationFrameRef.current = requestAnimationFrame(updateAudioData);
+  }, [isRecording]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -50,6 +103,18 @@ export function useVoiceInput(): UseVoiceInputReturn {
       
       streamRef.current = stream;
       audioChunksRef.current = [];
+      
+      // Set up audio analysis
+      const audioContext = new AudioContext();
+      audioContextRef.current = audioContext;
+      
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+      analyserRef.current = analyser;
+      
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
       
       // Determine best supported format
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
@@ -71,6 +136,9 @@ export function useVoiceInput(): UseVoiceInputReturn {
       
       mediaRecorder.start(100); // Collect data every 100ms
       setIsRecording(true);
+      
+      // Start audio visualization
+      animationFrameRef.current = requestAnimationFrame(updateAudioData);
       
       // Auto-stop after 60 seconds
       maxDurationTimeoutRef.current = setTimeout(() => {
@@ -98,7 +166,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
       cleanup();
       throw error;
     }
-  }, [cleanup]);
+  }, [cleanup, updateAudioData]);
 
   const stopRecording = useCallback(async (): Promise<string | null> => {
     return new Promise((resolve) => {
@@ -184,6 +252,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
   return {
     isRecording,
     isTranscribing,
+    audioData,
     startRecording,
     stopRecording,
     cancelRecording,
