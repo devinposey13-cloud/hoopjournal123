@@ -63,6 +63,7 @@ export interface PlayerProfile {
   displayName?: string;
   isProfilePublic?: boolean;
   themeMusicUrl?: string;
+  instagramUrl?: string;
 }
 
 export interface SeasonStats {
