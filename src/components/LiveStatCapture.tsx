@@ -334,8 +334,7 @@ export function LiveStatCapture({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
-            capture="environment"
+            accept="image/jpeg,image/png,image/gif,image/webp,image/heic"
             onChange={handlePhotoCapture}
             className="hidden"
           />
