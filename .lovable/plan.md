@@ -1,54 +1,58 @@
 
 
-## Move Season Averages to Stats Predictor Widget
+## Fix: Spotify Player Settings Update Failing
 
-This plan integrates the season averages display directly into the Stats Predictor widget so players can reference their historical performance while making predictions for the upcoming game.
+The test revealed a bug: saving the Spotify URL in Settings fails with error "Could not find the 'username' column of 'player_settings' in the schema cache".
 
-### What Will Change
+### Root Cause
 
-**User Experience:**
-- When making predictions, you'll see your season averages (PPG, RPG, APG) displayed directly above the prediction inputs
-- This provides helpful context - you can see what you typically score and set realistic or stretch goals
-- The season averages will be styled subtly so they don't distract from the main prediction action
+The `updateProfile` function in `useCloudData.ts` attempts to save a `username` field to the database, but this column does not exist in the `player_settings` table. The Settings panel has a UI for claiming usernames, but the database migration for the `username` column was never created.
 
-**Visual Layout:**
-- The standalone Season Averages card will be removed from the pregame page
-- Season averages will appear as reference values inside the Stats Predictor widget
-- Compact labels will show "Your Avg: X.X" above each prediction input
+### Fix Options
+
+**Option A: Add the missing `username` column (Recommended)**
+- Create a database migration to add `username` column to `player_settings`
+- Add a unique constraint on username for public profile URLs
+- This enables the full public profile URL feature
+
+**Option B: Remove username from the upsert (Quick fix)**
+- Remove the `username` field from the `updateProfile` upsert in `useCloudData.ts`
+- Hide or disable the username claiming UI in Settings until properly implemented
+- Spotify player will work but public profiles won't
+
+---
+
+### Implementation: Option A
+
+**Step 1: Database Migration**
+```sql
+-- Add username column to player_settings
+ALTER TABLE public.player_settings 
+ADD COLUMN username text UNIQUE;
+
+-- Create index for faster lookups
+CREATE INDEX idx_player_settings_username ON public.player_settings(username);
+```
+
+**Step 2: Verify and Test**
+- After migration, re-test saving the Spotify URL
+- Verify the Settings page saves successfully
+- Navigate to pregame page and confirm Spotify player appears
 
 ---
 
 ### Technical Details
 
-**Files to Modify:**
+**Files Affected:**
+- Database: `player_settings` table needs `username` column
+- No code changes needed - the existing code already handles the field correctly
 
-1. **`src/components/PregamePredictor.tsx`**
-   - Add optional `seasonStats` prop of type `SeasonStats`
-   - Display season averages (PPG, RPG, APG) as reference values above the prediction inputs
-   - In compact mode: Show small "Avg: X" labels above each input field
-   - In full mode: Show averages in a reference row before the input grid
-   - Handle empty state (no games played) gracefully
+**Current Database Schema (player_settings):**
+- Has: avatar_url, display_name, grade, height, is_profile_public, name, number, phone, position, team, theme_music_url, user_id
+- Missing: `username`
 
-2. **`src/pages/GameDetail.tsx`**
-   - Remove the standalone `<SeasonAveragesCard>` component from the pregame content section
-   - Pass `seasonStats` prop to `<PregamePredictor>` component
-   - Remove `SeasonAveragesCard` import if no longer used elsewhere
-
-**Component Props Update:**
+**Current Code (useCloudData.ts line 590):**
 ```typescript
-interface PregamePredictorProps {
-  scheduledGameId: string;
-  opponent: string;
-  compact?: boolean;
-  seasonStats?: SeasonStats;  // New prop
-}
+username: updates.username ?? profile.username ?? null,  // This fails!
 ```
-
-**UI Design for Compact Mode:**
-- Above each input (PTS, REB, AST), show a small muted label: "Avg: 12.5"
-- Helps players make informed predictions without adding clutter
-
-**UI Design for Full Mode:**
-- Add a "Your Season Averages" reference row above the prediction inputs
-- Display PPG, RPG, APG in subtle styling before the editable fields
 
