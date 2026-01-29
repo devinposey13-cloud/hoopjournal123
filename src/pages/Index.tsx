@@ -16,8 +16,10 @@ import { SettingsPanel } from '@/components/SettingsPanel';
 import { AuthForm } from '@/components/AuthForm';
 import { ExploreClips } from '@/components/ExploreClips';
 import { JournalHeader } from '@/components/JournalHeader';
+import { AdminPanel } from '@/components/AdminPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useCloudData } from '@/hooks/useCloudData';
+import { useAdmin } from '@/hooks/useAdmin';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { LogOut, Loader2 } from 'lucide-react';
@@ -34,6 +36,7 @@ import {
 export default function Index() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const { user, loading: authLoading, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const {
     games,
     clips,
@@ -109,6 +112,7 @@ export default function Index() {
         activeSeason={activeSeason}
         onSeasonChange={switchSeason}
         onCreateSeason={async (name) => { await createSeason(name); }}
+        isAdmin={isAdmin}
       />
 
       <main className="container mx-auto px-4 py-6">
@@ -374,6 +378,19 @@ export default function Index() {
               </Button>
             </div>
             <SettingsPanel profile={profile} onUpdateProfile={updateProfile} onUploadAvatar={uploadAvatar} />
+          </div>
+        )}
+
+        {/* Admin Tab */}
+        {activeTab === 'admin' && isAdmin && (
+          <div className="animate-fade-in">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+              <p className="text-muted-foreground">
+                Manage users, review reports, and view metrics
+              </p>
+            </div>
+            <AdminPanel />
           </div>
         )}
       </main>

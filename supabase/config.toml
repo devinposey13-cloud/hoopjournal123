@@ -2,3 +2,9 @@ project_id = "jwoupnumuotmwpwrkmob"
 
 [functions.coach-chat]
 verify_jwt = false
+
+[functions.admin-password-reset]
+verify_jwt = false
+
+[functions.post-game-recap]
+verify_jwt = false

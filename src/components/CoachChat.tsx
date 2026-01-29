@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { useAuth } from '@/hooks/useAuth';
+import { ReportContentButton } from './ReportContentButton';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -410,8 +411,18 @@ export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
                     </div>
                   )}
                   {message.role === 'assistant' ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    <div>
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      </div>
+                      {message.content && (
+                        <div className="mt-2 pt-2 border-t border-border/50">
+                          <ReportContentButton 
+                            userMessage={messages[index - 1]?.content || ''} 
+                            aiResponse={message.content} 
+                          />
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>

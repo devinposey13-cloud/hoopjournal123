@@ -1,10 +1,10 @@
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Calendar, Video, Settings, CalendarDays, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, Calendar, Video, Settings, CalendarDays, MessageCircle, Shield } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 import { SeasonSelector } from './SeasonSelector';
 import { Season } from '@/types/basketball';
 
-export type Tab = 'dashboard' | 'games' | 'schedule' | 'clips' | 'coach' | 'settings';
+export type Tab = 'dashboard' | 'games' | 'schedule' | 'clips' | 'coach' | 'settings' | 'admin';
 
 interface NavigationProps {
   activeTab: Tab;
@@ -13,9 +13,10 @@ interface NavigationProps {
   activeSeason: Season | null;
   onSeasonChange: (seasonId: string) => void;
   onCreateSeason: (name: string) => Promise<void>;
+  isAdmin?: boolean;
 }
 
-const tabs = [
+const baseTabs = [
   { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard },
   { id: 'games' as Tab, label: 'Games', icon: Calendar },
   { id: 'schedule' as Tab, label: 'Schedule', icon: CalendarDays },
@@ -31,7 +32,11 @@ export function Navigation({
   activeSeason,
   onSeasonChange,
   onCreateSeason,
+  isAdmin = false,
 }: NavigationProps) {
+  const tabs = isAdmin 
+    ? [...baseTabs, { id: 'admin' as Tab, label: 'Admin', icon: Shield }]
+    : baseTabs;
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto px-4">
