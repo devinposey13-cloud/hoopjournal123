@@ -113,12 +113,34 @@ export function GameStatsForm({ onSubmit, initialData, submitLabel = 'Save Game'
       </div>
 
       {/* Win/Loss Toggle */}
-      <div className="flex items-center gap-3">
-        <Switch
-          checked={formData.isWin}
-          onCheckedChange={(checked) => updateField('isWin', checked)}
-        />
-        <Label>{formData.isWin ? 'Win' : 'Loss'}</Label>
+      <div className="space-y-2">
+        <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          Game Result
+        </Label>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant={formData.isWin ? "default" : "outline"}
+            className={cn(
+              "flex-1 font-semibold transition-all",
+              formData.isWin && "bg-green-600 hover:bg-green-700 text-white"
+            )}
+            onClick={() => updateField('isWin', true)}
+          >
+            🏆 Win
+          </Button>
+          <Button
+            type="button"
+            variant={!formData.isWin ? "default" : "outline"}
+            className={cn(
+              "flex-1 font-semibold transition-all",
+              !formData.isWin && "bg-red-600 hover:bg-red-700 text-white"
+            )}
+            onClick={() => updateField('isWin', false)}
+          >
+            😤 Loss
+          </Button>
+        </div>
       </div>
 
       {/* Basic Stats */}
