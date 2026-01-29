@@ -18,6 +18,7 @@ import { ExploreClips } from '@/components/ExploreClips';
 import { JournalHeader } from '@/components/JournalHeader';
 import { AdminPanel } from '@/components/AdminPanel';
 import { GamesHub } from '@/components/games/GamesHub';
+import { SpotifyPlayer } from '@/components/SpotifyPlayer';
 import { useAuth } from '@/hooks/useAuth';
 import { useCloudData } from '@/hooks/useCloudData';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -144,6 +145,13 @@ export default function Index() {
                 <div className="journal-section">
                   <PlayerHeader profile={profile} seasonStats={seasonStats} games={games} />
                 </div>
+
+                {/* Spotify Player */}
+                {profile.themeMusicUrl && (
+                  <div className="journal-section">
+                    <SpotifyPlayer url={profile.themeMusicUrl} compact />
+                  </div>
+                )}
 
                 {/* Season Averages */}
                 <section className="journal-section">
