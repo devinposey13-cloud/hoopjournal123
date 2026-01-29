@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { SeasonStats, PlayerProfile, GameStats } from '@/types/basketball';
+import { SeasonStats, PlayerProfile, GameStats, HalfStats } from '@/types/basketball';
 import { format } from 'date-fns';
 
 export function exportSeasonStatsPdf(
@@ -139,5 +139,241 @@ export function exportSeasonStatsPdf(
     new Date(),
     'yyyy-MM-dd'
   )}.pdf`;
+  doc.save(fileName);
+}
+
+interface GameBoxScoreData {
+  game: GameStats;
+  firstHalf?: HalfStats;
+  secondHalf?: HalfStats;
+}
+
+export function exportGameBoxScorePdf(
+  profile: PlayerProfile,
+  gameData: GameBoxScoreData
+) {
+  const doc = new jsPDF({ orientation: 'landscape' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const { game, firstHalf, secondHalf } = gameData;
+
+  // Title Header
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Official Basketball Box Score - Game Totals - Final Statistics', pageWidth / 2, 12, { align: 'center' });
+  
+  doc.setFontSize(14);
+  doc.text(`${profile.team} vs ${game.opponent}`, pageWidth / 2, 20, { align: 'center' });
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(format(new Date(game.date), 'M/d/yy'), pageWidth / 2, 27, { align: 'center' });
+
+  // Team name and score
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${profile.team} ${game.points}`, 14, 40);
+
+  // Calculate percentages
+  const fgPct = game.fgAttempted > 0 ? ((game.fgMade / game.fgAttempted) * 100).toFixed(1) : '0.0';
+  const threePct = game.threePtAttempted > 0 ? ((game.threePtMade / game.threePtAttempted) * 100).toFixed(1) : '0.0';
+  const ftPct = game.ftAttempted > 0 ? ((game.ftMade / game.ftAttempted) * 100).toFixed(1) : '0.0';
+
+  // Main stats table
+  autoTable(doc, {
+    startY: 45,
+    head: [[
+      '##', 'Player', 
+      'Total\nFG-FGA', '3-Ptr\nFG-FGA', 'FT-FTA',
+      'Off', 'Def', 'Tot',
+      'PF', 'TP', 'A', 'TO', 'Blk', 'Stl', 'Min'
+    ]],
+    body: [
+      [
+        profile.number.toString().padStart(2, '0'),
+        profile.name,
+        `${game.fgMade}-${game.fgAttempted}`,
+        `${game.threePtMade}-${game.threePtAttempted}`,
+        `${game.ftMade}-${game.ftAttempted}`,
+        (game.offensiveRebounds || 0).toString(),
+        (game.defensiveRebounds || 0).toString(),
+        game.rebounds.toString(),
+        '0', // Personal fouls - not tracked
+        game.points.toString(),
+        game.assists.toString(),
+        game.turnovers.toString(),
+        game.blocks.toString(),
+        game.steals.toString(),
+        game.minutesPlayed.toString()
+      ],
+    ],
+    foot: [[
+      '', 'Totals',
+      `${game.fgMade}-${game.fgAttempted}`,
+      `${game.threePtMade}-${game.threePtAttempted}`,
+      `${game.ftMade}-${game.ftAttempted}`,
+      (game.offensiveRebounds || 0).toString(),
+      (game.defensiveRebounds || 0).toString(),
+      game.rebounds.toString(),
+      '0',
+      game.points.toString(),
+      game.assists.toString(),
+      game.turnovers.toString(),
+      game.blocks.toString(),
+      game.steals.toString(),
+      game.minutesPlayed.toString()
+    ]],
+    theme: 'plain',
+    styles: { 
+      fontSize: 9,
+      cellPadding: 2,
+      lineWidth: 0.1,
+      lineColor: [0, 0, 0],
+    },
+    headStyles: { 
+      fillColor: [255, 255, 255],
+      textColor: [0, 0, 0],
+      fontStyle: 'bold',
+      halign: 'center',
+      lineWidth: 0.1,
+    },
+    footStyles: {
+      fillColor: [255, 255, 255],
+      textColor: [0, 0, 0],
+      fontStyle: 'bold',
+      lineWidth: 0.1,
+    },
+    columnStyles: {
+      0: { cellWidth: 12, halign: 'center' },
+      1: { cellWidth: 45 },
+      2: { cellWidth: 20, halign: 'center' },
+      3: { cellWidth: 20, halign: 'center' },
+      4: { cellWidth: 18, halign: 'center' },
+      5: { cellWidth: 12, halign: 'center' },
+      6: { cellWidth: 12, halign: 'center' },
+      7: { cellWidth: 12, halign: 'center' },
+      8: { cellWidth: 12, halign: 'center' },
+      9: { cellWidth: 14, halign: 'center' },
+      10: { cellWidth: 12, halign: 'center' },
+      11: { cellWidth: 12, halign: 'center' },
+      12: { cellWidth: 12, halign: 'center' },
+      13: { cellWidth: 12, halign: 'center' },
+      14: { cellWidth: 14, halign: 'center' },
+    },
+    didDrawCell: (data) => {
+      // Draw vertical line after Rebounds section
+      if (data.column.index === 7 && data.section === 'body') {
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.3);
+        doc.line(
+          data.cell.x + data.cell.width,
+          data.cell.y,
+          data.cell.x + data.cell.width,
+          data.cell.y + data.cell.height
+        );
+      }
+    }
+  });
+
+  const tableEndY = (doc as any).lastAutoTable?.finalY || 80;
+
+  // Half-by-half shooting breakdown
+  if (firstHalf && secondHalf) {
+    const first1HFgPct = firstHalf.fgAttempted > 0 
+      ? ((firstHalf.fgMade / firstHalf.fgAttempted) * 100).toFixed(1) 
+      : '0.0';
+    const second2HFgPct = secondHalf.fgAttempted > 0 
+      ? ((secondHalf.fgMade / secondHalf.fgAttempted) * 100).toFixed(1) 
+      : '0.0';
+    
+    const first1H3Pct = firstHalf.threePtAttempted > 0 
+      ? ((firstHalf.threePtMade / firstHalf.threePtAttempted) * 100).toFixed(1) 
+      : '0.0';
+    const second2H3Pct = secondHalf.threePtAttempted > 0 
+      ? ((secondHalf.threePtMade / secondHalf.threePtAttempted) * 100).toFixed(1) 
+      : '0.0';
+    
+    const first1HFtPct = firstHalf.ftAttempted > 0 
+      ? ((firstHalf.ftMade / firstHalf.ftAttempted) * 100).toFixed(1) 
+      : '0.0';
+    const second2HFtPct = secondHalf.ftAttempted > 0 
+      ? ((secondHalf.ftMade / secondHalf.ftAttempted) * 100).toFixed(1) 
+      : '0.0';
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    
+    const shootingY = tableEndY + 8;
+    
+    // FG% breakdown
+    doc.text(
+      `FG % 1st Half: ${firstHalf.fgMade}-${firstHalf.fgAttempted}  ${first1HFgPct}%    ` +
+      `2nd half: ${secondHalf.fgMade}-${secondHalf.fgAttempted}  ${second2HFgPct}%    ` +
+      `Game: ${game.fgMade}-${game.fgAttempted}  ${fgPct}%`,
+      14, shootingY
+    );
+
+    // 3FG% breakdown
+    doc.text(
+      `3FG % 1st Half: ${firstHalf.threePtMade}-${firstHalf.threePtAttempted}  ${first1H3Pct}%    ` +
+      `2nd half: ${secondHalf.threePtMade}-${secondHalf.threePtAttempted}  ${second2H3Pct}%    ` +
+      `Game: ${game.threePtMade}-${game.threePtAttempted}  ${threePct}%`,
+      14, shootingY + 5
+    );
+
+    // FT% breakdown
+    doc.text(
+      `FT % 1st Half: ${firstHalf.ftMade}-${firstHalf.ftAttempted}  ${first1HFtPct}%    ` +
+      `2nd half: ${secondHalf.ftMade}-${secondHalf.ftAttempted}  ${second2HFtPct}%    ` +
+      `Game: ${game.ftMade}-${game.ftAttempted}  ${ftPct}%`,
+      14, shootingY + 10
+    );
+
+    // Score by periods table
+    const periodsY = shootingY + 20;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Score by periods', 14, periodsY);
+
+    autoTable(doc, {
+      startY: periodsY + 3,
+      head: [['', '1st', '2nd', 'Total']],
+      body: [
+        [profile.team, firstHalf.points.toString(), secondHalf.points.toString(), game.points.toString()],
+      ],
+      theme: 'plain',
+      styles: { 
+        fontSize: 9,
+        cellPadding: 2,
+        lineWidth: 0.1,
+        lineColor: [0, 0, 0],
+      },
+      headStyles: { 
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+      },
+      columnStyles: {
+        0: { cellWidth: 40 },
+        1: { cellWidth: 20, halign: 'center' },
+        2: { cellWidth: 20, halign: 'center' },
+        3: { cellWidth: 25, halign: 'center', fontStyle: 'bold' },
+      },
+      tableWidth: 105,
+    });
+  } else {
+    // If no half data, just show game totals
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    
+    const shootingY = tableEndY + 8;
+    doc.text(`FG %: ${game.fgMade}-${game.fgAttempted}  ${fgPct}%`, 14, shootingY);
+    doc.text(`3FG %: ${game.threePtMade}-${game.threePtAttempted}  ${threePct}%`, 14, shootingY + 5);
+    doc.text(`FT %: ${game.ftMade}-${game.ftAttempted}  ${ftPct}%`, 14, shootingY + 10);
+  }
+
+  // Save the PDF
+  const fileName = `${profile.team.replace(/\s+/g, '_')}_vs_${game.opponent.replace(/\s+/g, '_')}_${format(
+    new Date(game.date),
+    'yyyy-MM-dd'
+  )}_BoxScore.pdf`;
   doc.save(fileName);
 }

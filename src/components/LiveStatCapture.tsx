@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { FireCelebration } from './FireCelebration';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
+import { HalfStats } from '@/types/basketball';
 
 interface LiveStats {
   points: number;
@@ -38,12 +39,19 @@ interface StatAction {
   type: keyof LiveStats;
   value: number;
   label: string;
+  half: 1 | 2;
+}
+
+export interface LiveStatsSaveData {
+  total: LiveStats;
+  firstHalf: HalfStats;
+  secondHalf: HalfStats;
 }
 
 interface LiveStatCaptureProps {
   opponent: string;
   initialStats?: Partial<LiveStats>;
-  onSave: (stats: LiveStats) => void;
+  onSave: (stats: LiveStats, halfData?: LiveStatsSaveData) => void;
   onCancel: () => void;
   isSaving?: boolean;
 }
@@ -72,11 +80,42 @@ export function LiveStatCapture({
   onCancel,
   isSaving = false 
 }: LiveStatCaptureProps) {
-  const [stats, setStats] = useState<LiveStats>({ ...defaultStats, ...initialStats });
+  const [currentHalf, setCurrentHalf] = useState<1 | 2>(1);
+  const [firstHalfStats, setFirstHalfStats] = useState<LiveStats>({ ...defaultStats });
+  const [secondHalfStats, setSecondHalfStats] = useState<LiveStats>({ ...defaultStats });
   const [history, setHistory] = useState<StatAction[]>([]);
   const [lastAction, setLastAction] = useState<string | null>(null);
   const [showFireCelebration, setShowFireCelebration] = useState(false);
   const { playSound } = useSoundEffects();
+
+  // Initialize with any passed initial stats (goes to first half)
+  useEffect(() => {
+    if (initialStats) {
+      setFirstHalfStats(prev => ({ ...prev, ...initialStats }));
+    }
+  }, []);
+
+  // Calculate total stats from both halves
+  const totalStats: LiveStats = {
+    points: firstHalfStats.points + secondHalfStats.points,
+    fgMade: firstHalfStats.fgMade + secondHalfStats.fgMade,
+    fgAttempted: firstHalfStats.fgAttempted + secondHalfStats.fgAttempted,
+    threePtMade: firstHalfStats.threePtMade + secondHalfStats.threePtMade,
+    threePtAttempted: firstHalfStats.threePtAttempted + secondHalfStats.threePtAttempted,
+    ftMade: firstHalfStats.ftMade + secondHalfStats.ftMade,
+    ftAttempted: firstHalfStats.ftAttempted + secondHalfStats.ftAttempted,
+    rebounds: firstHalfStats.rebounds + secondHalfStats.rebounds,
+    offensiveRebounds: firstHalfStats.offensiveRebounds + secondHalfStats.offensiveRebounds,
+    defensiveRebounds: firstHalfStats.defensiveRebounds + secondHalfStats.defensiveRebounds,
+    assists: firstHalfStats.assists + secondHalfStats.assists,
+    steals: firstHalfStats.steals + secondHalfStats.steals,
+    blocks: firstHalfStats.blocks + secondHalfStats.blocks,
+    turnovers: firstHalfStats.turnovers + secondHalfStats.turnovers,
+  };
+
+  // Get current half stats for display
+  const currentStats = currentHalf === 1 ? firstHalfStats : secondHalfStats;
+  const setCurrentStats = currentHalf === 1 ? setFirstHalfStats : setSecondHalfStats;
 
   // Auto-hide fire celebration after delay
   useEffect(() => {
@@ -86,7 +125,9 @@ export function LiveStatCapture({
     }
   }, [showFireCelebration]);
 
-  const recordStat = useCallback((action: StatAction) => {
+  const recordStat = useCallback((action: Omit<StatAction, 'half'>) => {
+    const fullAction: StatAction = { ...action, half: currentHalf };
+    
     // Check if this is a made shot to trigger fire celebration
     const isMadeShot = action.type === 'fgMade' || action.type === 'threePtMade' || action.type === 'ftMade';
     const isMiss = action.type === 'fgAttempted' || action.type === 'threePtAttempted' || action.type === 'ftAttempted';
@@ -108,7 +149,7 @@ export function LiveStatCapture({
       playSound('turnover');
     }
     
-    setStats(prev => {
+    setCurrentStats(prev => {
       const newStats = { ...prev };
       
       // Handle shot makes - also increment attempts and points
@@ -133,10 +174,10 @@ export function LiveStatCapture({
         newStats.ftAttempted += 1;
       } else if (action.type === 'offensiveRebounds') {
         newStats.offensiveRebounds += 1;
-        newStats.rebounds += 1; // Also increment total
+        newStats.rebounds += 1;
       } else if (action.type === 'defensiveRebounds') {
         newStats.defensiveRebounds += 1;
-        newStats.rebounds += 1; // Also increment total
+        newStats.rebounds += 1;
       } else {
         newStats[action.type] += action.value;
       }
@@ -144,7 +185,7 @@ export function LiveStatCapture({
       return newStats;
     });
     
-    setHistory(prev => [...prev, action]);
+    setHistory(prev => [...prev, fullAction]);
     setLastAction(action.label);
     
     // Trigger fire celebration for made shots
@@ -154,14 +195,15 @@ export function LiveStatCapture({
     
     // Clear the last action indicator after a moment
     setTimeout(() => setLastAction(null), 1500);
-  }, [playSound]);
+  }, [currentHalf, setCurrentStats, playSound]);
 
   const undoLast = useCallback(() => {
     if (history.length === 0) return;
     
     const lastAction = history[history.length - 1];
+    const targetSetStats = lastAction.half === 1 ? setFirstHalfStats : setSecondHalfStats;
     
-    setStats(prev => {
+    targetSetStats(prev => {
       const newStats = { ...prev };
       
       // Reverse the action
@@ -200,12 +242,17 @@ export function LiveStatCapture({
   }, [history]);
 
   const handleSave = () => {
-    onSave(stats);
+    const saveData: LiveStatsSaveData = {
+      total: totalStats,
+      firstHalf: firstHalfStats,
+      secondHalf: secondHalfStats,
+    };
+    onSave(totalStats, saveData);
   };
 
-  const fgPct = stats.fgAttempted > 0 ? Math.round((stats.fgMade / stats.fgAttempted) * 100) : 0;
-  const threePct = stats.threePtAttempted > 0 ? Math.round((stats.threePtMade / stats.threePtAttempted) * 100) : 0;
-  const ftPct = stats.ftAttempted > 0 ? Math.round((stats.ftMade / stats.ftAttempted) * 100) : 0;
+  const fgPct = currentStats.fgAttempted > 0 ? Math.round((currentStats.fgMade / currentStats.fgAttempted) * 100) : 0;
+  const threePct = currentStats.threePtAttempted > 0 ? Math.round((currentStats.threePtMade / currentStats.threePtAttempted) * 100) : 0;
+  const ftPct = currentStats.ftAttempted > 0 ? Math.round((currentStats.ftMade / currentStats.ftAttempted) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -229,43 +276,83 @@ export function LiveStatCapture({
       {/* Last Action Indicator */}
       {lastAction && (
         <div className="bg-primary/20 text-primary text-center py-2 text-sm font-medium animate-pulse">
-          + {lastAction}
+          + {lastAction} ({currentHalf === 1 ? '1st' : '2nd'} Half)
         </div>
       )}
 
-      {/* Points Display */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 py-8 text-center">
-        <p className="text-6xl font-bold text-primary-foreground">{stats.points}</p>
-        <p className="text-primary-foreground/80 uppercase tracking-wider text-sm mt-1">Points</p>
+      {/* Points Display - Shows Total */}
+      <div className="bg-gradient-to-r from-primary to-primary/80 py-6 text-center">
+        <p className="text-5xl font-bold text-primary-foreground">{totalStats.points}</p>
+        <p className="text-primary-foreground/80 uppercase tracking-wider text-sm mt-1">Total Points</p>
+        <div className="flex justify-center gap-6 mt-2 text-primary-foreground/70 text-sm">
+          <span>1st: {firstHalfStats.points}</span>
+          <span>2nd: {secondHalfStats.points}</span>
+        </div>
       </div>
 
-      {/* Quick Stats Bar */}
+      {/* Quick Stats Bar - Shows Total */}
       <div className="grid grid-cols-5 gap-1 p-2 bg-card border-b border-border">
         <div className="text-center py-2">
-          <p className="text-lg font-bold">{stats.rebounds}</p>
+          <p className="text-lg font-bold">{totalStats.rebounds}</p>
           <p className="text-[10px] text-muted-foreground uppercase">REB</p>
-          <p className="text-[9px] text-muted-foreground">{stats.offensiveRebounds}O / {stats.defensiveRebounds}D</p>
+          <p className="text-[9px] text-muted-foreground">{totalStats.offensiveRebounds}O / {totalStats.defensiveRebounds}D</p>
         </div>
         <div className="text-center py-2">
-          <p className="text-lg font-bold">{stats.assists}</p>
+          <p className="text-lg font-bold">{totalStats.assists}</p>
           <p className="text-[10px] text-muted-foreground uppercase">AST</p>
         </div>
         <div className="text-center py-2">
-          <p className="text-lg font-bold">{stats.steals}</p>
+          <p className="text-lg font-bold">{totalStats.steals}</p>
           <p className="text-[10px] text-muted-foreground uppercase">STL</p>
         </div>
         <div className="text-center py-2">
-          <p className="text-lg font-bold">{stats.blocks}</p>
+          <p className="text-lg font-bold">{totalStats.blocks}</p>
           <p className="text-[10px] text-muted-foreground uppercase">BLK</p>
         </div>
         <div className="text-center py-2">
-          <p className="text-lg font-bold">{stats.turnovers}</p>
+          <p className="text-lg font-bold">{totalStats.turnovers}</p>
           <p className="text-[10px] text-muted-foreground uppercase">TO</p>
         </div>
       </div>
 
       {/* Remote Buttons */}
       <div className="flex-1 p-4 space-y-4 overflow-auto">
+        {/* Half Selection */}
+        <div className="flex gap-2 justify-center">
+          <Button
+            variant={currentHalf === 1 ? "default" : "outline"}
+            onClick={() => setCurrentHalf(1)}
+            className={cn(
+              "flex-1 max-w-[150px] font-semibold",
+              currentHalf === 1 && "gradient-primary"
+            )}
+          >
+            1st Half
+          </Button>
+          <Button
+            variant={currentHalf === 2 ? "default" : "outline"}
+            onClick={() => setCurrentHalf(2)}
+            className={cn(
+              "flex-1 max-w-[150px] font-semibold",
+              currentHalf === 2 && "gradient-primary"
+            )}
+          >
+            2nd Half
+          </Button>
+        </div>
+
+        {/* Current Half Stats Summary */}
+        <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+            {currentHalf === 1 ? '1st' : '2nd'} Half Stats
+          </p>
+          <div className="flex justify-center gap-4 text-sm">
+            <span>{currentStats.points} PTS</span>
+            <span>{currentStats.rebounds} REB</span>
+            <span>{currentStats.assists} AST</span>
+          </div>
+        </div>
+
         {/* Shooting Section */}
         <div className="space-y-3">
           <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Shooting</h3>
@@ -278,7 +365,7 @@ export function LiveStatCapture({
                 <span className="font-medium">2PT Field Goals</span>
               </div>
               <span className="text-sm text-muted-foreground">
-                {stats.fgMade - stats.threePtMade}/{stats.fgAttempted - stats.threePtAttempted} ({fgPct}%)
+                {currentStats.fgMade - currentStats.threePtMade}/{currentStats.fgAttempted - currentStats.threePtAttempted} ({fgPct}%)
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -303,7 +390,7 @@ export function LiveStatCapture({
                 <span className="font-medium">3PT Field Goals</span>
               </div>
               <span className="text-sm text-muted-foreground">
-                {stats.threePtMade}/{stats.threePtAttempted} ({threePct}%)
+                {currentStats.threePtMade}/{currentStats.threePtAttempted} ({threePct}%)
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -328,7 +415,7 @@ export function LiveStatCapture({
                 <span className="font-medium">Free Throws</span>
               </div>
               <span className="text-sm text-muted-foreground">
-                {stats.ftMade}/{stats.ftAttempted} ({ftPct}%)
+                {currentStats.ftMade}/{currentStats.ftAttempted} ({ftPct}%)
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -358,19 +445,19 @@ export function LiveStatCapture({
                 <span className="font-medium">Rebounds</span>
               </div>
               <span className="text-sm text-muted-foreground">
-                {stats.rebounds} ({stats.offensiveRebounds}O / {stats.defensiveRebounds}D)
+                {currentStats.rebounds} ({currentStats.offensiveRebounds}O / {currentStats.defensiveRebounds}D)
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <StatButton 
                 label="Offensive" 
-                count={stats.offensiveRebounds}
+                count={currentStats.offensiveRebounds}
                 variant="success"
                 onPress={() => recordStat({ type: 'offensiveRebounds', value: 1, label: 'Off. Rebound' })}
               />
               <StatButton 
                 label="Defensive" 
-                count={stats.defensiveRebounds}
+                count={currentStats.defensiveRebounds}
                 variant="primary"
                 onPress={() => recordStat({ type: 'defensiveRebounds', value: 1, label: 'Def. Rebound' })}
               />
@@ -381,21 +468,21 @@ export function LiveStatCapture({
             <StatButton 
               label="Assist" 
               icon={Zap}
-              count={stats.assists}
+              count={currentStats.assists}
               variant="primary"
               onPress={() => recordStat({ type: 'assists', value: 1, label: 'Assist' })}
             />
             <StatButton 
               label="Steal" 
               icon={Shield}
-              count={stats.steals}
+              count={currentStats.steals}
               variant="primary"
               onPress={() => recordStat({ type: 'steals', value: 1, label: 'Steal' })}
             />
             <StatButton 
               label="Block" 
               icon={HandMetal}
-              count={stats.blocks}
+              count={currentStats.blocks}
               variant="primary"
               onPress={() => recordStat({ type: 'blocks', value: 1, label: 'Block' })}
             />
@@ -404,7 +491,7 @@ export function LiveStatCapture({
           <StatButton 
             label="Turnover" 
             icon={AlertCircle}
-            count={stats.turnovers}
+            count={currentStats.turnovers}
             variant="warning"
             onPress={() => recordStat({ type: 'turnovers', value: 1, label: 'Turnover' })}
             fullWidth
