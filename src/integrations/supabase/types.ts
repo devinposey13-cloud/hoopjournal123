@@ -166,6 +166,7 @@ export type Database = {
           date: string
           fg_attempted: number
           fg_made: number
+          fouls: number
           ft_attempted: number
           ft_made: number
           game_photo_url: string | null
@@ -190,6 +191,7 @@ export type Database = {
           date: string
           fg_attempted?: number
           fg_made?: number
+          fouls?: number
           ft_attempted?: number
           ft_made?: number
           game_photo_url?: string | null
@@ -214,6 +216,7 @@ export type Database = {
           date?: string
           fg_attempted?: number
           fg_made?: number
+          fouls?: number
           ft_attempted?: number
           ft_made?: number
           game_photo_url?: string | null

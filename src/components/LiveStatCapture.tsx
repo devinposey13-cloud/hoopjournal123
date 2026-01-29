@@ -14,7 +14,8 @@ import {
   X,
   Camera,
   ImageIcon,
-  Trash2
+  Trash2,
+  UserX
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FireCelebration } from './FireCelebration';
@@ -48,6 +49,7 @@ interface LiveStats {
   steals: number;
   blocks: number;
   turnovers: number;
+  fouls: number;
 }
 
 interface StatAction {
@@ -89,6 +91,7 @@ const defaultStats: LiveStats = {
   steals: 0,
   blocks: 0,
   turnovers: 0,
+  fouls: 0,
 };
 
 export function LiveStatCapture({ 
@@ -135,6 +138,7 @@ export function LiveStatCapture({
     steals: firstHalfStats.steals + secondHalfStats.steals,
     blocks: firstHalfStats.blocks + secondHalfStats.blocks,
     turnovers: firstHalfStats.turnovers + secondHalfStats.turnovers,
+    fouls: firstHalfStats.fouls + secondHalfStats.fouls,
   };
 
   // Get current half stats for display
@@ -418,7 +422,7 @@ export function LiveStatCapture({
       </div>
 
       {/* Quick Stats Bar - Shows Total */}
-      <div className="grid grid-cols-5 gap-1 p-2 bg-card border-b border-border">
+      <div className="grid grid-cols-6 gap-1 p-2 bg-card border-b border-border">
         <div className="text-center py-2">
           <p className="text-lg font-bold">{totalStats.rebounds}</p>
           <p className="text-[10px] text-muted-foreground uppercase">REB</p>
@@ -439,6 +443,10 @@ export function LiveStatCapture({
         <div className="text-center py-2">
           <p className="text-lg font-bold">{totalStats.turnovers}</p>
           <p className="text-[10px] text-muted-foreground uppercase">TO</p>
+        </div>
+        <div className="text-center py-2">
+          <p className="text-lg font-bold">{totalStats.fouls}</p>
+          <p className="text-[10px] text-muted-foreground uppercase">PF</p>
         </div>
       </div>
 
@@ -657,14 +665,22 @@ export function LiveStatCapture({
             />
           </div>
 
-          <StatButton 
-            label="Turnover" 
-            icon={AlertCircle}
-            count={currentStats.turnovers}
-            variant="warning"
-            onPress={() => recordStat({ type: 'turnovers', value: 1, label: 'Turnover' })}
-            fullWidth
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <StatButton 
+              label="Turnover" 
+              icon={AlertCircle}
+              count={currentStats.turnovers}
+              variant="warning"
+              onPress={() => recordStat({ type: 'turnovers', value: 1, label: 'Turnover' })}
+            />
+            <StatButton 
+              label="Foul" 
+              icon={UserX}
+              count={currentStats.fouls}
+              variant="danger"
+              onPress={() => recordStat({ type: 'fouls', value: 1, label: 'Personal Foul' })}
+            />
+          </div>
         </div>
       </div>
 
