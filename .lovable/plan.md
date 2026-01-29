@@ -1,126 +1,40 @@
 
-# Add Instagram URL to User Profile
 
-## Overview
-Add an Instagram URL field to user profile settings that allows players to link their Instagram account. Display an Instagram button on the dashboard's PlayerHeader component that links to the user's Instagram profile when configured.
+## Plan: Fix User Deletion and Clean Up Orphaned Auth User
 
-## Changes Required
+### Overview
+We need to fix the issue where users are only being deleted from application tables but not from the authentication system, and manually clean up the orphaned auth user.
 
-### 1. Database Schema Update
-Add a new nullable column `instagram_url` to the `player_settings` table to store the user's Instagram profile URL.
+### Technical Details
 
-```sql
-ALTER TABLE player_settings 
-ADD COLUMN instagram_url text;
-```
+#### Problem Analysis
+- The `admin-delete-user` edge function was created but may not have been properly deployed or called
+- The AdminPanel component needs to ensure it's calling the edge function correctly
+- The user `jamaur.jackson@gmail.com` (ID: `6fda0654-9b6c-403d-8c8a-21293f368dd5`) exists in auth.users but not in player_settings
 
-### 2. TypeScript Types Update
-**File: `src/types/basketball.ts`**
+#### Step 1: Verify AdminPanel Integration
+Review the AdminPanel component to ensure:
+- It correctly invokes the `admin-delete-user` edge function
+- It passes the correct user ID (the auth user ID, not the player_settings ID)
+- Error handling shows any issues to the admin
 
-Add `instagramUrl` to the `PlayerProfile` interface:
-```typescript
-export interface PlayerProfile {
-  // ... existing fields
-  instagramUrl?: string;
-}
-```
+#### Step 2: Fix AdminPanel User ID Mapping
+The AdminPanel fetches from `player_settings` which has its own `id` and a `user_id` column. We need to ensure:
+- We're passing the `user_id` (auth user ID) to the edge function, not the table row `id`
+- The edge function receives `targetUserId` as the auth.users ID
 
-### 3. Settings Panel Update
-**File: `src/components/SettingsPanel.tsx`**
+#### Step 3: Redeploy Edge Function
+Ensure the `admin-delete-user` function is deployed and working properly.
 
-Add a new input field for the Instagram URL in the settings form:
-- Place it after the Theme Music URL field
-- Include an Instagram icon
-- Add placeholder text for expected format (e.g., `https://instagram.com/username`)
-- Add helper text explaining the field
+#### Step 4: Clean Up Orphaned User
+Call the edge function directly to delete the orphaned auth user `6fda0654-9b6c-403d-8c8a-21293f368dd5`.
 
-### 4. Data Hook Update
-**File: `src/hooks/useCloudData.ts`**
+### Files to Modify
+1. **`src/components/AdminPanel.tsx`** - Verify/fix the user ID being passed to the delete function
+2. **Test the `admin-delete-user` edge function** - Ensure it's deployed and call it to clean up the orphaned user
 
-Update two locations:
-1. **Fetch profile** (around line 188-201): Map `instagram_url` from database to `instagramUrl` in the profile state
-2. **Update profile** (around line 648-680): Include `instagram_url` in the upsert operation
+### Testing
+1. Call the edge function to delete the orphaned user ID
+2. Attempt to register with "jamaur.jackson@gmail.com" - should succeed
+3. Test the full flow: create user → delete from admin panel → re-register with same email
 
-### 5. Player Header Update
-**File: `src/components/PlayerHeader.tsx`**
-
-Add an Instagram icon button next to the player info that:
-- Only displays when `profile.instagramUrl` has a value
-- Opens the Instagram URL in a new tab when clicked
-- Uses a subtle, branded Instagram style
-
-### 6. Public Profile Update (Optional Enhancement)
-**File: `src/pages/PublicProfile.tsx`**
-
-If the user has a public profile and Instagram URL configured, display the Instagram button on their public profile page as well.
-
----
-
-## Technical Details
-
-### Database Migration
-```sql
--- Add instagram_url column to player_settings
-ALTER TABLE player_settings 
-ADD COLUMN instagram_url text;
-```
-
-### Type Definition Change
-```typescript
-// src/types/basketball.ts
-export interface PlayerProfile {
-  name: string;
-  team: string;
-  position: string;
-  number: number;
-  height: string;
-  grade: string;
-  avatar?: string;
-  username?: string;
-  displayName?: string;
-  isProfilePublic?: boolean;
-  themeMusicUrl?: string;
-  instagramUrl?: string;  // NEW
-}
-```
-
-### Settings Panel Addition
-The Instagram URL input will include:
-- Instagram icon from lucide-react
-- Input validation for URL format
-- Helper text: "Link your Instagram profile to display on your dashboard"
-
-### PlayerHeader Instagram Button
-```text
-+-------------------------------------------+
-| [Avatar] Player Name                      |
-|          #23 • Guard • Team • 8th Grade   |
-|          [Instagram Icon Button]          |  <- NEW
-+-------------------------------------------+
-```
-
-The button will:
-- Be conditionally rendered only when `instagramUrl` exists
-- Open the link in a new tab with `rel="noopener noreferrer"`
-- Use a recognizable Instagram icon
-
-### Data Flow
-```text
-Settings Panel (Input)
-    ↓
-useCloudData.updateProfile()
-    ↓
-Supabase player_settings.instagram_url
-    ↓
-useCloudData.fetchData()
-    ↓
-PlayerHeader (Display Button)
-```
-
-## Files to Modify
-1. `src/types/basketball.ts` - Add `instagramUrl` to PlayerProfile
-2. `src/components/SettingsPanel.tsx` - Add Instagram URL input field
-3. `src/hooks/useCloudData.ts` - Handle instagramUrl in fetch and update
-4. `src/components/PlayerHeader.tsx` - Add Instagram button
-5. `src/pages/PublicProfile.tsx` - Show Instagram on public profile
-6. Database migration - Add `instagram_url` column
