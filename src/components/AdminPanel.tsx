@@ -88,6 +88,8 @@ export function AdminPanel() {
   const [resettingPassword, setResettingPassword] = useState<string | null>(null);
   const [selectedFeedback, setSelectedFeedback] = useState<UserFeedback | null>(null);
   const [feedbackNotes, setFeedbackNotes] = useState('');
+  const [orphanUserId, setOrphanUserId] = useState('');
+  const [deletingOrphan, setDeletingOrphan] = useState(false);
 
   // Fetch users and reports
   useEffect(() => {
@@ -237,6 +239,39 @@ export function AdminPanel() {
       toast.error(error instanceof Error ? error.message : 'Failed to delete user');
     } finally {
       setDeletingUser(null);
+    }
+  }
+
+  // Delete orphaned auth user (exists in auth.users but not in player_settings)
+  async function handleDeleteOrphanUser() {
+    if (!orphanUserId.trim()) {
+      toast.error('Please enter a user ID');
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete this orphaned auth user? This will allow them to sign up again with the same email.')) return;
+
+    setDeletingOrphan(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ targetUserId: orphanUserId.trim() }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to delete orphan user');
+
+      toast.success('Orphaned user deleted - they can now sign up again');
+      setOrphanUserId('');
+    } catch (error) {
+      console.error('Error deleting orphan user:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete orphan user');
+    } finally {
+      setDeletingOrphan(false);
     }
   }
 
@@ -510,6 +545,49 @@ export function AdminPanel() {
 
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-4">
+          {/* Orphan User Cleanup */}
+          <Card className="border-dashed border-amber-500/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                Delete Orphaned Auth User
+              </CardTitle>
+              <CardDescription className="text-xs">
+                For users deleted from the app but still in auth system (can't re-register)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Enter auth user ID (UUID)"
+                  value={orphanUserId}
+                  onChange={(e) => setOrphanUserId(e.target.value)}
+                  className="max-w-md font-mono text-sm"
+                />
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteOrphanUser}
+                  disabled={deletingOrphan || !orphanUserId.trim()}
+                >
+                  {deletingOrphan ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Auth User
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Use this for: <code className="bg-muted px-1 rounded">6fda0654-9b6c-403d-8c8a-21293f368dd5</code> (jamaur.jackson@gmail.com)
+              </p>
+            </CardContent>
+          </Card>
+
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
