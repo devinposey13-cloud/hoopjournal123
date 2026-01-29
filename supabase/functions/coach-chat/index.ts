@@ -6,11 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper to determine if player is in 8th grade or below
+// Helper to determine if player is in 8th grade or below (young player)
 function isYoungPlayer(grade: string): boolean {
   if (!grade) return false;
   const normalizedGrade = grade.toLowerCase().trim();
-  const youngGrades = ['6th grade', '7th grade', '8th grade', '6th', '7th', '8th', 'middle school', 'elementary'];
+  const youngGrades = ['1st grade', '2nd grade', '3rd grade', '4th grade', '5th grade', '6th grade', '7th grade', '8th grade', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', 'middle school', 'elementary'];
   return youngGrades.some(g => normalizedGrade.includes(g.replace(' grade', '')) || normalizedGrade === g);
 }
 
