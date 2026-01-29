@@ -241,6 +241,45 @@ export type Database = {
           },
         ]
       }
+      milestone_definitions: {
+        Row: {
+          category: string
+          check_type: string
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          name: string
+          rarity: string
+          secondary_threshold: number | null
+          threshold: number
+        }
+        Insert: {
+          category: string
+          check_type: string
+          created_at?: string
+          description: string
+          icon: string
+          id?: string
+          name: string
+          rarity: string
+          secondary_threshold?: number | null
+          threshold?: number
+        }
+        Update: {
+          category?: string
+          check_type?: string
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          rarity?: string
+          secondary_threshold?: number | null
+          threshold?: number
+        }
+        Relationships: []
+      }
       password_reset_requests: {
         Row: {
           admin_notes: string | null
@@ -308,6 +347,61 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "player_badges_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_milestones: {
+        Row: {
+          earned_at: string
+          game_id: string | null
+          id: string
+          is_viewed: boolean
+          milestone_id: string
+          season_id: string | null
+          stats_snapshot: Json
+          user_id: string
+        }
+        Insert: {
+          earned_at?: string
+          game_id?: string | null
+          id?: string
+          is_viewed?: boolean
+          milestone_id: string
+          season_id?: string | null
+          stats_snapshot?: Json
+          user_id: string
+        }
+        Update: {
+          earned_at?: string
+          game_id?: string | null
+          id?: string
+          is_viewed?: boolean
+          milestone_id?: string
+          season_id?: string | null
+          stats_snapshot?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_milestones_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_milestones_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "milestone_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_milestones_season_id_fkey"
             columns: ["season_id"]
             isOneToOne: false
             referencedRelation: "seasons"
@@ -504,71 +598,6 @@ export type Database = {
             columns: ["scheduled_game_id"]
             isOneToOne: false
             referencedRelation: "scheduled_games"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      trading_cards: {
-        Row: {
-          athleticism_rating: number
-          badges_earned: Json
-          created_at: string
-          defense_rating: number
-          games_played: number
-          id: string
-          iq_rating: number
-          offense_rating: number
-          overall_rating: number
-          player_title: string | null
-          playmaking_rating: number
-          rarity: string
-          scouting_report: string | null
-          season_id: string | null
-          stats_snapshot: Json
-          user_id: string
-        }
-        Insert: {
-          athleticism_rating?: number
-          badges_earned?: Json
-          created_at?: string
-          defense_rating?: number
-          games_played?: number
-          id?: string
-          iq_rating?: number
-          offense_rating?: number
-          overall_rating?: number
-          player_title?: string | null
-          playmaking_rating?: number
-          rarity?: string
-          scouting_report?: string | null
-          season_id?: string | null
-          stats_snapshot?: Json
-          user_id: string
-        }
-        Update: {
-          athleticism_rating?: number
-          badges_earned?: Json
-          created_at?: string
-          defense_rating?: number
-          games_played?: number
-          id?: string
-          iq_rating?: number
-          offense_rating?: number
-          overall_rating?: number
-          player_title?: string | null
-          playmaking_rating?: number
-          rarity?: string
-          scouting_report?: string | null
-          season_id?: string | null
-          stats_snapshot?: Json
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "trading_cards_season_id_fkey"
-            columns: ["season_id"]
-            isOneToOne: false
-            referencedRelation: "seasons"
             referencedColumns: ["id"]
           },
         ]
