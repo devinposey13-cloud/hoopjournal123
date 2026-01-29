@@ -463,7 +463,42 @@ export default function GameDetail() {
           </div>
         </div>
 
-        {/* Additional Info */}
+        {/* Other Stats */}
+        <div className="stat-card mb-6">
+          <h2 className="text-lg font-semibold mb-4">Performance Stats</h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="text-center p-4 bg-secondary/30 rounded-lg">
+              <Repeat className="w-6 h-6 mx-auto mb-2 text-blue-400" />
+              <p className="text-3xl font-bold">{game.rebounds}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">Rebounds</p>
+              {(game.offensiveRebounds || game.defensiveRebounds) && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {game.offensiveRebounds || 0}O / {game.defensiveRebounds || 0}D
+                </p>
+              )}
+            </div>
+            <div className="text-center p-4 bg-secondary/30 rounded-lg">
+              <Zap className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
+              <p className="text-3xl font-bold">{game.assists}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">Assists</p>
+            </div>
+            <div className="text-center p-4 bg-secondary/30 rounded-lg">
+              <Shield className="w-6 h-6 mx-auto mb-2 text-green-400" />
+              <p className="text-3xl font-bold">{game.steals}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">Steals</p>
+            </div>
+            <div className="text-center p-4 bg-secondary/30 rounded-lg">
+              <HandMetal className="w-6 h-6 mx-auto mb-2 text-purple-400" />
+              <p className="text-3xl font-bold">{game.blocks}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">Blocks</p>
+            </div>
+            <div className="text-center p-4 bg-secondary/30 rounded-lg">
+              <AlertCircle className="w-6 h-6 mx-auto mb-2 text-orange-400" />
+              <p className="text-3xl font-bold">{game.turnovers}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">Turnovers</p>
+            </div>
+          </div>
+        </div>
         <div className="stat-card">
           <h2 className="text-lg font-semibold mb-4">Game Summary</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
