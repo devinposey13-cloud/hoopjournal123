@@ -147,6 +147,7 @@ export type Database = {
           is_profile_public: boolean
           name: string
           number: number
+          phone: string | null
           position: string
           team: string
           updated_at: string
@@ -162,6 +163,7 @@ export type Database = {
           is_profile_public?: boolean
           name?: string
           number?: number
+          phone?: string | null
           position?: string
           team?: string
           updated_at?: string
@@ -177,6 +179,7 @@ export type Database = {
           is_profile_public?: boolean
           name?: string
           number?: number
+          phone?: string | null
           position?: string
           team?: string
           updated_at?: string

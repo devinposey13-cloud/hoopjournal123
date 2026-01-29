@@ -4,13 +4,41 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { LogIn, UserPlus, Loader2, AtSign } from 'lucide-react';
+import { LogIn, UserPlus, Loader2, AtSign, Mail, Phone } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 import { supabase } from '@/integrations/supabase/client';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+// Normalize phone number to E.164 format (+1XXXXXXXXXX)
+const normalizePhoneNumber = (phone: string): string => {
+  // Remove all non-digit characters
+  const digits = phone.replace(/\D/g, '');
+  
+  // If it starts with 1 and has 11 digits, add +
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return `+${digits}`;
+  }
+  
+  // If it has 10 digits, assume US and add +1
+  if (digits.length === 10) {
+    return `+1${digits}`;
+  }
+  
+  // Return as-is with + prefix if it doesn't match expected formats
+  return digits.startsWith('+') ? digits : `+${digits}`;
+};
+
+// Validate phone number format
+const isValidPhoneNumber = (phone: string): boolean => {
+  const digits = phone.replace(/\D/g, '');
+  return digits.length === 10 || (digits.length === 11 && digits.startsWith('1'));
+};
 
 export function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [usernameError, setUsernameError] = useState('');
@@ -44,8 +72,15 @@ export function AuthForm() {
     setLoading(true);
 
     try {
+      // Validate phone number if using phone auth
+      if (authMethod === 'phone' && !isValidPhoneNumber(phone)) {
+        throw new Error('Please enter a valid 10-digit phone number');
+      }
+
+      const identifier = authMethod === 'email' ? email : normalizePhoneNumber(phone);
+
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        const { error } = await signIn({ identifier, password, method: authMethod });
         if (error) throw error;
         toast.success('Welcome back!');
       } else {
@@ -60,23 +95,30 @@ export function AuthForm() {
           throw new Error('Username is already taken');
         }
 
-        const { error, data } = await signUp(email, password);
+        const { error, data } = await signUp({ identifier, password, method: authMethod });
         if (error) throw error;
         
-        // Create player settings with username
+        // Create player settings with username and phone if applicable
         if (data.user) {
+          const settingsData: any = {
+            user_id: data.user.id,
+            username: username.toLowerCase(),
+            name: 'Player Name',
+            team: 'Team Name',
+            position: 'Guard',
+            number: 23,
+            height: "5'8\"",
+            grade: '8th Grade',
+          };
+          
+          // Store phone number in player_settings if using phone auth
+          if (authMethod === 'phone') {
+            settingsData.phone = normalizePhoneNumber(phone);
+          }
+
           const { error: settingsError } = await supabase
             .from('player_settings')
-            .insert({
-              user_id: data.user.id,
-              username: username.toLowerCase(),
-              name: 'Player Name',
-              team: 'Team Name',
-              position: 'Guard',
-              number: 23,
-              height: "5'8\"",
-              grade: '8th Grade',
-            });
+            .insert(settingsData);
           
           if (settingsError) {
             console.error('Error creating profile:', settingsError);
@@ -109,6 +151,20 @@ export function AuthForm() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Auth Method Toggle */}
+            <Tabs value={authMethod} onValueChange={(v) => setAuthMethod(v as 'email' | 'phone')} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="email" className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  Email
+                </TabsTrigger>
+                <TabsTrigger value="phone" className="flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  Phone
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             {!isLogin && (
               <div className="space-y-2">
                 <Label htmlFor="username">
@@ -139,17 +195,34 @@ export function AuthForm() {
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                required
-              />
-            </div>
+            {authMethod === 'email' ? (
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required={authMethod === 'email'}
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(555) 123-4567"
+                  required={authMethod === 'phone'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter your 10-digit US phone number
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>

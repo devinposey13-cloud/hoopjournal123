@@ -2,12 +2,26 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+type AuthMethod = 'email' | 'phone';
+
+interface SignUpParams {
+  identifier: string;
+  password: string;
+  method: AuthMethod;
+}
+
+interface SignInParams {
+  identifier: string;
+  password: string;
+  method: AuthMethod;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null; data: { user: User | null } }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (params: SignUpParams) => Promise<{ error: Error | null; data: { user: User | null } }>;
+  signIn: (params: SignInParams) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -38,22 +52,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
-    const { error, data } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
-    });
+  const signUp = async ({ identifier, password, method }: SignUpParams) => {
+    const authPayload = method === 'email' 
+      ? { email: identifier, password, options: { emailRedirectTo: window.location.origin } }
+      : { phone: identifier, password };
+    
+    const { error, data } = await supabase.auth.signUp(authPayload);
     return { error, data: { user: data.user } };
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  const signIn = async ({ identifier, password, method }: SignInParams) => {
+    const authPayload = method === 'email'
+      ? { email: identifier, password }
+      : { phone: identifier, password };
+    
+    const { error } = await supabase.auth.signInWithPassword(authPayload);
     return { error };
   };
 
