@@ -169,6 +169,8 @@ export function LiveStatCapture({
       playSound('make');
     } else if (action.type === 'ftAttempted') {
       playSound('miss_ft');
+    } else if (action.type === 'threePtAttempted') {
+      playSound('miss_3pt');
     } else if (isMiss) {
       playSound('miss');
     } else if (action.type === 'offensiveRebounds' || action.type === 'defensiveRebounds') {
