@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ interface MilestoneRevealProps {
 }
 
 // Confetti particle component
-function Confetti({ rarity }: { rarity: MilestoneRarity }) {
+const Confetti = forwardRef<HTMLDivElement, { rarity: MilestoneRarity }>(({ rarity }, ref) => {
   const colors = {
     common: ['#64748b', '#94a3b8'],
     uncommon: ['#22c55e', '#10b981'],
@@ -33,7 +33,7 @@ function Confetti({ rarity }: { rarity: MilestoneRarity }) {
   const particleCount = rarity === 'legendary' ? 40 : rarity === 'epic' ? 30 : 20;
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div ref={ref} className="absolute inset-0 overflow-hidden pointer-events-none">
       {Array.from({ length: particleCount }).map((_, i) => (
         <motion.div
           key={i}
@@ -63,10 +63,11 @@ function Confetti({ rarity }: { rarity: MilestoneRarity }) {
       ))}
     </div>
   );
-}
+});
+Confetti.displayName = 'Confetti';
 
 // Glow effect component
-function GlowEffect({ rarity }: { rarity: MilestoneRarity }) {
+const GlowEffect = forwardRef<HTMLDivElement, { rarity: MilestoneRarity }>(({ rarity }, ref) => {
   const glowColors = {
     common: 'rgba(100, 116, 139, 0.3)',
     uncommon: 'rgba(34, 197, 94, 0.4)',
@@ -77,6 +78,7 @@ function GlowEffect({ rarity }: { rarity: MilestoneRarity }) {
 
   return (
     <motion.div
+      ref={ref}
       className="absolute inset-0 rounded-xl"
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ 
@@ -89,7 +91,8 @@ function GlowEffect({ rarity }: { rarity: MilestoneRarity }) {
       }}
     />
   );
-}
+});
+GlowEffect.displayName = 'GlowEffect';
 
 export function MilestoneReveal({ milestones, onComplete, onViewCollection }: MilestoneRevealProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -227,22 +230,20 @@ export function MilestoneReveal({ milestones, onComplete, onViewCollection }: Mi
                 transition={{ duration: 0.5, ease: 'easeOut' }}
                 className="w-72"
               >
-                <AnimatePresence>
-                  {showCard && (
-                    <motion.div
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ duration: 0.3, delay: 0.1 }}
-                    >
-                      <MilestoneCard
-                        milestone={currentMilestone.milestone}
-                        earnedAt={new Date().toISOString()}
-                        statsSnapshot={currentMilestone.statsSnapshot}
-                        isEarned={true}
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {showCard && (
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3, delay: 0.1 }}
+                  >
+                    <MilestoneCard
+                      milestone={currentMilestone.milestone}
+                      earnedAt={new Date().toISOString()}
+                      statsSnapshot={currentMilestone.statsSnapshot}
+                      isEarned={true}
+                    />
+                  </motion.div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
