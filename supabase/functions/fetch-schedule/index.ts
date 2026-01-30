@@ -9,12 +9,32 @@ const corsHeaders = {
 // Allowed URL patterns for schedule fetching (to prevent SSRF)
 const ALLOWED_DOMAINS = [
   'calendar.google.com',
+  'drive.google.com',
   'outlook.live.com',
   'outlook.office365.com',
   'calendar.yahoo.com',
   'ical.mac.com',
-  'p.]',
 ];
+
+// Convert Google Drive view/share URLs to direct download URLs
+function convertGoogleDriveUrl(urlString: string): string {
+  const url = new URL(urlString);
+  
+  // Handle drive.google.com/file/d/{fileId}/view URLs
+  const fileMatch = urlString.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (fileMatch) {
+    const fileId = fileMatch[1];
+    return `https://drive.google.com/uc?export=download&id=${fileId}`;
+  }
+  
+  // Handle drive.google.com/open?id={fileId} URLs
+  const openMatch = url.searchParams.get('id');
+  if (url.hostname === 'drive.google.com' && openMatch) {
+    return `https://drive.google.com/uc?export=download&id=${openMatch}`;
+  }
+  
+  return urlString;
+}
 
 const isAllowedUrl = (urlString: string): boolean => {
   try {
@@ -101,11 +121,15 @@ serve(async (req) => {
 
     console.log(`User ${userId} - Fetching schedule from: ${url}`);
 
+    // Convert Google Drive URLs to direct download format
+    const fetchUrl = convertGoogleDriveUrl(url);
+    console.log(`Resolved fetch URL: ${fetchUrl}`);
+
     // Fetch the schedule content with timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-    const response = await fetch(url, {
+    const response = await fetch(fetchUrl, {
       headers: {
         'User-Agent': 'HoopJournal/1.0 (Schedule Import)',
         'Accept': 'text/calendar, application/xml, text/xml, */*',
