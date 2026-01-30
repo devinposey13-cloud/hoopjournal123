@@ -114,6 +114,7 @@ export default function GameDetail() {
               location: data.location,
               isHome: data.is_home,
               notes: data.notes || undefined,
+              tournament: (data as any).tournament || undefined,
             });
           } else {
             setError('Scheduled game not found');
@@ -538,6 +539,12 @@ export default function GameDetail() {
           <div className="stat-card mb-6">
             <h2 className="text-lg font-semibold mb-4">Game Details</h2>
             <div className="space-y-3">
+              {scheduledGame.tournament && (
+                <div className="flex items-center gap-3 text-primary font-medium">
+                  <Trophy className="w-5 h-5" />
+                  <span>{scheduledGame.tournament}</span>
+                </div>
+              )}
               <div className="flex items-center gap-3 text-muted-foreground">
                 <Calendar className="w-5 h-5" />
                 <span>{format(new Date(scheduledGame.date), 'EEEE, MMMM d, yyyy')} at {scheduledGame.time}</span>

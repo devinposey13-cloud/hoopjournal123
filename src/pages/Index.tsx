@@ -255,7 +255,7 @@ export default function Index() {
               </div>
               <div className="flex gap-2">
                 <ImportScheduleDialog onImport={bulkImportScheduledGames} />
-                <AddScheduleDialog onAddGame={addScheduledGame} />
+                <AddScheduleDialog onAddGame={addScheduledGame} onBulkAddGames={bulkImportScheduledGames} />
               </div>
             </div>
 
@@ -269,6 +269,7 @@ export default function Index() {
                 playedGames={games} 
                 onAddGame={addScheduledGame}
                 onUpdateGame={updateScheduledGame}
+                onBulkAddGames={bulkImportScheduledGames}
               />
             </section>
 

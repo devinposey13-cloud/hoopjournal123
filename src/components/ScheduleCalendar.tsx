@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils';
 import { ScheduledGame, GameStats } from '@/types/basketball';
 import { buttonVariants } from '@/components/ui/button';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Home, Plane, ChevronRight as ViewIcon, Plus, Pencil } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ChevronLeft, ChevronRight, Home, Plane, ChevronRight as ViewIcon, Plus, Pencil, Trophy } from 'lucide-react';
 import { QuickAddScheduleDialog } from './QuickAddScheduleDialog';
 import { EditScheduleDialog } from './EditScheduleDialog';
 
@@ -16,9 +17,10 @@ interface ScheduleCalendarProps {
   onSelectGame?: (game: ScheduledGame) => void;
   onAddGame?: (game: Omit<ScheduledGame, 'id'>) => Promise<any> | any;
   onUpdateGame?: (id: string, updates: Partial<Omit<ScheduledGame, 'id'>>) => Promise<any> | any;
+  onBulkAddGames?: (games: Omit<ScheduledGame, 'id'>[]) => Promise<any> | any;
 }
 
-export function ScheduleCalendar({ games, playedGames = [], onSelectGame, onAddGame, onUpdateGame }: ScheduleCalendarProps) {
+export function ScheduleCalendar({ games, playedGames = [], onSelectGame, onAddGame, onUpdateGame, onBulkAddGames }: ScheduleCalendarProps) {
   const [month, setMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [quickAddDate, setQuickAddDate] = useState<Date | null>(null);
@@ -204,6 +206,12 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame, onAddG
                       )}
                     </div>
                     <span className="text-base font-semibold">vs {game.opponent}</span>
+                    {game.tournament && (
+                      <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                        <Trophy className="w-3 h-3" />
+                        {game.tournament}
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {linkedGame && (
@@ -222,6 +230,7 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame, onAddG
                       <EditScheduleDialog
                         game={game}
                         onUpdate={onUpdateGame}
+                        onAddGame={onAddGame}
                         trigger={
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <Pencil className="w-4 h-4" />

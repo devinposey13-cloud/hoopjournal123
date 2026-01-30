@@ -90,6 +90,7 @@ export interface ScheduledGame {
   location: string;
   isHome: boolean;
   notes?: string;
+  tournament?: string;
 }
 
 export interface Season {
