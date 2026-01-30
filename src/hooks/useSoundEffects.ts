@@ -1,13 +1,14 @@
 import { useCallback, useRef, useEffect } from 'react';
 
 type SoundType = 
-  | 'make' | 'miss' | 'assist' | 'rebound' | 'steal' | 'block' | 'turnover' | 'foul'
+  | 'make' | 'miss' | 'miss_ft' | 'assist' | 'rebound' | 'steal' | 'block' | 'turnover' | 'foul'
   | 'crowd_cheer' | 'crowd_groan'
   | 'milestone_common' | 'milestone_uncommon' | 'milestone_rare' | 'milestone_epic' | 'milestone_legendary';
 
 const SOUND_PATHS: Partial<Record<SoundType, string>> = {
   make: '/sounds/make.mp3',
   miss: '/sounds/miss.mp3',
+  miss_ft: '/sounds/miss_ft.mp3',
   assist: '/sounds/assist.mp3',
   block: '/sounds/block.mp3',
   steal: '/sounds/steal.mp3',
