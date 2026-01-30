@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { 
   Target, Star, Crown, Shield, Hand, Users, Flame, ArrowUp, 
   Circle, Crosshair, Zap, Send, Box, Eye, ShieldOff, TrendingUp,
@@ -84,7 +85,7 @@ interface MilestoneCardProps {
   className?: string;
 }
 
-export function MilestoneCard({
+export const MilestoneCard = forwardRef<HTMLDivElement, MilestoneCardProps>(({
   milestone,
   earnedAt,
   statsSnapshot,
@@ -93,7 +94,7 @@ export function MilestoneCard({
   isLocked = false,
   onClick,
   className,
-}: MilestoneCardProps) {
+}, ref) => {
   // Use gameOpponent if provided (from actual game data), otherwise fall back to snapshot
   const displayOpponent = gameOpponent || statsSnapshot?.opponent;
   const IconComponent = ICON_MAP[milestone.icon] || Star;
@@ -101,6 +102,7 @@ export function MilestoneCard({
 
   return (
     <div
+      ref={ref}
       onClick={onClick}
       className={cn(
         'relative overflow-hidden rounded-xl transition-all duration-300 cursor-pointer',
@@ -197,7 +199,8 @@ export function MilestoneCard({
       </div>
     </div>
   );
-}
+});
+MilestoneCard.displayName = 'MilestoneCard';
 
 // Mini version for compact displays
 interface MilestoneCardMiniProps {
