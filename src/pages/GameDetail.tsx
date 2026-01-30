@@ -1,4 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -43,6 +44,7 @@ import { toast } from 'sonner';
 export default function GameDetail() {
   const { id, scheduledId } = useParams<{ id?: string; scheduledId?: string }>();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { user, loading: authLoading } = useAuth();
   const { profile, seasonStats, activeSeason, updateScheduledGame, addScheduledGame } = useCloudData();
   const { earnedMilestones } = useMilestones(activeSeason?.id);
@@ -801,23 +803,38 @@ export default function GameDetail() {
               onClick={() => photoInputRef.current?.click()}
               disabled={isUploadingPhoto}
               className={cn(game.gamePhotoUrl && "text-green-500")}
+              size={isMobile ? "icon" : "default"}
+              title={game.gamePhotoUrl ? 'Update Photo' : 'Add Photo'}
             >
               {isUploadingPhoto ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className={cn("w-4 h-4 animate-spin", !isMobile && "mr-2")} />
               ) : game.gamePhotoUrl ? (
-                <ImageIcon className="w-4 h-4 mr-2" />
+                <ImageIcon className={cn("w-4 h-4", !isMobile && "mr-2")} />
               ) : (
-                <Camera className="w-4 h-4 mr-2" />
+                <Camera className={cn("w-4 h-4", !isMobile && "mr-2")} />
               )}
-              {game.gamePhotoUrl ? 'Update Photo' : 'Add Photo'}
+              {!isMobile && (game.gamePhotoUrl ? 'Update Photo' : 'Add Photo')}
+              {isMobile && <span className="sr-only">{game.gamePhotoUrl ? 'Update Photo' : 'Add Photo'}</span>}
             </Button>
-            <Button variant="outline" onClick={() => setShowLiveCapture(true)}>
-              <Radio className="w-4 h-4 mr-2" />
-              Resume Live Stats
+            <Button 
+              variant="outline" 
+              onClick={() => setShowLiveCapture(true)}
+              size={isMobile ? "icon" : "default"}
+              title="Resume Live Stats"
+            >
+              <Radio className={cn("w-4 h-4", !isMobile && "mr-2")} />
+              {!isMobile && "Resume Live Stats"}
+              {isMobile && <span className="sr-only">Resume Live Stats</span>}
             </Button>
-            <Button variant="outline" onClick={handleExportPdf}>
-              <FileDown className="w-4 h-4 mr-2" />
-              Export PDF
+            <Button 
+              variant="outline" 
+              onClick={handleExportPdf}
+              size={isMobile ? "icon" : "default"}
+              title="Export PDF"
+            >
+              <FileDown className={cn("w-4 h-4", !isMobile && "mr-2")} />
+              {!isMobile && "Export PDF"}
+              {isMobile && <span className="sr-only">Export PDF</span>}
             </Button>
           </div>
         </div>
