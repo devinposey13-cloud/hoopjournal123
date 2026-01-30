@@ -471,7 +471,8 @@ export function useCloudData() {
           location: game.location,
           is_home: game.isHome,
           notes: game.notes,
-          tournament: game.tournament,
+          // Auto-fill tag with opponent if not provided
+          tournament: game.tournament || game.opponent,
         })
         .select()
         .single();
@@ -515,7 +516,8 @@ export function useCloudData() {
         location: game.location,
         is_home: game.isHome,
         notes: game.notes,
-        tournament: game.tournament,
+        // Auto-fill tag with opponent if not provided
+        tournament: game.tournament || game.opponent,
       }));
 
       const { data, error } = await supabase

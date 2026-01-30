@@ -559,7 +559,7 @@ export default function GameDetail() {
               {scheduledGame.tournament && (
                 <div className="flex items-center gap-3 text-primary font-medium">
                   <Trophy className="w-5 h-5" />
-                  <span>{scheduledGame.tournament}</span>
+                  <span>Tag: {scheduledGame.tournament}</span>
                 </div>
               )}
               <div className="flex items-center gap-3 text-muted-foreground">

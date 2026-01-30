@@ -92,7 +92,7 @@ export const ScheduleCard = forwardRef<HTMLDivElement, ScheduleCardProps>(
         {game.tournament && (
           <div className="flex items-center gap-1.5 mb-2 text-sm text-primary font-medium">
             <Trophy className="w-4 h-4" />
-            <span>{game.tournament}</span>
+            <span>Tag: {game.tournament}</span>
           </div>
         )}
 

@@ -38,8 +38,10 @@ export function QuickAddScheduleDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Auto-fill tag with opponent if not provided
     await onAddGame({
       ...formData,
+      tournament: formData.tournament || formData.opponent,
       date: date.toISOString(),
     });
     onOpenChange(false);
@@ -63,15 +65,16 @@ export function QuickAddScheduleDialog({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          {/* Tournament */}
+          {/* Tag */}
           <div className="space-y-2">
-            <Label htmlFor="tournament">Tournament (optional)</Label>
+            <Label htmlFor="tournament">Tag (optional)</Label>
             <Input
               id="tournament"
               value={formData.tournament}
               onChange={(e) => setFormData({ ...formData, tournament: e.target.value })}
               placeholder="e.g., Winter Classic 2026"
             />
+            <p className="text-xs text-muted-foreground">Leave blank to use opponent name as tag</p>
           </div>
 
           {/* Time */}
