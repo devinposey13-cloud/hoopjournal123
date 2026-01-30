@@ -1,82 +1,70 @@
 
 
-# Add Hoop Journal Logo to Approval Email
+# Fix Logo for Email Templates
 
-## Overview
-Replace the basketball emoji with the actual Hoop Journal logo in the approval email template.
+## The Problem
+The logo file is currently at `src/assets/hoop-journal-logo.png`. Files in `src/assets/` are bundled by Vite with hashed filenames and cannot be accessed via a predictable public URL. This means the email template will show a broken image.
 
-## How Email Images Work
-Emails cannot reference local files - images must be hosted at publicly accessible URLs. Since your app is published at `hoopjournal.me`, we can reference the logo from there.
+## The Solution
+Move or copy the logo to the `public` folder, which makes it accessible at a direct URL.
 
-## Changes
+## Changes Required
 
-### Edge Function Update: `send-approval-email/index.ts`
+### 1. Add Logo to Public Folder
+Copy the logo to `public/hoop-journal-logo.png`
 
-Replace the emoji-based header with an actual logo image:
+### 2. Update Email Templates
+Update the image URL in both edge functions:
 
-| Current | New |
-|---------|-----|
-| `<span style="font-size: 64px;">🏀</span>` | `<img src="https://hoopjournal.me/assets/hoop-journal-logo.png" alt="Hoop Journal" style="height: 60px; width: auto;">` |
+| File | Old URL | New URL |
+|------|---------|---------|
+| `send-approval-email/index.ts` | `https://hoopjournal.me/assets/hoop-journal-logo.png` | `https://hoopjournal.me/hoop-journal-logo.png` |
+| `send-password-reset/index.ts` | `https://hoopjournal.me/assets/hoop-journal-logo.png` | `https://hoopjournal.me/hoop-journal-logo.png` |
 
-**Alternative approach:** If the logo isn't at that exact path, we can use the favicon or upload the logo to a public location.
-
-### Updated Email Preview
+## Email Preview (After Fix)
 
 ```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-        [HOOP JOURNAL LOGO]
-
-     Welcome to the Team!
-   Your account has been approved
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Hey Marcus! 👋
-
-Great news! Your Hoop Journal account 
-has been reviewed and approved. You now 
-have full access to all features:
-
-  📊 Track your game stats
-  🎬 Upload highlight clips
-  🏆 Earn badges and milestones
-  🤖 Chat with Coach AI
-  📅 Manage your game schedule
-
-      ┌─────────────────────┐
-      │  Open Hoop Journal  │  ← Orange button
-      └─────────────────────┘
-
-"The only way to prove you're a good 
-sport is to lose." — Ernie Banks
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-© 2026 Hoop Journal. Keep grinding! 💪
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+┌─────────────────────────────────────────────────────┐
+│                                                     │
+│             [HOOP JOURNAL LOGO IMAGE]               │
+│                                                     │
+│              Welcome to the Team!                   │
+│         Your account has been approved              │
+│                                                     │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  Hey Marcus! 👋                                     │
+│                                                     │
+│  Great news! Your Hoop Journal account has been     │
+│  reviewed and approved. You now have full access    │
+│  to all features:                                   │
+│                                                     │
+│    📊 Track your game stats                         │
+│    🎬 Upload highlight clips                        │
+│    🏆 Earn badges and milestones                    │
+│    🤖 Chat with Coach AI                            │
+│    📅 Manage your game schedule                     │
+│                                                     │
+│         ┌────────────────────────┐                  │
+│         │   Open Hoop Journal    │  ← Orange button │
+│         └────────────────────────┘                  │
+│                                                     │
+│  "The only way to prove you're a good sport is      │
+│   to lose." — Ernie Banks                           │
+│                                                     │
+├─────────────────────────────────────────────────────┤
+│      © 2026 Hoop Journal. Keep grinding! 💪         │
+└─────────────────────────────────────────────────────┘
 ```
-
-## Technical Details
-
-### Logo Image Tag
-```html
-<img 
-  src="https://hoopjournal.me/assets/hoop-journal-logo.png" 
-  alt="Hoop Journal" 
-  style="height: 60px; width: auto; margin-bottom: 16px;"
->
-```
-
-### Email Client Compatibility
-- Uses inline styles (required for email)
-- Includes alt text for accessibility
-- Fixed height with auto width to maintain aspect ratio
-- Falls back to alt text if images are blocked
 
 ## Files to Modify
 
-| File | Change |
+| File | Action |
 |------|--------|
-| `supabase/functions/send-approval-email/index.ts` | Replace emoji with logo image |
-| `supabase/functions/send-password-reset/index.ts` | Also add logo for consistency |
+| `public/hoop-journal-logo.png` | Create (copy from src/assets) |
+| `supabase/functions/send-approval-email/index.ts` | Update logo URL |
+| `supabase/functions/send-password-reset/index.ts` | Update logo URL |
+
+## Important Note
+After these changes are made and published, the logo will display correctly in both the approval and password reset emails.
 
