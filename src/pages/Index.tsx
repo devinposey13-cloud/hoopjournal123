@@ -60,6 +60,7 @@ export default function Index() {
     updateProfile,
     uploadAvatar,
     addScheduledGame,
+    updateScheduledGame,
     deleteScheduledGame,
     bulkImportScheduledGames,
     createSeason,
@@ -263,7 +264,12 @@ export default function Index() {
               <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                 Calendar View
               </h2>
-              <ScheduleCalendar games={schedule} playedGames={games} />
+              <ScheduleCalendar 
+                games={schedule} 
+                playedGames={games} 
+                onAddGame={addScheduledGame}
+                onUpdateGame={updateScheduledGame}
+              />
             </section>
 
             {/* Upcoming Games */}

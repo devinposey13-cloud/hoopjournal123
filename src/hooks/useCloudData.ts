@@ -545,6 +545,49 @@ export function useCloudData() {
     }
   };
 
+  // Update scheduled game
+  const updateScheduledGame = async (id: string, updates: Partial<Omit<ScheduledGame, 'id'>>) => {
+    try {
+      const dbUpdates: Record<string, unknown> = {};
+      if (updates.date !== undefined) dbUpdates.date = updates.date;
+      if (updates.time !== undefined) dbUpdates.time = updates.time;
+      if (updates.opponent !== undefined) dbUpdates.opponent = updates.opponent;
+      if (updates.location !== undefined) dbUpdates.location = updates.location;
+      if (updates.isHome !== undefined) dbUpdates.is_home = updates.isHome;
+      if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+
+      const { data, error } = await supabase
+        .from('scheduled_games')
+        .update(dbUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const updatedGame: ScheduledGame = {
+        id: data.id,
+        date: data.date,
+        time: data.time,
+        opponent: data.opponent,
+        location: data.location,
+        isHome: data.is_home,
+        notes: data.notes || undefined,
+      };
+
+      setSchedule(prev => prev.map(g => g.id === id ? updatedGame : g).sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      ));
+      
+      toast.success('Game updated!');
+      return updatedGame;
+    } catch (error) {
+      console.error('Error updating scheduled game:', error);
+      toast.error('Failed to update game');
+      return null;
+    }
+  };
+
   // Delete scheduled game
   const deleteScheduledGame = async (id: string) => {
     try {
@@ -809,6 +852,7 @@ export function useCloudData() {
     addGame,
     deleteGame,
     addScheduledGame,
+    updateScheduledGame,
     deleteScheduledGame,
     bulkImportScheduledGames,
     addClip,

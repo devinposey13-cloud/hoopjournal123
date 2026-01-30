@@ -23,15 +23,16 @@ import { GameCountdown } from '@/components/GameCountdown';
 import { DailyQuote } from '@/components/DailyQuote';
 import { SpotifyPlayer } from '@/components/SpotifyPlayer';
 import { SeasonAveragesCard } from '@/components/SeasonAveragesCard';
+import { EditScheduleDialog } from '@/components/EditScheduleDialog';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function GameDetail() {
   const { id, scheduledId } = useParams<{ id?: string; scheduledId?: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { profile, seasonStats, activeSeason } = useCloudData();
+  const { profile, seasonStats, activeSeason, updateScheduledGame } = useCloudData();
   const { earnedMilestones } = useMilestones(activeSeason?.id);
   const [game, setGame] = useState<GameStats | null>(null);
   const [scheduledGame, setScheduledGame] = useState<ScheduledGame | null>(null);
@@ -500,6 +501,22 @@ export default function GameDetail() {
               </div>
               <h1 className="text-3xl font-bold">vs {scheduledGame.opponent}</h1>
             </div>
+            <EditScheduleDialog
+              game={scheduledGame}
+              onUpdate={async (id, updates) => {
+                const result = await updateScheduledGame(id, updates);
+                if (result) {
+                  // Update local state with new values
+                  setScheduledGame(result);
+                }
+              }}
+              trigger={
+                <Button variant="outline">
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit
+                </Button>
+              }
+            />
           </div>
 
           {/* Countdown Timer */}
