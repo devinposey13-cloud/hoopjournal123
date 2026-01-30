@@ -547,7 +547,7 @@ export default function GameDetail() {
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex-1">
@@ -726,7 +726,7 @@ export default function GameDetail() {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
+          <Button variant="ghost" onClick={() => navigate('/')} className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
@@ -754,7 +754,7 @@ export default function GameDetail() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
