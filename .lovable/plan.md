@@ -1,70 +1,90 @@
 
 
-# Fix Logo for Email Templates
+# Admin Notification Email for New Signups
 
-## The Problem
-The logo file is currently at `src/assets/hoop-journal-logo.png`. Files in `src/assets/` are bundled by Vite with hashed filenames and cannot be accessed via a predictable public URL. This means the email template will show a broken image.
+## Overview
+Create a new edge function that sends you an email notification whenever a new user signs up and creates an account approval request. This will alert you to check the admin approval page promptly.
 
-## The Solution
-Move or copy the logo to the `public` folder, which makes it accessible at a direct URL.
+## How It Works
+
+```text
+User Signs Up → Account Created → Approval Request Created → Email Sent to Admin
+                                                                    ↓
+                                                           You check your inbox
+                                                                    ↓
+                                                           Go to Admin Panel
+                                                                    ↓
+                                                           Approve/Reject User
+```
 
 ## Changes Required
 
-### 1. Add Logo to Public Folder
-Copy the logo to `public/hoop-journal-logo.png`
+### 1. Create New Edge Function: `notify-admin-signup`
 
-### 2. Update Email Templates
-Update the image URL in both edge functions:
+A new function that:
+- Receives signup details (username, email)
+- Sends a notification email to your personal email address
+- Includes a direct link to the admin approval page
 
-| File | Old URL | New URL |
-|------|---------|---------|
-| `send-approval-email/index.ts` | `https://hoopjournal.me/assets/hoop-journal-logo.png` | `https://hoopjournal.me/hoop-journal-logo.png` |
-| `send-password-reset/index.ts` | `https://hoopjournal.me/assets/hoop-journal-logo.png` | `https://hoopjournal.me/hoop-journal-logo.png` |
-
-## Email Preview (After Fix)
+**Email Preview:**
 
 ```text
 ┌─────────────────────────────────────────────────────┐
 │                                                     │
-│             [HOOP JOURNAL LOGO IMAGE]               │
+│             [HOOP JOURNAL LOGO]                     │
 │                                                     │
-│              Welcome to the Team!                   │
-│         Your account has been approved              │
-│                                                     │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  Hey Marcus! 👋                                     │
-│                                                     │
-│  Great news! Your Hoop Journal account has been     │
-│  reviewed and approved. You now have full access    │
-│  to all features:                                   │
-│                                                     │
-│    📊 Track your game stats                         │
-│    🎬 Upload highlight clips                        │
-│    🏆 Earn badges and milestones                    │
-│    🤖 Chat with Coach AI                            │
-│    📅 Manage your game schedule                     │
-│                                                     │
-│         ┌────────────────────────┐                  │
-│         │   Open Hoop Journal    │  ← Orange button │
-│         └────────────────────────┘                  │
-│                                                     │
-│  "The only way to prove you're a good sport is      │
-│   to lose." — Ernie Banks                           │
+│           New Account Request! 🏀                   │
 │                                                     │
 ├─────────────────────────────────────────────────────┤
-│      © 2026 Hoop Journal. Keep grinding! 💪         │
+│                                                     │
+│  A new user has signed up for Hoop Journal:         │
+│                                                     │
+│    Username: marcus_ball                            │
+│    Email: marcus@example.com                        │
+│    Signed up: Jan 30, 2026 at 3:45 PM              │
+│                                                     │
+│         ┌──────────────────────────┐                │
+│         │  Review Account Request  │                │
+│         └──────────────────────────┘                │
+│                                                     │
+├─────────────────────────────────────────────────────┤
+│         Hoop Journal Admin Notification             │
 └─────────────────────────────────────────────────────┘
 ```
 
-## Files to Modify
+### 2. Update AuthForm Component
+
+After creating the approval request, call the new edge function to notify you.
+
+### 3. Store Admin Email as Secret
+
+Add your personal email as a secret (`ADMIN_NOTIFICATION_EMAIL`) so it's not hardcoded in the codebase.
+
+## Technical Details
+
+### New Edge Function Structure
+
+| Aspect | Detail |
+|--------|--------|
+| Function Name | `notify-admin-signup` |
+| Auth Required | No (called during signup before user is authenticated) |
+| Secrets Used | `RESEND_API_KEY`, `ADMIN_NOTIFICATION_EMAIL` |
+
+### Files to Create/Modify
 
 | File | Action |
 |------|--------|
-| `public/hoop-journal-logo.png` | Create (copy from src/assets) |
-| `supabase/functions/send-approval-email/index.ts` | Update logo URL |
-| `supabase/functions/send-password-reset/index.ts` | Update logo URL |
+| `supabase/functions/notify-admin-signup/index.ts` | Create new edge function |
+| `supabase/config.toml` | Add function config (verify_jwt = false) |
+| `src/components/AuthForm.tsx` | Call the new function after signup |
 
-## Important Note
-After these changes are made and published, the logo will display correctly in both the approval and password reset emails.
+### Security Considerations
+
+- The function doesn't require authentication (since it's called during signup)
+- Rate limiting is handled by Resend
+- No sensitive user data is exposed (just username/email that user provided)
+
+## What You'll Need
+
+Before implementing, I'll need to add a secret for your admin notification email address.
 
