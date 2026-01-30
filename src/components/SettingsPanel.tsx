@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PlayerProfile } from '@/types/basketball';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,12 +12,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Save, Camera, Loader2, User, Copy, ExternalLink, AtSign, Check, X } from 'lucide-react';
+import { Save, Camera, Loader2, User, Copy, ExternalLink, AtSign, Check, X, Crown, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface SettingsPanelProps {
   profile: PlayerProfile;
@@ -28,6 +31,7 @@ const positions = ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forw
 const grades = ['1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
 export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: SettingsPanelProps) {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState(profile);
   const [isUploading, setIsUploading] = useState(false);
   const [newUsername, setNewUsername] = useState('');
@@ -35,7 +39,10 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [isClaimingUsername, setIsClaimingUsername] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const { isSubscribed, planType, subscriptionEnd, isLoading: subLoading, openCustomerPortal } = useSubscription();
 
   useEffect(() => {
     const getUser = async () => {
@@ -436,6 +443,67 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
             <Save className="w-4 h-4 mr-2" />
             Save Profile
           </Button>
+
+          {/* Subscription Section */}
+          <Separator className="my-6" />
+          
+          <div className="stat-card bg-secondary/30 p-4 rounded-lg space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Crown className={`w-5 h-5 ${isSubscribed ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+                <div>
+                  <p className="font-medium">
+                    {subLoading ? 'Loading...' : isSubscribed ? 'Pro Member' : 'Free Plan'}
+                  </p>
+                  {isSubscribed && subscriptionEnd && (
+                    <p className="text-xs text-muted-foreground">
+                      {planType === 'annual' ? 'Annual' : 'Monthly'} • Renews {new Date(subscriptionEnd).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+              {isSubscribed && (
+                <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                  Active
+                </Badge>
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              {isSubscribed ? (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    setIsLoadingPortal(true);
+                    try {
+                      await openCustomerPortal();
+                    } catch (error) {
+                      toast.error('Failed to open billing portal');
+                    } finally {
+                      setIsLoadingPortal(false);
+                    }
+                  }}
+                  disabled={isLoadingPortal}
+                >
+                  {isLoadingPortal ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <CreditCard className="w-4 h-4 mr-2" />
+                  )}
+                  Manage Subscription
+                </Button>
+              ) : (
+                <Button
+                  className="w-full gradient-primary"
+                  onClick={() => navigate('/pricing')}
+                >
+                  <Crown className="w-4 h-4 mr-2" />
+                  Upgrade to Pro
+                </Button>
+              )}
+            </div>
+          </div>
 
           {/* Feedback Section */}
           <Separator className="my-6" />
