@@ -3,7 +3,7 @@ import { format, isPast, isToday } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { ScheduledGame, GameStats } from '@/types/basketball';
 import { cn } from '@/lib/utils';
-import { Trash2, MapPin, Clock, Home, Plane, ChevronRight } from 'lucide-react';
+import { Trash2, MapPin, Clock, Home, Plane, ChevronRight, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ScheduleCardProps {
@@ -88,6 +88,13 @@ export const ScheduleCard = forwardRef<HTMLDivElement, ScheduleCardProps>(
         </div>
 
         <h3 className="font-semibold text-lg mb-2">vs {game.opponent}</h3>
+
+        {game.tournament && (
+          <div className="flex items-center gap-1.5 mb-2 text-sm text-primary font-medium">
+            <Trophy className="w-4 h-4" />
+            <span>{game.tournament}</span>
+          </div>
+        )}
 
         <div className="space-y-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
