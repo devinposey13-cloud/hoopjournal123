@@ -1,75 +1,61 @@
 
-# Navigate to Game Details on Milestone Reveal Close
+
+# Add Custom Sound Effects Toggle to Live Stats Capture
 
 ## Overview
-Update the milestone reveal flow so that clicking the "X" button (or completing the reveal) navigates directly to the game details page instead of staying on the current tab.
+Add a small toggle switch labeled "Custom Sound Effects" to the Live Stats Capture page that controls whether sound effects play when stat buttons are pressed. The toggle will be off by default.
 
----
+## Changes
 
-## Current Behavior
-- Milestones are triggered after saving a game
-- Each pending milestone already contains the `gameId` it was earned from
-- Clicking "X" or "Awesome!" calls `closeReveal()` which only clears state
-- User stays on whatever tab they were on (schedule tab in your case)
+### 1. Add State for Sound Toggle
+Add a new state variable to track whether custom sounds are enabled:
+```typescript
+const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(false);
+```
 
-## Proposed Behavior
-- Clicking "X" or completing the reveal navigates to `/game/:gameId`
-- The game ID comes from the milestone data (first milestone's `gameId`)
+### 2. Add Toggle UI
+Place a compact toggle switch in the header area (next to the photo/undo buttons) or just below the half selection buttons. The toggle will include:
+- A small label "Sound Effects" 
+- A Switch component from the existing UI library
+- Styling to keep it unobtrusive
 
----
+Proposed location: Below the half selection buttons, aligned to the right side for easy access during gameplay.
 
-## Changes Required
+### 3. Modify Sound Playing Logic
+Update the `recordStat` function to conditionally play sounds based on the toggle state:
+```typescript
+// Play appropriate sound effect only if enabled
+if (soundEffectsEnabled) {
+  if (isMadeShot) {
+    playSound('make');
+  } else if (action.type === 'ftAttempted') {
+    playSound('miss_ft');
+  }
+  // ... rest of sound logic
+}
+```
 
-### 1. Update MilestoneReveal Component
-**File:** `src/components/milestones/MilestoneReveal.tsx`
+## UI Mockup
+```text
++--------------------------------------------------+
+|  [1st Half]  [2nd Half]                          |
+|                                                  |
+|                     Sound Effects  [OFF]         |
++--------------------------------------------------+
+```
 
-- Add `useNavigate` from react-router-dom
-- Modify `onComplete` to also navigate to the game details page
-- Use the first milestone's `gameId` to determine the destination
-
-Changes:
-- Import `useNavigate` from `react-router-dom`
-- Get the `gameId` from the milestones prop (first milestone with a gameId)
-- When `onComplete` is called, navigate to `/game/${gameId}` before or after calling the callback
-
-### 2. Update Index.tsx (optional enhancement)
-**File:** `src/pages/Index.tsx`
-
-No changes strictly required since navigation will happen inside MilestoneReveal. However, we could optionally pass a `lastSavedGameId` prop if we want more control.
-
----
+The toggle will be small and positioned so it doesn't interfere with the main stat-tracking workflow.
 
 ## Technical Details
 
-```text
-MilestoneReveal Component Changes:
+### Files to Modify
+- `src/components/LiveStatCapture.tsx`
+  - Import the Switch component
+  - Add `soundEffectsEnabled` state (default: `false`)
+  - Add toggle UI below half selection
+  - Wrap all `playSound()` calls in a conditional check
 
-┌─────────────────────────────────────────────────┐
-│ import { useNavigate } from 'react-router-dom'  │
-├─────────────────────────────────────────────────┤
-│ const navigate = useNavigate();                 │
-│                                                 │
-│ // Get gameId from first milestone              │
-│ const gameId = milestones[0]?.gameId;           │
-│                                                 │
-│ const handleClose = () => {                     │
-│   onComplete();                                 │
-│   if (gameId) {                                 │
-│     navigate(`/game/${gameId}`);                │
-│   }                                             │
-│ };                                              │
-├─────────────────────────────────────────────────┤
-│ X button: onClick={handleClose}                 │
-│ Awesome! button: handleNext calls handleClose   │
-└─────────────────────────────────────────────────┘
-```
+### Dependencies
+- Uses existing `Switch` component from `@/components/ui/switch`
+- Uses existing `Label` component from `@/components/ui/label`
 
----
-
-## Summary
-
-| Location | Change |
-|----------|--------|
-| `MilestoneReveal.tsx` | Add navigation to game details on close/complete |
-
-This is a minimal change that leverages the existing `gameId` data already present in the milestone objects.
