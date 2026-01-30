@@ -10,6 +10,7 @@ const SOUND_PATHS: Partial<Record<SoundType, string>> = {
   assist: '/sounds/assist.mp3',
   block: '/sounds/block.mp3',
   steal: '/sounds/steal.mp3',
+  turnover: '/sounds/turnover.mp3',
 };
 
 export function useSoundEffects() {
