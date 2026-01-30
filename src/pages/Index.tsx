@@ -29,8 +29,15 @@ import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
 import { useAdmin } from '@/hooks/useAdmin';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { LogOut, Loader2 } from 'lucide-react';
+import { LogOut, Loader2, Trophy, X } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Target,
   Repeat,
@@ -42,6 +49,7 @@ import {
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [tournamentFilter, setTournamentFilter] = useState<string>('all');
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const {
@@ -86,10 +94,19 @@ export default function Index() {
   }
 
   const today = startOfDay(new Date());
-  const upcomingGames = schedule.filter(
+  
+  // Get unique tournaments for filter dropdown
+  const tournaments = [...new Set(schedule.filter(g => g.tournament).map(g => g.tournament!))].sort();
+  
+  // Apply tournament filter
+  const filteredSchedule = tournamentFilter === 'all' 
+    ? schedule 
+    : schedule.filter(g => g.tournament === tournamentFilter);
+  
+  const upcomingGames = filteredSchedule.filter(
     (g) => isAfter(new Date(g.date), today) || isToday(new Date(g.date))
   );
-  const pastScheduledGames = schedule.filter(
+  const pastScheduledGames = filteredSchedule.filter(
     (g) => isBefore(new Date(g.date), today) && !isToday(new Date(g.date))
   );
 
@@ -246,14 +263,42 @@ export default function Index() {
         {/* Schedule Tab */}
         {activeTab === 'schedule' && (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h1 className="text-2xl font-bold">Season Schedule</h1>
                 <p className="text-muted-foreground">
                   {upcomingGames.length} upcoming games
+                  {tournamentFilter !== 'all' && ` in ${tournamentFilter}`}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                {/* Tournament Filter */}
+                {tournaments.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Select value={tournamentFilter} onValueChange={setTournamentFilter}>
+                      <SelectTrigger className="w-[180px]">
+                        <Trophy className="w-4 h-4 mr-2 text-muted-foreground" />
+                        <SelectValue placeholder="All Tournaments" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Games</SelectItem>
+                        {tournaments.map((t) => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {tournamentFilter !== 'all' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setTournamentFilter('all')}
+                        className="h-9 w-9"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                )}
                 <ImportScheduleDialog onImport={bulkImportScheduledGames} />
                 <AddScheduleDialog onAddGame={addScheduledGame} onBulkAddGames={bulkImportScheduledGames} />
               </div>
@@ -265,7 +310,7 @@ export default function Index() {
                 Calendar View
               </h2>
               <ScheduleCalendar 
-                games={schedule} 
+                games={filteredSchedule} 
                 playedGames={games} 
                 onAddGame={addScheduledGame}
                 onUpdateGame={updateScheduledGame}
