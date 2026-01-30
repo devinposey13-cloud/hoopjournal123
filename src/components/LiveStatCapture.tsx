@@ -116,11 +116,15 @@ export function LiveStatCapture({
   const { playSound } = useSoundEffects();
 
   // Initialize with any passed initial stats (goes to first half)
+  // Using a ref to track if we've initialized to prevent re-running on every render
+  const hasInitialized = useRef(false);
+  
   useEffect(() => {
-    if (initialStats) {
+    if (initialStats && !hasInitialized.current) {
+      hasInitialized.current = true;
       setFirstHalfStats(prev => ({ ...prev, ...initialStats }));
     }
-  }, []);
+  }, [initialStats]);
 
   // Calculate total stats from both halves
   const totalStats: LiveStats = {

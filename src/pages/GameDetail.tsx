@@ -351,10 +351,13 @@ export default function GameDetail() {
           ftMade: game.ftMade,
           ftAttempted: game.ftAttempted,
           rebounds: game.rebounds,
+          offensiveRebounds: game.offensiveRebounds || 0,
+          defensiveRebounds: game.defensiveRebounds || 0,
           assists: game.assists,
           steals: game.steals,
           blocks: game.blocks,
           turnovers: game.turnovers,
+          fouls: game.fouls || 0,
         } : undefined}
         onSave={handleLiveCaptureSave}
         onCancel={() => setShowLiveCapture(false)}
