@@ -7,6 +7,7 @@ type SoundType =
 
 const SOUND_PATHS: Partial<Record<SoundType, string>> = {
   make: '/sounds/make.mp3',
+  miss: '/sounds/miss.mp3',
   assist: '/sounds/assist.mp3',
   block: '/sounds/block.mp3',
   steal: '/sounds/steal.mp3',
