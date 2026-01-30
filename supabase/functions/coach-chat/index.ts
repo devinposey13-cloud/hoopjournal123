@@ -37,6 +37,98 @@ function validateInput(message: string): { valid: boolean; reason?: string } {
   return { valid: true };
 }
 
+// Validate numeric stat value within reasonable basketball ranges
+function validateStatValue(value: unknown, min: number, max: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
+  return Math.max(min, Math.min(max, Math.round(value)));
+}
+
+interface ValidatedPlayerStats {
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  minutesPlayed: number;
+  fgMade: number;
+  fgAttempted: number;
+  threePtMade: number;
+  threePtAttempted: number;
+  ftMade: number;
+  ftAttempted: number;
+  isWin: boolean;
+  opponent: string;
+}
+
+// Validate and sanitize player stats from client
+function validatePlayerStats(stats: unknown): ValidatedPlayerStats | null {
+  if (!stats || typeof stats !== 'object') return null;
+  
+  const s = stats as Record<string, unknown>;
+  return {
+    points: validateStatValue(s.points, 0, 150),
+    rebounds: validateStatValue(s.rebounds, 0, 50),
+    assists: validateStatValue(s.assists, 0, 50),
+    steals: validateStatValue(s.steals, 0, 30),
+    blocks: validateStatValue(s.blocks, 0, 30),
+    turnovers: validateStatValue(s.turnovers, 0, 30),
+    minutesPlayed: validateStatValue(s.minutesPlayed, 0, 60),
+    fgMade: validateStatValue(s.fgMade, 0, 60),
+    fgAttempted: validateStatValue(s.fgAttempted, 0, 80),
+    threePtMade: validateStatValue(s.threePtMade, 0, 30),
+    threePtAttempted: validateStatValue(s.threePtAttempted, 0, 40),
+    ftMade: validateStatValue(s.ftMade, 0, 40),
+    ftAttempted: validateStatValue(s.ftAttempted, 0, 50),
+    isWin: typeof s.isWin === 'boolean' ? s.isWin : false,
+    opponent: typeof s.opponent === 'string' ? s.opponent.slice(0, 100) : 'Unknown',
+  };
+}
+
+interface ValidatedSeasonStats {
+  avgPoints: number;
+  avgRebounds: number;
+  avgAssists: number;
+  avgSteals: number;
+  avgBlocks: number;
+  fgPercentage: number;
+  gamesPlayed: number;
+  wins: number;
+  losses: number;
+}
+
+// Validate and sanitize season stats from client
+function validateSeasonStats(stats: unknown): ValidatedSeasonStats | null {
+  if (!stats || typeof stats !== 'object') return null;
+  
+  const s = stats as Record<string, unknown>;
+  return {
+    avgPoints: validateStatValue(s.avgPoints, 0, 100),
+    avgRebounds: validateStatValue(s.avgRebounds, 0, 50),
+    avgAssists: validateStatValue(s.avgAssists, 0, 30),
+    avgSteals: validateStatValue(s.avgSteals, 0, 15),
+    avgBlocks: validateStatValue(s.avgBlocks, 0, 15),
+    fgPercentage: validateStatValue(s.fgPercentage, 0, 100),
+    gamesPlayed: validateStatValue(s.gamesPlayed, 0, 200),
+    wins: validateStatValue(s.wins, 0, 200),
+    losses: validateStatValue(s.losses, 0, 200),
+  };
+}
+
+// Validate video frames array (base64 data URLs)
+function validateVideoFrames(frames: unknown): string[] {
+  if (!Array.isArray(frames)) return [];
+  
+  // Limit to 5 frames and validate each is a valid data URL
+  return frames
+    .slice(0, 5)
+    .filter((frame): frame is string => 
+      typeof frame === 'string' && 
+      frame.startsWith('data:image/') &&
+      frame.length < 2_000_000 // Max 2MB per frame
+    );
+}
+
 // Get coaching style based on player grade
 function getCoachingStyle(isYoung: boolean): string {
   if (isYoung) {
@@ -102,7 +194,15 @@ serve(async (req) => {
       });
     }
 
-    const { messages, playerStats, seasonStats, playerGrade, videoFrames, pregameContext } = await req.json();
+    const requestBody = await req.json();
+    const messages = requestBody.messages;
+    const playerGrade = requestBody.playerGrade;
+    const pregameContext = requestBody.pregameContext;
+    
+    // Validate and sanitize stats from client to prevent abuse
+    const playerStats = validatePlayerStats(requestBody.playerStats);
+    const seasonStats = validateSeasonStats(requestBody.seasonStats);
+    const videoFrames = validateVideoFrames(requestBody.videoFrames);
     
     // Validate the latest user message for inappropriate content
     const latestUserMessage = messages[messages.length - 1];
