@@ -1,144 +1,130 @@
 
-# Add Visual Confirmation Feedback for Performance Buttons
+# Fix Haptic Feedback on Mobile Devices
 
-## Overview
-Add emoji-based visual confirmation feedback for all stat buttons on the Live Stats Capture page, similar to the existing fire (🔥) celebration for made shots. Each button type will display a relevant emoji that briefly appears and fades when pressed.
+## Problem Identified
+The haptic feedback is **not working on iOS devices** because the Vibration API (`navigator.vibrate()`) is **not supported on iOS Safari** - it has never been supported and there are no plans to add it.
 
-## Current Behavior
-- Made shots (2PT, 3PT, FT made) trigger a full-screen `FireCelebration` component with 3D particles and a "🔥 BUCKET!" overlay
-- Other stat buttons (rebounds, assists, steals, blocks, turnovers, fouls, misses) have no visual feedback beyond the count update
+**Current status:**
+- **Android devices**: Should work (Vibration API is supported)
+- **iOS devices**: Does NOT work (Vibration API is not supported)
 
-## Proposed Solution
-Create a lightweight "stat flash" feedback system that shows a contextual emoji for each stat type. This will be simpler than the FireCelebration (no 3D) but still provide clear visual confirmation.
-
-### Emoji Mapping
-| Stat Type | Emoji | Message |
-|-----------|-------|---------|
-| 2PT Made / 3PT Made / FT Made | 🔥 | BUCKET! (existing) |
-| 2PT Miss / 3PT Miss / FT Miss | ❌ | MISS |
-| Offensive Rebound | 💪 | OREB! |
-| Defensive Rebound | 🧱 | DREB! |
-| Assist | 🎯 | DIME! |
-| Steal | 🔒 | STEAL! |
-| Block | 🚫 | BLOCK! |
-| Turnover | 😬 | TO |
-| Foul | ⚠️ | FOUL |
-
-## Changes
-
-### 1. Create StatFlash Component
-A new lightweight component that shows an emoji with a short message, centered on screen with a quick fade-in/out animation.
-
-**File: `src/components/StatFlash.tsx`**
+## Root Cause
+The current implementation at lines 177-189 of `LiveStatCapture.tsx`:
 ```typescript
-interface StatFlashProps {
-  show: boolean;
-  emoji: string;
-  message: string;
-  variant?: 'success' | 'danger' | 'warning' | 'neutral';
+if ('vibrate' in navigator) {
+  if (isMadeShot) {
+    navigator.vibrate([50, 30, 50]);
+  } else if (...) {
+    navigator.vibrate(30);
+  } else {
+    navigator.vibrate(40);
+  }
 }
 ```
 
-### 2. Add State Management in LiveStatCapture
-Track the current flash state including which emoji/message to show.
+The check `'vibrate' in navigator` returns `false` on iOS Safari, so the code never executes.
 
-**Add state:**
-```typescript
-const [statFlash, setStatFlash] = useState<{
-  show: boolean;
-  emoji: string;
-  message: string;
-  variant: 'success' | 'danger' | 'warning' | 'neutral';
-} | null>(null);
+## Solution
+Integrate the `ios-haptics` library which provides cross-platform haptic feedback:
+
+- **On iOS Safari 17.4+**: Uses a clever technique with `<input type="checkbox" switch />` elements that have native haptic feedback when toggled
+- **On Android/other browsers**: Falls back to `navigator.vibrate()` automatically
+
+## Changes Required
+
+### 1. Install the `ios-haptics` package
+```bash
+npm install ios-haptics
 ```
 
-### 3. Update recordStat Function
-Add logic to trigger the appropriate flash based on the stat type recorded.
+### 2. Create a Custom `useHapticFeedback` Hook
+Create a new hook that abstracts haptic feedback and provides different intensities:
 
+**File: `src/hooks/useHapticFeedback.ts`**
 ```typescript
-// Inside recordStat, after recording the stat:
-const flashConfig = getFlashForStat(action.type);
-if (flashConfig) {
-  setStatFlash({ show: true, ...flashConfig });
-  setTimeout(() => setStatFlash(null), 800);
-}
-```
+import { haptic } from 'ios-haptics';
 
-### 4. Add CSS Animation
-Add a "pop" keyframe animation to tailwind.config.ts for the emoji appearance.
-
-```typescript
-"stat-pop": {
-  "0%": { transform: "scale(0.5)", opacity: "0" },
-  "50%": { transform: "scale(1.2)" },
-  "100%": { transform: "scale(1)", opacity: "1" },
-},
-"stat-fade-out": {
-  "0%": { opacity: "1" },
-  "100%": { opacity: "0" },
-}
-```
-
-## Files to Modify
-
-1. **`src/components/StatFlash.tsx`** (NEW)
-   - Create new lightweight visual feedback component
-   - Accept emoji, message, and color variant props
-   - Display centered overlay with animation
-
-2. **`src/components/LiveStatCapture.tsx`**
-   - Import the new StatFlash component
-   - Add state for tracking current flash
-   - Update recordStat to trigger flash based on stat type
-   - Render StatFlash component alongside FireCelebration
-
-3. **`tailwind.config.ts`**
-   - Add new keyframe animations for the stat flash effect
-
-## Visual Design
-The StatFlash will be a semi-transparent overlay that appears briefly in the center of the screen:
-
-```text
-+--------------------------------------------------+
-|                                                  |
-|                                                  |
-|                     🎯                           |
-|                   DIME!                          |
-|                                                  |
-|                                                  |
-+--------------------------------------------------+
-```
-
-The overlay will:
-- Appear with a quick "pop" scale animation
-- Display for ~600ms
-- Fade out smoothly
-- Use color coding (green for positive stats, red for negative, orange for neutral)
-- Be non-interactive (`pointer-events: none`)
-
-## Implementation Details
-
-### Flash Configuration Helper
-```typescript
-function getFlashConfig(statType: string) {
-  const configs = {
-    fgMade: { emoji: '🔥', message: 'BUCKET!', variant: 'success' },
-    threePtMade: { emoji: '🔥', message: 'BUCKET!', variant: 'success' },
-    ftMade: { emoji: '🔥', message: 'BUCKET!', variant: 'success' },
-    fgAttempted: { emoji: '❌', message: 'MISS', variant: 'danger' },
-    threePtAttempted: { emoji: '❌', message: '3PT MISS', variant: 'danger' },
-    ftAttempted: { emoji: '❌', message: 'FT MISS', variant: 'danger' },
-    offensiveRebounds: { emoji: '💪', message: 'OREB!', variant: 'success' },
-    defensiveRebounds: { emoji: '🧱', message: 'DREB!', variant: 'neutral' },
-    assists: { emoji: '🎯', message: 'DIME!', variant: 'success' },
-    steals: { emoji: '🔒', message: 'STEAL!', variant: 'success' },
-    blocks: { emoji: '🚫', message: 'BLOCK!', variant: 'success' },
-    turnovers: { emoji: '😬', message: 'TURNOVER', variant: 'warning' },
-    fouls: { emoji: '⚠️', message: 'FOUL', variant: 'danger' },
+export function useHapticFeedback() {
+  const triggerHaptic = (intensity: 'light' | 'medium' | 'strong' | 'success' | 'error') => {
+    try {
+      switch (intensity) {
+        case 'light':
+          haptic();
+          break;
+        case 'medium':
+          haptic();
+          break;
+        case 'strong':
+        case 'success':
+          haptic.confirm(); // Double haptic
+          break;
+        case 'error':
+          haptic.error(); // Triple haptic
+          break;
+        default:
+          haptic();
+      }
+    } catch (e) {
+      // Silently fail if haptics not supported
+    }
   };
-  return configs[statType] || null;
+
+  return { triggerHaptic };
 }
 ```
 
-### Keeping FireCelebration for Made Shots
-The existing FireCelebration with 3D particles will continue to trigger for made shots. The new StatFlash will handle all other stats.
+### 3. Update `LiveStatCapture.tsx`
+Replace the direct `navigator.vibrate()` calls with the new hook:
+
+**Changes:**
+```typescript
+// Add import
+import { useHapticFeedback } from '@/hooks/useHapticFeedback';
+
+// Inside component
+const { triggerHaptic } = useHapticFeedback();
+
+// In recordStat function, replace lines 177-189:
+// Before:
+if ('vibrate' in navigator) {
+  if (isMadeShot) {
+    navigator.vibrate([50, 30, 50]);
+  } else if (isMiss || action.type === 'turnovers' || action.type === 'fouls') {
+    navigator.vibrate(30);
+  } else {
+    navigator.vibrate(40);
+  }
+}
+
+// After:
+if (isMadeShot) {
+  triggerHaptic('success'); // Double haptic for made shots
+} else if (isMiss || action.type === 'turnovers' || action.type === 'fouls') {
+  triggerHaptic('light'); // Light haptic for negative stats
+} else {
+  triggerHaptic('medium'); // Medium haptic for positive stats
+}
+```
+
+## Files to Create/Modify
+
+| File | Action | Description |
+|------|--------|-------------|
+| `package.json` | Modify | Add `ios-haptics` dependency |
+| `src/hooks/useHapticFeedback.ts` | Create | New hook for cross-platform haptic feedback |
+| `src/components/LiveStatCapture.tsx` | Modify | Use the new haptic hook instead of `navigator.vibrate()` |
+
+## Device Support After Fix
+
+| Device/Browser | Before Fix | After Fix |
+|----------------|------------|-----------|
+| Android Chrome | Works | Works |
+| Android Samsung Browser | Works | Works |
+| iOS Safari 17.4+ | Not working | Works |
+| iOS Safari older | Not working | Not supported (OS limitation) |
+
+## Technical Notes
+- The `ios-haptics` library is tiny (~1KB gzipped)
+- On iOS, it works by creating a hidden `<input type="checkbox" switch />`, toggling it (which triggers native haptic), then removing it
+- This is the only reliable way to trigger haptic feedback in Safari without a native app
+- Requires iOS 17.4+ for iOS haptic support
