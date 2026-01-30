@@ -486,6 +486,7 @@ export type Database = {
           opponent: string
           season_id: string | null
           time: string
+          tournament: string | null
           user_id: string
         }
         Insert: {
@@ -498,6 +499,7 @@ export type Database = {
           opponent: string
           season_id?: string | null
           time: string
+          tournament?: string | null
           user_id: string
         }
         Update: {
@@ -510,6 +512,7 @@ export type Database = {
           opponent?: string
           season_id?: string | null
           time?: string
+          tournament?: string | null
           user_id?: string
         }
         Relationships: [

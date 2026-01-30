@@ -134,6 +134,7 @@ export function useCloudData() {
         location: s.location,
         isHome: s.is_home,
         notes: s.notes || undefined,
+        tournament: (s as any).tournament || undefined,
       })) || []);
 
       // Fetch video clips (filtered by user_id and season)
@@ -470,6 +471,7 @@ export function useCloudData() {
           location: game.location,
           is_home: game.isHome,
           notes: game.notes,
+          tournament: game.tournament,
         })
         .select()
         .single();
@@ -484,6 +486,7 @@ export function useCloudData() {
         location: data.location,
         isHome: data.is_home,
         notes: data.notes || undefined,
+        tournament: (data as any).tournament || undefined,
       };
 
       setSchedule(prev => [...prev, newGame].sort((a, b) => 
@@ -512,6 +515,7 @@ export function useCloudData() {
         location: game.location,
         is_home: game.isHome,
         notes: game.notes,
+        tournament: game.tournament,
       }));
 
       const { data, error } = await supabase
@@ -529,6 +533,7 @@ export function useCloudData() {
         location: g.location,
         isHome: g.is_home,
         notes: g.notes || undefined,
+        tournament: (g as any).tournament || undefined,
       }));
 
       setSchedule((prev) =>
@@ -555,6 +560,7 @@ export function useCloudData() {
       if (updates.location !== undefined) dbUpdates.location = updates.location;
       if (updates.isHome !== undefined) dbUpdates.is_home = updates.isHome;
       if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+      if (updates.tournament !== undefined) dbUpdates.tournament = updates.tournament;
 
       const { data, error } = await supabase
         .from('scheduled_games')
@@ -573,6 +579,7 @@ export function useCloudData() {
         location: data.location,
         isHome: data.is_home,
         notes: data.notes || undefined,
+        tournament: (data as any).tournament || undefined,
       };
 
       setSchedule(prev => prev.map(g => g.id === id ? updatedGame : g).sort(

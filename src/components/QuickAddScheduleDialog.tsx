@@ -33,6 +33,7 @@ export function QuickAddScheduleDialog({
     location: '',
     isHome: true,
     notes: '',
+    tournament: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,6 +50,7 @@ export function QuickAddScheduleDialog({
       location: '',
       isHome: true,
       notes: '',
+      tournament: '',
     });
   };
 
@@ -61,6 +63,17 @@ export function QuickAddScheduleDialog({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          {/* Tournament */}
+          <div className="space-y-2">
+            <Label htmlFor="tournament">Tournament (optional)</Label>
+            <Input
+              id="tournament"
+              value={formData.tournament}
+              onChange={(e) => setFormData({ ...formData, tournament: e.target.value })}
+              placeholder="e.g., Winter Classic 2026"
+            />
+          </div>
+
           {/* Time */}
           <div className="space-y-2">
             <Label htmlFor="time">Time</Label>
