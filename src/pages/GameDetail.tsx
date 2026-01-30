@@ -246,40 +246,137 @@ export default function GameDetail() {
     };
     
     if (isGameOver) {
-      // Game is over - save and navigate to game recap
-      await handleAddGame(gameData);
+      // Game is over - save/update and navigate to game recap
+      if (game?.id) {
+        // Update existing game
+        setIsSubmitting(true);
+        try {
+          const { data, error: updateError } = await supabase
+            .from('games')
+            .update({
+              points: gameData.points,
+              rebounds: gameData.rebounds,
+              assists: gameData.assists,
+              steals: gameData.steals,
+              blocks: gameData.blocks,
+              turnovers: gameData.turnovers,
+              fouls: gameData.fouls ?? 0,
+              fg_made: gameData.fgMade,
+              fg_attempted: gameData.fgAttempted,
+              three_pt_made: gameData.threePtMade,
+              three_pt_attempted: gameData.threePtAttempted,
+              ft_made: gameData.ftMade,
+              ft_attempted: gameData.ftAttempted,
+              is_win: gameData.isWin,
+              game_photo_url: gameData.gamePhotoUrl,
+            })
+            .eq('id', game.id)
+            .select()
+            .single();
+
+          if (updateError) throw updateError;
+
+          toast.success('Game stats saved!');
+          setShowLiveCapture(false);
+          
+          if (data) {
+            setGame({
+              id: data.id,
+              date: data.date,
+              opponent: data.opponent,
+              points: data.points,
+              rebounds: data.rebounds,
+              assists: data.assists,
+              steals: data.steals,
+              blocks: data.blocks,
+              turnovers: data.turnovers,
+              fouls: data.fouls ?? 0,
+              minutesPlayed: data.minutes_played,
+              fgMade: data.fg_made,
+              fgAttempted: data.fg_attempted,
+              threePtMade: data.three_pt_made,
+              threePtAttempted: data.three_pt_attempted,
+              ftMade: data.ft_made,
+              ftAttempted: data.ft_attempted,
+              isWin: data.is_win,
+              gamePhotoUrl: data.game_photo_url,
+            });
+          }
+        } catch (err) {
+          console.error('Error updating game:', err);
+          toast.error('Failed to save game stats');
+        } finally {
+          setIsSubmitting(false);
+        }
+      } else {
+        // Insert new game
+        await handleAddGame(gameData);
+      }
     } else {
-      // Game not over - save stats but stay in live capture or allow resuming later
+      // Game not over - save stats but allow resuming later
       setIsSubmitting(true);
       try {
-        const { data, error: insertError } = await supabase
-          .from('games')
-          .insert({
-            user_id: user!.id,
-            season_id: activeSeason?.id || null,
-            date: gameData.date,
-            opponent: gameData.opponent,
-            points: gameData.points,
-            rebounds: gameData.rebounds,
-            assists: gameData.assists,
-            steals: gameData.steals,
-            blocks: gameData.blocks,
-            turnovers: gameData.turnovers,
-            fouls: gameData.fouls ?? 0,
-            minutes_played: gameData.minutesPlayed,
-            fg_made: gameData.fgMade,
-            fg_attempted: gameData.fgAttempted,
-            three_pt_made: gameData.threePtMade,
-            three_pt_attempted: gameData.threePtAttempted,
-            ft_made: gameData.ftMade,
-            ft_attempted: gameData.ftAttempted,
-            is_win: gameData.isWin,
-            game_photo_url: gameData.gamePhotoUrl,
-          })
-          .select()
-          .single();
+        let data;
+        
+        if (game?.id) {
+          // Update existing game
+          const { data: updateData, error: updateError } = await supabase
+            .from('games')
+            .update({
+              points: gameData.points,
+              rebounds: gameData.rebounds,
+              assists: gameData.assists,
+              steals: gameData.steals,
+              blocks: gameData.blocks,
+              turnovers: gameData.turnovers,
+              fouls: gameData.fouls ?? 0,
+              fg_made: gameData.fgMade,
+              fg_attempted: gameData.fgAttempted,
+              three_pt_made: gameData.threePtMade,
+              three_pt_attempted: gameData.threePtAttempted,
+              ft_made: gameData.ftMade,
+              ft_attempted: gameData.ftAttempted,
+              is_win: gameData.isWin,
+              game_photo_url: gameData.gamePhotoUrl,
+            })
+            .eq('id', game.id)
+            .select()
+            .single();
 
-        if (insertError) throw insertError;
+          if (updateError) throw updateError;
+          data = updateData;
+        } else {
+          // Insert new game
+          const { data: insertData, error: insertError } = await supabase
+            .from('games')
+            .insert({
+              user_id: user!.id,
+              season_id: activeSeason?.id || null,
+              date: gameData.date,
+              opponent: gameData.opponent,
+              points: gameData.points,
+              rebounds: gameData.rebounds,
+              assists: gameData.assists,
+              steals: gameData.steals,
+              blocks: gameData.blocks,
+              turnovers: gameData.turnovers,
+              fouls: gameData.fouls ?? 0,
+              minutes_played: gameData.minutesPlayed,
+              fg_made: gameData.fgMade,
+              fg_attempted: gameData.fgAttempted,
+              three_pt_made: gameData.threePtMade,
+              three_pt_attempted: gameData.threePtAttempted,
+              ft_made: gameData.ftMade,
+              ft_attempted: gameData.ftAttempted,
+              is_win: gameData.isWin,
+              game_photo_url: gameData.gamePhotoUrl,
+            })
+            .select()
+            .single();
+
+          if (insertError) throw insertError;
+          data = insertData;
+        }
 
         toast.success('Stats saved! You can resume tracking later.');
         setShowLiveCapture(false);
@@ -307,8 +404,10 @@ export default function GameDetail() {
             isWin: data.is_win,
             gamePhotoUrl: data.game_photo_url,
           });
-          // Update URL to reflect the saved game
-          navigate(`/game/${data.id}`, { replace: true });
+          // Update URL to reflect the saved game (only if it was a new game)
+          if (!game?.id) {
+            navigate(`/game/${data.id}`, { replace: true });
+          }
         }
       } catch (err) {
         console.error('Error saving game:', err);
@@ -562,10 +661,16 @@ export default function GameDetail() {
             </div>
             <h1 className="text-3xl font-bold">vs {game.opponent}</h1>
           </div>
-          <Button variant="outline" onClick={handleExportPdf}>
-            <FileDown className="w-4 h-4 mr-2" />
-            Export PDF
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowLiveCapture(true)}>
+              <Radio className="w-4 h-4 mr-2" />
+              Resume Live Stats
+            </Button>
+            <Button variant="outline" onClick={handleExportPdf}>
+              <FileDown className="w-4 h-4 mr-2" />
+              Export PDF
+            </Button>
+          </div>
         </div>
 
         {/* Game Photo */}
