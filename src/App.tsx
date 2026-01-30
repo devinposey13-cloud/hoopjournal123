@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import GameDetail from "./pages/GameDetail";
 import PublicProfile from "./pages/PublicProfile";
 import ResetPassword from "./pages/ResetPassword";
+import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <FloatingHomeButton />
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/game/:id" element={<GameDetail />} />
             <Route path="/game/scheduled/:scheduledId" element={<GameDetail />} />
             <Route path="/reset-password" element={<ResetPassword />} />
