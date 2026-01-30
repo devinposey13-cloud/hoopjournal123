@@ -98,7 +98,7 @@ serve(async (req: Request): Promise<Response> => {
             <td style="padding: 40px 32px; text-align: center;">
               <!-- Logo/Header -->
               <div style="margin-bottom: 24px;">
-                <span style="font-size: 64px;">🏀</span>
+                <img src="https://hoopjournal.me/assets/hoop-journal-logo.png" alt="Hoop Journal" style="height: 60px; width: auto;">
               </div>
               <h1 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 0 0 8px 0; letter-spacing: -0.5px;">Welcome to the Team!</h1>
               <p style="color: #f97316; font-size: 16px; font-weight: 600; margin: 0 0 32px 0;">Your account has been approved</p>
