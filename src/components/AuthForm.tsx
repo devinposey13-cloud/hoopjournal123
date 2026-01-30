@@ -130,6 +130,7 @@ export function AuthForm() {
         if (error) throw error;
         
         // Create player settings with username and phone if applicable
+        // Note: is_approved defaults to false, requiring admin approval
         if (data.user) {
           const settingsData: any = {
             user_id: data.user.id,
@@ -140,6 +141,7 @@ export function AuthForm() {
             number: 0,
             height: "5'8\"",
             grade: '1st Grade',
+            is_approved: false, // Require admin approval during trial period
           };
           
           // Store phone number in player_settings if using phone auth
@@ -154,9 +156,23 @@ export function AuthForm() {
           if (settingsError) {
             console.error('Error creating profile:', settingsError);
           }
+
+          // Create approval request for admin visibility
+          const { error: approvalError } = await supabase
+            .from('account_approval_requests')
+            .insert({
+              user_id: data.user.id,
+              email: authMethod === 'email' ? identifier : null,
+              username: username.toLowerCase(),
+              status: 'pending',
+            });
+          
+          if (approvalError) {
+            console.error('Error creating approval request:', approvalError);
+          }
         }
         
-        toast.success('Account created! You can now log in.');
+        toast.success('Account created! Awaiting admin approval.');
       }
     } catch (error: any) {
       toast.error(error.message || 'Authentication failed');

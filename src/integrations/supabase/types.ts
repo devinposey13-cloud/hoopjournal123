@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_approval_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          email: string | null
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       achievements: {
         Row: {
           category: string
@@ -424,6 +460,7 @@ export type Database = {
           height: string
           id: string
           instagram_url: string | null
+          is_approved: boolean
           is_profile_public: boolean
           name: string
           number: number
@@ -443,6 +480,7 @@ export type Database = {
           height?: string
           id?: string
           instagram_url?: string | null
+          is_approved?: boolean
           is_profile_public?: boolean
           name?: string
           number?: number
@@ -462,6 +500,7 @@ export type Database = {
           height?: string
           id?: string
           instagram_url?: string | null
+          is_approved?: boolean
           is_profile_public?: boolean
           name?: string
           number?: number
