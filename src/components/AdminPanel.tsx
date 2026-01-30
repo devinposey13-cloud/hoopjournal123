@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare } from 'lucide-react';
+import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface UserFeedback {
@@ -67,12 +67,25 @@ interface PasswordResetRequest {
   created_at: string;
 }
 
+interface AccountApprovalRequest {
+  id: string;
+  user_id: string;
+  email: string | null;
+  username: string | null;
+  status: string;
+  admin_notes: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
 export function AdminPanel() {
   const { session } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [reports, setReports] = useState<ContentReport[]>([]);
   const [passwordRequests, setPasswordRequests] = useState<PasswordResetRequest[]>([]);
   const [userFeedback, setUserFeedback] = useState<UserFeedback[]>([]);
+  const [approvalRequests, setApprovalRequests] = useState<AccountApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
@@ -134,6 +147,15 @@ export function AdminPanel() {
 
       if (feedbackError) throw feedbackError;
       setUserFeedback(feedbackData || []);
+
+      // Fetch account approval requests
+      const { data: approvalData, error: approvalError } = await supabase
+        .from('account_approval_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (approvalError) throw approvalError;
+      setApprovalRequests(approvalData || []);
     } catch (error) {
       console.error('Error fetching admin data:', error);
       toast.error('Failed to load admin data');
@@ -418,9 +440,67 @@ export function AdminPanel() {
   // Stats
   const pendingReports = reports.filter(r => r.status === 'pending').length;
   const pendingPasswordRequests = passwordRequests.filter(r => r.status === 'pending').length;
+  const pendingApprovals = approvalRequests.filter(r => r.status === 'pending').length;
   const unreadFeedback = userFeedback.filter(f => f.status === 'unread').length;
   const totalUsers = users.length;
   const publicProfiles = users.filter(u => u.is_profile_public).length;
+
+  // Handle approval request
+  async function handleApproveUser(request: AccountApprovalRequest) {
+    try {
+      // Update player_settings to set is_approved = true
+      const { error: settingsError } = await supabase
+        .from('player_settings')
+        .update({ is_approved: true })
+        .eq('user_id', request.user_id);
+
+      if (settingsError) throw settingsError;
+
+      // Update the approval request status
+      const { error: approvalError } = await supabase
+        .from('account_approval_requests')
+        .update({ 
+          status: 'approved',
+          reviewed_by: session?.user?.id,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', request.id);
+
+      if (approvalError) throw approvalError;
+
+      setApprovalRequests(prev => prev.map(r => 
+        r.id === request.id ? { ...r, status: 'approved', reviewed_at: new Date().toISOString() } : r
+      ));
+      toast.success('User approved successfully!');
+    } catch (error) {
+      console.error('Error approving user:', error);
+      toast.error('Failed to approve user');
+    }
+  }
+
+  // Reject approval request
+  async function handleRejectUser(requestId: string) {
+    try {
+      const { error } = await supabase
+        .from('account_approval_requests')
+        .update({ 
+          status: 'rejected',
+          reviewed_by: session?.user?.id,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      setApprovalRequests(prev => prev.map(r => 
+        r.id === requestId ? { ...r, status: 'rejected', reviewed_at: new Date().toISOString() } : r
+      ));
+      toast.success('User rejected');
+    } catch (error) {
+      console.error('Error rejecting user:', error);
+      toast.error('Failed to reject user');
+    }
+  }
 
   // Get user name for feedback display
   const getUserName = (userId: string) => {
@@ -510,8 +590,15 @@ export function AdminPanel() {
         </Card>
       </div>
 
-      <Tabs defaultValue="users" className="space-y-4">
-        <TabsList>
+      <Tabs defaultValue="approvals" className="space-y-4">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="approvals" className="gap-2">
+            <UserCheck className="w-4 h-4" />
+            Approvals
+            {pendingApprovals > 0 && (
+              <Badge variant="destructive" className="ml-1">{pendingApprovals}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="users" className="gap-2">
             <Users className="w-4 h-4" />
             Users
@@ -542,6 +629,108 @@ export function AdminPanel() {
             Metrics
           </TabsTrigger>
         </TabsList>
+
+        {/* Approvals Tab */}
+        <TabsContent value="approvals" className="space-y-4">
+          {approvalRequests.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <UserCheck className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No account approval requests yet</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {/* Pending Approvals First */}
+              {approvalRequests.filter(r => r.status === 'pending').length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                    Pending Approval ({approvalRequests.filter(r => r.status === 'pending').length})
+                  </h3>
+                  {approvalRequests.filter(r => r.status === 'pending').map((request) => (
+                    <Card key={request.id} className="border-amber-500/50">
+                      <CardContent className="py-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30">
+                                Pending
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">
+                                {format(new Date(request.created_at), 'MMM d, yyyy h:mm a')}
+                              </span>
+                            </div>
+                            <div className="font-medium">
+                              {request.email || 'No email'}
+                            </div>
+                            {request.username && (
+                              <div className="text-sm text-muted-foreground">
+                                @{request.username}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleRejectUser(request.id)}
+                            >
+                              <X className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleApproveUser(request)}
+                            >
+                              <Check className="w-4 h-4 mr-1" />
+                              Approve
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Processed Approvals */}
+              {approvalRequests.filter(r => r.status !== 'pending').length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                    Processed ({approvalRequests.filter(r => r.status !== 'pending').length})
+                  </h3>
+                  {approvalRequests.filter(r => r.status !== 'pending').map((request) => (
+                    <Card key={request.id} className="opacity-75">
+                      <CardContent className="py-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={request.status === 'approved' ? 'default' : 'destructive'}>
+                                {request.status}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">
+                                {request.reviewed_at && format(new Date(request.reviewed_at), 'MMM d, yyyy h:mm a')}
+                              </span>
+                            </div>
+                            <div className="font-medium">
+                              {request.email || 'No email'}
+                            </div>
+                            {request.username && (
+                              <div className="text-sm text-muted-foreground">
+                                @{request.username}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </TabsContent>
 
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-4">

@@ -27,9 +27,11 @@ import { PersistentMusicBar } from '@/components/PersistentMusicBar';
 import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
+import { PendingApproval } from '@/components/PendingApproval';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useApprovalStatus } from '@/hooks/useApprovalStatus';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { LogOut, Loader2, Trophy, X, Radio } from 'lucide-react';
@@ -62,6 +64,7 @@ export default function Index() {
   const [tournamentFilter, setTournamentFilter] = useState<string>('all');
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdmin();
+  const { isApproved, loading: approvalLoading, refetch: refetchApproval } = useApprovalStatus();
   const {
     games,
     clips,
@@ -91,7 +94,7 @@ export default function Index() {
   } = useGameWithMilestones();
 
   // Show auth form if not logged in
-  if (authLoading) {
+  if (authLoading || approvalLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -101,6 +104,11 @@ export default function Index() {
 
   if (!user) {
     return <AuthForm />;
+  }
+
+  // Show pending approval screen if not approved (admins bypass this)
+  if (!isApproved && !isAdmin) {
+    return <PendingApproval onRefresh={refetchApproval} />;
   }
 
   const today = startOfDay(new Date());
