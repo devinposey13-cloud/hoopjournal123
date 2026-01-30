@@ -1,52 +1,43 @@
 
-
-# Fix: Milestone Reveal "Next Milestone" Button Not Working
+# Fix: Game Details Back Button Not Working
 
 ## Problem
-The "Next Milestone" button doesn't work because Framer Motion's `AnimatePresence` requires child components to support refs for proper animation lifecycle management. The current components (`GlowEffect`, `Confetti`, and `MilestoneCard`) don't forward refs, causing animation transitions to fail.
+The back button on the Game Details page uses `navigate(-1)` which relies on browser history. This fails when:
+- Users access the page directly via URL, bookmark, or shared link
+- The page is refreshed, clearing the navigation history
+- Internal navigation uses `replace: true` which doesn't add to history
 
 ## Solution
-Wrap the affected components with `React.forwardRef` to enable proper ref forwarding for Framer Motion.
+Replace all `navigate(-1)` calls with `navigate('/')` to always navigate back to the main dashboard, providing consistent and reliable navigation.
 
 ---
 
 ## Changes
 
-### 1. Update `MilestoneReveal.tsx`
-Wrap `GlowEffect` and `Confetti` components with `forwardRef`:
+### Update `src/pages/GameDetail.tsx`
 
+**Location 1 - Scheduled Game View (line 550):**
 ```text
-Before:
-  function Confetti({ rarity }) { ... }
-  function GlowEffect({ rarity }) { ... }
-
-After:
-  const Confetti = forwardRef<HTMLDivElement, { rarity: MilestoneRarity }>((props, ref) => { ... })
-  const GlowEffect = forwardRef<HTMLDivElement, { rarity: MilestoneRarity }>((props, ref) => { ... })
+Before:  onClick={() => navigate(-1)}
+After:   onClick={() => navigate('/')}
 ```
 
-Also wrap the `motion.div` containing `MilestoneCard` differently - instead of wrapping `MilestoneCard` in `AnimatePresence`, render the card directly without nested `AnimatePresence`.
-
-### 2. Update `MilestoneCard.tsx`
-Wrap the main `MilestoneCard` component with `forwardRef`:
-
+**Location 2 - Error View (line 729):**
 ```text
-Before:
-  export function MilestoneCard({ ... }: MilestoneCardProps) { ... }
+Before:  onClick={() => navigate(-1)}
+After:   onClick={() => navigate('/')}
+```
 
-After:
-  export const MilestoneCard = forwardRef<HTMLDivElement, MilestoneCardProps>(
-    (props, ref) => { ... }
-  );
+**Location 3 - Main Game Details View (line 757):**
+```text
+Before:  onClick={() => navigate(-1)}
+After:   onClick={() => navigate('/')}
 ```
 
 ---
 
-## Technical Details
-
-- Import `forwardRef` from React in both files
-- Add the `ref` parameter to each component's outer div element
-- This allows Framer Motion to properly track component mount/unmount states
-- Ensures exit animations complete before state changes occur
-- Fixes the button click handler not being triggered due to stale animation state
-
+## Why This Works
+- The main dashboard (`/`) is always a valid navigation target
+- Matches the existing FloatingHomeButton behavior which navigates to `/`
+- Provides consistent, predictable navigation regardless of how the user arrived at the page
+- No dependency on browser history state
