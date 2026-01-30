@@ -175,8 +175,11 @@ export function AuthForm() {
               <img src={hoopJournalLogo} alt="Hoop Journal" className="w-full h-full object-cover" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">Hoop Journal</h1>
-            <p className="text-muted-foreground mt-1">
-              {isLogin ? 'Sign in to track your season' : 'Create your account'}
+            <p 
+              className="text-muted-foreground mt-1"
+              style={{ fontFamily: "'Dancing Script', cursive" }}
+            >
+              {isLogin ? 'Dear Basketball,' : 'Create your account'}
             </p>
           </div>
 
