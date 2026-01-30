@@ -113,11 +113,17 @@ export function ForgotPasswordDialog({ trigger }: ForgotPasswordDialogProps) {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const response = await supabase.functions.invoke('send-password-reset', {
+        body: { email },
       });
 
-      if (error) throw error;
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to send reset email');
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
 
       setEmailSent(true);
       toast.success('Password reset email sent! Check your inbox.');
