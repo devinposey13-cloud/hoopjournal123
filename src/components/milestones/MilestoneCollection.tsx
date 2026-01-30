@@ -30,6 +30,15 @@ export function MilestoneCollection() {
     [games]
   );
 
+  // Create lookup map for games by ID for O(1) opponent lookup
+  const gamesMap = useMemo(() => {
+    const map = new Map<string, typeof games[0]>();
+    games.forEach(g => {
+      if (g.id) map.set(g.id, g);
+    });
+    return map;
+  }, [games]);
+
   // Get season progress for cumulative milestones
   const seasonProgress = useMemo(() => 
     getSeasonProgress(gamesWithIds),
@@ -191,12 +200,15 @@ export function MilestoneCollection() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredDefinitions.map(def => {
             const earned = earnedMap.get(def.id);
+            // Look up actual game data if milestone has a gameId
+            const linkedGame = earned?.gameId ? gamesMap.get(earned.gameId) : undefined;
             return (
               <MilestoneCard
                 key={def.id}
                 milestone={def}
                 earnedAt={earned?.earnedAt}
                 statsSnapshot={earned?.statsSnapshot}
+                gameOpponent={linkedGame?.opponent}
                 isEarned={!!earned}
                 isLocked={!earned}
               />
