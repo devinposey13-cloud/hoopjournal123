@@ -77,6 +77,7 @@ interface MilestoneCardProps {
   milestone: MilestoneDefinition;
   earnedAt?: string;
   statsSnapshot?: MilestoneStatsSnapshot;
+  gameOpponent?: string; // Override opponent from actual game data
   isEarned?: boolean;
   isLocked?: boolean;
   onClick?: () => void;
@@ -87,11 +88,14 @@ export function MilestoneCard({
   milestone,
   earnedAt,
   statsSnapshot,
+  gameOpponent,
   isEarned = true,
   isLocked = false,
   onClick,
   className,
 }: MilestoneCardProps) {
+  // Use gameOpponent if provided (from actual game data), otherwise fall back to snapshot
+  const displayOpponent = gameOpponent || statsSnapshot?.opponent;
   const IconComponent = ICON_MAP[milestone.icon] || Star;
   const rarity = RARITY_CONFIG[milestone.rarity];
 
@@ -169,9 +173,9 @@ export function MilestoneCard({
                 )}
               </div>
             )}
-            {statsSnapshot.opponent && (
+            {displayOpponent && (
               <div className="text-xs text-muted-foreground mt-1">
-                vs {statsSnapshot.opponent}
+                vs {displayOpponent}
               </div>
             )}
             {earnedAt && (
