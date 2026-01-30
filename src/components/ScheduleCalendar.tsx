@@ -240,16 +240,24 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame, onAddG
                     )}
                   </div>
                 </div>
-                <div className="flex items-center justify-between mt-2">
-                  <p className="text-sm text-muted-foreground">
-                    {game.time} • {game.location}
-                  </p>
-                  <button 
-                    onClick={() => handleGameClick(game)}
-                    className="flex items-center gap-1 text-primary text-sm font-medium hover:underline"
-                  >
-                    View Details <ViewIcon className="w-4 h-4" />
-                  </button>
+                <div className="mt-2 space-y-1">
+                  {game.tournament && (
+                    <p className="text-sm text-primary font-medium flex items-center gap-1">
+                      <Trophy className="w-3 h-3" />
+                      {game.tournament}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      {game.time} • {game.location}
+                    </p>
+                    <button 
+                      onClick={() => handleGameClick(game)}
+                      className="flex items-center gap-1 text-primary text-sm font-medium hover:underline"
+                    >
+                      View Details <ViewIcon className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
