@@ -5,17 +5,23 @@ import { DayPicker } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { ScheduledGame, GameStats } from '@/types/basketball';
 import { buttonVariants } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Home, Plane, ChevronRight as ViewIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, Home, Plane, ChevronRight as ViewIcon, Plus, Pencil } from 'lucide-react';
+import { QuickAddScheduleDialog } from './QuickAddScheduleDialog';
+import { EditScheduleDialog } from './EditScheduleDialog';
 
 interface ScheduleCalendarProps {
   games: ScheduledGame[];
   playedGames?: GameStats[];
   onSelectGame?: (game: ScheduledGame) => void;
+  onAddGame?: (game: Omit<ScheduledGame, 'id'>) => Promise<any> | any;
+  onUpdateGame?: (id: string, updates: Partial<Omit<ScheduledGame, 'id'>>) => Promise<any> | any;
 }
 
-export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: ScheduleCalendarProps) {
+export function ScheduleCalendar({ games, playedGames = [], onSelectGame, onAddGame, onUpdateGame }: ScheduleCalendarProps) {
   const [month, setMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [quickAddDate, setQuickAddDate] = useState<Date | null>(null);
   const navigate = useNavigate();
 
   // Get games for a specific date
@@ -58,7 +64,12 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: Sche
     }
   };
 
-  // Custom day content with game markers
+  const handleQuickAdd = (day: Date, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setQuickAddDate(day);
+  };
+
+  // Custom day content with game markers and add button
   const renderDay = (day: Date) => {
     const dayGames = getGamesForDate(day);
     const hasGames = dayGames.length > 0;
@@ -71,7 +82,7 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: Sche
           handleDayClick(day);
         }}
         className={cn(
-          "w-full h-full flex flex-col items-center justify-center relative rounded-md transition-colors",
+          "w-full h-full flex flex-col items-center justify-center relative rounded-md transition-colors group/day",
           hasGames && "cursor-pointer",
           isSelected && hasGames && "bg-primary text-primary-foreground"
         )}
@@ -89,6 +100,20 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: Sche
               />
             ))}
           </div>
+        )}
+        {/* Quick Add Button - shows on hover */}
+        {onAddGame && (
+          <button
+            onClick={(e) => handleQuickAdd(day, e)}
+            className={cn(
+              "absolute top-0 right-0 w-4 h-4 rounded-full bg-primary text-primary-foreground",
+              "flex items-center justify-center text-xs font-bold",
+              "opacity-0 group-hover/day:opacity-100 transition-opacity",
+              "hover:bg-primary/80"
+            )}
+          >
+            <Plus className="w-3 h-3" />
+          </button>
         )}
       </button>
     );
@@ -154,9 +179,8 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: Sche
           {selectedGames.map((game) => {
             const linkedGame = findLinkedGame(game);
             return (
-              <button
+              <div
                 key={game.id}
-                onClick={() => handleGameClick(game)}
                 className="w-full text-left p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors border border-border/50 hover:border-primary/30"
               >
                 <div className="flex items-center justify-between gap-2">
@@ -181,28 +205,44 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: Sche
                     </div>
                     <span className="text-base font-semibold">vs {game.opponent}</span>
                   </div>
-                  {linkedGame && (
-                    <span
-                      className={cn(
-                        'text-xs font-bold px-2 py-1 rounded',
-                        linkedGame.isWin
-                          ? 'bg-green-500/20 text-green-400'
-                          : 'bg-red-500/20 text-red-400'
-                      )}
-                    >
-                      {linkedGame.isWin ? 'W' : 'L'} - {linkedGame.points} pts
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {linkedGame && (
+                      <span
+                        className={cn(
+                          'text-xs font-bold px-2 py-1 rounded',
+                          linkedGame.isWin
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-red-500/20 text-red-400'
+                        )}
+                      >
+                        {linkedGame.isWin ? 'W' : 'L'} - {linkedGame.points} pts
+                      </span>
+                    )}
+                    {onUpdateGame && !linkedGame && (
+                      <EditScheduleDialog
+                        game={game}
+                        onUpdate={onUpdateGame}
+                        trigger={
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        }
+                      />
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <p className="text-sm text-muted-foreground">
                     {game.time} • {game.location}
                   </p>
-                  <div className="flex items-center gap-1 text-primary text-sm font-medium">
+                  <button 
+                    onClick={() => handleGameClick(game)}
+                    className="flex items-center gap-1 text-primary text-sm font-medium hover:underline"
+                  >
                     View Details <ViewIcon className="w-4 h-4" />
-                  </div>
+                  </button>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -218,7 +258,25 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame }: Sche
           <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
           <span>Away</span>
         </div>
+        {onAddGame && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+              <Plus className="w-3 h-3 text-primary-foreground" />
+            </div>
+            <span>Hover to add</span>
+          </div>
+        )}
       </div>
+
+      {/* Quick Add Dialog */}
+      {quickAddDate && onAddGame && (
+        <QuickAddScheduleDialog
+          date={quickAddDate}
+          open={!!quickAddDate}
+          onOpenChange={(open) => !open && setQuickAddDate(null)}
+          onAddGame={onAddGame}
+        />
+      )}
     </div>
   );
 }
