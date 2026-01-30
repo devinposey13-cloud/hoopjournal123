@@ -1,7 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 
 type SoundType = 
-  | 'make' | 'miss' | 'assist' | 'rebound' | 'steal' | 'block' | 'turnover' 
+  | 'make' | 'miss' | 'assist' | 'rebound' | 'steal' | 'block' | 'turnover' | 'foul'
   | 'crowd_cheer' | 'crowd_groan'
   | 'milestone_common' | 'milestone_uncommon' | 'milestone_rare' | 'milestone_epic' | 'milestone_legendary';
 
@@ -11,6 +11,7 @@ const SOUND_PATHS: Partial<Record<SoundType, string>> = {
   block: '/sounds/block.mp3',
   steal: '/sounds/steal.mp3',
   turnover: '/sounds/turnover.mp3',
+  foul: '/sounds/foul.mp3',
 };
 
 export function useSoundEffects() {
