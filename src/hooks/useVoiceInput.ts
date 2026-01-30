@@ -93,21 +93,30 @@ export function useVoiceInput(): UseVoiceInputReturn {
 
   const startRecording = useCallback(async () => {
     try {
-      // Request microphone permission
+      // Request microphone permission with mobile-optimized constraints
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
+          // Mobile-specific: don't require specific sample rates
+          sampleRate: { ideal: 16000 },
         } 
       });
       
       streamRef.current = stream;
       audioChunksRef.current = [];
       
-      // Set up audio analysis
-      const audioContext = new AudioContext();
+      // Set up audio analysis with mobile AudioContext handling
+      // Use webkitAudioContext for older iOS Safari
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const audioContext = new AudioContextClass();
       audioContextRef.current = audioContext;
+      
+      // Resume AudioContext if suspended (required on iOS/mobile after user gesture)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
       
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 256;
@@ -117,16 +126,31 @@ export function useVoiceInput(): UseVoiceInputReturn {
       const source = audioContext.createMediaStreamSource(stream);
       source.connect(analyser);
       
-      // Determine best supported format
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : MediaRecorder.isTypeSupported('audio/mp4')
-            ? 'audio/mp4'
-            : 'audio/wav';
+      // Determine best supported format - prioritize formats that work on mobile
+      // iOS Safari supports audio/mp4, Android supports audio/webm
+      let mimeType = 'audio/webm';
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/webm';
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4';
+      } else if (MediaRecorder.isTypeSupported('audio/mpeg')) {
+        mimeType = 'audio/mpeg';
+      } else if (MediaRecorder.isTypeSupported('audio/aac')) {
+        mimeType = 'audio/aac';
+      }
       
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      console.log('Using audio MIME type:', mimeType);
+      
+      // Create MediaRecorder with fallback for unsupported mimeType
+      let mediaRecorder: MediaRecorder;
+      try {
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
+      } catch (e) {
+        console.warn('Failed to create MediaRecorder with mimeType:', mimeType, 'falling back to default');
+        mediaRecorder = new MediaRecorder(stream);
+      }
       mediaRecorderRef.current = mediaRecorder;
       
       mediaRecorder.ondataavailable = (event) => {
