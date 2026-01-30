@@ -170,6 +170,19 @@ export function AuthForm() {
           if (approvalError) {
             console.error('Error creating approval request:', approvalError);
           }
+
+          // Notify admin of new signup
+          try {
+            await supabase.functions.invoke('notify-admin-signup', {
+              body: {
+                username: username.toLowerCase(),
+                email: authMethod === 'email' ? identifier : null,
+              },
+            });
+          } catch (notifyError) {
+            // Don't block signup if notification fails
+            console.error('Error sending admin notification:', notifyError);
+          }
         }
         
         toast.success('Account created! Awaiting admin approval.');
