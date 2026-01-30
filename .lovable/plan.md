@@ -1,42 +1,144 @@
 
-# Fix Foul Sound Not Playing
+# Add Visual Confirmation Feedback for Performance Buttons
 
-## Problem
-The foul button sound is not working because the `recordStat` function in `LiveStatCapture.tsx` is missing the logic to trigger the foul sound. The sound file is properly uploaded and configured, but there's no code that actually calls `playSound('foul')` when a foul is recorded.
+## Overview
+Add emoji-based visual confirmation feedback for all stat buttons on the Live Stats Capture page, similar to the existing fire (🔥) celebration for made shots. Each button type will display a relevant emoji that briefly appears and fades when pressed.
 
-## Root Cause
-When the foul button is pressed, it calls:
-```typescript
-recordStat({ type: 'fouls', value: 1, label: 'Personal Foul' })
-```
+## Current Behavior
+- Made shots (2PT, 3PT, FT made) trigger a full-screen `FireCelebration` component with 3D particles and a "🔥 BUCKET!" overlay
+- Other stat buttons (rebounds, assists, steals, blocks, turnovers, fouls, misses) have no visual feedback beyond the count update
 
-However, the sound effect logic inside `recordStat` handles rebounds, assists, steals, blocks, and turnovers - but never checks for `action.type === 'fouls'`.
+## Proposed Solution
+Create a lightweight "stat flash" feedback system that shows a contextual emoji for each stat type. This will be simpler than the FireCelebration (no 3D) but still provide clear visual confirmation.
 
-## Solution
-Add a condition to trigger the foul sound in the `recordStat` function.
+### Emoji Mapping
+| Stat Type | Emoji | Message |
+|-----------|-------|---------|
+| 2PT Made / 3PT Made / FT Made | 🔥 | BUCKET! (existing) |
+| 2PT Miss / 3PT Miss / FT Miss | ❌ | MISS |
+| Offensive Rebound | 💪 | OREB! |
+| Defensive Rebound | 🧱 | DREB! |
+| Assist | 🎯 | DIME! |
+| Steal | 🔒 | STEAL! |
+| Block | 🚫 | BLOCK! |
+| Turnover | 😬 | TO |
+| Foul | ⚠️ | FOUL |
 
 ## Changes
 
-### File: `src/components/LiveStatCapture.tsx`
+### 1. Create StatFlash Component
+A new lightweight component that shows an emoji with a short message, centered on screen with a quick fade-in/out animation.
 
-Add a new condition for fouls in the sound effects block (around line 188-190):
-
+**File: `src/components/StatFlash.tsx`**
 ```typescript
-// Current code ends at turnovers:
-} else if (action.type === 'turnovers') {
-  playSound('turnover');
-}
-
-// Add this new condition:
-} else if (action.type === 'fouls') {
-  playSound('foul');
+interface StatFlashProps {
+  show: boolean;
+  emoji: string;
+  message: string;
+  variant?: 'success' | 'danger' | 'warning' | 'neutral';
 }
 ```
 
-This single line addition will complete the sound mapping so that when the foul button is pressed with Sound Effects enabled, the uploaded foul sound will play.
+### 2. Add State Management in LiveStatCapture
+Track the current flash state including which emoji/message to show.
 
-## Verification
-After the fix:
-1. Enable the "Sound Effects" toggle on the Live Stat Capture page
-2. Press the Personal Foul button
-3. The uploaded foul sound should now play
+**Add state:**
+```typescript
+const [statFlash, setStatFlash] = useState<{
+  show: boolean;
+  emoji: string;
+  message: string;
+  variant: 'success' | 'danger' | 'warning' | 'neutral';
+} | null>(null);
+```
+
+### 3. Update recordStat Function
+Add logic to trigger the appropriate flash based on the stat type recorded.
+
+```typescript
+// Inside recordStat, after recording the stat:
+const flashConfig = getFlashForStat(action.type);
+if (flashConfig) {
+  setStatFlash({ show: true, ...flashConfig });
+  setTimeout(() => setStatFlash(null), 800);
+}
+```
+
+### 4. Add CSS Animation
+Add a "pop" keyframe animation to tailwind.config.ts for the emoji appearance.
+
+```typescript
+"stat-pop": {
+  "0%": { transform: "scale(0.5)", opacity: "0" },
+  "50%": { transform: "scale(1.2)" },
+  "100%": { transform: "scale(1)", opacity: "1" },
+},
+"stat-fade-out": {
+  "0%": { opacity: "1" },
+  "100%": { opacity: "0" },
+}
+```
+
+## Files to Modify
+
+1. **`src/components/StatFlash.tsx`** (NEW)
+   - Create new lightweight visual feedback component
+   - Accept emoji, message, and color variant props
+   - Display centered overlay with animation
+
+2. **`src/components/LiveStatCapture.tsx`**
+   - Import the new StatFlash component
+   - Add state for tracking current flash
+   - Update recordStat to trigger flash based on stat type
+   - Render StatFlash component alongside FireCelebration
+
+3. **`tailwind.config.ts`**
+   - Add new keyframe animations for the stat flash effect
+
+## Visual Design
+The StatFlash will be a semi-transparent overlay that appears briefly in the center of the screen:
+
+```text
++--------------------------------------------------+
+|                                                  |
+|                                                  |
+|                     🎯                           |
+|                   DIME!                          |
+|                                                  |
+|                                                  |
++--------------------------------------------------+
+```
+
+The overlay will:
+- Appear with a quick "pop" scale animation
+- Display for ~600ms
+- Fade out smoothly
+- Use color coding (green for positive stats, red for negative, orange for neutral)
+- Be non-interactive (`pointer-events: none`)
+
+## Implementation Details
+
+### Flash Configuration Helper
+```typescript
+function getFlashConfig(statType: string) {
+  const configs = {
+    fgMade: { emoji: '🔥', message: 'BUCKET!', variant: 'success' },
+    threePtMade: { emoji: '🔥', message: 'BUCKET!', variant: 'success' },
+    ftMade: { emoji: '🔥', message: 'BUCKET!', variant: 'success' },
+    fgAttempted: { emoji: '❌', message: 'MISS', variant: 'danger' },
+    threePtAttempted: { emoji: '❌', message: '3PT MISS', variant: 'danger' },
+    ftAttempted: { emoji: '❌', message: 'FT MISS', variant: 'danger' },
+    offensiveRebounds: { emoji: '💪', message: 'OREB!', variant: 'success' },
+    defensiveRebounds: { emoji: '🧱', message: 'DREB!', variant: 'neutral' },
+    assists: { emoji: '🎯', message: 'DIME!', variant: 'success' },
+    steals: { emoji: '🔒', message: 'STEAL!', variant: 'success' },
+    blocks: { emoji: '🚫', message: 'BLOCK!', variant: 'success' },
+    turnovers: { emoji: '😬', message: 'TURNOVER', variant: 'warning' },
+    fouls: { emoji: '⚠️', message: 'FOUL', variant: 'danger' },
+  };
+  return configs[statType] || null;
+}
+```
+
+### Keeping FireCelebration for Made Shots
+The existing FireCelebration with 3D particles will continue to trigger for made shots. The new StatFlash will handle all other stats.
