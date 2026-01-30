@@ -136,10 +136,12 @@ export function useCloudData() {
         notes: s.notes || undefined,
       })) || []);
 
-      // Fetch video clips (filtered by season)
+      // Fetch video clips (filtered by user_id and season)
+      // IMPORTANT: Filter by user_id to only get the current user's clips
       let clipsQuery = supabase
         .from('video_clips')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
       if (currentSeasonId) {
