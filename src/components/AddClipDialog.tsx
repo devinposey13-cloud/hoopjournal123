@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { toast } from 'sonner';
 
 interface AddClipDialogProps {
   onAddClip: (file: File, title: string, description?: string, isPublic?: boolean) => Promise<any>;
@@ -28,9 +29,17 @@ export function AddClipDialog({ onAddClip }: AddClipDialogProps) {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setVideoFile(file);
+    if (!file) return;
+    
+    // Validate file size (100MB limit)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error('Please upload a video under 100MB.');
+      e.target.value = '';
+      return;
     }
+    
+    setVideoFile(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,7 +91,7 @@ export function AddClipDialog({ onAddClip }: AddClipDialogProps) {
                   Click to upload video
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  MP4, MOV, or WebM
+                  MP4, MOV, or WebM (Max 100MB)
                 </p>
               </div>
             )}
