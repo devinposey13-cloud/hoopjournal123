@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, ArrowLeft, Loader2, Crown, Zap } from 'lucide-react';
-import { useSubscription, SUBSCRIPTION_TIERS } from '@/hooks/useSubscription';
+import { useSubscription, SUBSCRIPTION_TIERS, FREE_TRIAL_DAYS } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -32,16 +32,16 @@ export default function Pricing() {
   const { isSubscribed, planType, isLoading, createCheckout } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-  const handleSubscribe = async (tier: 'monthly' | 'annual') => {
+  const handleSubscribe = async (tier: 'monthly' | 'annual', withTrial: boolean = false) => {
     if (!user) {
       toast.error('Please log in to subscribe');
       navigate('/');
       return;
     }
 
-    setLoadingPlan(tier);
+    setLoadingPlan(withTrial ? `${tier}-trial` : tier);
     try {
-      await createCheckout(SUBSCRIPTION_TIERS[tier].price_id);
+      await createCheckout(SUBSCRIPTION_TIERS[tier].price_id, withTrial);
       toast.success('Redirecting to checkout...');
     } catch (error) {
       console.error('Checkout error:', error);
@@ -140,6 +140,9 @@ export default function Pricing() {
                   <div className="text-sm text-muted-foreground">
                     or ${SUBSCRIPTION_TIERS.annual.price}/year <Badge variant="secondary" className="ml-1">Save 33%</Badge>
                   </div>
+                  <div className="text-sm text-primary font-medium">
+                    🎉 {FREE_TRIAL_DAYS}-day free trial available!
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -161,6 +164,28 @@ export default function Pricing() {
                 ) : (
                   <>
                     <Button
+                      className="w-full bg-gradient-to-r from-primary to-primary/80"
+                      onClick={() => handleSubscribe('monthly', true)}
+                      disabled={loadingPlan !== null}
+                    >
+                      {loadingPlan === 'monthly-trial' ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : null}
+                      Start {FREE_TRIAL_DAYS}-Day Free Trial
+                    </Button>
+                    <div className="text-xs text-center text-muted-foreground">
+                      Then ${SUBSCRIPTION_TIERS.monthly.price}/month
+                    </div>
+                    <div className="relative my-2">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">or subscribe now</span>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
                       className="w-full"
                       onClick={() => handleSubscribe('monthly')}
                       disabled={loadingPlan !== null}
@@ -168,7 +193,7 @@ export default function Pricing() {
                       {loadingPlan === 'monthly' ? (
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
                       ) : null}
-                      Subscribe Monthly
+                      Subscribe Monthly (${SUBSCRIPTION_TIERS.monthly.price}/mo)
                     </Button>
                     <Button
                       variant="outline"
@@ -179,7 +204,7 @@ export default function Pricing() {
                       {loadingPlan === 'annual' ? (
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
                       ) : null}
-                      Subscribe Annually (Save 33%)
+                      Subscribe Annually (${SUBSCRIPTION_TIERS.annual.price}/yr)
                     </Button>
                   </>
                 )}
