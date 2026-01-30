@@ -1,61 +1,42 @@
 
+# Fix Foul Sound Not Playing
 
-# Add Custom Sound Effects Toggle to Live Stats Capture
+## Problem
+The foul button sound is not working because the `recordStat` function in `LiveStatCapture.tsx` is missing the logic to trigger the foul sound. The sound file is properly uploaded and configured, but there's no code that actually calls `playSound('foul')` when a foul is recorded.
 
-## Overview
-Add a small toggle switch labeled "Custom Sound Effects" to the Live Stats Capture page that controls whether sound effects play when stat buttons are pressed. The toggle will be off by default.
+## Root Cause
+When the foul button is pressed, it calls:
+```typescript
+recordStat({ type: 'fouls', value: 1, label: 'Personal Foul' })
+```
+
+However, the sound effect logic inside `recordStat` handles rebounds, assists, steals, blocks, and turnovers - but never checks for `action.type === 'fouls'`.
+
+## Solution
+Add a condition to trigger the foul sound in the `recordStat` function.
 
 ## Changes
 
-### 1. Add State for Sound Toggle
-Add a new state variable to track whether custom sounds are enabled:
+### File: `src/components/LiveStatCapture.tsx`
+
+Add a new condition for fouls in the sound effects block (around line 188-190):
+
 ```typescript
-const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(false);
-```
+// Current code ends at turnovers:
+} else if (action.type === 'turnovers') {
+  playSound('turnover');
+}
 
-### 2. Add Toggle UI
-Place a compact toggle switch in the header area (next to the photo/undo buttons) or just below the half selection buttons. The toggle will include:
-- A small label "Sound Effects" 
-- A Switch component from the existing UI library
-- Styling to keep it unobtrusive
-
-Proposed location: Below the half selection buttons, aligned to the right side for easy access during gameplay.
-
-### 3. Modify Sound Playing Logic
-Update the `recordStat` function to conditionally play sounds based on the toggle state:
-```typescript
-// Play appropriate sound effect only if enabled
-if (soundEffectsEnabled) {
-  if (isMadeShot) {
-    playSound('make');
-  } else if (action.type === 'ftAttempted') {
-    playSound('miss_ft');
-  }
-  // ... rest of sound logic
+// Add this new condition:
+} else if (action.type === 'fouls') {
+  playSound('foul');
 }
 ```
 
-## UI Mockup
-```text
-+--------------------------------------------------+
-|  [1st Half]  [2nd Half]                          |
-|                                                  |
-|                     Sound Effects  [OFF]         |
-+--------------------------------------------------+
-```
+This single line addition will complete the sound mapping so that when the foul button is pressed with Sound Effects enabled, the uploaded foul sound will play.
 
-The toggle will be small and positioned so it doesn't interfere with the main stat-tracking workflow.
-
-## Technical Details
-
-### Files to Modify
-- `src/components/LiveStatCapture.tsx`
-  - Import the Switch component
-  - Add `soundEffectsEnabled` state (default: `false`)
-  - Add toggle UI below half selection
-  - Wrap all `playSound()` calls in a conditional check
-
-### Dependencies
-- Uses existing `Switch` component from `@/components/ui/switch`
-- Uses existing `Label` component from `@/components/ui/label`
-
+## Verification
+After the fix:
+1. Enable the "Sound Effects" toggle on the Live Stat Capture page
+2. Press the Personal Foul button
+3. The uploaded foul sound should now play
