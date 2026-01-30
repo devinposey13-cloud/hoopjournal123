@@ -16,9 +16,10 @@ import { toast } from 'sonner';
 
 interface AddClipDialogProps {
   onAddClip: (file: File, title: string, description?: string, isPublic?: boolean) => Promise<any>;
+  isMobile?: boolean;
 }
 
-export function AddClipDialog({ onAddClip }: AddClipDialogProps) {
+export function AddClipDialog({ onAddClip, isMobile }: AddClipDialogProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -62,9 +63,14 @@ export function AddClipDialog({ onAddClip }: AddClipDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gradient-primary font-semibold">
-          <Plus className="w-4 h-4 mr-2" />
-          Upload Clip
+        <Button 
+          className="gradient-primary font-semibold"
+          size={isMobile ? "icon" : "default"}
+          title="Upload Clip"
+        >
+          <Plus className="w-4 h-4" />
+          {!isMobile && <span className="ml-2">Upload Clip</span>}
+          {isMobile && <span className="sr-only">Upload Clip</span>}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md bg-card border-border">

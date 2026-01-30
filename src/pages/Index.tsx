@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { AnimatePresence } from 'framer-motion';
 import { Navigation, Tab } from '@/components/Navigation';
 import { PlayerHeader } from '@/components/PlayerHeader';
@@ -52,6 +53,7 @@ import { toast } from 'sonner';
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const isMobile = useIsMobile();
   const [showQuickLiveStatsDialog, setShowQuickLiveStatsDialog] = useState(false);
   const [showQuickLiveCapture, setShowQuickLiveCapture] = useState(false);
   const [quickCaptureOpponent, setQuickCaptureOpponent] = useState('');
@@ -295,7 +297,7 @@ export default function Index() {
                 <section className="journal-section">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="journal-heading mb-0">Recent Games</h2>
-                    <AddGameDialog onAddGame={addGame} />
+                    <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
                   </div>
                   {games.length === 0 ? (
                     <div className="journal-card text-center py-12 rounded-xl">
@@ -327,7 +329,7 @@ export default function Index() {
                   {games.length} games recorded
                 </p>
               </div>
-              <AddGameDialog onAddGame={addGame} />
+              <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
             </div>
 
             {games.length === 0 ? (
@@ -389,12 +391,15 @@ export default function Index() {
                 <Button
                   onClick={handleQuickLiveStatsClick}
                   className="gradient-primary"
+                  size={isMobile ? "icon" : "default"}
+                  title="Live Stats"
                 >
-                  <Radio className="w-4 h-4 mr-2" />
-                  Live Stats
+                  <Radio className="w-4 h-4" />
+                  {!isMobile && <span className="ml-2">Live Stats</span>}
+                  {isMobile && <span className="sr-only">Live Stats</span>}
                 </Button>
-                <ImportScheduleDialog onImport={bulkImportScheduledGames} />
-                <AddScheduleDialog onAddGame={addScheduledGame} onBulkAddGames={bulkImportScheduledGames} />
+                <ImportScheduleDialog onImport={bulkImportScheduledGames} isMobile={isMobile} />
+                <AddScheduleDialog onAddGame={addScheduledGame} onBulkAddGames={bulkImportScheduledGames} isMobile={isMobile} />
               </div>
             </div>
 
@@ -477,7 +482,7 @@ export default function Index() {
                   {clips.length} clips uploaded
                 </p>
               </div>
-              <AddClipDialog onAddClip={addClip} />
+              <AddClipDialog onAddClip={addClip} isMobile={isMobile} />
             </div>
 
             <Tabs defaultValue="my-clips" className="w-full">

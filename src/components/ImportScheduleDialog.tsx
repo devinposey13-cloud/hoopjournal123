@@ -23,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface ImportScheduleDialogProps {
   onImport: (games: Omit<ScheduledGame, 'id'>[]) => Promise<ScheduledGame[] | void>;
+  isMobile?: boolean;
 }
 
 interface ParsedGame {
@@ -35,7 +36,7 @@ interface ParsedGame {
   selected: boolean;
 }
 
-export function ImportScheduleDialog({ onImport }: ImportScheduleDialogProps) {
+export function ImportScheduleDialog({ onImport, isMobile }: ImportScheduleDialogProps) {
   const [open, setOpen] = useState(false);
   const [feedContent, setFeedContent] = useState('');
   const [parsedGames, setParsedGames] = useState<ParsedGame[]>([]);
@@ -191,9 +192,14 @@ export function ImportScheduleDialog({ onImport }: ImportScheduleDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(o) : handleClose())}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Calendar className="w-4 h-4 mr-2" />
-          Import Schedule
+        <Button 
+          variant="outline" 
+          size={isMobile ? "icon" : "sm"}
+          title="Import Schedule"
+        >
+          <Calendar className="w-4 h-4" />
+          {!isMobile && <span className="ml-2">Import Schedule</span>}
+          {isMobile && <span className="sr-only">Import Schedule</span>}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">

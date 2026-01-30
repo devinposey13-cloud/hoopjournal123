@@ -13,9 +13,10 @@ import { GameStatsForm } from './GameStatsForm';
 
 interface AddGameDialogProps {
   onAddGame: (game: Omit<GameStats, 'id'>) => Promise<any> | any;
+  isMobile?: boolean;
 }
 
-export function AddGameDialog({ onAddGame }: AddGameDialogProps) {
+export function AddGameDialog({ onAddGame, isMobile }: AddGameDialogProps) {
   const [open, setOpen] = useState(false);
 
   const handleSubmit = async (gameData: Omit<GameStats, 'id'>) => {
@@ -26,9 +27,14 @@ export function AddGameDialog({ onAddGame }: AddGameDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gradient-primary font-semibold">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Game
+        <Button 
+          className="gradient-primary font-semibold"
+          size={isMobile ? "icon" : "default"}
+          title="Add Game"
+        >
+          <Plus className="w-4 h-4" />
+          {!isMobile && <span className="ml-2">Add Game</span>}
+          {isMobile && <span className="sr-only">Add Game</span>}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-card border-border">

@@ -32,9 +32,10 @@ interface MultiGameEntry {
 interface AddScheduleDialogProps {
   onAddGame: (game: Omit<ScheduledGame, 'id'>) => Promise<any> | any;
   onBulkAddGames?: (games: Omit<ScheduledGame, 'id'>[]) => Promise<any> | any;
+  isMobile?: boolean;
 }
 
-export function AddScheduleDialog({ onAddGame, onBulkAddGames }: AddScheduleDialogProps) {
+export function AddScheduleDialog({ onAddGame, onBulkAddGames, isMobile }: AddScheduleDialogProps) {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
   const [multiMode, setMultiMode] = useState(false);
@@ -123,9 +124,14 @@ export function AddScheduleDialog({ onAddGame, onBulkAddGames }: AddScheduleDial
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
       <DialogTrigger asChild>
-        <Button className="gradient-primary font-semibold">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Game
+        <Button 
+          className="gradient-primary font-semibold"
+          size={isMobile ? "icon" : "default"}
+          title="Add Game"
+        >
+          <Plus className="w-4 h-4" />
+          {!isMobile && <span className="ml-2">Add Game</span>}
+          {isMobile && <span className="sr-only">Add Game</span>}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg bg-card border-border max-h-[90vh] overflow-y-auto">
