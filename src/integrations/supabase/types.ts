@@ -900,9 +900,9 @@ export type Database = {
           grade?: string | null
           height?: string | null
           id?: string | null
-          instagram_url?: string | null
+          instagram_url?: never
           is_profile_public?: boolean | null
-          name?: string | null
+          name?: never
           number?: number | null
           position?: string | null
           team?: string | null
@@ -918,9 +918,9 @@ export type Database = {
           grade?: string | null
           height?: string | null
           id?: string | null
-          instagram_url?: string | null
+          instagram_url?: never
           is_profile_public?: boolean | null
-          name?: string | null
+          name?: never
           number?: number | null
           position?: string | null
           team?: string | null
