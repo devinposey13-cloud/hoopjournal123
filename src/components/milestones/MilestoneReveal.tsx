@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, forwardRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -95,6 +96,7 @@ const GlowEffect = forwardRef<HTMLDivElement, { rarity: MilestoneRarity }>(({ ra
 GlowEffect.displayName = 'GlowEffect';
 
 export function MilestoneReveal({ milestones, onComplete, onViewCollection }: MilestoneRevealProps) {
+  const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
   const [showCard, setShowCard] = useState(false);
@@ -102,6 +104,9 @@ export function MilestoneReveal({ milestones, onComplete, onViewCollection }: Mi
 
   const currentMilestone = milestones[currentIndex];
   const hasMore = currentIndex < milestones.length - 1;
+  
+  // Get gameId from first milestone that has one
+  const gameId = milestones.find(m => m.gameId)?.gameId;
 
   // Play sound when card is revealed
   const playCelebrationSound = useCallback((rarity: MilestoneRarity) => {
@@ -135,6 +140,13 @@ export function MilestoneReveal({ milestones, onComplete, onViewCollection }: Mi
     };
   }, [currentIndex, currentMilestone, playCelebrationSound]);
 
+  const handleClose = useCallback(() => {
+    onComplete();
+    if (gameId) {
+      navigate(`/game/${gameId}`);
+    }
+  }, [onComplete, gameId, navigate]);
+
   const handleNext = useCallback(() => {
     if (hasMore) {
       setIsRevealed(false);
@@ -143,9 +155,9 @@ export function MilestoneReveal({ milestones, onComplete, onViewCollection }: Mi
         setCurrentIndex(prev => prev + 1);
       }, 300);
     } else {
-      onComplete();
+      handleClose();
     }
-  }, [hasMore, onComplete]);
+  }, [hasMore, handleClose]);
 
   if (!currentMilestone) return null;
 
@@ -161,7 +173,7 @@ export function MilestoneReveal({ milestones, onComplete, onViewCollection }: Mi
         variant="ghost"
         size="icon"
         className="absolute top-4 right-4 z-10"
-        onClick={onComplete}
+        onClick={handleClose}
       >
         <X className="w-5 h-5" />
       </Button>
