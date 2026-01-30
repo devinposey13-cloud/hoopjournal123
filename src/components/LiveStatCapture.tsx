@@ -187,6 +187,8 @@ export function LiveStatCapture({
         playSound('block');
       } else if (action.type === 'turnovers') {
         playSound('turnover');
+      } else if (action.type === 'fouls') {
+        playSound('foul');
       }
     }
     
