@@ -1,130 +1,99 @@
 
-# Fix Haptic Feedback on Mobile Devices
+# Fix Mobile Button Layout on Game Detail Page
 
-## Problem Identified
-The haptic feedback is **not working on iOS devices** because the Vibration API (`navigator.vibrate()`) is **not supported on iOS Safari** - it has never been supported and there are no plans to add it.
-
-**Current status:**
-- **Android devices**: Should work (Vibration API is supported)
-- **iOS devices**: Does NOT work (Vibration API is not supported)
-
-## Root Cause
-The current implementation at lines 177-189 of `LiveStatCapture.tsx`:
-```typescript
-if ('vibrate' in navigator) {
-  if (isMadeShot) {
-    navigator.vibrate([50, 30, 50]);
-  } else if (...) {
-    navigator.vibrate(30);
-  } else {
-    navigator.vibrate(40);
-  }
-}
-```
-
-The check `'vibrate' in navigator` returns `false` on iOS Safari, so the code never executes.
+## Problem
+The "Add Photo", "Resume Live Stats", and "Export PDF" buttons on the game detail page display distorted on mobile devices. The buttons have both icons and text labels, causing layout issues when screen space is limited.
 
 ## Solution
-Integrate the `ios-haptics` library which provides cross-platform haptic feedback:
+Use the existing `useIsMobile` hook to conditionally hide button text labels on mobile devices, showing only the icons. This saves significant horizontal space while maintaining functionality through recognizable icons.
 
-- **On iOS Safari 17.4+**: Uses a clever technique with `<input type="checkbox" switch />` elements that have native haptic feedback when toggled
-- **On Android/other browsers**: Falls back to `navigator.vibrate()` automatically
+## Changes
 
-## Changes Required
+### File: `src/pages/GameDetail.tsx`
 
-### 1. Install the `ios-haptics` package
-```bash
-npm install ios-haptics
-```
-
-### 2. Create a Custom `useHapticFeedback` Hook
-Create a new hook that abstracts haptic feedback and provides different intensities:
-
-**File: `src/hooks/useHapticFeedback.ts`**
+**1. Add import for the mobile hook:**
 ```typescript
-import { haptic } from 'ios-haptics';
-
-export function useHapticFeedback() {
-  const triggerHaptic = (intensity: 'light' | 'medium' | 'strong' | 'success' | 'error') => {
-    try {
-      switch (intensity) {
-        case 'light':
-          haptic();
-          break;
-        case 'medium':
-          haptic();
-          break;
-        case 'strong':
-        case 'success':
-          haptic.confirm(); // Double haptic
-          break;
-        case 'error':
-          haptic.error(); // Triple haptic
-          break;
-        default:
-          haptic();
-      }
-    } catch (e) {
-      // Silently fail if haptics not supported
-    }
-  };
-
-  return { triggerHaptic };
-}
+import { useIsMobile } from '@/hooks/use-mobile';
 ```
 
-### 3. Update `LiveStatCapture.tsx`
-Replace the direct `navigator.vibrate()` calls with the new hook:
-
-**Changes:**
+**2. Use the hook in the component:**
 ```typescript
-// Add import
-import { useHapticFeedback } from '@/hooks/useHapticFeedback';
-
-// Inside component
-const { triggerHaptic } = useHapticFeedback();
-
-// In recordStat function, replace lines 177-189:
-// Before:
-if ('vibrate' in navigator) {
-  if (isMadeShot) {
-    navigator.vibrate([50, 30, 50]);
-  } else if (isMiss || action.type === 'turnovers' || action.type === 'fouls') {
-    navigator.vibrate(30);
-  } else {
-    navigator.vibrate(40);
-  }
-}
-
-// After:
-if (isMadeShot) {
-  triggerHaptic('success'); // Double haptic for made shots
-} else if (isMiss || action.type === 'turnovers' || action.type === 'fouls') {
-  triggerHaptic('light'); // Light haptic for negative stats
-} else {
-  triggerHaptic('medium'); // Medium haptic for positive stats
-}
+const isMobile = useIsMobile();
 ```
 
-## Files to Create/Modify
+**3. Update the three buttons (lines 799-821) to conditionally render labels:**
 
-| File | Action | Description |
-|------|--------|-------------|
-| `package.json` | Modify | Add `ios-haptics` dependency |
-| `src/hooks/useHapticFeedback.ts` | Create | New hook for cross-platform haptic feedback |
-| `src/components/LiveStatCapture.tsx` | Modify | Use the new haptic hook instead of `navigator.vibrate()` |
+Current buttons:
+```text
++--------------+  +------------------+  +-------------+
+| 📷 Add Photo |  | 🔴 Resume Live.. |  | 📥 Export.. |
++--------------+  +------------------+  +-------------+
+```
 
-## Device Support After Fix
+After fix on mobile:
+```text
++----+  +----+  +----+
+| 📷 |  | 🔴 |  | 📥 |
++----+  +----+  +----+
+```
 
-| Device/Browser | Before Fix | After Fix |
-|----------------|------------|-----------|
-| Android Chrome | Works | Works |
-| Android Samsung Browser | Works | Works |
-| iOS Safari 17.4+ | Not working | Works |
-| iOS Safari older | Not working | Not supported (OS limitation) |
+**Button modifications:**
 
-## Technical Notes
-- The `ios-haptics` library is tiny (~1KB gzipped)
-- On iOS, it works by creating a hidden `<input type="checkbox" switch />`, toggling it (which triggers native haptic), then removing it
-- This is the only reliable way to trigger haptic feedback in Safari without a native app
-- Requires iOS 17.4+ for iOS haptic support
+| Button | Current Label | Mobile Label |
+|--------|--------------|--------------|
+| Add Photo | "Add Photo" / "Update Photo" | Icon only + sr-only text |
+| Resume Live Stats | "Resume Live Stats" | Icon only + sr-only text |
+| Export PDF | "Export PDF" | Icon only + sr-only text |
+
+The implementation will:
+- Keep icons always visible
+- Hide text labels on mobile using `{!isMobile && "Label Text"}`
+- Add `sr-only` (screen reader only) span for accessibility
+- Add tooltip on mobile buttons for discoverability
+- Adjust button size to `size="icon"` on mobile for consistent sizing
+
+**Example button transformation:**
+```tsx
+// Before
+<Button variant="outline" onClick={handleExportPdf}>
+  <FileDown className="w-4 h-4 mr-2" />
+  Export PDF
+</Button>
+
+// After
+<Button 
+  variant="outline" 
+  onClick={handleExportPdf}
+  size={isMobile ? "icon" : "default"}
+  title="Export PDF"
+>
+  <FileDown className={cn("w-4 h-4", !isMobile && "mr-2")} />
+  {!isMobile && "Export PDF"}
+  {isMobile && <span className="sr-only">Export PDF</span>}
+</Button>
+```
+
+## Technical Details
+
+- The `useIsMobile` hook is already available at `src/hooks/use-mobile.tsx` with a breakpoint of 768px
+- The `cn` utility is already imported for conditional class merging
+- Adding `title` attribute provides hover tooltip on desktop and long-press hint on mobile
+- Screen reader text (`sr-only`) maintains accessibility
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/pages/GameDetail.tsx` | Import `useIsMobile`, apply conditional rendering to 3 buttons |
+
+## Visual Result
+
+**Desktop (unchanged):**
+```text
+[📷 Add Photo] [🔴 Resume Live Stats] [📥 Export PDF]
+```
+
+**Mobile (fixed):**
+```text
+[📷] [🔴] [📥]
+```
