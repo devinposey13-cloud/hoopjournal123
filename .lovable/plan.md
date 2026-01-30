@@ -1,90 +1,62 @@
 
 
-# Admin Notification Email for New Signups
+## Fix Email Notification Issues
 
-## Overview
-Create a new edge function that sends you an email notification whenever a new user signs up and creates an account approval request. This will alert you to check the admin approval page promptly.
+### Problem Summary
 
-## How It Works
+Based on the backend logs, I identified two distinct issues:
 
-```text
-User Signs Up → Account Created → Approval Request Created → Email Sent to Admin
-                                                                    ↓
-                                                           You check your inbox
-                                                                    ↓
-                                                           Go to Admin Panel
-                                                                    ↓
-                                                           Approve/Reject User
-```
+1. **Admin signup notification failing** - The `ADMIN_NOTIFICATION_EMAIL` secret contains an invalid value, causing Resend to reject the email with a 422 validation error
+2. **User approval email** - Actually working according to logs, but may not be reaching your inbox
 
-## Changes Required
+---
 
-### 1. Create New Edge Function: `notify-admin-signup`
+### Fix 1: Update ADMIN_NOTIFICATION_EMAIL Secret
 
-A new function that:
-- Receives signup details (username, email)
-- Sends a notification email to your personal email address
-- Includes a direct link to the admin approval page
+The secret exists but contains an invalid email format. You need to update it with a valid email address.
 
-**Email Preview:**
+**Action Required**: Update the secret with your email address `devinposey13@gmail.com`
 
-```text
-┌─────────────────────────────────────────────────────┐
-│                                                     │
-│             [HOOP JOURNAL LOGO]                     │
-│                                                     │
-│           New Account Request! 🏀                   │
-│                                                     │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  A new user has signed up for Hoop Journal:         │
-│                                                     │
-│    Username: marcus_ball                            │
-│    Email: marcus@example.com                        │
-│    Signed up: Jan 30, 2026 at 3:45 PM              │
-│                                                     │
-│         ┌──────────────────────────┐                │
-│         │  Review Account Request  │                │
-│         └──────────────────────────┘                │
-│                                                     │
-├─────────────────────────────────────────────────────┤
-│         Hoop Journal Admin Notification             │
-└─────────────────────────────────────────────────────┘
-```
+---
 
-### 2. Update AuthForm Component
+### Fix 2: Verify Approval Emails
 
-After creating the approval request, call the new edge function to notify you.
+The backend logs show approval emails ARE being sent successfully (with a valid Resend message ID). If you're not receiving them:
 
-### 3. Store Admin Email as Secret
+1. **Check spam/junk folder** in Gmail
+2. **Search Gmail** for "Hoop Journal" or "noreply@hoopjournal.me"
+3. **Check Gmail filters** that might be auto-archiving or deleting these emails
+4. **Verify the test user's email** - the approval email goes to the USER being approved, not to the admin
 
-Add your personal email as a secret (`ADMIN_NOTIFICATION_EMAIL`) so it's not hardcoded in the codebase.
+---
 
-## Technical Details
+### Fix 3: Add Better Error Logging (Optional Enhancement)
 
-### New Edge Function Structure
+I recommend updating the `notify-admin-signup` edge function to:
+- Log the actual email address being used (masked for privacy)
+- Fail gracefully with a clear error if the email format is invalid
+- Return the actual error in the response for debugging
 
-| Aspect | Detail |
-|--------|--------|
-| Function Name | `notify-admin-signup` |
-| Auth Required | No (called during signup before user is authenticated) |
-| Secrets Used | `RESEND_API_KEY`, `ADMIN_NOTIFICATION_EMAIL` |
+---
 
-### Files to Create/Modify
+### Technical Details
 
-| File | Action |
-|------|--------|
-| `supabase/functions/notify-admin-signup/index.ts` | Create new edge function |
-| `supabase/config.toml` | Add function config (verify_jwt = false) |
-| `src/components/AuthForm.tsx` | Call the new function after signup |
+**notify-admin-signup/index.ts Changes:**
+- Add email format validation before sending
+- Log masked email address for debugging
+- Return detailed error information
 
-### Security Considerations
+**No changes needed for:**
+- send-approval-email (working correctly)
+- send-password-reset (working correctly)
 
-- The function doesn't require authentication (since it's called during signup)
-- Rate limiting is handled by Resend
-- No sensitive user data is exposed (just username/email that user provided)
+---
 
-## What You'll Need
+### Testing Plan
 
-Before implementing, I'll need to add a secret for your admin notification email address.
+After updating the secret:
+
+1. Create a new test account to trigger admin notification
+2. Approve the test account and verify the user receives their welcome email
+3. Confirm you receive the admin notification at devinposey13@gmail.com
 
