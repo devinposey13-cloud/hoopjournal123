@@ -174,6 +174,20 @@ export function LiveStatCapture({
     const isMadeShot = action.type === 'fgMade' || action.type === 'threePtMade' || action.type === 'ftMade';
     const isMiss = action.type === 'fgAttempted' || action.type === 'threePtAttempted' || action.type === 'ftAttempted';
     
+    // Trigger haptic feedback on mobile devices
+    if ('vibrate' in navigator) {
+      if (isMadeShot) {
+        // Strong double pulse for made shots
+        navigator.vibrate([50, 30, 50]);
+      } else if (isMiss || action.type === 'turnovers' || action.type === 'fouls') {
+        // Short single buzz for negative stats
+        navigator.vibrate(30);
+      } else {
+        // Medium pulse for positive stats (rebounds, assists, steals, blocks)
+        navigator.vibrate(40);
+      }
+    }
+    
     // Play appropriate sound effect only if enabled
     if (soundEffectsEnabled) {
       if (isMadeShot) {
