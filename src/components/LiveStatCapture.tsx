@@ -167,6 +167,8 @@ export function LiveStatCapture({
     // Play appropriate sound effect
     if (isMadeShot) {
       playSound('make');
+    } else if (action.type === 'ftAttempted') {
+      playSound('miss_ft');
     } else if (isMiss) {
       playSound('miss');
     } else if (action.type === 'offensiveRebounds' || action.type === 'defensiveRebounds') {
