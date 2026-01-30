@@ -84,7 +84,7 @@ export function getFlashConfig(statType: string): { emoji: string; message: stri
     ftAttempted: { emoji: '❌', message: 'FT MISS', variant: 'danger' },
     // Rebounds
     offensiveRebounds: { emoji: '💪', message: 'OREB!', variant: 'success' },
-    defensiveRebounds: { emoji: '🧱', message: 'DREB!', variant: 'neutral' },
+    defensiveRebounds: { emoji: '🪵', message: 'BOARD!', variant: 'neutral' },
     // Other positive stats
     assists: { emoji: '🎯', message: 'DIME!', variant: 'success' },
     steals: { emoji: '🔒', message: 'STEAL!', variant: 'success' },
