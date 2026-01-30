@@ -475,6 +475,69 @@ export type Database = {
         }
         Relationships: []
       }
+      postgame_insights: {
+        Row: {
+          areas_to_improve: string[] | null
+          confidence_level: number | null
+          created_at: string
+          feeling: string | null
+          game_id: string
+          goals_achieved: string[] | null
+          goals_missed: string[] | null
+          id: string
+          key_takeaways: string[] | null
+          mental_notes: string | null
+          season_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          areas_to_improve?: string[] | null
+          confidence_level?: number | null
+          created_at?: string
+          feeling?: string | null
+          game_id: string
+          goals_achieved?: string[] | null
+          goals_missed?: string[] | null
+          id?: string
+          key_takeaways?: string[] | null
+          mental_notes?: string | null
+          season_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          areas_to_improve?: string[] | null
+          confidence_level?: number | null
+          created_at?: string
+          feeling?: string | null
+          game_id?: string
+          goals_achieved?: string[] | null
+          goals_missed?: string[] | null
+          id?: string
+          key_takeaways?: string[] | null
+          mental_notes?: string | null
+          season_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "postgame_insights_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "postgame_insights_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduled_games: {
         Row: {
           created_at: string

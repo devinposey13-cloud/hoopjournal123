@@ -27,6 +27,7 @@ import {
 import { GameStatsForm } from '@/components/GameStatsForm';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { PostGameRecap } from '@/components/PostGameRecap';
+import { PostGameTalk } from '@/components/PostGameTalk';
 import { PregameTalk } from '@/components/PregameTalk';
 import { PregamePredictor } from '@/components/PregamePredictor';
 import { GameCountdown } from '@/components/GameCountdown';
@@ -974,6 +975,12 @@ export default function GameDetail() {
               .map(m => ({ name: m.milestone?.name || '', rarity: m.milestone?.rarity || 'common' }))
           }
           onRecapChange={handleRecapChange} 
+        />
+
+        {/* Post Game Talk - Reflection with Coach AI */}
+        <PostGameTalk 
+          game={game}
+          seasonId={activeSeason?.id}
         />
       </div>
     </div>
