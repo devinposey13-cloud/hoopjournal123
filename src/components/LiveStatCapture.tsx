@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { 
   ArrowLeft, 
   Undo2, 
@@ -112,6 +114,7 @@ export function LiveStatCapture({
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
   const [isWin, setIsWin] = useState<boolean | null>(null);
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { playSound } = useSoundEffects();
 
@@ -164,25 +167,27 @@ export function LiveStatCapture({
     const isMadeShot = action.type === 'fgMade' || action.type === 'threePtMade' || action.type === 'ftMade';
     const isMiss = action.type === 'fgAttempted' || action.type === 'threePtAttempted' || action.type === 'ftAttempted';
     
-    // Play appropriate sound effect
-    if (isMadeShot) {
-      playSound('make');
-    } else if (action.type === 'ftAttempted') {
-      playSound('miss_ft');
-    } else if (action.type === 'threePtAttempted') {
-      playSound('miss_3pt');
-    } else if (isMiss) {
-      playSound('miss');
-    } else if (action.type === 'offensiveRebounds' || action.type === 'defensiveRebounds') {
-      playSound('rebound');
-    } else if (action.type === 'assists') {
-      playSound('assist');
-    } else if (action.type === 'steals') {
-      playSound('steal');
-    } else if (action.type === 'blocks') {
-      playSound('block');
-    } else if (action.type === 'turnovers') {
-      playSound('turnover');
+    // Play appropriate sound effect only if enabled
+    if (soundEffectsEnabled) {
+      if (isMadeShot) {
+        playSound('make');
+      } else if (action.type === 'ftAttempted') {
+        playSound('miss_ft');
+      } else if (action.type === 'threePtAttempted') {
+        playSound('miss_3pt');
+      } else if (isMiss) {
+        playSound('miss');
+      } else if (action.type === 'offensiveRebounds' || action.type === 'defensiveRebounds') {
+        playSound('rebound');
+      } else if (action.type === 'assists') {
+        playSound('assist');
+      } else if (action.type === 'steals') {
+        playSound('steal');
+      } else if (action.type === 'blocks') {
+        playSound('block');
+      } else if (action.type === 'turnovers') {
+        playSound('turnover');
+      }
     }
     
     setCurrentStats(prev => {
@@ -231,7 +236,7 @@ export function LiveStatCapture({
     
     // Clear the last action indicator after a moment
     setTimeout(() => setLastAction(null), 1500);
-  }, [currentHalf, setCurrentStats, playSound]);
+  }, [currentHalf, setCurrentStats, playSound, soundEffectsEnabled]);
 
   const undoLast = useCallback(() => {
     if (history.length === 0) return;
@@ -482,6 +487,19 @@ export function LiveStatCapture({
           >
             2nd Half
           </Button>
+        </div>
+
+        {/* Sound Effects Toggle */}
+        <div className="flex items-center justify-end gap-2">
+          <Label htmlFor="sound-effects" className="text-xs text-muted-foreground">
+            Sound Effects
+          </Label>
+          <Switch
+            id="sound-effects"
+            checked={soundEffectsEnabled}
+            onCheckedChange={setSoundEffectsEnabled}
+            className="scale-90"
+          />
         </div>
 
         {/* Game Result Selection */}
