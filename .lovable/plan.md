@@ -1,127 +1,82 @@
 
-# Custom Password Reset Email Flow with Resend
+
+# Add Hoop Journal Logo to Approval Email
 
 ## Overview
-Replace the default Supabase password reset emails with a custom flow using Resend. This gives you full control over the sender address (`noreply@hoopjournal.me`) and email template design.
+Replace the basketball emoji with the actual Hoop Journal logo in the approval email template.
 
-## Prerequisites (User Action Required)
-Before implementation can work, you'll need to:
-
-1. **Create a Resend account** at https://resend.com (if you don't have one)
-2. **Verify your domain** at https://resend.com/domains - add `hoopjournal.me` and configure the DNS records they provide
-3. **Create an API key** at https://resend.com/api-keys
-4. **Provide the API key** when prompted during implementation
-
-## Architecture
-
-```text
-Current Flow:
-┌──────────────┐    ┌─────────────────┐    ┌──────────────┐
-│ User clicks  │───▶│ Supabase Auth   │───▶│ Generic email│
-│ "Reset"      │    │ resetPassword() │    │ from Supabase│
-└──────────────┘    └─────────────────┘    └──────────────┘
-
-New Flow:
-┌──────────────┐    ┌─────────────────┐    ┌──────────────┐    ┌──────────────┐
-│ User clicks  │───▶│ Edge Function   │───▶│ Resend API   │───▶│ Custom email │
-│ "Reset"      │    │ (token + email) │    │              │    │ from your    │
-└──────────────┘    └─────────────────┘    └──────────────┘    │ domain       │
-                            │                                   └──────────────┘
-                            ▼
-                    ┌─────────────────┐
-                    │ password_reset_ │
-                    │ tokens table    │
-                    └─────────────────┘
-```
+## How Email Images Work
+Emails cannot reference local files - images must be hosted at publicly accessible URLs. Since your app is published at `hoopjournal.me`, we can reference the logo from there.
 
 ## Changes
 
-### Database: New Token Storage Table
+### Edge Function Update: `send-approval-email/index.ts`
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| user_id | uuid | Reference to auth.users |
-| email | text | User's email address |
-| token | text | Unique secure reset token |
-| expires_at | timestamptz | Token expiration (1 hour) |
-| used_at | timestamptz | When token was used (null if unused) |
-| created_at | timestamptz | Creation timestamp |
+Replace the emoji-based header with an actual logo image:
 
-RLS policies will ensure tokens are secure and can only be validated server-side.
+| Current | New |
+|---------|-----|
+| `<span style="font-size: 64px;">🏀</span>` | `<img src="https://hoopjournal.me/assets/hoop-journal-logo.png" alt="Hoop Journal" style="height: 60px; width: auto;">` |
 
-### New Edge Function: `send-password-reset`
+**Alternative approach:** If the logo isn't at that exact path, we can use the favicon or upload the logo to a public location.
 
-Handles the reset request:
-1. Validates the email exists in auth.users
-2. Generates a secure random token
-3. Stores token in database with 1-hour expiration
-4. Sends branded email via Resend from `noreply@hoopjournal.me`
+### Updated Email Preview
 
-### New Edge Function: `validate-reset-token`
-
-Validates token when user clicks the link:
-1. Checks token exists and hasn't expired
-2. Checks token hasn't been used
-3. Returns user info if valid
-
-### Frontend Changes
-
-| File | Changes |
-|------|---------|
-| `ForgotPasswordDialog.tsx` | Call new edge function instead of `supabase.auth.resetPasswordForEmail` |
-| `ResetPassword.tsx` | Handle custom token validation, then use `supabase.auth.updateUser` |
-
-### Email Template
-
-The reset email will include:
-- Hoop Journal branding
-- Personalized greeting
-- Clear call-to-action button
-- Link expiration notice (1 hour)
-- Security notice if they didn't request it
-
-Example email preview:
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-         🏀 HOOP JOURNAL
+
+        [HOOP JOURNAL LOGO]
+
+     Welcome to the Team!
+   Your account has been approved
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Hi there,
+Hey Marcus! 👋
 
-You requested to reset your password for 
-your Hoop Journal account.
+Great news! Your Hoop Journal account 
+has been reviewed and approved. You now 
+have full access to all features:
 
-      [ Reset Password ]
+  📊 Track your game stats
+  🎬 Upload highlight clips
+  🏆 Earn badges and milestones
+  🤖 Chat with Coach AI
+  📅 Manage your game schedule
 
-This link will expire in 1 hour.
+      ┌─────────────────────┐
+      │  Open Hoop Journal  │  ← Orange button
+      └─────────────────────┘
 
-If you didn't request this, you can safely 
-ignore this email.
+"The only way to prove you're a good 
+sport is to lose." — Ernie Banks
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+© 2026 Hoop Journal. Keep grinding! 💪
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-## Files to Create/Modify
+## Technical Details
 
-| File | Action | Description |
-|------|--------|-------------|
-| Database migration | Create | Add `password_reset_tokens` table |
-| `supabase/functions/send-password-reset/index.ts` | Create | Generate token & send email via Resend |
-| `supabase/functions/validate-reset-token/index.ts` | Create | Validate token for password update |
-| `src/components/ForgotPasswordDialog.tsx` | Modify | Use new edge function |
-| `src/pages/ResetPassword.tsx` | Modify | Validate custom token before allowing password update |
-| `supabase/config.toml` | Modify | Add new edge functions config |
+### Logo Image Tag
+```html
+<img 
+  src="https://hoopjournal.me/assets/hoop-journal-logo.png" 
+  alt="Hoop Journal" 
+  style="height: 60px; width: auto; margin-bottom: 16px;"
+>
+```
 
-## Security Considerations
+### Email Client Compatibility
+- Uses inline styles (required for email)
+- Includes alt text for accessibility
+- Fixed height with auto width to maintain aspect ratio
+- Falls back to alt text if images are blocked
 
-- Tokens are cryptographically random (32 bytes)
-- Tokens expire after 1 hour
-- Tokens can only be used once
-- Rate limiting: one request per email per 5 minutes
-- Tokens validated server-side only (via edge function)
-- Email enumeration protection: same response regardless of email existence
+## Files to Modify
 
-## Secret Required
+| File | Change |
+|------|--------|
+| `supabase/functions/send-approval-email/index.ts` | Replace emoji with logo image |
+| `supabase/functions/send-password-reset/index.ts` | Also add logo for consistency |
 
-You'll need to add the `RESEND_API_KEY` secret when prompted during implementation.
