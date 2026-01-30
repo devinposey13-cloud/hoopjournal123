@@ -79,7 +79,7 @@ const GlowEffect = forwardRef<HTMLDivElement, { rarity: MilestoneRarity }>(({ ra
   return (
     <motion.div
       ref={ref}
-      className="absolute inset-0 rounded-xl"
+      className="absolute inset-0 rounded-xl pointer-events-none"
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ 
         opacity: [0, 1, 0.5, 1],
