@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FireCelebration } from './FireCelebration';
+import { StatFlash, getFlashConfig } from './StatFlash';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { HalfStats } from '@/types/basketball';
 import { supabase } from '@/integrations/supabase/client';
@@ -110,6 +111,12 @@ export function LiveStatCapture({
   const [history, setHistory] = useState<StatAction[]>([]);
   const [lastAction, setLastAction] = useState<string | null>(null);
   const [showFireCelebration, setShowFireCelebration] = useState(false);
+  const [statFlash, setStatFlash] = useState<{
+    show: boolean;
+    emoji: string;
+    message: string;
+    variant: 'success' | 'danger' | 'warning' | 'neutral';
+  } | null>(null);
   const [gamePhoto, setGamePhoto] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
@@ -234,6 +241,14 @@ export function LiveStatCapture({
     // Trigger fire celebration for made shots
     if (isMadeShot) {
       setShowFireCelebration(true);
+    } else {
+      // Trigger stat flash for other actions
+      const flashConfig = getFlashConfig(action.type);
+      if (flashConfig) {
+        setStatFlash({ show: true, ...flashConfig });
+        // Reset after animation completes
+        setTimeout(() => setStatFlash(null), 850);
+      }
     }
     
     // Clear the last action indicator after a moment
@@ -356,8 +371,16 @@ export function LiveStatCapture({
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Fire Celebration Overlay */}
+      {/* Visual Feedback Overlays */}
       <FireCelebration show={showFireCelebration} />
+      {statFlash && (
+        <StatFlash
+          show={statFlash.show}
+          emoji={statFlash.emoji}
+          message={statFlash.message}
+          variant={statFlash.variant}
+        />
+      )}
       
       {/* Header */}
       <div className="bg-card border-b border-border p-4 flex items-center justify-between sticky top-0 z-10">
