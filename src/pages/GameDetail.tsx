@@ -14,6 +14,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { GameStatsForm } from '@/components/GameStatsForm';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { PostGameRecap } from '@/components/PostGameRecap';
@@ -47,6 +57,7 @@ export default function GameDetail() {
   const [includeRecapInPdf, setIncludeRecapInPdf] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const [showDeletePhotoDialog, setShowDeletePhotoDialog] = useState(false);
 
   const handleRecapChange = useCallback((recap: string | null, includeInPdf: boolean) => {
     setCoachRecap(recap);
@@ -822,10 +833,32 @@ export default function GameDetail() {
               variant="destructive"
               size="icon"
               className="absolute top-2 right-2 w-8 h-8"
-              onClick={handleRemovePhoto}
+              onClick={() => setShowDeletePhotoDialog(true)}
             >
               <Trash2 className="w-4 h-4" />
             </Button>
+            <AlertDialog open={showDeletePhotoDialog} onOpenChange={setShowDeletePhotoDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Game Photo?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently remove the photo from this game. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      handleRemovePhoto();
+                      setShowDeletePhotoDialog(false);
+                    }}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <div className="p-3 text-center text-sm text-muted-foreground">
               📸 Game Day Photo
             </div>
