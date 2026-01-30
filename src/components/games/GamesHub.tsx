@@ -8,7 +8,6 @@ import { TriviaGame } from './TriviaGame';
 import { StatsPredictorGame } from './StatsPredictorGame';
 import { Leaderboard } from './Leaderboard';
 import { AchievementsList } from './AchievementsList';
-import { MilestoneCollection } from '@/components/milestones/MilestoneCollection';
 import { useGameData } from '@/hooks/useGameData';
 import { useAchievements } from '@/hooks/useAchievements';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -132,10 +131,9 @@ export function GamesHub() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="games">Games</TabsTrigger>
-          <TabsTrigger value="milestones">Milestones</TabsTrigger>
-          <TabsTrigger value="achievements">Achievements</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="games">Mini-Games</TabsTrigger>
+          <TabsTrigger value="badges">Badges</TabsTrigger>
           <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
         </TabsList>
 
@@ -157,11 +155,7 @@ export function GamesHub() {
           </div>
         </TabsContent>
 
-        <TabsContent value="milestones" className="mt-6">
-          <MilestoneCollection />
-        </TabsContent>
-
-        <TabsContent value="achievements" className="mt-6">
+        <TabsContent value="badges" className="mt-6">
           <AchievementsList />
         </TabsContent>
 

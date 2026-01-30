@@ -21,6 +21,7 @@ import { ExploreClips } from '@/components/ExploreClips';
 import { JournalHeader } from '@/components/JournalHeader';
 import { AdminPanel } from '@/components/AdminPanel';
 import { GamesHub } from '@/components/games/GamesHub';
+import { MilestoneCollection } from '@/components/milestones/MilestoneCollection';
 import { PersistentMusicBar } from '@/components/PersistentMusicBar';
 import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
 import { useAuth } from '@/hooks/useAuth';
@@ -355,13 +356,26 @@ export default function Index() {
           </div>
         )}
 
+        {/* Milestones Tab - Real Game Achievements */}
+        {activeTab === 'milestones' && (
+          <div className="space-y-6 animate-fade-in">
+            <div>
+              <h1 className="text-2xl font-bold">Milestones</h1>
+              <p className="text-muted-foreground">
+                Achievements earned from your real basketball games
+              </p>
+            </div>
+            <MilestoneCollection />
+          </div>
+        )}
+
         {/* Mini Games Tab */}
         {activeTab === 'minigames' && (
           <div className="space-y-6 animate-fade-in">
             <div>
-              <h1 className="text-2xl font-bold">Games & Challenges</h1>
+              <h1 className="text-2xl font-bold">Mini-Games</h1>
               <p className="text-muted-foreground">
-                Play mini-games, earn achievements, and climb the leaderboard
+                Play mini-games, earn badges, and climb the leaderboard
               </p>
             </div>
             <GamesHub />

@@ -24,13 +24,15 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 export function AchievementsList() {
-  const { achievements, loading, isUnlocked, getTotalPoints, getUnlockedCount } = useAchievements();
+  const { achievements, loading, isUnlocked } = useAchievements();
 
-  const totalPoints = getTotalPoints();
-  const unlockedCount = getUnlockedCount();
-  const progress = achievements.length > 0 ? (unlockedCount / achievements.length) * 100 : 0;
-
-  const groupedAchievements = achievements.reduce((acc, achievement) => {
+  // Filter to mini-game achievements only (exclude "stats" category which is for real games)
+  const miniGameAchievements = achievements.filter(a => a.category !== 'stats');
+  const totalPoints = miniGameAchievements.filter(a => isUnlocked(a.id)).reduce((sum, a) => sum + a.points, 0);
+  const unlockedCount = miniGameAchievements.filter(a => isUnlocked(a.id)).length;
+  const progress = miniGameAchievements.length > 0 ? (unlockedCount / miniGameAchievements.length) * 100 : 0;
+  
+  const groupedAchievements = miniGameAchievements.reduce((acc, achievement) => {
     const category = achievement.category;
     if (!acc[category]) acc[category] = [];
     acc[category].push(achievement);
@@ -38,8 +40,7 @@ export function AchievementsList() {
   }, {} as Record<string, Achievement[]>);
 
   const categoryLabels: Record<string, string> = {
-    games: '🎮 Games',
-    stats: '📊 Real Games',
+    games: '🎮 Mini-Games',
     engagement: '🔥 Engagement',
   };
 
@@ -63,9 +64,9 @@ export function AchievementsList() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-lg font-semibold">Achievement Progress</h3>
+              <h3 className="text-lg font-semibold">Mini-Game Badges</h3>
               <p className="text-sm text-muted-foreground">
-                {unlockedCount} of {achievements.length} unlocked
+                {unlockedCount} of {miniGameAchievements.length} unlocked
               </p>
             </div>
             <div className="text-right">
