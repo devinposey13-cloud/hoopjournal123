@@ -1,99 +1,127 @@
 
-# Fix Mobile Button Layout on Game Detail Page
+# Custom Password Reset Email Flow with Resend
 
-## Problem
-The "Add Photo", "Resume Live Stats", and "Export PDF" buttons on the game detail page display distorted on mobile devices. The buttons have both icons and text labels, causing layout issues when screen space is limited.
+## Overview
+Replace the default Supabase password reset emails with a custom flow using Resend. This gives you full control over the sender address (`noreply@hoopjournal.me`) and email template design.
 
-## Solution
-Use the existing `useIsMobile` hook to conditionally hide button text labels on mobile devices, showing only the icons. This saves significant horizontal space while maintaining functionality through recognizable icons.
+## Prerequisites (User Action Required)
+Before implementation can work, you'll need to:
+
+1. **Create a Resend account** at https://resend.com (if you don't have one)
+2. **Verify your domain** at https://resend.com/domains - add `hoopjournal.me` and configure the DNS records they provide
+3. **Create an API key** at https://resend.com/api-keys
+4. **Provide the API key** when prompted during implementation
+
+## Architecture
+
+```text
+Current Flow:
+┌──────────────┐    ┌─────────────────┐    ┌──────────────┐
+│ User clicks  │───▶│ Supabase Auth   │───▶│ Generic email│
+│ "Reset"      │    │ resetPassword() │    │ from Supabase│
+└──────────────┘    └─────────────────┘    └──────────────┘
+
+New Flow:
+┌──────────────┐    ┌─────────────────┐    ┌──────────────┐    ┌──────────────┐
+│ User clicks  │───▶│ Edge Function   │───▶│ Resend API   │───▶│ Custom email │
+│ "Reset"      │    │ (token + email) │    │              │    │ from your    │
+└──────────────┘    └─────────────────┘    └──────────────┘    │ domain       │
+                            │                                   └──────────────┘
+                            ▼
+                    ┌─────────────────┐
+                    │ password_reset_ │
+                    │ tokens table    │
+                    └─────────────────┘
+```
 
 ## Changes
 
-### File: `src/pages/GameDetail.tsx`
+### Database: New Token Storage Table
 
-**1. Add import for the mobile hook:**
-```typescript
-import { useIsMobile } from '@/hooks/use-mobile';
-```
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| user_id | uuid | Reference to auth.users |
+| email | text | User's email address |
+| token | text | Unique secure reset token |
+| expires_at | timestamptz | Token expiration (1 hour) |
+| used_at | timestamptz | When token was used (null if unused) |
+| created_at | timestamptz | Creation timestamp |
 
-**2. Use the hook in the component:**
-```typescript
-const isMobile = useIsMobile();
-```
+RLS policies will ensure tokens are secure and can only be validated server-side.
 
-**3. Update the three buttons (lines 799-821) to conditionally render labels:**
+### New Edge Function: `send-password-reset`
 
-Current buttons:
-```text
-+--------------+  +------------------+  +-------------+
-| 📷 Add Photo |  | 🔴 Resume Live.. |  | 📥 Export.. |
-+--------------+  +------------------+  +-------------+
-```
+Handles the reset request:
+1. Validates the email exists in auth.users
+2. Generates a secure random token
+3. Stores token in database with 1-hour expiration
+4. Sends branded email via Resend from `noreply@hoopjournal.me`
 
-After fix on mobile:
-```text
-+----+  +----+  +----+
-| 📷 |  | 🔴 |  | 📥 |
-+----+  +----+  +----+
-```
+### New Edge Function: `validate-reset-token`
 
-**Button modifications:**
+Validates token when user clicks the link:
+1. Checks token exists and hasn't expired
+2. Checks token hasn't been used
+3. Returns user info if valid
 
-| Button | Current Label | Mobile Label |
-|--------|--------------|--------------|
-| Add Photo | "Add Photo" / "Update Photo" | Icon only + sr-only text |
-| Resume Live Stats | "Resume Live Stats" | Icon only + sr-only text |
-| Export PDF | "Export PDF" | Icon only + sr-only text |
-
-The implementation will:
-- Keep icons always visible
-- Hide text labels on mobile using `{!isMobile && "Label Text"}`
-- Add `sr-only` (screen reader only) span for accessibility
-- Add tooltip on mobile buttons for discoverability
-- Adjust button size to `size="icon"` on mobile for consistent sizing
-
-**Example button transformation:**
-```tsx
-// Before
-<Button variant="outline" onClick={handleExportPdf}>
-  <FileDown className="w-4 h-4 mr-2" />
-  Export PDF
-</Button>
-
-// After
-<Button 
-  variant="outline" 
-  onClick={handleExportPdf}
-  size={isMobile ? "icon" : "default"}
-  title="Export PDF"
->
-  <FileDown className={cn("w-4 h-4", !isMobile && "mr-2")} />
-  {!isMobile && "Export PDF"}
-  {isMobile && <span className="sr-only">Export PDF</span>}
-</Button>
-```
-
-## Technical Details
-
-- The `useIsMobile` hook is already available at `src/hooks/use-mobile.tsx` with a breakpoint of 768px
-- The `cn` utility is already imported for conditional class merging
-- Adding `title` attribute provides hover tooltip on desktop and long-press hint on mobile
-- Screen reader text (`sr-only`) maintains accessibility
-
-## Files to Modify
+### Frontend Changes
 
 | File | Changes |
 |------|---------|
-| `src/pages/GameDetail.tsx` | Import `useIsMobile`, apply conditional rendering to 3 buttons |
+| `ForgotPasswordDialog.tsx` | Call new edge function instead of `supabase.auth.resetPasswordForEmail` |
+| `ResetPassword.tsx` | Handle custom token validation, then use `supabase.auth.updateUser` |
 
-## Visual Result
+### Email Template
 
-**Desktop (unchanged):**
+The reset email will include:
+- Hoop Journal branding
+- Personalized greeting
+- Clear call-to-action button
+- Link expiration notice (1 hour)
+- Security notice if they didn't request it
+
+Example email preview:
 ```text
-[📷 Add Photo] [🔴 Resume Live Stats] [📥 Export PDF]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+         🏀 HOOP JOURNAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Hi there,
+
+You requested to reset your password for 
+your Hoop Journal account.
+
+      [ Reset Password ]
+
+This link will expire in 1 hour.
+
+If you didn't request this, you can safely 
+ignore this email.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-**Mobile (fixed):**
-```text
-[📷] [🔴] [📥]
-```
+## Files to Create/Modify
+
+| File | Action | Description |
+|------|--------|-------------|
+| Database migration | Create | Add `password_reset_tokens` table |
+| `supabase/functions/send-password-reset/index.ts` | Create | Generate token & send email via Resend |
+| `supabase/functions/validate-reset-token/index.ts` | Create | Validate token for password update |
+| `src/components/ForgotPasswordDialog.tsx` | Modify | Use new edge function |
+| `src/pages/ResetPassword.tsx` | Modify | Validate custom token before allowing password update |
+| `supabase/config.toml` | Modify | Add new edge functions config |
+
+## Security Considerations
+
+- Tokens are cryptographically random (32 bytes)
+- Tokens expire after 1 hour
+- Tokens can only be used once
+- Rate limiting: one request per email per 5 minutes
+- Tokens validated server-side only (via edge function)
+- Email enumeration protection: same response regardless of email existence
+
+## Secret Required
+
+You'll need to add the `RESEND_API_KEY` secret when prompted during implementation.
