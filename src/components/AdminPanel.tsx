@@ -583,7 +583,7 @@ export function AdminPanel() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Use this for: <code className="bg-muted px-1 rounded">6fda0654-9b6c-403d-8c8a-21293f368dd5</code> (jamaur.jackson@gmail.com)
+                Use this for auth users that exist but have no player profile.
               </p>
             </CardContent>
           </Card>
