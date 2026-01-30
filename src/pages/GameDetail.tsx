@@ -1,5 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCloudData } from '@/hooks/useCloudData';
@@ -25,7 +25,7 @@ import { SpotifyPlayer } from '@/components/SpotifyPlayer';
 import { SeasonAveragesCard } from '@/components/SeasonAveragesCard';
 import { EditScheduleDialog } from '@/components/EditScheduleDialog';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon } from 'lucide-react';
 import { QuickDuplicateDialog } from '@/components/QuickDuplicateDialog';
 import { toast } from 'sonner';
 
@@ -45,6 +45,8 @@ export default function GameDetail() {
   const [halfData, setHalfData] = useState<LiveStatsSaveData | null>(null);
   const [coachRecap, setCoachRecap] = useState<string | null>(null);
   const [includeRecapInPdf, setIncludeRecapInPdf] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const handleRecapChange = useCallback((recap: string | null, includeInPdf: boolean) => {
     setCoachRecap(recap);
@@ -438,6 +440,55 @@ export default function GameDetail() {
     toast.success('Box score PDF exported!');
   };
 
+  // Handle game photo capture/update
+  const handleGamePhotoCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !game || !user) return;
+
+    setIsUploadingPhoto(true);
+    try {
+      // Create a unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars') // Reusing avatars bucket for game photos
+        .upload(`game-photos/${fileName}`, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(`game-photos/${fileName}`);
+
+      // Update the game with the new photo URL
+      const { error: updateError } = await supabase
+        .from('games')
+        .update({ game_photo_url: publicUrl })
+        .eq('id', game.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setGame(prev => prev ? { ...prev, gamePhotoUrl: publicUrl } : null);
+      toast.success('Game photo updated!');
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast.error('Failed to upload photo');
+    } finally {
+      setIsUploadingPhoto(false);
+      // Reset the input
+      if (photoInputRef.current) {
+        photoInputRef.current.value = '';
+      }
+    }
+  };
+
   // Show Live Stat Capture fullscreen
   if (showLiveCapture) {
     const opponent = scheduledGame?.opponent || game?.opponent || 'Unknown';
@@ -703,6 +754,29 @@ export default function GameDetail() {
             <h1 className="text-3xl font-bold">vs {game.opponent}</h1>
           </div>
           <div className="flex gap-2">
+            {/* Hidden file input for photo capture */}
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp,image/heic"
+              onChange={handleGamePhotoCapture}
+              className="hidden"
+            />
+            <Button 
+              variant="outline" 
+              onClick={() => photoInputRef.current?.click()}
+              disabled={isUploadingPhoto}
+              className={cn(game.gamePhotoUrl && "text-green-500")}
+            >
+              {isUploadingPhoto ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : game.gamePhotoUrl ? (
+                <ImageIcon className="w-4 h-4 mr-2" />
+              ) : (
+                <Camera className="w-4 h-4 mr-2" />
+              )}
+              {game.gamePhotoUrl ? 'Update Photo' : 'Add Photo'}
+            </Button>
             <Button variant="outline" onClick={() => setShowLiveCapture(true)}>
               <Radio className="w-4 h-4 mr-2" />
               Resume Live Stats
