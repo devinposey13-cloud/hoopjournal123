@@ -1,103 +1,148 @@
 
 
-# Fix Milestone Opponent Display
+# Add Tournament Field with Quick Duplicate Feature
 
-## Problem Identified
+## Overview
 
-The existing milestone records in the database contain **test/sample data** with hardcoded opponent names ("Lakers", "Celtics") that don't correspond to actual games. Specifically:
-
-- All milestones have `game_id: null` 
-- The `stats_snapshot` contains `opponent: "Lakers"` which is hardcoded test data
-- Real games in the database are against teams like "Asia" and "Gonzaga College"
-
-The code that creates milestones is correct - it properly extracts the opponent from real game data. The issue is that the initial milestone data was seeded with fake values.
-
-## Solution Approach
-
-### Part 1: Update MilestoneCard to Use Game Data When Available
-
-Modify the `MilestoneCard` component and `MilestoneCollection` to pass the actual game data, so we can look up the real opponent even if the `stats_snapshot` is incorrect.
-
-1. **MilestoneCollection.tsx**: 
-   - Create a `gamesMap` from `game_id` → `game` for quick lookup
-   - Pass the actual game's opponent to MilestoneCard when `gameId` exists
-
-2. **MilestoneCard.tsx**:
-   - Add optional `gameOpponent` prop that overrides `statsSnapshot.opponent`
-   - Display the real opponent when available
-
-### Part 2: Data Cleanup Option
-
-Provide you with an option to clean up the corrupted milestone data:
-- Delete milestones with invalid opponent data (like "Lakers", "Celtics")
-- Or update them to link to actual games based on matching criteria
+Add a "Tournament" field to scheduled games that allows users to group games under a tournament name, and provide a convenient way to quickly create multiple tournament games without re-entering common information.
 
 ---
 
-## Technical Details
+## Part 1: Database Schema Update
 
-### File Changes
-
-**src/components/milestones/MilestoneCollection.tsx**
-- Create `gamesMap` from games array for O(1) lookup by game ID
-- Pass `gameOpponent` prop when earned milestone has a valid `gameId` that matches a game
-
-```typescript
-// Create lookup map for games
-const gamesMap = useMemo(() => {
-  const map = new Map<string, typeof games[0]>();
-  games.forEach(g => {
-    if (g.id) map.set(g.id, g);
-  });
-  return map;
-}, [games]);
-
-// In MilestoneCard render:
-const linkedGame = earned?.gameId ? gamesMap.get(earned.gameId) : undefined;
-<MilestoneCard
-  ...
-  gameOpponent={linkedGame?.opponent}
-/>
-```
-
-**src/components/milestones/MilestoneCard.tsx**
-- Add `gameOpponent?: string` prop
-- Use `gameOpponent` if provided, otherwise fall back to `statsSnapshot.opponent`
-
-```typescript
-interface MilestoneCardProps {
-  ...
-  gameOpponent?: string; // Override opponent from actual game data
-}
-
-// In render:
-const displayOpponent = gameOpponent || statsSnapshot?.opponent;
-{displayOpponent && (
-  <div className="text-xs text-muted-foreground mt-1">
-    vs {displayOpponent}
-  </div>
-)}
-```
-
-### Data Cleanup (Optional)
-
-After implementing the fix, you can choose to clean up the corrupted data:
+Add a new `tournament` column to the `scheduled_games` table.
 
 ```sql
--- Option 1: Delete milestones with test data
-DELETE FROM player_milestones 
-WHERE stats_snapshot->>'opponent' IN ('Lakers', 'Celtics');
-
--- Option 2: Or leave them - they'll just show without opponent info
--- since game_id is null and no game matches
+ALTER TABLE scheduled_games
+ADD COLUMN tournament text DEFAULT NULL;
 ```
 
 ---
 
-## Expected Outcome
+## Part 2: Update TypeScript Types
 
-After this change:
-- Milestones linked to real games will display the actual opponent name from the games table
-- Milestones with corrupted/test data will either show no opponent (if game_id is null) or the correct opponent (if game_id exists)
-- Future milestones will work correctly since the code already saves proper game data
+**File: `src/types/basketball.ts`**
+
+Add `tournament` to the `ScheduledGame` interface:
+
+```typescript
+export interface ScheduledGame {
+  id: string;
+  date: string;
+  time: string;
+  opponent: string;
+  location: string;
+  isHome: boolean;
+  notes?: string;
+  tournament?: string;  // NEW
+}
+```
+
+---
+
+## Part 3: Update Data Layer
+
+**File: `src/hooks/useCloudData.ts`**
+
+- Update `fetchData` to include `tournament` field when mapping scheduled games
+- Update `addScheduledGame` to include tournament in insert
+- Update `updateScheduledGame` to handle tournament updates
+- Update `bulkImportScheduledGames` to include tournament field
+
+---
+
+## Part 4: Update Edit Dialog with Tournament Field + "Duplicate for Tournament" Feature
+
+**File: `src/components/EditScheduleDialog.tsx`**
+
+Add:
+1. **Tournament input field** - optional text field for tournament name
+2. **"Add Another Game" button** - appears when tournament is filled in, allowing quick duplication
+
+When "Add Another Game" is clicked:
+- Save current game changes
+- Open a new dialog pre-filled with: tournament name, location, isHome setting
+- Only require: new date, time, and opponent
+- This creates a streamlined flow for tournament entry
+
+---
+
+## Part 5: Update Add Schedule Dialog
+
+**File: `src/components/AddScheduleDialog.tsx`**
+
+Add:
+1. **Tournament input field**
+2. **"Add Multiple Games" toggle** - when enabled, shows:
+   - A list of games to add (date + time + opponent rows)
+   - "Add Row" button to add more games
+   - All games share the same: tournament, location, isHome
+   - Submit creates all games at once via `bulkImportScheduledGames`
+
+This enables rapid tournament entry:
+1. Enter tournament name + location + home/away once
+2. Add rows for each game: just pick date, time, opponent
+3. Submit all at once
+
+---
+
+## Part 6: Update Quick Add Dialog
+
+**File: `src/components/QuickAddScheduleDialog.tsx`**
+
+Add the tournament field, keeping it optional for single game quick-adds.
+
+---
+
+## Part 7: Display Tournament in Game Detail Page
+
+**File: `src/pages/GameDetail.tsx`**
+
+Show tournament name in the Game Details card if present:
+```
+Tournament: Winter Classic 2026
+```
+
+---
+
+## Part 8: Display Tournament Badge in Calendar
+
+**File: `src/components/ScheduleCalendar.tsx`**
+
+When showing game details in the expanded date view, display a tournament badge if the game is part of a tournament.
+
+---
+
+## User Flow Summary
+
+**Single Game Entry:**
+- Use existing flow, optionally add tournament name
+
+**Tournament Entry (Efficient):**
+1. Click "Add Game" or use calendar quick-add
+2. Enter tournament name (e.g., "Winter Classic")
+3. Enter location once
+4. Toggle "Add Multiple Games"
+5. Add rows for each game (just date/time/opponent)
+6. Submit all at once
+
+**Editing Existing Tournament Game:**
+1. Open edit dialog
+2. See tournament field
+3. Click "Duplicate for New Game" to create another game with same tournament/location pre-filled
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| Database migration | Add `tournament` column |
+| `src/types/basketball.ts` | Add `tournament` to interface |
+| `src/hooks/useCloudData.ts` | Handle tournament in CRUD operations |
+| `src/components/EditScheduleDialog.tsx` | Add tournament field + duplicate button |
+| `src/components/AddScheduleDialog.tsx` | Add tournament field + multi-game entry mode |
+| `src/components/QuickAddScheduleDialog.tsx` | Add tournament field |
+| `src/pages/GameDetail.tsx` | Display tournament name |
+| `src/components/ScheduleCalendar.tsx` | Show tournament badge on game cards |
 
