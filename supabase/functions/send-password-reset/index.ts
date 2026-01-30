@@ -128,7 +128,7 @@ serve(async (req: Request): Promise<Response> => {
             <td style="padding: 40px 32px; text-align: center;">
               <!-- Logo/Header -->
               <div style="margin-bottom: 32px;">
-                <img src="https://hoopjournal.me/assets/hoop-journal-logo.png" alt="Hoop Journal" style="height: 60px; width: auto; margin-bottom: 16px;">
+                <img src="https://hoopjournal.me/hoop-journal-logo.png" alt="Hoop Journal" style="height: 60px; width: auto; margin-bottom: 16px;">
               </div>
               
               <!-- Main Content -->
