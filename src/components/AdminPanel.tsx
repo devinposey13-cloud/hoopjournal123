@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck } from 'lucide-react';
+import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { format } from 'date-fns';
 
 interface UserFeedback {
@@ -656,21 +657,32 @@ export function AdminPanel() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
-              {/* Pending Approvals First */}
-              {approvalRequests.filter(r => r.status === 'pending').length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                    Pending Approval ({approvalRequests.filter(r => r.status === 'pending').length})
+            <div className="space-y-6">
+              {/* Pending Approvals - Action Required */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  <h3 className="font-semibold text-amber-600 dark:text-amber-400">
+                    Action Required ({approvalRequests.filter(r => r.status === 'pending').length})
                   </h3>
-                  {approvalRequests.filter(r => r.status === 'pending').map((request) => (
-                    <Card key={request.id} className="border-amber-500/50">
+                </div>
+                
+                {approvalRequests.filter(r => r.status === 'pending').length === 0 ? (
+                  <Card className="border-dashed border-muted-foreground/30">
+                    <CardContent className="py-8 text-center text-muted-foreground">
+                      <Check className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                      <p className="text-sm">All caught up! No pending requests.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  approvalRequests.filter(r => r.status === 'pending').map((request) => (
+                    <Card key={request.id} className="border-2 border-amber-500/50 bg-amber-500/5">
                       <CardContent className="py-4">
                         <div className="flex items-center justify-between">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30">
-                                Pending
+                              <Badge className="bg-amber-500 text-white hover:bg-amber-600">
+                                New Request
                               </Badge>
                               <span className="text-sm text-muted-foreground">
                                 {format(new Date(request.created_at), 'MMM d, yyyy h:mm a')}
@@ -689,7 +701,7 @@ export function AdminPanel() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-destructive hover:text-destructive"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
                               onClick={() => handleRejectUser(request.id)}
                             >
                               <X className="w-4 h-4 mr-1" />
@@ -697,6 +709,7 @@ export function AdminPanel() {
                             </Button>
                             <Button
                               size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-white"
                               onClick={() => handleApproveUser(request)}
                             >
                               <Check className="w-4 h-4 mr-1" />
@@ -706,43 +719,55 @@ export function AdminPanel() {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
-              )}
+                  ))
+                )}
+              </div>
 
-              {/* Processed Approvals */}
+              {/* History - Collapsible */}
               {approvalRequests.filter(r => r.status !== 'pending').length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                    Processed ({approvalRequests.filter(r => r.status !== 'pending').length})
-                  </h3>
-                  {approvalRequests.filter(r => r.status !== 'pending').map((request) => (
-                    <Card key={request.id} className="opacity-75">
-                      <CardContent className="py-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={request.status === 'approved' ? 'default' : 'destructive'}>
-                                {request.status}
-                              </Badge>
-                              <span className="text-sm text-muted-foreground">
-                                {request.reviewed_at && format(new Date(request.reviewed_at), 'MMM d, yyyy h:mm a')}
-                              </span>
-                            </div>
-                            <div className="font-medium">
-                              {request.email || 'No email'}
-                            </div>
-                            {request.username && (
-                              <div className="text-sm text-muted-foreground">
-                                @{request.username}
+                <Collapsible defaultOpen={false}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-between px-0 hover:bg-transparent">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground/50" />
+                        <span className="text-sm font-medium">
+                          History ({approvalRequests.filter(r => r.status !== 'pending').length})
+                        </span>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-2 mt-2">
+                    {approvalRequests.filter(r => r.status !== 'pending').map((request) => (
+                      <Card key={request.id} className="bg-muted/30 border-muted">
+                        <CardContent className="py-3">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Badge 
+                                  variant="outline"
+                                  className={request.status === 'approved' 
+                                    ? 'bg-green-500/10 text-green-600 border-green-500/30' 
+                                    : 'bg-destructive/10 text-destructive border-destructive/30'
+                                  }
+                                >
+                                  {request.status === 'approved' ? 'Approved' : 'Rejected'}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {request.reviewed_at && format(new Date(request.reviewed_at), 'MMM d, yyyy')}
+                                </span>
                               </div>
-                            )}
+                              <div className="text-sm text-muted-foreground">
+                                {request.email || 'No email'}
+                                {request.username && ` (@${request.username})`}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
               )}
             </div>
           )}
