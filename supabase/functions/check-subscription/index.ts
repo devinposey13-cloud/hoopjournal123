@@ -15,7 +15,7 @@ const logStep = (step: string, details?: any) => {
 // Price and product mappings
 const PRICE_TO_PLAN: Record<string, string> = {
   "price_1SvKZNRmEndXycaGjqXeIVXg": "monthly",
-  "price_1SvKZwRmEndXycaGEeA8oxvL": "annual",
+  "price_1SvKgjRmEndXycaGRatSCc0m": "annual",
 };
 
 serve(async (req) => {

@@ -39,9 +39,9 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { priceId } = await req.json();
+    const { priceId, withTrial } = await req.json();
     if (!priceId) throw new Error("priceId is required");
-    logStep("Price ID received", { priceId });
+    logStep("Price ID received", { priceId, withTrial });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
@@ -56,7 +56,8 @@ serve(async (req) => {
     }
 
     const origin = req.headers.get("origin") || "https://hoopjournal123.lovable.app";
-    const session = await stripe.checkout.sessions.create({
+    
+    const sessionParams: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
@@ -68,7 +69,17 @@ serve(async (req) => {
       mode: "subscription",
       success_url: `${origin}/?subscription=success`,
       cancel_url: `${origin}/?subscription=cancelled`,
-    });
+    };
+
+    // Add 7-day free trial if requested
+    if (withTrial) {
+      sessionParams.subscription_data = {
+        trial_period_days: 7,
+      };
+      logStep("Adding 7-day free trial");
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 

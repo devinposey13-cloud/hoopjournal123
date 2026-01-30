@@ -11,12 +11,15 @@ export const SUBSCRIPTION_TIERS = {
     interval: "month",
   },
   annual: {
-    price_id: "price_1SvKZwRmEndXycaGEeA8oxvL",
-    product_id: "prod_Tt6nSQJmhT3XAq",
-    price: 79.99,
+    price_id: "price_1SvKgjRmEndXycaGRatSCc0m",
+    product_id: "prod_Tt6ugFMBjcSxU8",
+    price: 39.99,
     interval: "year",
   }
 } as const;
+
+// 7-day free trial in days
+export const FREE_TRIAL_DAYS = 7;
 
 interface SubscriptionState {
   isSubscribed: boolean;
@@ -72,13 +75,13 @@ export function useSubscription() {
     }
   }, [user]);
 
-  const createCheckout = async (priceId: string) => {
+  const createCheckout = async (priceId: string, withTrial: boolean = false) => {
     if (!user) {
       throw new Error('Must be logged in to subscribe');
     }
 
     const { data, error } = await supabase.functions.invoke('create-checkout', {
-      body: { priceId },
+      body: { priceId, withTrial },
     });
 
     if (error) throw error;
