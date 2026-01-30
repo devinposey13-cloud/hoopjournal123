@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,36 +10,58 @@ import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [validating, setValidating] = useState(true);
   const [success, setSuccess] = useState(false);
-  const [isValidSession, setIsValidSession] = useState<boolean | null>(null);
+  const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+
+  const token = searchParams.get('token');
 
   useEffect(() => {
-    // Check if we have a valid session from the reset link
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // If there's a session, the user clicked a valid reset link
-      if (session) {
-        setIsValidSession(true);
-      } else {
-        setIsValidSession(false);
+    const validateToken = async () => {
+      // If no token in URL, check for Supabase session (legacy flow fallback)
+      if (!token) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setIsValidToken(true);
+          setValidating(false);
+          return;
+        }
+        setIsValidToken(false);
+        setErrorMessage('Invalid or expired link');
+        setValidating(false);
+        return;
+      }
+
+      // Validate custom token via edge function
+      try {
+        const response = await supabase.functions.invoke('validate-reset-token', {
+          body: { token },
+        });
+
+        if (response.error || !response.data?.valid) {
+          setIsValidToken(false);
+          setErrorMessage(response.data?.error || 'Invalid or expired reset link');
+        } else {
+          setIsValidToken(true);
+          setUserEmail(response.data.email);
+        }
+      } catch (error) {
+        console.error('Token validation error:', error);
+        setIsValidToken(false);
+        setErrorMessage('Failed to validate reset link');
+      } finally {
+        setValidating(false);
       }
     };
 
-    checkSession();
-
-    // Listen for auth state changes (when user clicks the reset link)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsValidSession(true);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    validateToken();
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,9 +79,20 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      // If we have a custom token, use edge function to update password
+      if (token) {
+        const response = await supabase.functions.invoke('validate-reset-token', {
+          body: { token, newPassword: password },
+        });
 
-      if (error) throw error;
+        if (response.error || !response.data?.success) {
+          throw new Error(response.data?.error || 'Failed to update password');
+        }
+      } else {
+        // Legacy Supabase flow fallback
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw error;
+      }
 
       setSuccess(true);
       toast.success('Password updated successfully!');
@@ -75,8 +108,8 @@ export default function ResetPassword() {
     }
   };
 
-  // Show loading state while checking session
-  if (isValidSession === null) {
+  // Show loading state while validating token
+  if (validating) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -84,8 +117,8 @@ export default function ResetPassword() {
     );
   }
 
-  // Show error if no valid session
-  if (!isValidSession) {
+  // Show error if token is invalid
+  if (!isValidToken) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-md">
@@ -95,7 +128,7 @@ export default function ResetPassword() {
             </div>
             <h1 className="text-xl font-bold text-foreground mb-2">Invalid or Expired Link</h1>
             <p className="text-muted-foreground mb-6">
-              This password reset link is invalid or has expired. Please request a new one.
+              {errorMessage || 'This password reset link is invalid or has expired. Please request a new one.'}
             </p>
             <Button onClick={() => navigate('/')} className="gradient-primary">
               Go to Login
