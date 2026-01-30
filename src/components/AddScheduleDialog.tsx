@@ -81,14 +81,16 @@ export function AddScheduleDialog({ onAddGame, onBulkAddGames }: AddScheduleDial
         location: formData.location,
         isHome: formData.isHome,
         notes: '',
-        tournament: formData.tournament,
+        // Auto-fill tag with opponent if not provided
+        tournament: formData.tournament || g.opponent,
       }));
       
       await onBulkAddGames(gamesToAdd);
     } else {
-      // Single game
+      // Single game - auto-fill tag with opponent if not provided
       await onAddGame({
         ...formData,
+        tournament: formData.tournament || formData.opponent,
         date: date.toISOString(),
       });
     }
@@ -131,15 +133,16 @@ export function AddScheduleDialog({ onAddGame, onBulkAddGames }: AddScheduleDial
           <DialogTitle className="text-xl font-bold">Schedule New Game</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          {/* Tournament */}
+          {/* Tag */}
           <div className="space-y-2">
-            <Label htmlFor="tournament">Tournament (optional)</Label>
+            <Label htmlFor="tournament">Tag (optional)</Label>
             <Input
               id="tournament"
               value={formData.tournament}
               onChange={(e) => setFormData({ ...formData, tournament: e.target.value })}
               placeholder="e.g., Winter Classic 2026"
             />
+            <p className="text-xs text-muted-foreground">Leave blank to use opponent name as tag</p>
           </div>
 
           {/* Location */}
@@ -163,7 +166,7 @@ export function AddScheduleDialog({ onAddGame, onBulkAddGames }: AddScheduleDial
             <Label>{formData.isHome ? 'Home Game' : 'Away Game'}</Label>
           </div>
 
-          {/* Multi-game toggle - only show if tournament is entered */}
+          {/* Multi-game toggle - only show if tag is entered */}
           {formData.tournament && onBulkAddGames && (
             <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg border border-border">
               <Switch
@@ -172,7 +175,7 @@ export function AddScheduleDialog({ onAddGame, onBulkAddGames }: AddScheduleDial
               />
               <div>
                 <Label className="font-medium">Add Multiple Games</Label>
-                <p className="text-xs text-muted-foreground">Add several games at once with shared tournament info</p>
+                <p className="text-xs text-muted-foreground">Add several games at once with shared tag info</p>
               </div>
             </div>
           )}

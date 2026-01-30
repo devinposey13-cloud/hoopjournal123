@@ -244,7 +244,7 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame, onAddG
                   {game.tournament && (
                     <p className="text-sm text-primary font-medium flex items-center gap-1">
                       <Trophy className="w-3 h-3" />
-                      {game.tournament}
+                      Tag: {game.tournament}
                     </p>
                   )}
                   <div className="flex items-center justify-between">

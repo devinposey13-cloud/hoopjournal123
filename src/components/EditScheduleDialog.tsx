@@ -112,15 +112,15 @@ export function EditScheduleDialog({ game, onUpdate, onAddGame, trigger }: EditS
       <DialogContent className="max-w-md bg-card border-border max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
-            {showDuplicateForm ? 'Add Another Tournament Game' : 'Edit Game Details'}
+            {showDuplicateForm ? 'Add Another Tagged Game' : 'Edit Game Details'}
           </DialogTitle>
         </DialogHeader>
         
         {!showDuplicateForm ? (
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-            {/* Tournament */}
+            {/* Tag */}
             <div className="space-y-2">
-              <Label htmlFor="tournament">Tournament (optional)</Label>
+              <Label htmlFor="tournament">Tag (optional)</Label>
               <Input
                 id="tournament"
                 value={formData.tournament}
@@ -219,7 +219,7 @@ export function EditScheduleDialog({ game, onUpdate, onAddGame, trigger }: EditS
                 Save Changes
               </Button>
               
-              {/* Duplicate button - only show when tournament is set and onAddGame is provided */}
+              {/* Duplicate button - only show when tag is set and onAddGame is provided */}
               {formData.tournament && onAddGame && (
                 <Button 
                   type="button" 
@@ -228,16 +228,16 @@ export function EditScheduleDialog({ game, onUpdate, onAddGame, trigger }: EditS
                   onClick={() => setShowDuplicateForm(true)}
                 >
                   <Copy className="w-4 h-4 mr-2" />
-                  Add Another Game to "{formData.tournament}"
+                  Add Another Game with "{formData.tournament}" tag
                 </Button>
               )}
             </div>
           </form>
         ) : (
           <form onSubmit={handleDuplicateSubmit} className="space-y-4 mt-4">
-            {/* Tournament Badge */}
+            {/* Tag Badge */}
             <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
-              <p className="text-sm font-medium text-primary">Tournament: {formData.tournament}</p>
+              <p className="text-sm font-medium text-primary">Tag: {formData.tournament}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Location: {formData.location} • {formData.isHome ? 'Home' : 'Away'}
               </p>

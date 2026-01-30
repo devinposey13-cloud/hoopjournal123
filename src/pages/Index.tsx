@@ -95,10 +95,10 @@ export default function Index() {
 
   const today = startOfDay(new Date());
   
-  // Get unique tournaments for filter dropdown
+  // Get unique tags for filter dropdown
   const tournaments = [...new Set(schedule.filter(g => g.tournament).map(g => g.tournament!))].sort();
   
-  // Apply tournament filter
+  // Apply tag filter
   const filteredSchedule = tournamentFilter === 'all' 
     ? schedule 
     : schedule.filter(g => g.tournament === tournamentFilter);
@@ -272,13 +272,13 @@ export default function Index() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {/* Tournament Filter */}
+                {/* Tag Filter */}
                 {tournaments.length > 0 && (
                   <div className="flex items-center gap-2">
                     <Select value={tournamentFilter} onValueChange={setTournamentFilter}>
                       <SelectTrigger className="w-[180px]">
                         <Trophy className="w-4 h-4 mr-2 text-muted-foreground" />
-                        <SelectValue placeholder="All Tournaments" />
+                        <SelectValue placeholder="All Tags" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Games</SelectItem>
