@@ -1,148 +1,98 @@
 
-
-# Add Tournament Field with Quick Duplicate Feature
+# Plan: Add Quick Live Stats Button to Schedule Tab
 
 ## Overview
+Add a prominent "Live Stats" button on the Schedule tab that allows users to quickly jump into the Live Stat Capture interface without navigating through game details first. This is designed for users who are in a rush on game day and want to start tracking immediately.
 
-Add a "Tournament" field to scheduled games that allows users to group games under a tournament name, and provide a convenient way to quickly create multiple tournament games without re-entering common information.
+## User Experience Flow
 
----
-
-## Part 1: Database Schema Update
-
-Add a new `tournament` column to the `scheduled_games` table.
-
-```sql
-ALTER TABLE scheduled_games
-ADD COLUMN tournament text DEFAULT NULL;
+```text
++------------------+     +----------------------+     +-------------------+
+|   Schedule Tab   | --> | Today's Game Found?  | --> | Live Stat Capture |
+|  [Live Stats]    |     | Auto-select & start  |     | (Game in progress)|
++------------------+     +----------------------+     +-------------------+
+                                  |
+                                  v (No game today)
+                         +----------------------+
+                         | Quick Start Dialog   |
+                         | - Enter opponent     |
+                         | - Optional: date     |
+                         +----------------------+
 ```
 
----
+## Implementation Details
 
-## Part 2: Update TypeScript Types
+### 1. Add Quick Live Stats Button to Schedule Tab Header
+**File:** `src/pages/Index.tsx`
 
-**File: `src/types/basketball.ts`**
+- Add a new prominent button labeled "Live Stats" with a Radio icon in the Schedule tab header
+- Position it alongside existing action buttons (Import Schedule, Add Schedule)
+- Use the `gradient-primary` class for visual prominence
+- Button triggers either:
+  - Direct navigation to Live Stat Capture (if a game is scheduled for today)
+  - Opens a "Quick Start" dialog (if no game today or multiple games today)
 
-Add `tournament` to the `ScheduledGame` interface:
+### 2. Create Quick Start Dialog Component
+**New File:** `src/components/QuickLiveStatsDialog.tsx`
 
-```typescript
-export interface ScheduledGame {
-  id: string;
-  date: string;
-  time: string;
-  opponent: string;
-  location: string;
-  isHome: boolean;
-  notes?: string;
-  tournament?: string;  // NEW
-}
+- A simple dialog with two modes:
+  - **Auto-select mode:** If exactly one game is scheduled for today, show that game's info and a "Start Tracking" button
+  - **Manual mode:** If no game today or multiple games, let user either select from today's games or enter an opponent name manually
+- Fields:
+  - Opponent name (required) - dropdown of today's games + manual entry option
+  - Pre-fill date to today
+- On submit: Navigate to a new "quick capture" route or directly render LiveStatCapture
+
+### 3. Handle the Quick Start Flow
+**Option A: Navigate to existing flow**
+- Create a temporary scheduled game entry in the database with minimal info
+- Navigate to `/game/scheduled/:newId` which shows the LiveStatCapture
+
+**Option B: Direct render approach (simpler)**
+- Store the quick-start state in component state on Index.tsx
+- Render `LiveStatCapture` directly when triggered
+- On save, the game is created with today's date and the provided opponent
+
+### Recommended Approach: Option B (Direct Render)
+This is cleaner because:
+- No database pollution with temporary scheduled games
+- Faster experience - no navigation needed
+- Already have a pattern for this in GameDetail.tsx
+
+### 4. Technical Changes
+
+**`src/pages/Index.tsx`:**
+- Add state: `showQuickLiveCapture: boolean` and `quickCaptureOpponent: string`
+- Add the "Live Stats" button in the Schedule tab header
+- Add the QuickLiveStatsDialog component usage
+- Add conditional rendering of `LiveStatCapture` when `showQuickLiveCapture` is true
+- Handle the save flow: create new game entry and show success
+
+**`src/components/QuickLiveStatsDialog.tsx` (new file):**
+- Props: `open`, `onOpenChange`, `todayGames: ScheduledGame[]`, `onStartCapture: (opponent: string, scheduledGameId?: string) => void`
+- Show today's scheduled games if any
+- Allow manual opponent entry
+- Start button triggers the callback
+
+### 5. UI Placement
+The button will be placed in the Schedule tab header alongside existing actions:
+
+```
+Season Schedule                            [Live Stats] [Import] [Add Game]
+X upcoming games
 ```
 
----
-
-## Part 3: Update Data Layer
-
-**File: `src/hooks/useCloudData.ts`**
-
-- Update `fetchData` to include `tournament` field when mapping scheduled games
-- Update `addScheduledGame` to include tournament in insert
-- Update `updateScheduledGame` to handle tournament updates
-- Update `bulkImportScheduledGames` to include tournament field
+The "Live Stats" button should stand out as it's designed for quick access during game time.
 
 ---
 
-## Part 4: Update Edit Dialog with Tournament Field + "Duplicate for Tournament" Feature
+## Technical Notes
 
-**File: `src/components/EditScheduleDialog.tsx`**
+- The `LiveStatCapture` component is already designed to work without a scheduled game context (uses `opponent` prop)
+- The save handler in `LiveStatCapture` creates a new game entry in the database
+- Today's games are already being filtered in the Schedule tab (`upcomingGames` includes today's games via `isToday()`)
+- Will reuse the existing `addGame` function from `useGameWithMilestones` hook for saving
 
-Add:
-1. **Tournament input field** - optional text field for tournament name
-2. **"Add Another Game" button** - appears when tournament is filled in, allowing quick duplication
-
-When "Add Another Game" is clicked:
-- Save current game changes
-- Open a new dialog pre-filled with: tournament name, location, isHome setting
-- Only require: new date, time, and opponent
-- This creates a streamlined flow for tournament entry
-
----
-
-## Part 5: Update Add Schedule Dialog
-
-**File: `src/components/AddScheduleDialog.tsx`**
-
-Add:
-1. **Tournament input field**
-2. **"Add Multiple Games" toggle** - when enabled, shows:
-   - A list of games to add (date + time + opponent rows)
-   - "Add Row" button to add more games
-   - All games share the same: tournament, location, isHome
-   - Submit creates all games at once via `bulkImportScheduledGames`
-
-This enables rapid tournament entry:
-1. Enter tournament name + location + home/away once
-2. Add rows for each game: just pick date, time, opponent
-3. Submit all at once
-
----
-
-## Part 6: Update Quick Add Dialog
-
-**File: `src/components/QuickAddScheduleDialog.tsx`**
-
-Add the tournament field, keeping it optional for single game quick-adds.
-
----
-
-## Part 7: Display Tournament in Game Detail Page
-
-**File: `src/pages/GameDetail.tsx`**
-
-Show tournament name in the Game Details card if present:
-```
-Tournament: Winter Classic 2026
-```
-
----
-
-## Part 8: Display Tournament Badge in Calendar
-
-**File: `src/components/ScheduleCalendar.tsx`**
-
-When showing game details in the expanded date view, display a tournament badge if the game is part of a tournament.
-
----
-
-## User Flow Summary
-
-**Single Game Entry:**
-- Use existing flow, optionally add tournament name
-
-**Tournament Entry (Efficient):**
-1. Click "Add Game" or use calendar quick-add
-2. Enter tournament name (e.g., "Winter Classic")
-3. Enter location once
-4. Toggle "Add Multiple Games"
-5. Add rows for each game (just date/time/opponent)
-6. Submit all at once
-
-**Editing Existing Tournament Game:**
-1. Open edit dialog
-2. See tournament field
-3. Click "Duplicate for New Game" to create another game with same tournament/location pre-filled
-
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| Database migration | Add `tournament` column |
-| `src/types/basketball.ts` | Add `tournament` to interface |
-| `src/hooks/useCloudData.ts` | Handle tournament in CRUD operations |
-| `src/components/EditScheduleDialog.tsx` | Add tournament field + duplicate button |
-| `src/components/AddScheduleDialog.tsx` | Add tournament field + multi-game entry mode |
-| `src/components/QuickAddScheduleDialog.tsx` | Add tournament field |
-| `src/pages/GameDetail.tsx` | Display tournament name |
-| `src/components/ScheduleCalendar.tsx` | Show tournament badge on game cards |
-
+## Files to Create/Modify
+1. **Create:** `src/components/QuickLiveStatsDialog.tsx`
+2. **Modify:** `src/pages/Index.tsx` - Add button, dialog, and LiveStatCapture rendering logic
