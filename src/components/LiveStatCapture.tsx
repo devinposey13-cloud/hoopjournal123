@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { FireCelebration } from './FireCelebration';
 import { StatFlash, getFlashConfig } from './StatFlash';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
+import { useHapticFeedback } from '@/hooks/useHapticFeedback';
 import { HalfStats } from '@/types/basketball';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -124,6 +125,7 @@ export function LiveStatCapture({
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { playSound } = useSoundEffects();
+  const { triggerHaptic } = useHapticFeedback();
 
   // Initialize with any passed initial stats (goes to first half)
   // Using a ref to track if we've initialized to prevent re-running on every render
@@ -174,18 +176,13 @@ export function LiveStatCapture({
     const isMadeShot = action.type === 'fgMade' || action.type === 'threePtMade' || action.type === 'ftMade';
     const isMiss = action.type === 'fgAttempted' || action.type === 'threePtAttempted' || action.type === 'ftAttempted';
     
-    // Trigger haptic feedback on mobile devices
-    if ('vibrate' in navigator) {
-      if (isMadeShot) {
-        // Strong double pulse for made shots
-        navigator.vibrate([50, 30, 50]);
-      } else if (isMiss || action.type === 'turnovers' || action.type === 'fouls') {
-        // Short single buzz for negative stats
-        navigator.vibrate(30);
-      } else {
-        // Medium pulse for positive stats (rebounds, assists, steals, blocks)
-        navigator.vibrate(40);
-      }
+    // Trigger haptic feedback on mobile devices (iOS + Android)
+    if (isMadeShot) {
+      triggerHaptic('success'); // Double haptic for made shots
+    } else if (isMiss || action.type === 'turnovers' || action.type === 'fouls') {
+      triggerHaptic('light'); // Light haptic for negative stats
+    } else {
+      triggerHaptic('medium'); // Medium haptic for positive stats
     }
     
     // Play appropriate sound effect only if enabled
