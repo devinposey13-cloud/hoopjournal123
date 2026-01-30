@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 
@@ -55,6 +56,12 @@ export function useCoachVoice(): UseCoachVoiceReturn {
     setIsLoadingAudio(true);
 
     try {
+      // Get the current session token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('You must be logged in to use voice playback');
+      }
+
       // Strip markdown for cleaner speech
       const cleanText = text
         .replace(/#{1,6}\s/g, '') // Remove headers
@@ -70,7 +77,7 @@ export function useCoachVoice(): UseCoachVoiceReturn {
         headers: {
           'Content-Type': 'application/json',
           'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ text: cleanText }),
       });
