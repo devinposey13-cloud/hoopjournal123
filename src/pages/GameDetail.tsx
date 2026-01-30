@@ -25,7 +25,7 @@ import { SpotifyPlayer } from '@/components/SpotifyPlayer';
 import { SeasonAveragesCard } from '@/components/SeasonAveragesCard';
 import { EditScheduleDialog } from '@/components/EditScheduleDialog';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2 } from 'lucide-react';
 import { QuickDuplicateDialog } from '@/components/QuickDuplicateDialog';
 import { toast } from 'sonner';
 
@@ -489,6 +489,28 @@ export default function GameDetail() {
     }
   };
 
+  // Handle game photo removal
+  const handleRemovePhoto = async () => {
+    if (!game || !user) return;
+
+    try {
+      // Update the game to remove the photo URL
+      const { error: updateError } = await supabase
+        .from('games')
+        .update({ game_photo_url: null })
+        .eq('id', game.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setGame(prev => prev ? { ...prev, gamePhotoUrl: undefined } : null);
+      toast.success('Game photo removed');
+    } catch (error) {
+      console.error('Error removing photo:', error);
+      toast.error('Failed to remove photo');
+    }
+  };
+
   // Show Live Stat Capture fullscreen
   if (showLiveCapture) {
     const opponent = scheduledGame?.opponent || game?.opponent || 'Unknown';
@@ -790,12 +812,20 @@ export default function GameDetail() {
 
         {/* Game Photo */}
         {game.gamePhotoUrl && (
-          <div className="stat-card mb-6 p-0 overflow-hidden">
+          <div className="stat-card mb-6 p-0 overflow-hidden relative">
             <img 
               src={game.gamePhotoUrl} 
               alt={`Game vs ${game.opponent}`}
               className="w-full h-48 md:h-64 object-cover"
             />
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute top-2 right-2 w-8 h-8"
+              onClick={handleRemovePhoto}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
             <div className="p-3 text-center text-sm text-muted-foreground">
               📸 Game Day Photo
             </div>
