@@ -1,50 +1,75 @@
 
-# Increase Video Upload Limit to 100MB
+# Navigate to Game Details on Milestone Reveal Close
 
 ## Overview
-Update the video file size limit from 50MB to 100MB across all locations where it's enforced.
+Update the milestone reveal flow so that clicking the "X" button (or completing the reveal) navigates directly to the game details page instead of staying on the current tab.
+
+---
+
+## Current Behavior
+- Milestones are triggered after saving a game
+- Each pending milestone already contains the `gameId` it was earned from
+- Clicking "X" or "Awesome!" calls `closeReveal()` which only clears state
+- User stays on whatever tab they were on (schedule tab in your case)
+
+## Proposed Behavior
+- Clicking "X" or completing the reveal navigates to `/game/:gameId`
+- The game ID comes from the milestone data (first milestone's `gameId`)
 
 ---
 
 ## Changes Required
 
-### 1. Database Migration (Storage Bucket)
-**File:** Create new migration
+### 1. Update MilestoneReveal Component
+**File:** `src/components/milestones/MilestoneReveal.tsx`
 
-Update the `video-clips` storage bucket configuration:
-- Change `file_size_limit` from `52428800` (50MB) to `104857600` (100MB)
+- Add `useNavigate` from react-router-dom
+- Modify `onComplete` to also navigate to the game details page
+- Use the first milestone's `gameId` to determine the destination
 
-```sql
-UPDATE storage.buckets 
-SET file_size_limit = 104857600 -- 100MB in bytes
-WHERE id = 'video-clips';
+Changes:
+- Import `useNavigate` from `react-router-dom`
+- Get the `gameId` from the milestones prop (first milestone with a gameId)
+- When `onComplete` is called, navigate to `/game/${gameId}` before or after calling the callback
+
+### 2. Update Index.tsx (optional enhancement)
+**File:** `src/pages/Index.tsx`
+
+No changes strictly required since navigation will happen inside MilestoneReveal. However, we could optionally pass a `lastSavedGameId` prop if we want more control.
+
+---
+
+## Technical Details
+
+```text
+MilestoneReveal Component Changes:
+
+┌─────────────────────────────────────────────────┐
+│ import { useNavigate } from 'react-router-dom'  │
+├─────────────────────────────────────────────────┤
+│ const navigate = useNavigate();                 │
+│                                                 │
+│ // Get gameId from first milestone              │
+│ const gameId = milestones[0]?.gameId;           │
+│                                                 │
+│ const handleClose = () => {                     │
+│   onComplete();                                 │
+│   if (gameId) {                                 │
+│     navigate(`/game/${gameId}`);                │
+│   }                                             │
+│ };                                              │
+├─────────────────────────────────────────────────┤
+│ X button: onClick={handleClose}                 │
+│ Awesome! button: handleNext calls handleClose   │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
 
-### 2. Update CoachChat Validation
-**File:** `src/components/CoachChat.tsx`
+## Summary
 
-Update the client-side validation:
-- Change `50 * 1024 * 1024` to `100 * 1024 * 1024`
-- Update error message from "50MB" to "100MB"
+| Location | Change |
+|----------|--------|
+| `MilestoneReveal.tsx` | Add navigation to game details on close/complete |
 
----
-
-### 3. Add Client-Side Validation to AddClipDialog
-**File:** `src/components/AddClipDialog.tsx`
-
-Add file size validation with better UX:
-- Validate file size (100MB limit) when file is selected
-- Show error toast if file exceeds limit
-- Update the upload hint text to show "Max 100MB"
-
----
-
-## Summary of Limit Locations
-
-| Location | Current | New |
-|----------|---------|-----|
-| Storage bucket (`video-clips`) | 50MB | 100MB |
-| CoachChat validation | 50MB | 100MB |
-| AddClipDialog (new validation) | None | 100MB |
+This is a minimal change that leverages the existing `gameId` data already present in the milestone objects.
