@@ -307,7 +307,7 @@ export default function Index() {
                   ) : (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {games.slice(0, 6).map((game) => (
-                        <GameCard key={game.id} game={game} onDelete={deleteGame} />
+                        <GameCard key={game.id} game={game} profile={profile} onDelete={deleteGame} />
                       ))}
                     </div>
                   )}
@@ -340,7 +340,7 @@ export default function Index() {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {games.map((game) => (
-                  <GameCard key={game.id} game={game} onDelete={deleteGame} />
+                  <GameCard key={game.id} game={game} profile={profile} onDelete={deleteGame} />
                 ))}
               </div>
             )}

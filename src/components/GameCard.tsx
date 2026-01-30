@@ -1,16 +1,33 @@
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
-import { GameStats } from '@/types/basketball';
+import { GameStats, PlayerProfile } from '@/types/basketball';
 import { cn } from '@/lib/utils';
-import { Trash2 } from 'lucide-react';
+import { Trash2, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { exportGameBoxScorePdf } from '@/utils/exportPdf';
+import { toast } from 'sonner';
 
 interface GameCardProps {
   game: GameStats;
+  profile?: PlayerProfile;
   onDelete?: (id: string) => void;
 }
 
-export function GameCard({ game, onDelete }: GameCardProps) {
+export function GameCard({ game, profile, onDelete }: GameCardProps) {
+  const handleExportPdf = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!profile) {
+      toast.error('Profile not available for export');
+      return;
+    }
+    
+    toast.info('Generating PDF...');
+    await exportGameBoxScorePdf(profile, { game });
+    toast.success('Box score PDF exported!');
+  };
+
   return (
     <Link to={`/game/${game.id}`} className="block">
       <div className="stat-card group hover:border-primary/50 transition-colors cursor-pointer">
@@ -30,20 +47,33 @@ export function GameCard({ game, onDelete }: GameCardProps) {
               {format(new Date(game.date), 'MMM d, yyyy')}
             </span>
           </div>
-          {onDelete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-destructive"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onDelete(game.id);
-              }}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {profile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-primary"
+                onClick={handleExportPdf}
+                title="Export PDF"
+              >
+                <FileDown className="w-4 h-4" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-destructive"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDelete(game.id);
+                }}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
         
         <h3 className="font-semibold text-lg mb-4">vs {game.opponent}</h3>
