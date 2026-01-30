@@ -24,12 +24,14 @@ import { GamesHub } from '@/components/games/GamesHub';
 import { MilestoneCollection } from '@/components/milestones/MilestoneCollection';
 import { PersistentMusicBar } from '@/components/PersistentMusicBar';
 import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
+import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
+import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
 import { useAdmin } from '@/hooks/useAdmin';
-import { isAfter, isBefore, isToday, startOfDay, isSameDay } from 'date-fns';
+import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { LogOut, Loader2, Trophy, X } from 'lucide-react';
+import { LogOut, Loader2, Trophy, X, Radio } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Select,
@@ -46,9 +48,15 @@ import {
   HandMetal,
   Percent,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [showQuickLiveStatsDialog, setShowQuickLiveStatsDialog] = useState(false);
+  const [showQuickLiveCapture, setShowQuickLiveCapture] = useState(false);
+  const [quickCaptureOpponent, setQuickCaptureOpponent] = useState('');
+  const [quickCaptureScheduledGameId, setQuickCaptureScheduledGameId] = useState<string | undefined>();
+  const [isSavingQuickCapture, setIsSavingQuickCapture] = useState(false);
   const [tournamentFilter, setTournamentFilter] = useState<string>('all');
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdmin();
@@ -109,6 +117,9 @@ export default function Index() {
   const pastScheduledGames = filteredSchedule.filter(
     (g) => isBefore(new Date(g.date), today) && !isToday(new Date(g.date))
   );
+  
+  // Get today's games specifically for Quick Live Stats
+  const todayGames = schedule.filter((g) => isToday(new Date(g.date)));
 
   // Helper to find a linked played game for a scheduled game
   const findLinkedGame = (scheduledGame: { opponent: string; date: string }) => {
@@ -122,6 +133,70 @@ export default function Index() {
     });
   };
 
+  // Quick Live Stats handlers
+  const handleQuickLiveStatsClick = () => {
+    // If exactly one game today, go straight to capture
+    if (todayGames.length === 1) {
+      setQuickCaptureOpponent(todayGames[0].opponent);
+      setQuickCaptureScheduledGameId(todayGames[0].id);
+      setShowQuickLiveCapture(true);
+    } else {
+      // Otherwise show the dialog
+      setShowQuickLiveStatsDialog(true);
+    }
+  };
+
+  const handleStartQuickCapture = (opponent: string, scheduledGameId?: string) => {
+    setQuickCaptureOpponent(opponent);
+    setQuickCaptureScheduledGameId(scheduledGameId);
+    setShowQuickLiveCapture(true);
+  };
+
+  const handleQuickCaptureSave = async (stats: any, halfData?: LiveStatsSaveData, isGameOver?: boolean) => {
+    setIsSavingQuickCapture(true);
+    try {
+      const gameData = {
+        date: format(new Date(), 'yyyy-MM-dd'),
+        opponent: quickCaptureOpponent,
+        points: halfData?.total.points ?? stats.points,
+        rebounds: halfData?.total.rebounds ?? stats.rebounds,
+        assists: halfData?.total.assists ?? stats.assists,
+        steals: halfData?.total.steals ?? stats.steals,
+        blocks: halfData?.total.blocks ?? stats.blocks,
+        turnovers: halfData?.total.turnovers ?? stats.turnovers,
+        fouls: halfData?.total.fouls ?? stats.fouls,
+        minutesPlayed: 0,
+        fgMade: halfData?.total.fgMade ?? stats.fgMade,
+        fgAttempted: halfData?.total.fgAttempted ?? stats.fgAttempted,
+        threePtMade: halfData?.total.threePtMade ?? stats.threePtMade,
+        threePtAttempted: halfData?.total.threePtAttempted ?? stats.threePtAttempted,
+        ftMade: halfData?.total.ftMade ?? stats.ftMade,
+        ftAttempted: halfData?.total.ftAttempted ?? stats.ftAttempted,
+        isWin: halfData?.isWin ?? false,
+        offensiveRebounds: halfData?.total.offensiveRebounds ?? stats.offensiveRebounds,
+        defensiveRebounds: halfData?.total.defensiveRebounds ?? stats.defensiveRebounds,
+        gamePhotoUrl: halfData?.gamePhotoUrl,
+      };
+
+      await addGame(gameData);
+      toast.success('Game saved successfully!');
+      setShowQuickLiveCapture(false);
+      setQuickCaptureOpponent('');
+      setQuickCaptureScheduledGameId(undefined);
+    } catch (error) {
+      console.error('Error saving game:', error);
+      toast.error('Failed to save game');
+    } finally {
+      setIsSavingQuickCapture(false);
+    }
+  };
+
+  const handleQuickCaptureCancel = () => {
+    setShowQuickLiveCapture(false);
+    setQuickCaptureOpponent('');
+    setQuickCaptureScheduledGameId(undefined);
+  };
+
   if (dataLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -130,6 +205,18 @@ export default function Index() {
           <p className="text-muted-foreground">Loading your stats...</p>
         </div>
       </div>
+    );
+  }
+
+  // Show Quick Live Capture fullscreen mode
+  if (showQuickLiveCapture) {
+    return (
+      <LiveStatCapture
+        opponent={quickCaptureOpponent}
+        onSave={handleQuickCaptureSave}
+        onCancel={handleQuickCaptureCancel}
+        isSaving={isSavingQuickCapture}
+      />
     );
   }
 
@@ -299,10 +386,25 @@ export default function Index() {
                     )}
                   </div>
                 )}
+                <Button
+                  onClick={handleQuickLiveStatsClick}
+                  className="gradient-primary"
+                >
+                  <Radio className="w-4 h-4 mr-2" />
+                  Live Stats
+                </Button>
                 <ImportScheduleDialog onImport={bulkImportScheduledGames} />
                 <AddScheduleDialog onAddGame={addScheduledGame} onBulkAddGames={bulkImportScheduledGames} />
               </div>
             </div>
+
+            {/* Quick Live Stats Dialog */}
+            <QuickLiveStatsDialog
+              open={showQuickLiveStatsDialog}
+              onOpenChange={setShowQuickLiveStatsDialog}
+              todayGames={todayGames}
+              onStartCapture={handleStartQuickCapture}
+            />
 
             {/* Calendar View */}
             <section>
