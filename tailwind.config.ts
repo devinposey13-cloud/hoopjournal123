@@ -94,6 +94,15 @@ export default {
           "0%, 100%": { boxShadow: "0 0 20px hsl(24 100% 50% / 0.2)" },
           "50%": { boxShadow: "0 0 40px hsl(24 100% 50% / 0.4)" },
         },
+        "stat-pop": {
+          "0%": { transform: "scale(0.5)", opacity: "0" },
+          "50%": { transform: "scale(1.15)" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        "stat-fade-out": {
+          "0%": { opacity: "1" },
+          "100%": { opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -101,6 +110,8 @@ export default {
         "fade-in": "fade-in 0.5s ease-out forwards",
         "slide-in": "slide-in 0.3s ease-out forwards",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "stat-pop": "stat-pop 0.3s ease-out forwards",
+        "stat-fade-out": "stat-fade-out 0.3s ease-out forwards",
       },
     },
   },
