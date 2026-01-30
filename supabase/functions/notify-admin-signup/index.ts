@@ -14,6 +14,20 @@ interface SignupNotificationRequest {
   email: string | null;
 }
 
+// Simple email validation
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email.trim());
+};
+
+// Mask email for logging (show first 3 chars + domain)
+const maskEmail = (email: string): string => {
+  const [local, domain] = email.split('@');
+  if (!local || !domain) return '***invalid***';
+  const masked = local.length > 3 ? local.substring(0, 3) + '***' : '***';
+  return `${masked}@${domain}`;
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -21,9 +35,17 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const adminEmail = Deno.env.get("ADMIN_NOTIFICATION_EMAIL");
+    const adminEmail = Deno.env.get("ADMIN_NOTIFICATION_EMAIL")?.trim();
+    
+    console.log("Admin email configured:", adminEmail ? maskEmail(adminEmail) : "NOT SET");
+    
     if (!adminEmail) {
       throw new Error("ADMIN_NOTIFICATION_EMAIL not configured");
+    }
+
+    if (!isValidEmail(adminEmail)) {
+      console.error("Invalid admin email format:", maskEmail(adminEmail));
+      throw new Error(`ADMIN_NOTIFICATION_EMAIL has invalid format: ${maskEmail(adminEmail)}`);
     }
 
     const { username, email }: SignupNotificationRequest = await req.json();
