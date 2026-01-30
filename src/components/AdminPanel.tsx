@@ -468,6 +468,22 @@ export function AdminPanel() {
 
       if (approvalError) throw approvalError;
 
+      // Send approval notification email if we have an email address
+      if (request.email) {
+        try {
+          await supabase.functions.invoke('send-approval-email', {
+            body: {
+              userId: request.user_id,
+              email: request.email,
+              username: request.username,
+            },
+          });
+        } catch (emailError) {
+          console.error('Failed to send approval email:', emailError);
+          // Don't fail the approval if email fails - just log it
+        }
+      }
+
       setApprovalRequests(prev => prev.map(r => 
         r.id === request.id ? { ...r, status: 'approved', reviewed_at: new Date().toISOString() } : r
       ));
