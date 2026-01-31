@@ -1,9 +1,45 @@
-import { useState, useEffect, Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { useState, useEffect, Suspense, useRef } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { RealisticBasketball } from '@/components/RealisticBasketball';
+import * as THREE from 'three';
+
+// Camera controller that subtly follows the basketball
+function CameraController({ active }: { active: boolean }) {
+  const { camera } = useThree();
+  const targetY = useRef(1);
+  const startTime = useRef<number | null>(null);
+
+  useFrame((state) => {
+    if (!active) return;
+
+    if (startTime.current === null) {
+      startTime.current = state.clock.elapsedTime;
+    }
+
+    const t = state.clock.elapsedTime - startTime.current;
+    
+    // Calculate ball position (matching RealisticBasketball physics)
+    const bounceHeight = Math.abs(Math.sin(t * 3.5)) * Math.exp(-t * 0.4);
+    const ballY = bounceHeight * 2.5 - 0.5;
+    
+    // Smoothly follow the ball with dampening (subtle movement)
+    targetY.current = THREE.MathUtils.lerp(targetY.current, 1 + ballY * 0.15, 0.05);
+    
+    // Update camera position with subtle Y tracking
+    camera.position.y = targetY.current;
+    
+    // Slight horizontal sway for cinematic feel
+    camera.position.x = Math.sin(t * 0.3) * 0.2;
+    
+    // Always look at the ball area
+    camera.lookAt(0, ballY * 0.5, 0);
+  });
+
+  return null;
+}
 
 interface FirstLoginIntroProps {
   onComplete: () => void;
@@ -103,6 +139,7 @@ export function FirstLoginIntro({ onComplete }: FirstLoginIntroProps) {
       {/* 3D Canvas for basketball */}
       <div className="absolute inset-0">
         <Canvas camera={{ position: [0, 1, 5], fov: 50 }}>
+          <CameraController active={phase >= 1} />
           <ambientLight intensity={0.3} />
           <pointLight position={[5, 5, 5]} intensity={0.5} />
           <Spotlight visible={phase >= 3} />
