@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Gamepad2, Target, Brain, Zap, HelpCircle, TrendingUp, Trophy, Medal } from 'lucide-react';
+import { Gamepad2, Target, Brain, Zap, HelpCircle, TrendingUp, Trophy, Medal, Flame } from 'lucide-react';
 import { GameCard } from './GameCard';
 import { FreeThrowGame } from './FreeThrowGame';
 import { MemoryMatchGame } from './MemoryMatchGame';
@@ -8,6 +8,7 @@ import { TriviaGame } from './TriviaGame';
 import { StatsPredictorGame } from './StatsPredictorGame';
 import { Leaderboard } from './Leaderboard';
 import { AchievementsList } from './AchievementsList';
+import { cn } from '@/lib/utils';
 import { useGameData } from '@/hooks/useGameData';
 import { useAchievements } from '@/hooks/useAchievements';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -120,12 +121,26 @@ export function GamesHub() {
             {achievementsLoading ? '...' : `${getUnlockedCount()}/${achievements.length}`}
           </p>
         </div>
-        <div className="bg-card rounded-xl p-4 border border-border">
+        <div className={cn(
+          'bg-card rounded-xl p-4 border transition-all duration-300',
+          (userStats?.current_streak || 0) > 0
+            ? 'border-orange-500/50 animate-pulse-glow'
+            : 'border-border'
+        )}>
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <Zap className="w-4 h-4" />
+            {(userStats?.current_streak || 0) > 0 ? (
+              <Flame className="w-4 h-4 text-orange-500" />
+            ) : (
+              <Zap className="w-4 h-4" />
+            )}
             <span className="text-sm">Current Streak</span>
           </div>
-          <p className="text-2xl font-bold">{userStats?.current_streak || 0} days</p>
+          <p className={cn(
+            'text-2xl font-bold',
+            (userStats?.current_streak || 0) > 0 && 'text-orange-500'
+          )}>
+            {userStats?.current_streak || 0} days
+          </p>
         </div>
       </div>
 
