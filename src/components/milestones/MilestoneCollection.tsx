@@ -1,16 +1,15 @@
 import { useState, useMemo } from 'react';
-import { Trophy, Filter, Lock, TrendingUp } from 'lucide-react';
+import { Trophy, Lock, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { MilestoneCard, MilestoneCardMini } from './MilestoneCard';
+import { MilestoneCard } from './MilestoneCard';
 import { useMilestones } from '@/hooks/useMilestones';
 import { useCloudData } from '@/hooks/useCloudData';
 import type { MilestoneCategory, MilestoneRarity } from '@/types/milestone';
 import { cn } from '@/lib/utils';
 
 type FilterCategory = 'all' | MilestoneCategory;
-type FilterRarity = 'all' | MilestoneRarity;
 
 export function MilestoneCollection() {
   const { games, activeSeason } = useCloudData();
@@ -18,7 +17,8 @@ export function MilestoneCollection() {
     definitions, 
     earnedMilestones, 
     loading, 
-    getSeasonProgress 
+    getSeasonProgress,
+    getOccurrencesByMilestoneId,
   } = useMilestones(activeSeason?.id);
 
   const [categoryFilter, setCategoryFilter] = useState<FilterCategory>('all');
@@ -32,9 +32,9 @@ export function MilestoneCollection() {
 
   // Create lookup map for games by ID for O(1) opponent lookup
   const gamesMap = useMemo(() => {
-    const map = new Map<string, typeof games[0]>();
+    const map = new Map<string, { opponent: string }>();
     games.forEach(g => {
-      if (g.id) map.set(g.id, g);
+      if (g.id) map.set(g.id, { opponent: g.opponent });
     });
     return map;
   }, [games]);
@@ -45,10 +45,15 @@ export function MilestoneCollection() {
     [getSeasonProgress, gamesWithIds]
   );
 
-  // Group earned milestones by milestone id for quick lookup
+  // Group earned milestones by milestone id for quick lookup (first occurrence for display)
   const earnedMap = useMemo(() => {
     const map = new Map<string, typeof earnedMilestones[0]>();
-    earnedMilestones.forEach(em => map.set(em.milestoneId, em));
+    // Use first occurrence (most recent) for display
+    earnedMilestones.forEach(em => {
+      if (!map.has(em.milestoneId)) {
+        map.set(em.milestoneId, em);
+      }
+    });
     return map;
   }, [earnedMilestones]);
 
@@ -85,7 +90,7 @@ export function MilestoneCollection() {
   }, [definitions, categoryFilter, showEarned, earnedMap]);
 
   // Stats
-  const totalEarned = earnedMilestones.length;
+  const totalEarned = new Set(earnedMilestones.map(m => m.milestoneId)).size;
   const totalAvailable = definitions.length;
 
   if (loading) {
@@ -199,18 +204,26 @@ export function MilestoneCollection() {
         {/* Milestone Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredDefinitions.map(def => {
-            const earned = earnedMap.get(def.id);
+            const firstEarned = earnedMap.get(def.id);
+            const allOccurrences = getOccurrencesByMilestoneId.get(def.id) || [];
+            const count = allOccurrences.length;
+            
             // Look up actual game data if milestone has a gameId
-            const linkedGame = earned?.gameId ? gamesMap.get(earned.gameId) : undefined;
+            const linkedGame = firstEarned?.gameId ? gamesMap.get(firstEarned.gameId) : undefined;
+            
             return (
               <MilestoneCard
                 key={def.id}
                 milestone={def}
-                earnedAt={earned?.earnedAt}
-                statsSnapshot={earned?.statsSnapshot}
+                earnedAt={firstEarned?.earnedAt}
+                statsSnapshot={firstEarned?.statsSnapshot}
                 gameOpponent={linkedGame?.opponent}
-                isEarned={!!earned}
-                isLocked={!earned}
+                isEarned={!!firstEarned}
+                isLocked={!firstEarned}
+                allOccurrences={allOccurrences}
+                gamesMap={gamesMap}
+                showFlipHint={count > 1}
+                occurrenceCount={count}
               />
             );
           })}

@@ -58,6 +58,7 @@ export default function GameDetail() {
     showReveal,
     closeReveal,
     earnedMilestones,
+    getOccurrenceCount,
   } = useGameWithMilestones();
   const [lastSavedGameId, setLastSavedGameId] = useState<string | null>(null);
   const [game, setGame] = useState<GameStats | null>(null);
@@ -987,18 +988,22 @@ export default function GameDetail() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {earnedMilestones
                   .filter(m => m.gameId === game.id)
-                  .map((earned) => (
-                    earned.milestone && (
-                      <MilestoneCard
-                        key={earned.id}
-                        milestone={earned.milestone}
-                        earnedAt={earned.earnedAt}
-                        statsSnapshot={earned.statsSnapshot}
-                        gameOpponent={game.opponent}
-                        isEarned={true}
-                      />
-                    )
-                  ))}
+                  .map((earned) => {
+                    const count = getOccurrenceCount(earned.milestoneId);
+                    return (
+                      earned.milestone && (
+                        <MilestoneCard
+                          key={earned.id}
+                          milestone={earned.milestone}
+                          earnedAt={earned.earnedAt}
+                          statsSnapshot={earned.statsSnapshot}
+                          gameOpponent={game.opponent}
+                          isEarned={true}
+                          occurrenceCount={count}
+                        />
+                      )
+                    );
+                  })}
               </div>
             </>
           )}
