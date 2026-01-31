@@ -320,6 +320,7 @@ export default function Index() {
                     onAvatarGenerated={(newUrl) => {
                       updateProfile({ ...profile, avatar: newUrl });
                     }}
+                    onAvatarUploaded={uploadAvatar}
                   />
                 </div>
               </div>
