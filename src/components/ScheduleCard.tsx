@@ -22,7 +22,10 @@ export const ScheduleCard = forwardRef<HTMLDivElement, ScheduleCardProps>(
       <div
         ref={ref}
         className={cn(
-          'stat-card group relative hover:border-primary/50 cursor-pointer transition-colors',
+          'stat-card group relative cursor-pointer',
+          'transition-all duration-300 ease-out',
+          'hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/5',
+          'hover:border-primary/30 hover:-translate-y-0.5',
           isPastGame && 'opacity-50',
           isTodayGame && 'border-primary/50 shadow-glow'
         )}
