@@ -26,6 +26,11 @@ interface StatAction {
   half: 1 | 2;
 }
 
+interface TeamScore {
+  us: number;
+  them: number;
+}
+
 interface AutosaveData {
   opponent: string;
   currentHalf: 1 | 2;
@@ -35,6 +40,8 @@ interface AutosaveData {
   gamePhoto: string | null;
   isWin: boolean | null;
   soundEffectsEnabled: boolean;
+  halftimeScore?: TeamScore | null;
+  finalScore?: TeamScore | null;
   savedAt: number;
 }
 

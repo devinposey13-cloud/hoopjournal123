@@ -28,6 +28,7 @@ import { useLiveStatsAutosave } from '@/hooks/useLiveStatsAutosave';
 import { HalfStats } from '@/types/basketball';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,12 +65,19 @@ interface StatAction {
   half: 1 | 2;
 }
 
+export interface TeamScore {
+  us: number;
+  them: number;
+}
+
 export interface LiveStatsSaveData {
   total: LiveStats;
   firstHalf: HalfStats;
   secondHalf: HalfStats;
   gamePhotoUrl?: string;
   isWin?: boolean;
+  halftimeScore?: TeamScore;
+  finalScore?: TeamScore;
 }
 
 interface LiveStatCaptureProps {
@@ -125,6 +133,13 @@ export function LiveStatCapture({
   const [isWin, setIsWin] = useState<boolean | null>(null);
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(false);
   const [hasRestoredFromAutosave, setHasRestoredFromAutosave] = useState(false);
+  const [showHalftimeDialog, setShowHalftimeDialog] = useState(false);
+  const [halftimeScore, setHalftimeScore] = useState<TeamScore | null>(null);
+  const [halftimeScoreInput, setHalftimeScoreInput] = useState({ us: '', them: '' });
+  const [finalScore, setFinalScore] = useState<TeamScore | null>(null);
+  const [finalScoreInput, setFinalScoreInput] = useState({ us: '', them: '' });
+  const [pendingWinSelection, setPendingWinSelection] = useState<boolean | null>(null);
+  const [showFinalScoreDialog, setShowFinalScoreDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { playSound } = useSoundEffects();
   const { triggerHaptic } = useHapticFeedback();
@@ -148,6 +163,12 @@ export function LiveStatCapture({
       setGamePhoto(savedData.gamePhoto);
       setIsWin(savedData.isWin);
       setSoundEffectsEnabled(savedData.soundEffectsEnabled);
+      if (savedData.halftimeScore) {
+        setHalftimeScore(savedData.halftimeScore);
+      }
+      if (savedData.finalScore) {
+        setFinalScore(savedData.finalScore);
+      }
       setHasRestoredFromAutosave(true);
       
       toast.success('Restored your stats from autosave!', {
@@ -175,8 +196,10 @@ export function LiveStatCapture({
       gamePhoto,
       isWin,
       soundEffectsEnabled,
+      halftimeScore,
+      finalScore,
     });
-  }, [opponent, currentHalf, firstHalfStats, secondHalfStats, history, gamePhoto, isWin, soundEffectsEnabled, saveData]);
+  }, [opponent, currentHalf, firstHalfStats, secondHalfStats, history, gamePhoto, isWin, soundEffectsEnabled, halftimeScore, finalScore, saveData]);
 
   // Immediate save when page becomes hidden (user switches tabs, receives call, etc.)
   useEffect(() => {
@@ -191,6 +214,8 @@ export function LiveStatCapture({
           gamePhoto,
           isWin,
           soundEffectsEnabled,
+          halftimeScore,
+          finalScore,
         });
       }
     };
@@ -205,6 +230,8 @@ export function LiveStatCapture({
         gamePhoto,
         isWin,
         soundEffectsEnabled,
+        halftimeScore,
+        finalScore,
       });
     };
 
@@ -217,7 +244,7 @@ export function LiveStatCapture({
       window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('beforeunload', handlePageHide);
     };
-  }, [opponent, currentHalf, firstHalfStats, secondHalfStats, history, gamePhoto, isWin, soundEffectsEnabled, immediateSave]);
+  }, [opponent, currentHalf, firstHalfStats, secondHalfStats, history, gamePhoto, isWin, soundEffectsEnabled, halftimeScore, finalScore, immediateSave]);
 
   // Calculate total stats from both halves
   const totalStats: LiveStats = {
@@ -452,6 +479,8 @@ export function LiveStatCapture({
       secondHalf: secondHalfStats,
       gamePhotoUrl: gamePhoto || undefined,
       isWin: isWin ?? undefined,
+      halftimeScore: halftimeScore ?? undefined,
+      finalScore: finalScore ?? undefined,
     };
     setShowGameOverDialog(false);
     
@@ -459,6 +488,49 @@ export function LiveStatCapture({
     clearSavedData();
     
     onSave(totalStats, savePayload, isGameOver);
+  };
+
+  // Handle switching to 2nd half - require halftime score
+  const handleSwitchToSecondHalf = () => {
+    if (!halftimeScore) {
+      setShowHalftimeDialog(true);
+    } else {
+      setCurrentHalf(2);
+    }
+  };
+
+  // Confirm halftime score and switch to 2nd half
+  const handleHalftimeScoreConfirm = () => {
+    const us = parseInt(halftimeScoreInput.us) || 0;
+    const them = parseInt(halftimeScoreInput.them) || 0;
+    setHalftimeScore({ us, them });
+    setShowHalftimeDialog(false);
+    setCurrentHalf(2);
+  };
+
+  // Handle win/loss selection - require final score first
+  const handleWinLossClick = (isWinSelection: boolean) => {
+    if (navigator.vibrate) navigator.vibrate(50);
+    setPendingWinSelection(isWinSelection);
+    if (!finalScore) {
+      // Pre-fill with player's total points as "us"
+      setFinalScoreInput(prev => ({ ...prev, us: totalStats.points.toString() }));
+      setShowFinalScoreDialog(true);
+    } else {
+      setIsWin(isWinSelection);
+    }
+  };
+
+  // Confirm final score and set win/loss
+  const handleFinalScoreConfirm = () => {
+    const us = parseInt(finalScoreInput.us) || 0;
+    const them = parseInt(finalScoreInput.them) || 0;
+    setFinalScore({ us, them });
+    setShowFinalScoreDialog(false);
+    if (pendingWinSelection !== null) {
+      setIsWin(pendingWinSelection);
+    }
+    setPendingWinSelection(null);
   };
 
   const fgPct = currentStats.fgAttempted > 0 ? Math.round((currentStats.fgMade / currentStats.fgAttempted) * 100) : 0;
@@ -600,15 +672,34 @@ export function LiveStatCapture({
           </Button>
           <Button
             variant={currentHalf === 2 ? "default" : "outline"}
-            onClick={() => setCurrentHalf(2)}
+            onClick={() => handleSwitchToSecondHalf()}
             className={cn(
               "flex-1 max-w-[150px] font-semibold",
               currentHalf === 2 && "gradient-primary"
             )}
           >
             2nd Half
+            {halftimeScore && <span className="ml-1 text-xs opacity-70">✓</span>}
           </Button>
         </div>
+
+        {/* Halftime Score Display */}
+        {halftimeScore && (
+          <div className="bg-muted/30 rounded-lg p-2 text-center text-sm">
+            <span className="text-muted-foreground">Halftime: </span>
+            <span className="font-semibold">{halftimeScore.us}</span>
+            <span className="text-muted-foreground"> - </span>
+            <span className="font-semibold">{halftimeScore.them}</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="ml-2 h-6 text-xs"
+              onClick={() => setShowHalftimeDialog(true)}
+            >
+              Edit
+            </Button>
+          </div>
+        )}
 
         {/* Sound Effects Toggle */}
         <div className="flex items-center justify-end gap-2">
@@ -629,10 +720,7 @@ export function LiveStatCapture({
           <div className="flex gap-2 justify-center">
             <Button
               variant={isWin === true ? "default" : "outline"}
-              onClick={() => {
-                if (navigator.vibrate) navigator.vibrate(50);
-                setIsWin(true);
-              }}
+              onClick={() => handleWinLossClick(true)}
               className={cn(
                 "flex-1 max-w-[120px] font-semibold",
                 isWin === true && "bg-green-500 hover:bg-green-600 text-white"
@@ -642,10 +730,7 @@ export function LiveStatCapture({
             </Button>
             <Button
               variant={isWin === false ? "default" : "outline"}
-              onClick={() => {
-                if (navigator.vibrate) navigator.vibrate(50);
-                setIsWin(false);
-              }}
+              onClick={() => handleWinLossClick(false)}
               className={cn(
                 "flex-1 max-w-[120px] font-semibold",
                 isWin === false && "bg-red-500 hover:bg-red-600 text-white"
@@ -654,6 +739,23 @@ export function LiveStatCapture({
               ✗ Loss
             </Button>
           </div>
+          {/* Final Score Display */}
+          {finalScore && (
+            <div className="bg-muted/30 rounded-lg p-2 text-center text-sm">
+              <span className="text-muted-foreground">Final: </span>
+              <span className="font-semibold">{finalScore.us}</span>
+              <span className="text-muted-foreground"> - </span>
+              <span className="font-semibold">{finalScore.them}</span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="ml-2 h-6 text-xs"
+                onClick={() => setShowFinalScoreDialog(true)}
+              >
+                Edit
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="bg-muted/50 rounded-lg p-3 text-center">
@@ -877,6 +979,125 @@ export function LiveStatCapture({
               className="gradient-primary"
             >
               Yes, Game Over
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Halftime Score Dialog */}
+      <AlertDialog open={showHalftimeDialog} onOpenChange={setShowHalftimeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Enter Halftime Score</AlertDialogTitle>
+            <AlertDialogDescription>
+              What's the score at halftime? This helps track team performance.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="halftime-us" className="text-center block">Your Team</Label>
+                <Input
+                  id="halftime-us"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="999"
+                  placeholder="0"
+                  value={halftimeScoreInput.us}
+                  onChange={(e) => setHalftimeScoreInput(prev => ({ ...prev, us: e.target.value }))}
+                  className="text-center text-2xl font-bold h-14"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="halftime-them" className="text-center block">Opponent</Label>
+                <Input
+                  id="halftime-them"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="999"
+                  placeholder="0"
+                  value={halftimeScoreInput.them}
+                  onChange={(e) => setHalftimeScoreInput(prev => ({ ...prev, them: e.target.value }))}
+                  className="text-center text-2xl font-bold h-14"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Your 1st half points: {firstHalfStats.points}
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowHalftimeDialog(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleHalftimeScoreConfirm}
+              className="gradient-primary"
+            >
+              Continue to 2nd Half
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Final Score Dialog */}
+      <AlertDialog open={showFinalScoreDialog} onOpenChange={setShowFinalScoreDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Enter Final Score</AlertDialogTitle>
+            <AlertDialogDescription>
+              What was the final score of the game?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="final-us" className="text-center block">Your Team</Label>
+                <Input
+                  id="final-us"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="999"
+                  placeholder="0"
+                  value={finalScoreInput.us}
+                  onChange={(e) => setFinalScoreInput(prev => ({ ...prev, us: e.target.value }))}
+                  className="text-center text-2xl font-bold h-14"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="final-them" className="text-center block">Opponent</Label>
+                <Input
+                  id="final-them"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="999"
+                  placeholder="0"
+                  value={finalScoreInput.them}
+                  onChange={(e) => setFinalScoreInput(prev => ({ ...prev, them: e.target.value }))}
+                  className="text-center text-2xl font-bold h-14"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Your total points: {totalStats.points}
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowFinalScoreDialog(false);
+              setPendingWinSelection(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleFinalScoreConfirm}
+              className="gradient-primary"
+            >
+              Confirm Score
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
