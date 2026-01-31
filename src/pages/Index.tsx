@@ -452,8 +452,9 @@ export default function Index() {
               /* Full journal page wrapper - existing content */
               <div className="journal-page rounded-2xl overflow-hidden">
                 <div className="px-6 md:px-10 py-8 space-y-8">
-                  <div className="flex items-center justify-between flex-wrap gap-4">
-                    <JournalHeader playerName={profile.name} />
+                  <JournalHeader playerName={profile.name} className="mb-2" />
+                  
+                  <div className="flex items-center justify-end flex-wrap gap-4">
                     
                     {/* Team Filter for Dashboard */}
                     {teams.length > 0 && (
