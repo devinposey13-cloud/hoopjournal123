@@ -376,7 +376,7 @@ export default function PublicProfile() {
 
           <TabsContent value="milestones">
             {groupedMilestones.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {groupedMilestones.map((m) => (
                   <PublicMilestoneCard
                     key={m.milestoneId}
