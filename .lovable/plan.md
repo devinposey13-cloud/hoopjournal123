@@ -1,63 +1,110 @@
 
-# Bug Fix: Live Stats Capture 2PT/3PT Field Goal Tracking
+# Fix: Field Goals Display to Show Total FG (2PT + 3PT Combined)
 
-## Problem Identified
-The Live Stats Capture interface has a critical bug where adding made 2-point field goals incorrectly affects 3-point field goal counts (and vice versa), sometimes resulting in **negative shot attempts** which is impossible in basketball.
+## Problem Summary
+On the Game Details page, the "Field Goals" stat shows **only 2-point shots** (e.g., 3/6) instead of the **total field goals** (2PT + 3PT combined). The user example: 3/6 2PT and 2/4 3PT should display as **5/10 Total FG**.
 
-## Root Cause
-There's a **data model mismatch** in how the stats are stored vs. displayed:
+The PDF export has the same issue - it's labeled "Total FG-FGA" but only shows the 2-point values.
 
-| What Happens | How Stats Are Stored | How Stats Are Displayed |
-|-------------|---------------------|------------------------|
-| 2PT Made | `fgMade += 1` | Shows `fgMade - threePtMade` |
-| 3PT Made | `threePtMade += 1` | Shows `threePtMade` |
+## Current vs. Expected Behavior
 
-The code assumes `fgMade` is the **total of all field goals** (2PT + 3PT), but in reality it only tracks 2-pointers.
+| Scenario | 2PT Stats | 3PT Stats | Current Display | Expected Display |
+|----------|-----------|-----------|-----------------|------------------|
+| Field Goals | 3/6 | 2/4 | 3/6 (50%) | **5/10 (50%)** |
+| 3-Pointers | — | 2/4 | 2/4 (50%) | 2/4 (50%) *(no change)* |
 
-**Example causing negative numbers:**
-- User records a 3PT made → `fgMade = 0`, `threePtMade = 1`
-- Display calculates 2PT made as `0 - 1 = -1` ❌
+## Solution Overview
+Calculate **Total FG** at display time by adding 2PT and 3PT stats together. The Live Stats Capture continues tracking them separately for granular data collection.
 
-## Solution
-Update the **display logic** to match how the stats are actually stored. Since `fgMade` represents 2-point field goals only:
-- Remove the incorrect subtraction in all 2PT display calculations
-- Show `fgMade` and `fgAttempted` directly for 2-point stats
-- Keep 3-point stats display unchanged
+---
 
 ## Changes Required
 
-### File: `src/components/LiveStatCapture.tsx`
+### File 1: `src/pages/GameDetail.tsx`
 
-**1. Fix the 2PT display header (line 607)**
-```text
-Current:  {currentStats.fgMade - currentStats.threePtMade}/{currentStats.fgAttempted - currentStats.threePtAttempted}
-Fixed:    {currentStats.fgMade}/{currentStats.fgAttempted}
+**Update percentage calculations (lines 762-764)**
+
+Add new variables for Total FG:
+```typescript
+// Calculate TOTAL field goals (2PT + 3PT combined)
+const totalFgMade = game.fgMade + game.threePtMade;
+const totalFgAttempted = game.fgAttempted + game.threePtAttempted;
+const totalFgPct = totalFgAttempted > 0 
+  ? Math.round((totalFgMade / totalFgAttempted) * 100) 
+  : 0;
 ```
 
-**2. Fix the 2PT percentage calculation (line 379)**
-```text
-Current:  const fgPct = currentStats.fgAttempted > 0 ? Math.round((currentStats.fgMade / currentStats.fgAttempted) * 100) : 0;
-```
-This line is actually correct for showing 2PT percentage, but it's labeled misleadingly as "fgPct" which implies all field goals.
+**Update Shooting Performance section (lines 905-910)**
 
-**3. Fix the half stats 2PT percentage display (lines 586-588)**
-```text
-Current:  2PT: {currentStats.fgAttempted - currentStats.threePtAttempted > 0 
-            ? Math.round(((currentStats.fgMade - currentStats.threePtMade) / (currentStats.fgAttempted - currentStats.threePtAttempted)) * 100) 
-            : 0}%
-Fixed:    2PT: {currentStats.fgAttempted > 0 
-            ? Math.round((currentStats.fgMade / currentStats.fgAttempted) * 100) 
-            : 0}%
+Pass the combined totals to the Field Goals display:
+```typescript
+<ShootingStatBox
+  label="Field Goals"
+  made={totalFgMade}           // was: game.fgMade
+  attempted={totalFgAttempted} // was: game.fgAttempted
+  percentage={totalFgPct}      // was: fgPct
+/>
 ```
+
+**Update True Shooting calculation (lines 978-980)**
+
+The True Shooting % formula should use Total FG attempts (it may already be correct if the original intent was total FG):
+```typescript
+// True Shooting uses total FG attempts
+{totalFgAttempted + (0.44 * game.ftAttempted) > 0
+  ? Math.round((game.points / (2 * (totalFgAttempted + 0.44 * game.ftAttempted))) * 100)
+  : 0}%
+```
+
+---
+
+### File 2: `src/utils/exportPdf.ts`
+
+**Update PDF box score to use Total FG (lines 279-320)**
+
+Calculate combined totals for the PDF:
+```typescript
+// Calculate TOTAL field goals for display
+const totalFgMade = game.fgMade + game.threePtMade;
+const totalFgAttempted = game.fgAttempted + game.threePtAttempted;
+const totalFgPct = totalFgAttempted > 0 
+  ? ((totalFgMade / totalFgAttempted) * 100).toFixed(1) 
+  : '0.0';
+```
+
+Update the table body to use total values:
+```typescript
+// In body array (around line 297)
+`${totalFgMade}-${totalFgAttempted}`,  // was: game.fgMade-game.fgAttempted
+
+// In foot array (around line 314)  
+`${totalFgMade}-${totalFgAttempted}`,  // was: game.fgMade-game.fgAttempted
+```
+
+**Update half-by-half shooting breakdown (around lines 380-400)**
+
+The 2PT% breakdown should still show the actual 2PT stats (since it's explicitly labeled "2PT %"), but verify the Game totals use combined values for consistency.
+
+---
 
 ## Summary of Edits
 
-| Line | Change Description |
-|------|-------------------|
-| 586-588 | Remove subtraction in 2PT percentage calculation |
-| 607 | Remove subtraction in 2PT made/attempted display |
+| File | Location | Change |
+|------|----------|--------|
+| `GameDetail.tsx` | Lines 762-764 | Add `totalFgMade`, `totalFgAttempted`, `totalFgPct` calculations |
+| `GameDetail.tsx` | Lines 905-910 | Pass combined totals to ShootingStatBox |
+| `GameDetail.tsx` | Lines 978-980 | Use `totalFgAttempted` in True Shooting formula |
+| `exportPdf.ts` | Lines 279-282 | Add total FG calculation variables |
+| `exportPdf.ts` | Lines 297, 314 | Use combined totals in table rows |
 
-This fix ensures:
-- ✅ 2PT and 3PT field goals are tracked independently and correctly
-- ✅ No negative shot attempts can occur
-- ✅ Percentages calculate correctly for both shot types
+---
+
+## What Stays the Same
+- **Live Stats Capture**: Continues tracking 2PT and 3PT separately (buttons for "2PT Make", "3PT Make", etc.)
+- **Database Storage**: `fg_made`/`fg_attempted` still stores 2PT; `three_pt_made`/`three_pt_attempted` stores 3PT
+- **Half-by-half PDF breakdown**: Still shows "2PT %" and "3PT %" separately for detailed analysis
+
+This ensures:
+- **Game Details page** shows Total FG as users expect
+- **PDF export** correctly represents Total FG-FGA
+- **Data collection** remains granular for future analysis
