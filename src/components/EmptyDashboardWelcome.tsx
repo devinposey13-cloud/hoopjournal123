@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Mic, Camera, User, Sparkles, Loader2, Check, X, RefreshCw, Trash2 } from 'lucide-react';
+import { Plus, Mic, Camera, User, Sparkles, Loader2, Check, X, RefreshCw, Trash2, Volume2 } from 'lucide-react';
+import { useCoachVoice } from '@/hooks/useCoachVoice';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   AlertDialog,
@@ -25,6 +26,7 @@ interface EmptyDashboardWelcomeProps {
   playerName: string;
   avatarUrl?: string;
   hasSkippedAvatar?: boolean;
+  isFirstTimeAfterOnboarding?: boolean;
   onLogFirstGame: () => void;
   onPregameTalk: () => void;
   onUploadPhoto: () => void;
@@ -32,6 +34,7 @@ interface EmptyDashboardWelcomeProps {
   onAvatarGenerated?: (newAvatarUrl: string) => void;
   onAvatarUploaded?: (file: File) => Promise<string | null>;
   onAvatarDeleted?: () => Promise<void>;
+  onIntroPlayed?: () => void;
 }
 
 type AvatarState = 'idle' | 'generating' | 'preview' | 'uploading';
@@ -40,13 +43,15 @@ export function EmptyDashboardWelcome({
   playerName, 
   avatarUrl,
   hasSkippedAvatar,
+  isFirstTimeAfterOnboarding,
   onLogFirstGame, 
   onPregameTalk,
   onUploadPhoto,
   onSkipPhoto,
   onAvatarGenerated,
   onAvatarUploaded,
-  onAvatarDeleted
+  onAvatarDeleted,
+  onIntroPlayed
 }: EmptyDashboardWelcomeProps) {
   const hasAvatar = Boolean(avatarUrl);
   // Hide avatar card if user has skipped and has no avatar
@@ -57,7 +62,26 @@ export function EmptyDashboardWelcome({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const [showAvatarPreview, setShowAvatarPreview] = useState(false);
+  const [hasPlayedIntro, setHasPlayedIntro] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Coach voice for intro
+  const { playVoice, playingIndex, isLoadingAudio } = useCoachVoice();
+
+  const INTRO_MESSAGE = "First game hasn't been logged yet — but every season starts somewhere. Let me know when you're ready.";
+
+  // Auto-play Coach AI intro voice after onboarding
+  useEffect(() => {
+    if (isFirstTimeAfterOnboarding && !hasPlayedIntro) {
+      // Small delay to let animations settle
+      const timer = setTimeout(() => {
+        playVoice(INTRO_MESSAGE, -1); // Use -1 as special index for intro
+        setHasPlayedIntro(true);
+        onIntroPlayed?.();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isFirstTimeAfterOnboarding, hasPlayedIntro, playVoice, onIntroPlayed]);
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -212,14 +236,33 @@ export function EmptyDashboardWelcome({
     >
       <div className={`grid gap-4 w-full max-w-2xl ${shouldShowAvatarCard ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 max-w-md mx-auto'}`}>
         {/* Coach AI Card */}
-        <Card className="bg-gradient-to-br from-card to-card/80 border-2 border-primary/20 shadow-lg">
+        <Card className="bg-gradient-to-br from-card to-card/80 border-2 border-primary/20 shadow-lg relative overflow-hidden">
+          {/* Audio indicator when playing */}
+          {(playingIndex === -1 || isLoadingAudio) && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute top-3 right-3"
+            >
+              <div className="flex items-center gap-1.5 text-primary">
+                {isLoadingAudio ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Volume2 className="w-4 h-4 animate-pulse" />
+                )}
+                <span className="text-xs font-medium">
+                  {isLoadingAudio ? 'Loading...' : 'Speaking'}
+                </span>
+              </div>
+            </motion.div>
+          )}
           <CardContent className="pt-8 pb-6 px-6 text-center">
             {/* Coach AI Avatar */}
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', delay: 0.2 }}
-              className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6"
+              className={`w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6 ${playingIndex === -1 ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
             >
               <span className="text-4xl">🏀</span>
             </motion.div>
@@ -247,10 +290,9 @@ export function EmptyDashboardWelcome({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="text-muted-foreground mb-8 leading-relaxed text-sm"
+              className={`text-muted-foreground mb-8 leading-relaxed text-sm ${playingIndex === -1 ? 'text-foreground' : ''}`}
             >
-              First game hasn't been logged yet — but every season starts somewhere.
-              Let me know when you're ready.
+              {INTRO_MESSAGE}
             </motion.p>
 
             {/* Action Buttons */}
