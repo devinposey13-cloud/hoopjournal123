@@ -344,32 +344,21 @@ export default function Index() {
               /* Full journal page wrapper - existing content */
               <div className="journal-page rounded-2xl overflow-hidden">
                 <div className="px-6 md:px-10 py-8 space-y-8">
-                  {/* Journal-style header with optional avatar */}
-                  <div className={`pb-6 border-b border-amber-800/20 ${profile.avatar ? 'flex flex-col md:flex-row items-center gap-6 md:gap-8' : 'text-center'}`}>
-                    {profile.avatar && (
-                      <div className="shrink-0">
-                        <img 
-                          src={profile.avatar} 
-                          alt={profile.name || 'Player'} 
-                          className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border-2 border-amber-800/20 shadow-md"
-                        />
-                      </div>
-                    )}
-                    <div className={profile.avatar ? 'text-center md:text-left' : ''}>
-                      <h1 
-                        className="text-4xl md:text-5xl lg:text-6xl mb-2"
-                        style={{ fontFamily: "'Dancing Script', cursive" }}
-                      >
-                        Dear Basketball,
-                      </h1>
-                      <div className={`w-32 h-0.5 bg-amber-800/30 my-4 ${profile.avatar ? 'mx-auto md:mx-0' : 'mx-auto'}`} />
-                      <p 
-                        className="text-lg md:text-xl opacity-80"
-                        style={{ fontFamily: "'Dancing Script', cursive" }}
-                      >
-                        {profile.name ? `${profile.name}'s Journey` : 'My Basketball Journey'}
-                      </p>
-                    </div>
+                  {/* Journal-style header - centered */}
+                  <div className="pb-6 border-b border-amber-800/20 text-center">
+                    <h1 
+                      className="text-4xl md:text-5xl lg:text-6xl mb-2"
+                      style={{ fontFamily: "'Dancing Script', cursive" }}
+                    >
+                      Dear Basketball,
+                    </h1>
+                    <div className="w-32 h-0.5 bg-amber-800/30 my-4 mx-auto" />
+                    <p 
+                      className="text-lg md:text-xl opacity-80"
+                      style={{ fontFamily: "'Dancing Script', cursive" }}
+                    >
+                      {profile.name ? `${profile.name}'s Journey` : 'My Basketball Journey'}
+                    </p>
                   </div>
 
                   {/* Player Header - styled for journal */}
