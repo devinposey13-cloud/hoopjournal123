@@ -331,6 +331,36 @@ export type Database = {
           },
         ]
       }
+      level_rewards: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          level_required: number
+          reward_icon: string
+          reward_name: string
+          reward_type: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          level_required: number
+          reward_icon: string
+          reward_name: string
+          reward_type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          level_required?: number
+          reward_icon?: string
+          reward_name?: string
+          reward_type?: string
+        }
+        Relationships: []
+      }
       milestone_definitions: {
         Row: {
           category: string
@@ -525,6 +555,38 @@ export type Database = {
           },
         ]
       }
+      player_level_rewards: {
+        Row: {
+          id: string
+          reward_id: string
+          unlocked_at: string
+          unlocked_quarter: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          reward_id: string
+          unlocked_at?: string
+          unlocked_quarter: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          reward_id?: string
+          unlocked_at?: string
+          unlocked_quarter?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_level_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "level_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_milestones: {
         Row: {
           earned_at: string
@@ -684,6 +746,78 @@ export type Database = {
           id?: string
           is_primary?: boolean
           name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      player_xp_history: {
+        Row: {
+          archived_at: string
+          avg_performance: number | null
+          final_level: number
+          games_played: number
+          id: string
+          quarter: string
+          total_xp_earned: number
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string
+          avg_performance?: number | null
+          final_level: number
+          games_played: number
+          id?: string
+          quarter: string
+          total_xp_earned: number
+          user_id: string
+        }
+        Update: {
+          archived_at?: string
+          avg_performance?: number | null
+          final_level?: number
+          games_played?: number
+          id?: string
+          quarter?: string
+          total_xp_earned?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      player_xp_progress: {
+        Row: {
+          created_at: string
+          current_level: number
+          current_xp: number
+          games_logged: number
+          id: string
+          peak_level: number
+          quarter: string
+          total_performance_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_level?: number
+          current_xp?: number
+          games_logged?: number
+          id?: string
+          peak_level?: number
+          quarter: string
+          total_performance_score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_level?: number
+          current_xp?: number
+          games_logged?: number
+          id?: string
+          peak_level?: number
+          quarter?: string
+          total_performance_score?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
