@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { ProgressDots } from './onboarding/ProgressDots';
 import { IdentityCard } from './onboarding/IdentityCard';
@@ -28,6 +28,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [showTransition, setShowTransition] = useState(false);
   const [direction, setDirection] = useState(0); // -1 for back, 1 for forward
+  const [isEntering, setIsEntering] = useState(true);
   const [data, setData] = useState<OnboardingData>({
     name: '',
     courtRole: '',
@@ -35,6 +36,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     seasonGoals: [],
     parentEmail: null,
   });
+
+  // Initial fade-in animation
+  useEffect(() => {
+    const timer = setTimeout(() => setIsEntering(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   const goBack = useCallback(() => {
     if (currentStep > 0) {
@@ -119,11 +126,21 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden">
-      {/* Header with progress */}
-      <div className="pt-12 pb-4">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden"
+    >
+      {/* Header with progress - fade in with delay */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.2, ease: 'easeOut' }}
+        className="pt-12 pb-4"
+      >
         <ProgressDots currentStep={currentStep} totalSteps={TOTAL_STEPS} />
-      </div>
+      </motion.div>
 
       {/* Swipe hint for mobile - only show on first step */}
       {currentStep === 0 && (
@@ -137,7 +154,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       )}
 
       {/* Card content with swipe gestures */}
-      <div className="flex-1 flex items-center justify-center overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="flex-1 flex items-center justify-center overflow-hidden"
+      >
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={currentStep}
@@ -148,7 +170,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             exit="exit"
             transition={{
               x: { type: 'spring', stiffness: 300, damping: 30 },
-              opacity: { duration: 0.2 },
+              opacity: { duration: 0.25 },
             }}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
@@ -188,20 +210,21 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             )}
           </motion.div>
         </AnimatePresence>
-      </div>
+      </motion.div>
 
       {/* Back button for steps > 0 */}
       {currentStep > 0 && (
         <motion.button
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.6 }}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 0.6, x: 0 }}
           whileHover={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
           onClick={goBack}
           className="absolute bottom-8 left-8 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           ← Back
         </motion.button>
       )}
-    </div>
+    </motion.div>
   );
 }
