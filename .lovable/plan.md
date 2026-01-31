@@ -1,136 +1,90 @@
 
-# Bug Fix: First-Time User Intro/Onboarding Not Showing
+# AI Avatar Generator Integration
 
-## Problem Identified
+## Overview
 
-The first-time user experience (basketball animation + 5-card onboarding) did not appear for the test account `bigpose2@gmail.com`. The user went directly to the Coach AI welcome screen.
+Add an AI-powered avatar generation feature that transforms a user's uploaded profile photo into a stylized basketball avatar. Users will have the option to either keep their original photo or generate an AI-stylized version.
 
-## Root Cause Analysis
+## How It Works
 
-The onboarding detection in `useFirstLogin.ts` uses **browser localStorage** to track whether a user has seen the intro and completed onboarding:
+1. User uploads a profile photo (existing functionality)
+2. After upload completes, a new "Generate Avatar" button appears
+3. User clicks to generate an AI-stylized basketball avatar
+4. AI transforms their photo into a stylized cartoon/illustrated avatar
+5. User can keep the AI avatar or revert to original photo
 
-```typescript
-const INTRO_SEEN_KEY = 'hoopjournal_intro_seen';
-const ONBOARDING_COMPLETE_KEY = 'hoopjournal_onboarding_complete';
-```
+## Technical Approach
 
-**Critical flaw:** These localStorage keys are **global to the browser**, not user-specific. This causes problems when:
-1. A user tests with multiple accounts in the same browser
-2. A user clears their data and logs back in
-3. A user switches devices/browsers
+### AI Model
 
-The database correctly stores `onboarding_completed_at` in the `player_settings` table, but this value is **never checked** by `useFirstLogin`.
+Using **Lovable AI** with `google/gemini-2.5-flash-image` model - this is already configured in your project (via `LOVABLE_API_KEY`) and requires no additional API keys. While you mentioned DALL-E, Lovable AI provides equivalent image generation capabilities and is the recommended approach since it's already integrated.
 
-## Evidence from Database
+### Architecture
 
-For `bigpose2@gmail.com`:
-- `is_approved`: true (approved by admin)
-- `onboarding_completed_at`: NULL (never completed onboarding)
-- `court_role`, `playing_level`, `season_goals`: all NULL
-
-The database clearly shows onboarding was never completed, but localStorage from a previous account session may have had the flags set.
-
-## Solution: Hybrid Database + localStorage Approach
-
-Update `useFirstLogin.ts` to:
-1. Check the database `onboarding_completed_at` field as the **source of truth**
-2. Use localStorage as a secondary cache for the intro animation (which is truly first-impression only)
-3. Sync the two: if database says not completed but localStorage says completed, trust the database
-
-## Implementation Changes
-
-### 1. Update `useFirstLogin.ts`
-
-Current logic:
 ```text
-localStorage empty? → Show intro
-localStorage intro_seen? → Check onboarding
-localStorage both set? → Skip to dashboard
+User uploads photo → Stored in Supabase Storage
+                            ↓
+User clicks "Generate Avatar" → Edge Function
+                            ↓
+                    Lovable AI Gateway
+                    (gemini-2.5-flash-image)
+                            ↓
+              Generated avatar base64 returned
+                            ↓
+            Upload to Supabase Storage → Update profile
 ```
 
-New logic:
-```text
-1. Wait for user profile to load
-2. Check database: onboarding_completed_at is NULL?
-   - YES → Check localStorage intro_seen?
-     - NO → Show intro animation
-     - YES → Show onboarding flow
-   - NO → Skip both (user already completed onboarding)
-```
+### New Components and Files
 
-### 2. Pass User Context to Hook
+| File | Purpose |
+|------|---------|
+| `supabase/functions/generate-avatar/index.ts` | Edge function to call Lovable AI for image generation |
+| `src/components/AvatarGenerator.tsx` | UI component with generate button and loading state |
+| `src/components/SettingsPanel.tsx` | Updated to include the avatar generator after photo upload |
 
-The hook needs access to the user's profile data (`onboardingCompletedAt`) to make database-aware decisions.
+### Edge Function Design
 
-### 3. User-Specific localStorage Keys (Optional Enhancement)
+The function will:
+1. Accept the uploaded photo URL
+2. Call Lovable AI with a prompt like: "Transform this photo into a stylized basketball player avatar in a cartoon/illustrated style. Keep the person's likeness but make it look like a sports trading card illustration."
+3. Return the generated image as base64
+4. The frontend uploads this to storage and updates the profile
 
-Could change keys to include user ID:
-```typescript
-const INTRO_SEEN_KEY = `hoopjournal_intro_seen_${userId}`;
-```
+### UI/UX Flow
 
-But the simpler fix is to just trust the database.
+1. **Avatar Section Updates**:
+   - Current: Camera icon overlay on hover
+   - New: After upload, show a small "Generate AI Avatar" button below the photo
+   - Show loading spinner with "Creating your avatar..." during generation
+   - After generation, show both original and AI version with toggle option
 
-## File Changes
+2. **Visual States**:
+   - `idle`: Shows current avatar with upload button
+   - `uploading`: Shows spinner during photo upload
+   - `generating`: Shows animated spinner with "AI is creating your avatar..."
+   - `preview`: Shows generated avatar with "Use This" and "Keep Original" buttons
 
-| File | Change |
-|------|--------|
-| `src/hooks/useFirstLogin.ts` | Accept profile data as parameter, check `onboardingCompletedAt` from database |
-| `src/pages/Index.tsx` | Pass profile loading state and onboarding status to the hook |
+### Database Changes
 
-## Updated Hook Logic
+None required - we'll store the AI-generated avatar URL in the existing `avatar_url` column. Optionally, we could add an `original_avatar_url` column to preserve the original, but this can be a future enhancement.
 
-```typescript
-export function useFirstLogin(profile: PlayerProfile | null, profileLoading: boolean) {
-  const [showIntro, setShowIntro] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [loading, setLoading] = useState(true);
+### Error Handling
 
-  useEffect(() => {
-    // Wait for profile to load
-    if (profileLoading) return;
-    
-    // If database shows onboarding completed, skip everything
-    if (profile?.onboardingCompletedAt) {
-      setShowIntro(false);
-      setShowOnboarding(false);
-      setLoading(false);
-      return;
-    }
-    
-    // Database says NOT completed - check localStorage for intro
-    const hasSeenIntro = localStorage.getItem(INTRO_SEEN_KEY);
-    
-    if (!hasSeenIntro) {
-      setShowIntro(true);
-    } else {
-      setShowOnboarding(true);
-    }
-    setLoading(false);
-  }, [profile, profileLoading]);
+- If AI generation fails, show toast error and keep original photo
+- Implement retry button for failed generations
+- Add timeout handling (30 second max for generation)
 
-  // ... rest of implementation
-}
-```
+## Implementation Steps
 
-## Technical Details
+1. Create the `generate-avatar` edge function
+2. Create the `AvatarGenerator` component with generate button and states
+3. Update `SettingsPanel` to integrate the avatar generator
+4. Update `useCloudData` to handle the generated avatar upload
+5. Add loading animations and user feedback
 
-### Index.tsx Updates
+## Considerations
 
-1. Move `useFirstLogin` call after profile is available from `useGameWithMilestones`
-2. Pass profile and loading state to the hook
-3. Adjust loading state handling order
-
-### Edge Cases Handled
-
-| Scenario | Behavior |
-|----------|----------|
-| Fresh account, empty localStorage | Shows intro → onboarding |
-| Fresh account, stale localStorage from another account | Database says NULL → shows intro → onboarding |
-| Returning user, same device | Database says completed → skips both |
-| Returning user, new device | Database says completed → skips both |
-| User who completed onboarding then cleared localStorage | Database says completed → skips both |
-
-## Summary
-
-The fix ensures the database `onboarding_completed_at` field is the source of truth, making the first-time experience work correctly across all scenarios. localStorage remains useful as a per-session cache for the intro animation, but the database determines whether onboarding is truly complete.
+- **Processing Time**: Image generation takes 5-15 seconds - need good loading feedback
+- **Cost**: Each generation uses Lovable AI credits - consider limiting to avoid abuse
+- **Quality**: The prompt can be refined based on results
+- **Storage**: Generated avatars use same storage bucket as regular avatars
