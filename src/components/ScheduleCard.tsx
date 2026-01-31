@@ -40,10 +40,10 @@ export const ScheduleCard = forwardRef<HTMLDivElement, ScheduleCardProps>(
           <div className="flex items-center gap-2">
             <div
               className={cn(
-                'px-2 py-1 rounded text-xs font-bold uppercase',
+                'px-2 py-1 rounded text-xs font-bold uppercase transition-all duration-300',
                 game.isHome
-                  ? 'bg-green-500/20 text-green-400'
-                  : 'bg-blue-500/20 text-blue-400'
+                  ? 'bg-green-500/20 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)] group-hover:shadow-[0_0_15px_rgba(34,197,94,0.5)]'
+                  : 'bg-blue-500/20 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.3)] group-hover:shadow-[0_0_15px_rgba(59,130,246,0.5)]'
               )}
             >
               {game.isHome ? (
