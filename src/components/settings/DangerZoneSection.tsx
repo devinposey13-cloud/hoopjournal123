@@ -107,6 +107,13 @@ export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProp
         .select('file_path, thumbnail_path')
         .eq('user_id', userId);
 
+      // Get player settings to delete avatar from storage
+      const { data: playerSettings } = await supabase
+        .from('player_settings')
+        .select('avatar_url')
+        .eq('user_id', userId)
+        .maybeSingle();
+
       // Delete video files from storage
       if (videoClips && videoClips.length > 0) {
         const filePaths = videoClips
@@ -115,6 +122,15 @@ export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProp
 
         if (filePaths.length > 0) {
           await supabase.storage.from('video-clips').remove(filePaths);
+        }
+      }
+
+      // Delete avatar from storage
+      if (playerSettings?.avatar_url && playerSettings.avatar_url.includes('avatars/')) {
+        const pathMatch = playerSettings.avatar_url.match(/avatars\/([^?]+)/);
+        if (pathMatch) {
+          const filePath = pathMatch[1];
+          await supabase.storage.from('avatars').remove([filePath]);
         }
       }
 
@@ -147,6 +163,7 @@ export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProp
       }
 
       // Reset player_settings to trigger re-onboarding (set onboarding_completed_at to null)
+      // Also clear avatar_url so user starts fresh with no profile photo
       const { error: updateError } = await supabase
         .from('player_settings')
         .update({
@@ -160,6 +177,8 @@ export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProp
           court_role: null,
           playing_level: null,
           season_goals: null,
+          avatar_url: null,
+          avatar_skipped_at: null,
         })
         .eq('user_id', userId);
 
@@ -209,8 +228,8 @@ export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProp
                 Start Over
               </h4>
               <p className="text-sm text-muted-foreground mt-1">
-                Wipe all game data, clips, and schedule. You'll go through onboarding again.
-                Your account and profile photo will be preserved.
+                Wipe all game data, clips, schedule, and profile photo. You'll go through onboarding again.
+                Your account will be preserved.
               </p>
             </div>
             <Button
@@ -330,8 +349,8 @@ export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProp
                 <li>Milestones and achievements</li>
               </ul>
               <p className="text-sm text-muted-foreground">
-                Your account, email, and profile photo will be preserved. You'll go through
-                the onboarding process again as if you were a new user.
+                Your account and email will be preserved. Your profile photo will be removed.
+                You'll go through the onboarding process again as if you were a new user.
               </p>
               <div className="pt-2">
                 <label className="text-sm font-medium">
