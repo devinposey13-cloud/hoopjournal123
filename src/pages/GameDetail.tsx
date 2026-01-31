@@ -41,6 +41,7 @@ import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, Ale
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { QuickDuplicateDialog } from '@/components/QuickDuplicateDialog';
 import { MilestoneCard } from '@/components/milestones/MilestoneCard';
+import { GamePerformanceCard } from '@/components/xp/GamePerformanceCard';
 import { toast } from 'sonner';
 
 export default function GameDetail() {
@@ -974,6 +975,9 @@ export default function GameDetail() {
               </p>
             </div>
           </div>
+
+          {/* XP Performance Score */}
+          <GamePerformanceCard game={game} className="mb-6 border-0 shadow-none p-0" />
 
           {/* Milestones Earned in This Game */}
           {earnedMilestones.filter(m => m.gameId === game.id).length > 0 && (
