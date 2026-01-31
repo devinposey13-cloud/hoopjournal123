@@ -471,6 +471,40 @@ export function useCloudData() {
     }
   };
 
+  // Update game team assignment
+  const updateGameTeam = async (gameId: string, teamId: string | null) => {
+    if (!user) return false;
+
+    try {
+      const { data, error } = await supabase
+        .from('games')
+        .update({ team_id: teamId })
+        .eq('id', gameId)
+        .select('*, player_teams(name)')
+        .single();
+
+      if (error) throw error;
+
+      // Update local state
+      setGames(prev => prev.map(g => 
+        g.id === gameId 
+          ? { 
+              ...g, 
+              teamId: teamId || undefined, 
+              teamName: (data.player_teams as any)?.name || undefined 
+            } 
+          : g
+      ));
+      
+      toast.success(teamId ? 'Team assigned!' : 'Team removed');
+      return true;
+    } catch (error) {
+      console.error('Error updating game team:', error);
+      toast.error('Failed to update team');
+      return false;
+    }
+  };
+
   // Add scheduled game (now with season_id and team_id)
   const addScheduledGame = async (game: Omit<ScheduledGame, 'id'>) => {
     if (!user) return null;
@@ -894,6 +928,7 @@ export function useCloudData() {
     seasonStats: calculateSeasonStats(),
     addGame,
     deleteGame,
+    updateGameTeam,
     addScheduledGame,
     updateScheduledGame,
     deleteScheduledGame,
