@@ -315,7 +315,7 @@ export default function Index() {
                       setActiveTab('settings');
                     }}
                     onSkipPhoto={() => {
-                      // Just dismiss - user can add later
+                      toast.info("No problem! You can add a photo anytime in Settings.");
                     }}
                     onAvatarGenerated={(newUrl) => {
                       updateProfile({ ...profile, avatar: newUrl });
