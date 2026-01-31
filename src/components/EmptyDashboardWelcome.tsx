@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,9 +15,10 @@ interface EmptyDashboardWelcomeProps {
   onUploadPhoto: () => void;
   onSkipPhoto: () => void;
   onAvatarGenerated?: (newAvatarUrl: string) => void;
+  onAvatarUploaded?: (file: File) => Promise<string | null>;
 }
 
-type AvatarState = 'idle' | 'generating' | 'preview';
+type AvatarState = 'idle' | 'generating' | 'preview' | 'uploading';
 
 export function EmptyDashboardWelcome({ 
   playerName, 
@@ -26,12 +27,51 @@ export function EmptyDashboardWelcome({
   onPregameTalk,
   onUploadPhoto,
   onSkipPhoto,
-  onAvatarGenerated
+  onAvatarGenerated,
+  onAvatarUploaded
 }: EmptyDashboardWelcomeProps) {
   const hasAvatar = Boolean(avatarUrl);
   const [avatarState, setAvatarState] = useState<AvatarState>('idle');
   const [generatedPreview, setGeneratedPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    if (onAvatarUploaded) {
+      setAvatarState('uploading');
+      try {
+        const newUrl = await onAvatarUploaded(file);
+        if (newUrl && onAvatarGenerated) {
+          onAvatarGenerated(newUrl);
+        }
+      } finally {
+        setAvatarState('idle');
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    } else {
+      // Fallback to settings panel
+      onUploadPhoto();
+    }
+  };
 
   const generateAvatar = async () => {
     if (!avatarUrl) {
@@ -210,7 +250,7 @@ export function EmptyDashboardWelcome({
               {/* Avatar Preview - show different states with animations */}
               <div className="mx-auto mb-8 h-36 flex items-center justify-center">
                 <AnimatePresence mode="wait">
-                  {avatarState === 'generating' ? (
+                {avatarState === 'generating' ? (
                     <motion.div
                       key="generating"
                       initial={{ opacity: 0, scale: 0.8 }}
@@ -232,6 +272,29 @@ export function EmptyDashboardWelcome({
                         }}
                       />
                       <Loader2 className="w-8 h-8 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin text-primary" />
+                    </motion.div>
+                  ) : avatarState === 'uploading' ? (
+                    <motion.div
+                      key="uploading"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      className="relative"
+                    >
+                      <motion.div 
+                        className="w-28 h-28 rounded-full bg-gradient-to-r from-primary/20 to-primary/40"
+                        animate={{ 
+                          scale: [1, 1.05, 1],
+                          opacity: [0.5, 1, 0.5]
+                        }}
+                        transition={{ 
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      />
+                      <Camera className="w-8 h-8 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary animate-pulse" />
                     </motion.div>
                   ) : avatarState === 'preview' && generatedPreview ? (
                     <motion.div 
@@ -323,6 +386,8 @@ export function EmptyDashboardWelcome({
                           ease: "easeInOut"
                         }
                       }}
+                      className="relative cursor-pointer group"
+                      onClick={handleAvatarClick}
                     >
                       <motion.div
                         animate={{
@@ -345,9 +410,25 @@ export function EmptyDashboardWelcome({
                           </AvatarFallback>
                         </Avatar>
                       </motion.div>
+                      {/* Plus icon overlay */}
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                        className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-primary flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform"
+                      >
+                        <Plus className="w-5 h-5 text-primary-foreground" />
+                      </motion.div>
                     </motion.div>
                   )}
                 </AnimatePresence>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
               </div>
 
               {/* Header */}
