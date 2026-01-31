@@ -27,6 +27,7 @@ import { PersistentMusicBar } from '@/components/PersistentMusicBar';
 import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
 import { PostGameXpReveal } from '@/components/xp/PostGameXpReveal';
 import { LevelUpCelebration } from '@/components/xp/LevelUpCelebration';
+import { TierCelebration } from '@/components/xp/TierCelebration';
 import { QuarterlyProgress } from '@/components/xp/QuarterlyProgress';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
@@ -109,6 +110,10 @@ export default function Index() {
     closeXpReveal,
     showLevelUpCelebration,
     closeLevelUpCelebration,
+    // Tier celebration
+    pendingTierCelebration,
+    showTierCelebration,
+    closeTierCelebration,
   } = useGameWithMilestones();
 
   // useFirstLogin now uses database as source of truth
@@ -790,6 +795,17 @@ export default function Index() {
             performance={pendingXpResult.performance}
             xpResult={pendingXpResult.xpResult}
             onClose={closeXpReveal}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Tier Celebration - New tier unlocked for first time */}
+      <AnimatePresence>
+        {showTierCelebration && pendingTierCelebration && (
+          <TierCelebration
+            tier={pendingTierCelebration.tier}
+            performanceScore={pendingTierCelebration.performanceScore}
+            onComplete={closeTierCelebration}
           />
         )}
       </AnimatePresence>

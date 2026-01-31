@@ -750,6 +750,41 @@ export type Database = {
         }
         Relationships: []
       }
+      player_tier_achievements: {
+        Row: {
+          achieved_at: string
+          game_id: string | null
+          id: string
+          performance_score: number
+          tier: string
+          user_id: string
+        }
+        Insert: {
+          achieved_at?: string
+          game_id?: string | null
+          id?: string
+          performance_score: number
+          tier: string
+          user_id: string
+        }
+        Update: {
+          achieved_at?: string
+          game_id?: string | null
+          id?: string
+          performance_score?: number
+          tier?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_tier_achievements_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_xp_history: {
         Row: {
           archived_at: string
