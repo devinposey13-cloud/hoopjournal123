@@ -30,7 +30,12 @@ export function GameCard({ game, profile, onDelete }: GameCardProps) {
 
   return (
     <Link to={`/game/${game.id}`} className="block">
-      <div className="stat-card group hover:border-primary/50 transition-colors cursor-pointer">
+      <div className={cn(
+        'stat-card group cursor-pointer',
+        'transition-all duration-300 ease-out',
+        'hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/5',
+        'hover:border-primary/30 hover:-translate-y-0.5'
+      )}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <div
