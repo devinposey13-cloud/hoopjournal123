@@ -30,6 +30,10 @@ export interface GameStats {
   gamePhotoUrl?: string;
   teamId?: string;
   teamName?: string;
+  halftimeScoreUs?: number;
+  halftimeScoreThem?: number;
+  finalScoreUs?: number;
+  finalScoreThem?: number;
 }
 
 export interface HalfStats {
