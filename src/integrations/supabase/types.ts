@@ -484,6 +484,7 @@ export type Database = {
       player_settings: {
         Row: {
           avatar_url: string | null
+          court_role: string | null
           created_at: string
           display_name: string | null
           grade: string
@@ -494,8 +495,12 @@ export type Database = {
           is_profile_public: boolean
           name: string
           number: number
+          onboarding_completed_at: string | null
+          parent_email: string | null
           phone: string | null
+          playing_level: string | null
           position: string
+          season_goals: string[] | null
           team: string
           theme_music_url: string | null
           updated_at: string
@@ -504,6 +509,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          court_role?: string | null
           created_at?: string
           display_name?: string | null
           grade?: string
@@ -514,8 +520,12 @@ export type Database = {
           is_profile_public?: boolean
           name?: string
           number?: number
+          onboarding_completed_at?: string | null
+          parent_email?: string | null
           phone?: string | null
+          playing_level?: string | null
           position?: string
+          season_goals?: string[] | null
           team?: string
           theme_music_url?: string | null
           updated_at?: string
@@ -524,6 +534,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          court_role?: string | null
           created_at?: string
           display_name?: string | null
           grade?: string
@@ -534,8 +545,12 @@ export type Database = {
           is_profile_public?: boolean
           name?: string
           number?: number
+          onboarding_completed_at?: string | null
+          parent_email?: string | null
           phone?: string | null
+          playing_level?: string | null
           position?: string
+          season_goals?: string[] | null
           team?: string
           theme_music_url?: string | null
           updated_at?: string

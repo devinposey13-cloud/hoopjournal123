@@ -29,6 +29,8 @@ import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { PendingApproval } from '@/components/PendingApproval';
 import { FirstLoginIntro } from '@/components/FirstLoginIntro';
+import { OnboardingFlow, OnboardingData } from '@/components/OnboardingFlow';
+import { EmptyDashboardWelcome } from '@/components/EmptyDashboardWelcome';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -67,7 +69,7 @@ export default function Index() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const { isApproved, loading: approvalLoading, refetch: refetchApproval } = useApprovalStatus();
-  const { showIntro, loading: introLoading, completeIntro } = useFirstLogin();
+  const { showIntro, showOnboarding, loading: introLoading, completeIntro, completeOnboarding } = useFirstLogin();
   const {
     games,
     clips,
@@ -117,6 +119,24 @@ export default function Index() {
   // Show first login intro animation for new users
   if (showIntro) {
     return <FirstLoginIntro onComplete={completeIntro} />;
+  }
+
+  // Show onboarding flow after intro
+  const handleOnboardingComplete = async (data: OnboardingData) => {
+    // Save onboarding data to profile
+    await updateProfile({
+      name: data.name,
+      courtRole: data.courtRole,
+      playingLevel: data.playingLevel,
+      seasonGoals: data.seasonGoals,
+      parentEmail: data.parentEmail || undefined,
+      onboardingCompletedAt: new Date().toISOString(),
+    });
+    completeOnboarding();
+  };
+
+  if (showOnboarding) {
+    return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
   const today = startOfDay(new Date());
@@ -255,83 +275,109 @@ export default function Index() {
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="animate-fade-in">
-            {/* Full journal page wrapper */}
-            <div className="journal-page rounded-2xl overflow-hidden">
-              <div className="px-6 md:px-10 py-8 space-y-8">
-                {/* Journal-style header */}
-                <div className="text-center pb-6 border-b border-amber-800/20">
-                  <h1 
-                    className="text-4xl md:text-5xl lg:text-6xl mb-2"
-                    style={{ fontFamily: "'Dancing Script', cursive" }}
-                  >
-                    Dear Basketball,
-                  </h1>
-                  <div className="w-32 h-0.5 bg-amber-800/30 mx-auto my-4" />
-                  <p 
-                    className="text-lg md:text-xl opacity-80"
-                    style={{ fontFamily: "'Dancing Script', cursive" }}
-                  >
-                    {profile.name ? `${profile.name}'s Journey` : 'My Basketball Journey'}
-                  </p>
+            {/* Show Coach AI welcome for new users with no games */}
+            {games.length === 0 ? (
+              <div className="journal-page rounded-2xl overflow-hidden">
+                <div className="px-6 md:px-10 py-8">
+                  {/* Journal-style header */}
+                  <div className="text-center pb-6 border-b border-amber-800/20 mb-6">
+                    <h1 
+                      className="text-4xl md:text-5xl lg:text-6xl mb-2"
+                      style={{ fontFamily: "'Dancing Script', cursive" }}
+                    >
+                      Dear Basketball,
+                    </h1>
+                    <div className="w-32 h-0.5 bg-amber-800/30 mx-auto my-4" />
+                    <p 
+                      className="text-lg md:text-xl opacity-80"
+                      style={{ fontFamily: "'Dancing Script', cursive" }}
+                    >
+                      {profile.name ? `${profile.name}'s Journey` : 'My Basketball Journey'}
+                    </p>
+                  </div>
+                  
+                  <EmptyDashboardWelcome
+                    playerName={profile.name || 'Player'}
+                    onLogFirstGame={() => {
+                      // Trigger add game dialog - navigate to games tab
+                      setActiveTab('games');
+                    }}
+                    onPregameTalk={() => {
+                      setActiveTab('coach');
+                    }}
+                  />
                 </div>
-
-                {/* Player Header - styled for journal */}
-                <div className="journal-section">
-                  <PlayerHeader profile={profile} seasonStats={seasonStats} games={games} />
-                </div>
-
-                {/* Season Averages */}
-                <section className="journal-section">
-                  <h2 className="journal-heading">Season Averages</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <StatCard label="Points" value={seasonStats.avgPoints} icon={Target} className="journal-card" />
-                    <StatCard label="Rebounds" value={seasonStats.avgRebounds} icon={Repeat} className="journal-card" />
-                    <StatCard label="Assists" value={seasonStats.avgAssists} icon={Zap} className="journal-card" />
-                    <StatCard label="Steals" value={seasonStats.avgSteals} icon={Shield} className="journal-card" />
-                    <StatCard label="Blocks" value={seasonStats.avgBlocks} icon={HandMetal} className="journal-card" />
-                    <StatCard label="FG%" value={seasonStats.fgPercentage} suffix="%" icon={Percent} className="journal-card" />
+              </div>
+            ) : (
+              /* Full journal page wrapper - existing content */
+              <div className="journal-page rounded-2xl overflow-hidden">
+                <div className="px-6 md:px-10 py-8 space-y-8">
+                  {/* Journal-style header */}
+                  <div className="text-center pb-6 border-b border-amber-800/20">
+                    <h1 
+                      className="text-4xl md:text-5xl lg:text-6xl mb-2"
+                      style={{ fontFamily: "'Dancing Script', cursive" }}
+                    >
+                      Dear Basketball,
+                    </h1>
+                    <div className="w-32 h-0.5 bg-amber-800/30 mx-auto my-4" />
+                    <p 
+                      className="text-lg md:text-xl opacity-80"
+                      style={{ fontFamily: "'Dancing Script', cursive" }}
+                    >
+                      {profile.name ? `${profile.name}'s Journey` : 'My Basketball Journey'}
+                    </p>
                   </div>
-                </section>
 
-                {/* Performance Charts */}
-                <section className="journal-section">
-                  <h2 className="journal-heading">Performance Trends</h2>
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div className="journal-card p-4 rounded-xl">
-                      <StatsChart games={games} stat="points" />
-                    </div>
-                    <div className="journal-card p-4 rounded-xl">
-                      <StatsChart games={games} stat="rebounds" />
-                    </div>
-                    <div className="journal-card p-4 rounded-xl">
-                      <StatsChart games={games} stat="assists" />
-                    </div>
+                  {/* Player Header - styled for journal */}
+                  <div className="journal-section">
+                    <PlayerHeader profile={profile} seasonStats={seasonStats} games={games} />
                   </div>
-                </section>
 
-                {/* Recent Games */}
-                <section className="journal-section">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="journal-heading mb-0">Recent Games</h2>
-                    <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
-                  </div>
-                  {games.length === 0 ? (
-                    <div className="journal-card text-center py-12 rounded-xl">
-                      <p className="text-amber-900/70">No games recorded yet.</p>
-                      <p className="text-sm text-amber-800/50 mt-1">
-                        Click "Add Game" to log your first game!
-                      </p>
+                  {/* Season Averages */}
+                  <section className="journal-section">
+                    <h2 className="journal-heading">Season Averages</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                      <StatCard label="Points" value={seasonStats.avgPoints} icon={Target} className="journal-card" />
+                      <StatCard label="Rebounds" value={seasonStats.avgRebounds} icon={Repeat} className="journal-card" />
+                      <StatCard label="Assists" value={seasonStats.avgAssists} icon={Zap} className="journal-card" />
+                      <StatCard label="Steals" value={seasonStats.avgSteals} icon={Shield} className="journal-card" />
+                      <StatCard label="Blocks" value={seasonStats.avgBlocks} icon={HandMetal} className="journal-card" />
+                      <StatCard label="FG%" value={seasonStats.fgPercentage} suffix="%" icon={Percent} className="journal-card" />
                     </div>
-                  ) : (
+                  </section>
+
+                  {/* Performance Charts */}
+                  <section className="journal-section">
+                    <h2 className="journal-heading">Performance Trends</h2>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="journal-card p-4 rounded-xl">
+                        <StatsChart games={games} stat="points" />
+                      </div>
+                      <div className="journal-card p-4 rounded-xl">
+                        <StatsChart games={games} stat="rebounds" />
+                      </div>
+                      <div className="journal-card p-4 rounded-xl">
+                        <StatsChart games={games} stat="assists" />
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Recent Games */}
+                  <section className="journal-section">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="journal-heading mb-0">Recent Games</h2>
+                      <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+                    </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {games.slice(0, 6).map((game) => (
                         <GameCard key={game.id} game={game} profile={profile} onDelete={deleteGame} />
                       ))}
                     </div>
-                  )}
-                </section>
+                  </section>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
