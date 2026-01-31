@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { MilestoneCard } from './MilestoneCard';
+import { MonthlyChallenges } from './MonthlyChallenges';
 import { useMilestones } from '@/hooks/useMilestones';
 import { useCloudData } from '@/hooks/useCloudData';
 import type { MilestoneCategory, MilestoneRarity } from '@/types/milestone';
@@ -103,6 +104,9 @@ export function MilestoneCollection() {
 
   return (
     <div className="space-y-6">
+      {/* Monthly Challenges Section */}
+      <MonthlyChallenges />
+
       {/* Header Stats */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
