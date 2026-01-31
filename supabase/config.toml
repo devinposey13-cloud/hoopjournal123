@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.rotate-monthly-challenges]
 verify_jwt = false
+
+[functions.reset-quarterly-xp]
+verify_jwt = false
