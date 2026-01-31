@@ -1,90 +1,118 @@
 
-# AI Avatar Generator Integration
+
+# Plan: Hide Avatar Upload Card After Skipping + Display Avatar in Journal Header
 
 ## Overview
 
-Add an AI-powered avatar generation feature that transforms a user's uploaded profile photo into a stylized basketball avatar. Users will have the option to either keep their original photo or generate an AI-stylized version.
+This update implements two connected features:
+1. **Persist the "Skip for now" action** - When users click "Skip for now" on the avatar upload card, the preference is saved to the database so the card stays hidden permanently
+2. **Display avatar in the "Dear Basketball" header** - Once a user has an avatar (uploaded or generated), show it next to the journal header text
 
-## How It Works
+---
 
-1. User uploads a profile photo (existing functionality)
-2. After upload completes, a new "Generate Avatar" button appears
-3. User clicks to generate an AI-stylized basketball avatar
-4. AI transforms their photo into a stylized cartoon/illustrated avatar
-5. User can keep the AI avatar or revert to original photo
+## What You'll See
 
-## Technical Approach
+### After Clicking "Skip for now"
+- The "Add a face to the journey" card disappears immediately
+- A toast confirms: "No problem! You can add a photo anytime in Settings."
+- The card won't reappear on page refresh or other devices
+- You can still add your photo through the Settings panel anytime
 
-### AI Model
+### Avatar in Journal Header
+- Once you have an avatar, it appears to the left of "Dear Basketball"
+- The header shifts to a side-by-side layout with the avatar
+- Without an avatar, the header remains centered as it currently is
 
-Using **Lovable AI** with `google/gemini-2.5-flash-image` model - this is already configured in your project (via `LOVABLE_API_KEY`) and requires no additional API keys. While you mentioned DALL-E, Lovable AI provides equivalent image generation capabilities and is the recommended approach since it's already integrated.
+---
 
-### Architecture
+## Technical Details
 
-```text
-User uploads photo → Stored in Supabase Storage
-                            ↓
-User clicks "Generate Avatar" → Edge Function
-                            ↓
-                    Lovable AI Gateway
-                    (gemini-2.5-flash-image)
-                            ↓
-              Generated avatar base64 returned
-                            ↓
-            Upload to Supabase Storage → Update profile
+### 1. Database Change
+
+Add a new column to the `player_settings` table:
+
+| Column | Type | Default |
+|--------|------|---------|
+| `avatar_skipped_at` | timestamp with time zone | null |
+
+This timestamp records when the user dismissed the avatar prompt. If set, the avatar upload card stays hidden.
+
+### 2. Type Updates
+
+**`src/types/basketball.ts`** - Add to PlayerProfile:
+```typescript
+avatarSkippedAt?: string;
 ```
 
-### New Components and Files
+### 3. Data Layer Updates
 
-| File | Purpose |
-|------|---------|
-| `supabase/functions/generate-avatar/index.ts` | Edge function to call Lovable AI for image generation |
-| `src/components/AvatarGenerator.tsx` | UI component with generate button and loading state |
-| `src/components/SettingsPanel.tsx` | Updated to include the avatar generator after photo upload |
+**`src/hooks/useCloudData.ts`**:
+- Read `avatar_skipped_at` when loading profile data (around line 211)
+- Write `avatar_skipped_at` when updating profile (around line 738)
 
-### Edge Function Design
+### 4. Component Updates
 
-The function will:
-1. Accept the uploaded photo URL
-2. Call Lovable AI with a prompt like: "Transform this photo into a stylized basketball player avatar in a cartoon/illustrated style. Keep the person's likeness but make it look like a sports trading card illustration."
-3. Return the generated image as base64
-4. The frontend uploads this to storage and updates the profile
+**`src/components/EmptyDashboardWelcome.tsx`**:
+- Add `hasSkippedAvatar?: boolean` prop
+- When `hasSkippedAvatar` is true AND no avatar exists, hide the entire avatar upload card
 
-### UI/UX Flow
+**`src/pages/Index.tsx`**:
+- Pass `hasSkippedAvatar={Boolean(profile.avatarSkippedAt)}` to EmptyDashboardWelcome
+- Update `onSkipPhoto` to save the timestamp:
+```typescript
+onSkipPhoto={() => {
+  updateProfile({ avatarSkippedAt: new Date().toISOString() });
+  toast.info("No problem! You can add a photo anytime in Settings.");
+}}
+```
 
-1. **Avatar Section Updates**:
-   - Current: Camera icon overlay on hover
-   - New: After upload, show a small "Generate AI Avatar" button below the photo
-   - Show loading spinner with "Creating your avatar..." during generation
-   - After generation, show both original and AI version with toggle option
+**Dashboard Header** (in `src/pages/Index.tsx` - lines 285-302 and 333-349):
+- Update the inline journal header to show avatar when available
+- Create a flex layout with avatar on the left, text on the right
+- Keep centered text-only layout when no avatar exists
 
-2. **Visual States**:
-   - `idle`: Shows current avatar with upload button
-   - `uploading`: Shows spinner during photo upload
-   - `generating`: Shows animated spinner with "AI is creating your avatar..."
-   - `preview`: Shows generated avatar with "Use This" and "Keep Original" buttons
+### 5. Header Layout Changes
 
-### Database Changes
+The "Dear Basketball" header section currently looks like:
+```text
+        Dear Basketball,
+        ──────────────
+       Player's Journey
+```
 
-None required - we'll store the AI-generated avatar URL in the existing `avatar_url` column. Optionally, we could add an `original_avatar_url` column to preserve the original, but this can be a future enhancement.
+With an avatar, it will become:
+```text
+┌──────┐
+│ 👤  │  Dear Basketball,
+│avatar│  ──────────────
+└──────┘  Player's Journey
+```
 
-### Error Handling
+The avatar will be:
+- Circular with a subtle border matching the journal aesthetic
+- Sized appropriately (80-96px diameter)
+- Positioned to the left on larger screens
+- Stacked above on mobile for proper responsiveness
 
-- If AI generation fails, show toast error and keep original photo
-- Implement retry button for failed generations
-- Add timeout handling (30 second max for generation)
+---
 
-## Implementation Steps
+## Implementation Sequence
 
-1. Create the `generate-avatar` edge function
-2. Create the `AvatarGenerator` component with generate button and states
-3. Update `SettingsPanel` to integrate the avatar generator
-4. Update `useCloudData` to handle the generated avatar upload
-5. Add loading animations and user feedback
+1. **Database migration** - Add `avatar_skipped_at` column to `player_settings`
+2. **Type update** - Add `avatarSkippedAt` to PlayerProfile interface
+3. **Hook update** - Read/write the new field in useCloudData
+4. **EmptyDashboardWelcome update** - Accept and handle `hasSkippedAvatar` prop
+5. **Index page updates**:
+   - Pass skip status to EmptyDashboardWelcome
+   - Update onSkipPhoto handler
+   - Add avatar display to both journal header sections (empty state and with games)
 
-## Considerations
+---
 
-- **Processing Time**: Image generation takes 5-15 seconds - need good loading feedback
-- **Cost**: Each generation uses Lovable AI credits - consider limiting to avoid abuse
-- **Quality**: The prompt can be refined based on results
-- **Storage**: Generated avatars use same storage bucket as regular avatars
+## Edge Cases Handled
+
+- **User uploads photo later**: The avatar will appear in the header; the upload card remains hidden (skipped preference stays)
+- **User deletes their avatar**: The upload card stays hidden because they previously skipped; they can re-add via Settings
+- **User already has avatar**: Upload card is already hidden; avatar shows in header
+- **New users who don't skip**: Upload card continues to show until they upload or skip
+
