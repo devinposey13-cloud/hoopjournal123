@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trophy, Lock, Check, Star, Sparkles, Gift, Crown, Medal } from 'lucide-react';
@@ -54,100 +55,105 @@ interface RewardCardProps {
   currentLevel: number;
 }
 
-function RewardCard({ reward, isUnlocked, currentLevel }: RewardCardProps) {
-  const levelsAway = reward.level_required - currentLevel;
-  const tierGradient = getLevelTierGradient(reward.level_required);
+const RewardCard = forwardRef<HTMLDivElement, RewardCardProps>(
+  ({ reward, isUnlocked, currentLevel }, ref) => {
+    const levelsAway = reward.level_required - currentLevel;
+    const tierGradient = getLevelTierGradient(reward.level_required);
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={isUnlocked ? { scale: 1.02, y: -2 } : undefined}
-      className={cn(
-        'relative rounded-xl border p-4 transition-all overflow-hidden',
-        isUnlocked 
-          ? 'bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30 shadow-lg shadow-yellow-500/10' 
-          : 'bg-card/50 border-border opacity-60'
-      )}
-    >
-      {/* Background glow for unlocked */}
-      {isUnlocked && (
-        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 via-transparent to-orange-500/5" />
-      )}
+    return (
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={isUnlocked ? { scale: 1.02, y: -2 } : undefined}
+        className={cn(
+          'relative rounded-xl border p-4 transition-all overflow-hidden',
+          isUnlocked 
+            ? 'bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30 shadow-lg shadow-yellow-500/10' 
+            : 'bg-card/50 border-border opacity-60'
+        )}
+      >
+        {/* Background glow for unlocked */}
+        {isUnlocked && (
+          <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 via-transparent to-orange-500/5 pointer-events-none" />
+        )}
 
-      {/* Lock/Check Icon */}
-      <div className={cn(
-        'absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center',
-        isUnlocked ? 'bg-green-500/20 text-green-500' : 'bg-muted text-muted-foreground'
-      )}>
-        {isUnlocked ? <Check className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Icon */}
+        {/* Lock/Check Icon */}
         <div className={cn(
-          'text-4xl mb-3',
-          !isUnlocked && 'grayscale opacity-50'
+          'absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center',
+          isUnlocked ? 'bg-green-500/20 text-green-500' : 'bg-muted text-muted-foreground'
         )}>
-          {reward.reward_icon}
+          {isUnlocked ? <Check className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
         </div>
 
-        {/* Info */}
-        <div className="space-y-1.5">
-          <h4 className={cn(
-            'font-semibold',
-            isUnlocked && 'text-yellow-100'
+        {/* Content */}
+        <div className="relative z-10">
+          {/* Icon */}
+          <div className={cn(
+            'text-4xl mb-3',
+            !isUnlocked && 'grayscale opacity-50'
           )}>
-            {reward.reward_name}
-          </h4>
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {reward.description}
-          </p>
-          
-          {/* Level requirement */}
-          <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border/50">
-            <span className={cn(
-              'text-xs px-2.5 py-1 rounded-full font-medium',
-              isUnlocked 
-                ? 'bg-green-500/20 text-green-400' 
-                : `bg-gradient-to-r ${tierGradient} text-white/90`
+            {reward.reward_icon}
+          </div>
+
+          {/* Info */}
+          <div className="space-y-1.5">
+            <h4 className={cn(
+              'font-semibold',
+              isUnlocked && 'text-yellow-100'
             )}>
-              Level {reward.level_required}
-            </span>
+              {reward.reward_name}
+            </h4>
+            <p className="text-sm text-muted-foreground line-clamp-2">
+              {reward.description}
+            </p>
             
-            {!isUnlocked && levelsAway > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {levelsAway} level{levelsAway !== 1 ? 's' : ''} away
+            {/* Level requirement */}
+            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border/50">
+              <span className={cn(
+                'text-xs px-2.5 py-1 rounded-full font-medium',
+                isUnlocked 
+                  ? 'bg-green-500/20 text-green-400' 
+                  : `bg-gradient-to-r ${tierGradient} text-white/90`
+              )}>
+                Level {reward.level_required}
               </span>
-            )}
-            
-            {isUnlocked && (
-              <span className="text-xs text-green-400 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> Unlocked!
-              </span>
-            )}
+              
+              {!isUnlocked && levelsAway > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {levelsAway} level{levelsAway !== 1 ? 's' : ''} away
+                </span>
+              )}
+              
+              {isUnlocked && (
+                <span className="text-xs text-green-400 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> Unlocked!
+                </span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Shimmer effect for unlocked rewards */}
-      {isUnlocked && (
-        <motion.div
-          className="absolute inset-0 overflow-hidden pointer-events-none"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
+        {/* Shimmer effect for unlocked rewards */}
+        {isUnlocked && (
           <motion.div
-            className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/5 to-transparent"
-            animate={{ x: ['-100%', '400%'] }}
-            transition={{ duration: 4, repeat: Infinity, repeatDelay: 6 }}
-          />
-        </motion.div>
-      )}
-    </motion.div>
-  );
-}
+            className="absolute inset-0 overflow-hidden pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <motion.div
+              className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+              animate={{ x: ['-100%', '400%'] }}
+              transition={{ duration: 4, repeat: Infinity, repeatDelay: 6 }}
+            />
+          </motion.div>
+        )}
+      </motion.div>
+    );
+  }
+);
+
+RewardCard.displayName = 'RewardCard';
 
 export default function Rewards() {
   const navigate = useNavigate();
