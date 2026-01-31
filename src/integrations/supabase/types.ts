@@ -255,6 +255,7 @@ export type Database = {
           rebounds: number
           season_id: string | null
           steals: number
+          team_id: string | null
           three_pt_attempted: number
           three_pt_made: number
           turnovers: number
@@ -280,6 +281,7 @@ export type Database = {
           rebounds?: number
           season_id?: string | null
           steals?: number
+          team_id?: string | null
           three_pt_attempted?: number
           three_pt_made?: number
           turnovers?: number
@@ -305,6 +307,7 @@ export type Database = {
           rebounds?: number
           season_id?: string | null
           steals?: number
+          team_id?: string | null
           three_pt_attempted?: number
           three_pt_made?: number
           turnovers?: number
@@ -317,6 +320,13 @@ export type Database = {
             columns: ["season_id"]
             isOneToOne: false
             referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "player_teams"
             referencedColumns: ["id"]
           },
         ]
@@ -651,6 +661,30 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      player_teams: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          name?: string
+          user_id?: string
         }
         Relationships: []
       }

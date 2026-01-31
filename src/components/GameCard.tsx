@@ -81,7 +81,12 @@ export function GameCard({ game, profile, onDelete }: GameCardProps) {
           </div>
         </div>
         
-        <h3 className="font-semibold text-lg mb-4">vs {game.opponent}</h3>
+        <div className="mb-4">
+          <h3 className="font-semibold text-lg">vs {game.opponent}</h3>
+          {game.teamName && (
+            <p className="text-xs text-muted-foreground">Playing for {game.teamName}</p>
+          )}
+        </div>
         
         <div className="grid grid-cols-4 gap-4">
           <StatItem label="PTS" value={game.points} highlight />
