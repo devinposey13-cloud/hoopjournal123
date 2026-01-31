@@ -3,7 +3,8 @@ import { useCallback, useRef, useEffect } from 'react';
 type SoundType = 
   | 'make' | 'miss' | 'miss_ft' | 'miss_3pt' | 'assist' | 'rebound' | 'steal' | 'block' | 'turnover' | 'foul'
   | 'crowd_cheer' | 'crowd_groan'
-  | 'milestone_common' | 'milestone_uncommon' | 'milestone_rare' | 'milestone_epic' | 'milestone_legendary';
+  | 'milestone_common' | 'milestone_uncommon' | 'milestone_rare' | 'milestone_epic' | 'milestone_legendary'
+  | 'bounce_echo' | 'arena_ambience';
 
 const SOUND_PATHS: Partial<Record<SoundType, string>> = {
   make: '/sounds/make.mp3',
@@ -186,6 +187,14 @@ export function useSoundEffects() {
         
       case 'milestone_legendary':
         createMilestoneSound(ctx, now, 'legendary');
+        return;
+
+      case 'bounce_echo':
+        createBounceEcho(ctx, now);
+        return;
+
+      case 'arena_ambience':
+        createArenaAmbience(ctx, now);
         return;
         
       default:
@@ -421,4 +430,96 @@ function createMilestoneSound(ctx: AudioContext, now: number, rarity: 'common' |
     bass.start(now);
     bass.stop(now + 0.3);
   }
+}
+
+// Create deep basketball bounce with reverb echo
+function createBounceEcho(ctx: AudioContext, now: number) {
+  // Main bounce impact
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(120, now);
+  osc.frequency.exponentialRampToValueAtTime(50, now + 0.4);
+  
+  gain.gain.setValueAtTime(0.4, now);
+  gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+  
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  
+  osc.start(now);
+  osc.stop(now + 0.5);
+  
+  // Add echo/reverb effect with delayed quieter bounces
+  for (let i = 1; i <= 3; i++) {
+    const echoOsc = ctx.createOscillator();
+    const echoGain = ctx.createGain();
+    
+    echoOsc.type = 'sine';
+    const echoTime = now + i * 0.15;
+    echoOsc.frequency.setValueAtTime(100 - i * 15, echoTime);
+    echoOsc.frequency.exponentialRampToValueAtTime(40, echoTime + 0.3);
+    
+    const echoVolume = 0.2 / (i + 1);
+    echoGain.gain.setValueAtTime(echoVolume, echoTime);
+    echoGain.gain.exponentialRampToValueAtTime(0.001, echoTime + 0.3);
+    
+    echoOsc.connect(echoGain);
+    echoGain.connect(ctx.destination);
+    
+    echoOsc.start(echoTime);
+    echoOsc.stop(echoTime + 0.35);
+  }
+}
+
+// Create soft arena ambience
+function createArenaAmbience(ctx: AudioContext, now: number) {
+  // Create filtered noise for arena atmosphere
+  const bufferSize = ctx.sampleRate * 2;
+  const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const output = noiseBuffer.getChannelData(0);
+  
+  for (let i = 0; i < bufferSize; i++) {
+    output[i] = (Math.random() * 2 - 1) * 0.5;
+  }
+  
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuffer;
+  
+  // Low-pass filter for muffled crowd sound
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(400, now);
+  filter.Q.value = 0.5;
+  
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0, now);
+  noiseGain.gain.linearRampToValueAtTime(0.08, now + 0.5);
+  noiseGain.gain.linearRampToValueAtTime(0.06, now + 1.5);
+  noiseGain.gain.linearRampToValueAtTime(0.01, now + 2);
+  
+  noise.connect(filter);
+  filter.connect(noiseGain);
+  noiseGain.connect(ctx.destination);
+  
+  noise.start(now);
+  noise.stop(now + 2);
+  
+  // Add subtle low hum for atmosphere
+  const hum = ctx.createOscillator();
+  const humGain = ctx.createGain();
+  
+  hum.type = 'sine';
+  hum.frequency.setValueAtTime(60, now);
+  
+  humGain.gain.setValueAtTime(0, now);
+  humGain.gain.linearRampToValueAtTime(0.03, now + 0.5);
+  humGain.gain.linearRampToValueAtTime(0.01, now + 2);
+  
+  hum.connect(humGain);
+  humGain.connect(ctx.destination);
+  
+  hum.start(now);
+  hum.stop(now + 2);
 }

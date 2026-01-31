@@ -28,10 +28,12 @@ import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { PendingApproval } from '@/components/PendingApproval';
+import { FirstLoginIntro } from '@/components/FirstLoginIntro';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useApprovalStatus } from '@/hooks/useApprovalStatus';
+import { useFirstLogin } from '@/hooks/useFirstLogin';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { LogOut, Loader2, Trophy, X, Radio } from 'lucide-react';
@@ -65,6 +67,7 @@ export default function Index() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const { isApproved, loading: approvalLoading, refetch: refetchApproval } = useApprovalStatus();
+  const { showIntro, loading: introLoading, completeIntro } = useFirstLogin();
   const {
     games,
     clips,
@@ -94,7 +97,7 @@ export default function Index() {
   } = useGameWithMilestones();
 
   // Show auth form if not logged in
-  if (authLoading || approvalLoading) {
+  if (authLoading || approvalLoading || introLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -109,6 +112,11 @@ export default function Index() {
   // Show pending approval screen if not approved (admins bypass this)
   if (!isApproved && !isAdmin) {
     return <PendingApproval onRefresh={refetchApproval} />;
+  }
+
+  // Show first login intro animation for new users
+  if (showIntro) {
+    return <FirstLoginIntro onComplete={completeIntro} />;
   }
 
   const today = startOfDay(new Date());
