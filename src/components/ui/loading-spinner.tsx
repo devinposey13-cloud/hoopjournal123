@@ -1,16 +1,16 @@
 import { motion } from 'framer-motion';
 import '@lottiefiles/dotlottie-wc';
 
-// Use the dotlottie-wc types from the loading-spinner component
-// The global types are declared there
+// Use the dotlottie-wc types from the web-components.d.ts file
 
 interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   message?: string;
   fullScreen?: boolean;
 }
 
 const sizeMap = {
+  xs: { width: 32, height: 32 },
   sm: { width: 60, height: 60 },
   md: { width: 100, height: 100 },
   lg: { width: 150, height: 150 },
@@ -62,4 +62,26 @@ export function LoadingSpinner({
   }
 
   return content;
+}
+
+// Inline variant for chat bubbles and small loading states
+interface InlineLoadingProps {
+  message?: string;
+  className?: string;
+}
+
+export function InlineLoading({ message, className }: InlineLoadingProps) {
+  return (
+    <div className={`flex items-center gap-2 ${className || ''}`}>
+      <dotlottie-wc
+        src="https://lottie.host/dc3b3b08-d2bb-46f0-915d-c8d56d0dd2c1/lCHnsbvgB8.lottie"
+        style={{ width: '24px', height: '24px' }}
+        autoplay
+        loop
+      />
+      {message && (
+        <span className="text-xs text-muted-foreground">{message}</span>
+      )}
+    </div>
+  );
 }

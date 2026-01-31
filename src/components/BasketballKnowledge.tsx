@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useCoachVoice } from '@/hooks/useCoachVoice';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Search, Loader2, Volume2, VolumeX, ExternalLink, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
@@ -109,9 +110,8 @@ export function BasketballKnowledge() {
       {/* Loading State */}
       {isLoading && (
         <Card>
-          <CardContent className="py-12 text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-            <p className="text-muted-foreground">Searching basketball knowledge...</p>
+          <CardContent className="py-8">
+            <LoadingSpinner size="sm" message="Searching basketball knowledge..." />
           </CardContent>
         </Card>
       )}
