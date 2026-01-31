@@ -1,319 +1,136 @@
 
+# Bug Fix: First-Time User Intro/Onboarding Not Showing
 
-# Guided Player Setup: Card-Based Onboarding Experience
+## Problem Identified
 
-## Overview
+The first-time user experience (basketball animation + 5-card onboarding) did not appear for the test account `bigpose2@gmail.com`. The user went directly to the Coach AI welcome screen.
 
-Redesign the first-time user flow from a single animation that dumps users into settings, to a **card-based, one-question-at-a-time** onboarding that builds identity, creates emotional buy-in, and delivers an instant payoff.
+## Root Cause Analysis
 
-## User Flow
+The onboarding detection in `useFirstLogin.ts` uses **browser localStorage** to track whether a user has seen the intro and completed onboarding:
 
-```text
-User Signs In (first time)
-     ↓
-Basketball Animation (existing, 5-7 sec)
-     ↓
-"Start My Journey" button
-     ↓
-Card 1: "Who's the hooper?" (name/nickname)
-     ↓
-Card 2: "How do you see yourself?" (role selection)
-     ↓
-Card 3: "What level are you playing at?" (level selection)
-     ↓
-Card 4: "What are you chasing?" (goals multi-select)
-     ↓
-Card 5: "Share with family?" (optional parent email)
-     ↓
-Transition: "Profile created. Season loading..."
-     ↓
-Dashboard with Coach AI welcome card
+```typescript
+const INTRO_SEEN_KEY = 'hoopjournal_intro_seen';
+const ONBOARDING_COMPLETE_KEY = 'hoopjournal_onboarding_complete';
 ```
 
-## Card Design Specifications
+**Critical flaw:** These localStorage keys are **global to the browser**, not user-specific. This causes problems when:
+1. A user tests with multiple accounts in the same browser
+2. A user clears their data and logs back in
+3. A user switches devices/browsers
 
-### Visual Layout (Each Card)
+The database correctly stores `onboarding_completed_at` in the `player_settings` table, but this value is **never checked** by `useFirstLogin`.
+
+## Evidence from Database
+
+For `bigpose2@gmail.com`:
+- `is_approved`: true (approved by admin)
+- `onboarding_completed_at`: NULL (never completed onboarding)
+- `court_role`, `playing_level`, `season_goals`: all NULL
+
+The database clearly shows onboarding was never completed, but localStorage from a previous account session may have had the flags set.
+
+## Solution: Hybrid Database + localStorage Approach
+
+Update `useFirstLogin.ts` to:
+1. Check the database `onboarding_completed_at` field as the **source of truth**
+2. Use localStorage as a secondary cache for the intro animation (which is truly first-impression only)
+3. Sync the two: if database says not completed but localStorage says completed, trust the database
+
+## Implementation Changes
+
+### 1. Update `useFirstLogin.ts`
+
+Current logic:
 ```text
-+------------------------------------------+
-|         ● ● ● ○ ○                        |  <- Progress dots
-|                                          |
-|    "How do you see yourself             |
-|         on the court?"                   |  <- Question text
-|                                          |
-|  +----------+  +----------+              |
-|  |    🏀    |  |    🎯    |              |  <- Tappable cards
-|  |  Scorer  |  | Playmaker|              |
-|  +----------+  +----------+              |
-|                                          |
-|  +----------+  +----------+              |
-|  |    🛡️    |  |    🔥    |              |
-|  | Lockdown |  |  Energy  |              |
-|  +----------+  +----------+              |
-|                                          |
-+------------------------------------------+
+localStorage empty? → Show intro
+localStorage intro_seen? → Check onboarding
+localStorage both set? → Skip to dashboard
 ```
 
-### Card Content
+New logic:
+```text
+1. Wait for user profile to load
+2. Check database: onboarding_completed_at is NULL?
+   - YES → Check localStorage intro_seen?
+     - NO → Show intro animation
+     - YES → Show onboarding flow
+   - NO → Skip both (user already completed onboarding)
+```
 
-| Card | Question | Input Type | Options |
-|------|----------|------------|---------|
-| 1 | "Who's the hooper?" | Text input | Name/nickname |
-| 2 | "How do you see yourself on the court?" | Single tap cards | Scorer, Playmaker, Lockdown Defender, Energy Player |
-| 3 | "What level are you playing at right now?" | Single tap cards | Middle School, Freshman/JV, Varsity, AAU/Club |
-| 4 | "What are you chasing this season?" | Multi-select cards | More confidence, More minutes, Better stats, Better defense, Making the team, Just getting better |
-| 5 | "Want to share this journey with family?" | Optional email input | Add parent email OR Skip |
+### 2. Pass User Context to Hook
 
-## Technical Implementation
+The hook needs access to the user's profile data (`onboardingCompletedAt`) to make database-aware decisions.
 
-### New Files
+### 3. User-Specific localStorage Keys (Optional Enhancement)
 
-| File | Purpose |
-|------|---------|
-| `src/components/OnboardingFlow.tsx` | Main card-based onboarding container |
-| `src/components/onboarding/OnboardingCard.tsx` | Reusable animated card wrapper |
-| `src/components/onboarding/IdentityCard.tsx` | Card 1 - Name input |
-| `src/components/onboarding/RoleCard.tsx` | Card 2 - Court role selection |
-| `src/components/onboarding/LevelCard.tsx` | Card 3 - Playing level selection |
-| `src/components/onboarding/GoalsCard.tsx` | Card 4 - Season goals multi-select |
-| `src/components/onboarding/FamilyCard.tsx` | Card 5 - Parent email (optional) |
-| `src/components/onboarding/TransitionScreen.tsx` | "Season loading..." animation |
-| `src/components/EmptyDashboardWelcome.tsx` | Coach AI welcome card for empty state |
+Could change keys to include user ID:
+```typescript
+const INTRO_SEEN_KEY = `hoopjournal_intro_seen_${userId}`;
+```
 
-### Modified Files
+But the simpler fix is to just trust the database.
+
+## File Changes
 
 | File | Change |
 |------|--------|
-| `src/components/FirstLoginIntro.tsx` | Update to transition to onboarding flow instead of completing |
-| `src/hooks/useFirstLogin.ts` | Add onboarding step tracking (intro_seen, onboarding_complete) |
-| `src/pages/Index.tsx` | Add onboarding flow between intro and dashboard, show welcome state |
-| `src/types/basketball.ts` | Add new profile fields (courtRole, playingLevel, seasonGoals, parentEmail) |
-| `src/hooks/useCloudData.ts` | Update profile saving to include new fields |
-| `tailwind.config.ts` | Add card-swipe and slide animations |
+| `src/hooks/useFirstLogin.ts` | Accept profile data as parameter, check `onboardingCompletedAt` from database |
+| `src/pages/Index.tsx` | Pass profile loading state and onboarding status to the hook |
 
-### Database Migration
-
-Add new columns to `player_settings` table:
-
-```sql
-ALTER TABLE player_settings
-ADD COLUMN IF NOT EXISTS court_role TEXT,
-ADD COLUMN IF NOT EXISTS playing_level TEXT,
-ADD COLUMN IF NOT EXISTS season_goals TEXT[],
-ADD COLUMN IF NOT EXISTS parent_email TEXT,
-ADD COLUMN IF NOT EXISTS onboarding_completed_at TIMESTAMP WITH TIME ZONE;
-```
-
-## Component Design Details
-
-### OnboardingFlow.tsx
-
-Main orchestrator component that:
-- Tracks current step (1-5)
-- Manages form data state
-- Handles step transitions with Framer Motion AnimatePresence
-- Shows progress indicator (dots)
-- Saves profile data on completion
+## Updated Hook Logic
 
 ```typescript
-interface OnboardingData {
-  name: string;
-  courtRole: 'scorer' | 'playmaker' | 'defender' | 'energy';
-  playingLevel: 'middle_school' | 'freshman_jv' | 'varsity' | 'aau_club';
-  seasonGoals: string[];
-  parentEmail?: string;
+export function useFirstLogin(profile: PlayerProfile | null, profileLoading: boolean) {
+  const [showIntro, setShowIntro] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Wait for profile to load
+    if (profileLoading) return;
+    
+    // If database shows onboarding completed, skip everything
+    if (profile?.onboardingCompletedAt) {
+      setShowIntro(false);
+      setShowOnboarding(false);
+      setLoading(false);
+      return;
+    }
+    
+    // Database says NOT completed - check localStorage for intro
+    const hasSeenIntro = localStorage.getItem(INTRO_SEEN_KEY);
+    
+    if (!hasSeenIntro) {
+      setShowIntro(true);
+    } else {
+      setShowOnboarding(true);
+    }
+    setLoading(false);
+  }, [profile, profileLoading]);
+
+  // ... rest of implementation
 }
 ```
 
-### Progress Indicator
+## Technical Details
 
-```text
-Step 1: ● ○ ○ ○ ○
-Step 2: ● ● ○ ○ ○
-Step 3: ● ● ● ○ ○
-Step 4: ● ● ● ● ○
-Step 5: ● ● ● ● ●
-```
+### Index.tsx Updates
 
-### Card Animations
+1. Move `useFirstLogin` call after profile is available from `useGameWithMilestones`
+2. Pass profile and loading state to the hook
+3. Adjust loading state handling order
 
-Using Framer Motion for smooth transitions:
+### Edge Cases Handled
 
-```typescript
-const cardVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 300 : -300,
-    opacity: 0
-  }),
-  center: {
-    x: 0,
-    opacity: 1
-  },
-  exit: (direction: number) => ({
-    x: direction < 0 ? 300 : -300,
-    opacity: 0
-  })
-};
-```
+| Scenario | Behavior |
+|----------|----------|
+| Fresh account, empty localStorage | Shows intro → onboarding |
+| Fresh account, stale localStorage from another account | Database says NULL → shows intro → onboarding |
+| Returning user, same device | Database says completed → skips both |
+| Returning user, new device | Database says completed → skips both |
+| User who completed onboarding then cleared localStorage | Database says completed → skips both |
 
-### Role Selection Cards (Card 2)
+## Summary
 
-```typescript
-const roles = [
-  { id: 'scorer', icon: '🏀', label: 'Scorer', description: 'Put the ball in the bucket' },
-  { id: 'playmaker', icon: '🎯', label: 'Playmaker', description: 'Set up teammates for success' },
-  { id: 'defender', icon: '🛡️', label: 'Lockdown Defender', description: 'Shut down the opposition' },
-  { id: 'energy', icon: '🔥', label: 'Energy Player', description: 'Hustle and heart every play' },
-];
-```
-
-### Level Selection Cards (Card 3)
-
-```typescript
-const levels = [
-  { id: 'middle_school', label: 'Middle School', subtext: 'Grades 6-8' },
-  { id: 'freshman_jv', label: 'Freshman / JV', subtext: 'High school development' },
-  { id: 'varsity', label: 'Varsity', subtext: 'Top high school level' },
-  { id: 'aau_club', label: 'AAU / Club', subtext: 'Travel & competitive ball' },
-];
-```
-
-### Goals Multi-Select (Card 4)
-
-```typescript
-const goals = [
-  { id: 'confidence', label: 'More confidence', icon: '💪' },
-  { id: 'minutes', label: 'More minutes', icon: '⏱️' },
-  { id: 'stats', label: 'Better stats', icon: '📊' },
-  { id: 'defense', label: 'Better defense', icon: '🛡️' },
-  { id: 'make_team', label: 'Making the team', icon: '✅' },
-  { id: 'improve', label: 'Just getting better', icon: '📈' },
-];
-```
-
-### Empty Dashboard Welcome (EmptyDashboardWelcome.tsx)
-
-When user completes onboarding but has no games:
-
-```text
-+------------------------------------------+
-|                                          |
-|    🏀 Coach AI                           |
-|                                          |
-|    "First game hasn't been logged yet —  |
-|     but every season starts somewhere.   |
-|     Let me know when you're ready."      |
-|                                          |
-|    [ Log First Game ]  [ Pregame Talk ]  |
-|                                          |
-+------------------------------------------+
-```
-
-## First Login Hook Updates
-
-```typescript
-// src/hooks/useFirstLogin.ts
-interface FirstLoginState {
-  showIntro: boolean;      // Show basketball animation
-  showOnboarding: boolean; // Show card-based setup
-  loading: boolean;
-}
-
-export function useFirstLogin() {
-  // Check localStorage keys:
-  // - hoopjournal_intro_seen (animation watched)
-  // - hoopjournal_onboarding_complete (setup finished)
-  
-  const completeIntro = () => {
-    localStorage.setItem('hoopjournal_intro_seen', 'true');
-    // Now show onboarding
-  };
-  
-  const completeOnboarding = () => {
-    localStorage.setItem('hoopjournal_onboarding_complete', 'true');
-    // Now show dashboard
-  };
-}
-```
-
-## Animation Additions (tailwind.config.ts)
-
-```typescript
-keyframes: {
-  "card-slide-in": {
-    "0%": { transform: "translateX(100%)", opacity: "0" },
-    "100%": { transform: "translateX(0)", opacity: "1" }
-  },
-  "card-slide-out": {
-    "0%": { transform: "translateX(0)", opacity: "1" },
-    "100%": { transform: "translateX(-100%)", opacity: "0" }
-  },
-  "option-pop": {
-    "0%": { transform: "scale(0.8)", opacity: "0" },
-    "100%": { transform: "scale(1)", opacity: "1" }
-  },
-  "dot-fill": {
-    "0%": { backgroundColor: "transparent" },
-    "100%": { backgroundColor: "hsl(var(--primary))" }
-  },
-  "loading-pulse": {
-    "0%, 100%": { opacity: "0.4" },
-    "50%": { opacity: "1" }
-  }
-}
-```
-
-## Transition Screen Design
-
-After Card 5, before dashboard:
-
-```text
-+------------------------------------------+
-|                                          |
-|              [Basketball]                |
-|            (brief bounce)                |
-|                                          |
-|     "Profile created. Season loading…"   |
-|                                          |
-|         [Loading bar animation]          |
-|                                          |
-+------------------------------------------+
-```
-
-Duration: 2-3 seconds with animated progress bar
-
-## Summary of Changes
-
-| Aspect | Implementation |
-|--------|----------------|
-| Detection | Separate flags for intro_seen and onboarding_complete |
-| Card Flow | 5 cards with swipe/tap navigation |
-| Progress | Dot indicator at top of each card |
-| Animations | Framer Motion for card transitions |
-| Data | New profile fields for role, level, goals |
-| Payoff | Coach AI welcome card on empty dashboard |
-| Style | 2K/Duolingo-inspired, fun not form-like |
-
-## Files Summary
-
-**New Files (9):**
-- `src/components/OnboardingFlow.tsx`
-- `src/components/onboarding/OnboardingCard.tsx`
-- `src/components/onboarding/IdentityCard.tsx`
-- `src/components/onboarding/RoleCard.tsx`
-- `src/components/onboarding/LevelCard.tsx`
-- `src/components/onboarding/GoalsCard.tsx`
-- `src/components/onboarding/FamilyCard.tsx`
-- `src/components/onboarding/TransitionScreen.tsx`
-- `src/components/EmptyDashboardWelcome.tsx`
-
-**Modified Files (6):**
-- `src/components/FirstLoginIntro.tsx`
-- `src/hooks/useFirstLogin.ts`
-- `src/pages/Index.tsx`
-- `src/types/basketball.ts`
-- `src/hooks/useCloudData.ts`
-- `tailwind.config.ts`
-
-**Database Migration:**
-- Add columns: court_role, playing_level, season_goals, parent_email, onboarding_completed_at
-
+The fix ensures the database `onboarding_completed_at` field is the source of truth, making the first-time experience work correctly across all scenarios. localStorage remains useful as a per-session cache for the intro animation, but the database determines whether onboarding is truly complete.
