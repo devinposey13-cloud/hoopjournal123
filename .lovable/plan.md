@@ -1,228 +1,133 @@
 
+# Plan: Enhance Intro Basketball Realism & Audio
 
-# Milestone System Expansion: New Creative Cards + Monthly Challenges
-
-## Current State Analysis
-
-Your milestone system is already robust with **87 total milestones** across three categories:
-- **52 Single-Game** milestones (performance in one game)
-- **13 Multi-Game** milestones (streaks, consistency)
-- **22 Season** milestones (cumulative totals)
-
-There are **31 check types** currently implemented, covering points, rebounds, assists, steals, blocks, 3-pointers, efficiency, and various combinations.
+## Overview
+Upgrade the first-login intro animation with a photorealistic 3D basketball using PBR textures and replace synthetic audio with AI-generated sound effects using ElevenLabs.
 
 ---
 
-## Expansion Opportunities
+## Part 1: Realistic 3D Basketball
 
-### New Creative Milestone Ideas (40+ New Cards)
+### Current Issues
+- Basketball is a plain orange sphere with simple torus rings
+- No surface texture (leather grain, pebbling)
+- Basic flat lighting without shadows
+- Seams don't look authentic
 
-**1. Comeback & Clutch Milestones (Single-Game)**
-| Name | Description | Rarity |
-|------|-------------|--------|
-| Comeback Kid | Win after being down at halftime | Rare |
-| Clutch Performer | Score 5+ points in final quarter | Uncommon |
-| Closer | Hit game-winning shot | Epic |
-| Ice in Veins | Make 2+ clutch free throws (90%+ FT in a win) | Rare |
+### Solution: Procedural PBR Basketball
 
-**2. Efficiency & Smart Play (Single-Game)**
-| Name | Description | Rarity |
-|------|-------------|--------|
-| Turnover-Free Zone | Play 20+ minutes with 0 turnovers | Uncommon |
-| Ball Security | 5+ assists with 0 turnovers | Rare |
-| Floor General | 8+ assists in a single game | Rare |
-| Facilitator | More assists than field goal attempts | Epic |
-| Efficient Engine | 15+ points on 60%+ shooting | Rare |
-| Perfect Touch | 100% FT with 5+ attempts | Rare |
+Using `@react-three/drei` (already installed), we'll create a realistic basketball with:
 
-**3. Defensive Excellence (Single-Game)**
-| Name | Description | Rarity |
-|------|-------------|--------|
-| Lockdown Defender | 3+ steals and 2+ blocks | Epic |
-| Pickpocket | 5+ steals in a game | Rare |
-| Rim Protector | 4+ blocks in a game | Epic |
-| Glass Cleaner | 15+ rebounds | Epic |
-| Pest | 4+ steals in a win | Rare |
+1. **Procedural Leather Texture**
+   - Generate a canvas-based texture for the leather pebble pattern
+   - Apply as both color map and bump/normal map for depth
 
-**4. Rare Achievements (Single-Game)**
-| Name | Description | Rarity |
-|------|-------------|--------|
-| 30-Point Explosion | Score 30+ points | Epic |
-| 40-Point Eruption | Score 40+ points | Legendary |
-| 5x5 | 5+ in all 5 major stats | Legendary |
-| 20-20 Club | 20+ points and 20+ rebounds | Legendary |
-| Triple-Threat | 20+ pts, 5+ reb, 5+ ast | Rare |
+2. **Realistic Seam Lines**
+   - Use `Line` component from drei for smooth curved seams
+   - Proper basketball seam layout (8 panels)
 
-**5. Streak & Consistency (Multi-Game)**
-| Name | Description | Rarity |
-|------|-------------|--------|
-| Rebound Streak | 8+ rebounds in 3 consecutive games | Rare |
-| Defensive Streak | 2+ steals in 5 straight games | Epic |
-| Double-Double Streak | Double-double in 3 straight games | Legendary |
-| Consistency King | 10+ pts, 5+ reb, 3+ ast in 5 straight | Legendary |
-| Hot Hand | 3+ threes in 3 consecutive games | Rare |
-| Iron Will | Play 20+ min in 10 straight games | Epic |
+3. **Enhanced Materials**
+   - `MeshPhysicalMaterial` for subsurface scattering effect
+   - Proper roughness map for worn leather look
+   - Environment reflections for gymnasium lighting
 
-**6. Season Cumulative (Season)**
-| Name | Description | Rarity |
-|------|-------------|--------|
-| Century Club | 100 total rebounds in a season | Rare |
-| Assist Master | 100 assists in a season | Epic |
-| Swiper | 50 steals in a season | Rare |
-| Shot Blocker | 25 blocks in a season | Rare |
-| Sharpshooter Season | 50 three-pointers made | Uncommon |
-| 1000 Point Season | Score 1000 points | Legendary |
-
----
-
-## Monthly Challenge System
-
-### Concept: Rotating Challenges
-
-Each month, a fresh set of **3-5 time-limited challenges** appear. They reset automatically on the 1st of each month, creating urgency and replay value.
-
-### Architecture
+4. **Better Lighting**
+   - `Environment` preset for realistic reflections
+   - Soft shadows on the court floor
+   - Rim lighting for drama
 
 ```text
-+-------------------+     +----------------------+     +-------------------+
-| monthly_challenges|---->| challenge_progress   |---->| challenge_rewards |
-|                   |     | (per-user tracking)  |     | (badges earned)   |
-+-------------------+     +----------------------+     +-------------------+
-     |
-     v
- Rotates monthly via
- pg_cron scheduled job
-```
-
-**New Database Tables:**
-
-1. **monthly_challenges** - Defines each month's active challenges
-   - `id`, `name`, `description`, `icon`, `check_type`, `threshold`
-   - `month` (e.g., "2026-02"), `reward_points`, `difficulty`
-   - `is_active` boolean
-
-2. **challenge_progress** - Tracks user progress
-   - `user_id`, `challenge_id`, `current_value`, `is_completed`
-   - `completed_at`, `created_at`
-
-3. **challenge_history** - Archive of past completed challenges
-
-### Example Monthly Challenge Sets
-
-**February 2026 - "Winter Grind"**
-| Challenge | Goal | Reward |
-|-----------|------|--------|
-| Scoring Surge | Score 100 total points this month | 50 pts |
-| Board Collector | Grab 50 rebounds this month | 40 pts |
-| 3-Point February | Make 20 three-pointers | 60 pts |
-| Win Streak | Win 3 games in a row | 75 pts |
-| Perfect Game | 0 turnovers in any game | 30 pts |
-
-**March 2026 - "March Madness"**
-| Challenge | Goal | Reward |
-|-----------|------|--------|
-| Bracket Buster | Win 5 games this month | 60 pts |
-| Assist Machine | Dish 30 assists | 50 pts |
-| Defensive March | Get 25 steals + blocks combined | 55 pts |
-| Hot Shooting | Shoot 50%+ FG for the month | 70 pts |
-| Ironman | Log 8+ games this month | 80 pts |
-
-### Auto-Rotation Logic
-
-A backend job (pg_cron) runs on the 1st of each month to:
-1. Archive current month's challenges to history
-2. Activate next month's pre-seeded challenges
-3. Reset all user progress for new month
-
----
-
-## Implementation Plan
-
-### Phase 1: Add New Static Milestones ✅ COMPLETED
-1. ✅ Created database migration to insert 28 new milestone definitions
-2. ✅ Added new check types to `milestoneChecker.ts`:
-   - `zero_to_minutes` - 0 turnovers with X+ minutes
-   - `ast_zero_to` - assists with 0 turnovers
-   - `ast_gt_fga` - more assists than FGA
-   - `efficient_high_scorer` - points on high FG%
-   - `clutch_ft` - FT% in wins
-   - `combined_defensive` - steals + blocks combo
-   - `steals_in_win` - steals in a winning game
-   - `five_by_five` - 5+ in all 5 stats
-   - `twenty_twenty` - 20/20 club
-   - `triple_threat` - 20+ pts, 5+ reb, 5+ ast
-   - `rebound_streak` - multi-game rebound check
-   - `steal_streak` - multi-game steal check
-   - `double_double_streak` - consecutive DD games
-   - `consistency_streak` - all-around consistency
-   - `minutes_streak` - playing time consistency
-
-### Phase 2: Monthly Challenge Infrastructure
-1. Create `monthly_challenges` and `challenge_progress` tables
-2. Build `useMonthlyChallenges` hook for fetching and tracking
-3. Create `MonthlyChallengesCard` component for dashboard display
-4. Add progress tracking when games are logged
-
-### Phase 3: Challenge Rotation Automation
-1. Create edge function `rotate-monthly-challenges`
-2. Set up pg_cron job to run on 1st of each month
-3. Pre-seed challenge templates for 6+ months ahead
-
-### Phase 4: UI Integration
-1. Add "Monthly Challenges" section to Milestones tab
-2. Show countdown timer to month end
-3. Display completion badges in collection
-4. Add celebration animation for challenge completion
-
----
-
-## Technical Considerations
-
-### Check Type Extensions Needed
-
-```typescript
-// New check types to add to milestoneChecker.ts
-case 'ast_to_to_ratio':
-  return game.turnovers === 0 || 
-    (game.assists / Math.max(game.turnovers, 1)) >= def.threshold;
-
-case 'combined_defensive':
-  return (game.steals + game.blocks) >= def.threshold;
-
-case 'minutes_gte':
-  return game.minutesPlayed >= def.threshold;
-
-case 'five_by_five':
-  return game.points >= 5 && game.rebounds >= 5 && 
-    game.assists >= 5 && game.steals >= 5 && game.blocks >= 5;
-
-case 'twenty_twenty':
-  return game.points >= 20 && game.rebounds >= 20;
-```
-
-### Monthly Challenge Progress Hook
-
-```typescript
-// useMonthlyChallenge hook pattern
-const updateChallengeProgress = async (gameStats: GameStats) => {
-  // Fetch active challenges for current month
-  // Calculate contribution from this game
-  // Update progress in challenge_progress table
-  // Check for completions and award if threshold met
-};
+┌─────────────────────────────────────┐
+│         Enhanced Basketball         │
+├─────────────────────────────────────┤
+│  • Procedural leather texture       │
+│  • 8-panel seam layout              │
+│  • Bump mapping for pebble grain    │
+│  • Environment reflections          │
+│  • Soft shadows                     │
+└─────────────────────────────────────┘
 ```
 
 ---
 
-## Summary
+## Part 2: Professional Audio
 
-| Category | Current | Proposed New | Total |
-|----------|---------|--------------|-------|
-| Single-Game | 52 | 25 | 77 |
-| Multi-Game | 13 | 10 | 23 |
-| Season | 22 | 8 | 30 |
-| Monthly Challenges | 0 | 5/month | 60/year |
-| **Total Static** | 87 | 43 | **130** |
+### Current Issues
+- `bounce_echo` and `arena_ambience` use Web Audio API oscillators
+- Sounds are synthetic and robotic
+- No court impact sounds
 
-This expansion adds **43 new permanent milestones** plus a **rotating monthly challenge system** that keeps players engaged with fresh goals every month.
+### Solution: ElevenLabs Sound Effects API
 
+Create a new edge function to generate high-quality sound effects:
+
+| Sound | Prompt | Duration |
+|-------|--------|----------|
+| Bounce Echo | "Basketball bouncing on hardwood gymnasium floor with reverb echo in empty arena" | 3s |
+| Arena Ambience | "Quiet basketball arena crowd murmur with distant sneaker squeaks" | 5s |
+| Swoosh | "Basketball swishing through net clean shot" | 2s |
+
+**Implementation:**
+1. Create `elevenlabs-sfx` edge function
+2. Generate sounds on first app load and cache in localStorage
+3. Fall back to synthetic sounds if API fails
+
+---
+
+## Technical Implementation
+
+### Files to Create
+| File | Purpose |
+|------|---------|
+| `supabase/functions/elevenlabs-sfx/index.ts` | Edge function for sound generation |
+| `src/components/RealisticBasketball.tsx` | New 3D basketball component |
+
+### Files to Modify
+| File | Changes |
+|------|---------|
+| `src/components/FirstLoginIntro.tsx` | Use new basketball component, add sound preloading |
+| `src/hooks/useSoundEffects.ts` | Add ElevenLabs sound fetching with caching |
+
+---
+
+## Detailed Steps
+
+### Step 1: Create ElevenLabs SFX Edge Function
+- New edge function calling ElevenLabs Sound Effects API
+- Returns MP3 audio buffer
+- Supports custom prompts and durations
+
+### Step 2: Build Realistic Basketball Component
+- Use `MeshPhysicalMaterial` with:
+  - Base orange color
+  - Roughness: 0.8 for matte leather
+  - Clearcoat: 0.1 for subtle shine
+- Create procedural bump map using canvas:
+  - Perlin noise pattern for leather pebbling
+  - Higher frequency for realistic grain
+- Draw proper 8-panel seam lines using drei `Line`
+- Add subtle environment reflections
+
+### Step 3: Enhance Scene Lighting
+- Add `Environment` from drei with "warehouse" preset
+- Enable shadows on floor mesh
+- Add secondary fill light for depth
+
+### Step 4: Integrate AI Sound Effects
+- On intro start, fetch sounds from edge function
+- Cache in localStorage as base64 for instant replay
+- Use Web Audio API for precise timing
+- Keep synthetic fallback for offline/error cases
+
+### Step 5: Improve Animation Timing
+- Add slight squash on ground impact
+- Sync bounce sounds with animation frames
+- Add subtle camera follow movement
+
+---
+
+## Expected Results
+- Basketball looks like a real NBA game ball with visible leather texture
+- Bounce sounds feel like you're in a gymnasium
+- Arena ambience creates immersive atmosphere
+- Smooth 60fps animation with physics-based bouncing
