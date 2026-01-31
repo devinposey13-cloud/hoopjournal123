@@ -110,6 +110,8 @@ export interface ScheduledGame {
   isHome: boolean;
   notes?: string;
   tournament?: string;
+  teamId?: string;
+  teamName?: string;
 }
 
 export interface Season {

@@ -39,9 +39,10 @@ import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useApprovalStatus } from '@/hooks/useApprovalStatus';
 import { useFirstLogin } from '@/hooks/useFirstLogin';
+import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { LogOut, Trophy, X, Radio } from 'lucide-react';
+import { LogOut, Trophy, X, Radio, Users } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton, MilestonesTabSkeleton, GamesHubTabSkeleton, CoachTabSkeleton, ClipsTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -72,8 +73,10 @@ export default function Index() {
   const [quickCaptureScheduledGameId, setQuickCaptureScheduledGameId] = useState<string | undefined>();
   const [isSavingQuickCapture, setIsSavingQuickCapture] = useState(false);
   const [tournamentFilter, setTournamentFilter] = useState<string>('all');
+  const [teamFilter, setTeamFilter] = useState<string>('all');
   const [justCompletedOnboarding, setJustCompletedOnboarding] = useState(false);
   const { user, loading: authLoading, signOut } = useAuth();
+  const { teams } = usePlayerTeams();
   const { isAdmin } = useAdmin();
   const { isApproved, loading: approvalLoading, refetch: refetchApproval } = useApprovalStatus();
   const {
@@ -161,10 +164,12 @@ export default function Index() {
   // Get unique tags for filter dropdown
   const tournaments = [...new Set(schedule.filter(g => g.tournament).map(g => g.tournament!))].sort();
   
-  // Apply tag filter
-  const filteredSchedule = tournamentFilter === 'all' 
-    ? schedule 
-    : schedule.filter(g => g.tournament === tournamentFilter);
+  // Apply filters (team + tag)
+  const filteredSchedule = schedule.filter(g => {
+    const matchesTeam = teamFilter === 'all' || g.teamId === teamFilter || (!g.teamId && teamFilter === 'unassigned');
+    const matchesTournament = tournamentFilter === 'all' || g.tournament === tournamentFilter;
+    return matchesTeam && matchesTournament;
+  });
   
   const upcomingGames = filteredSchedule.filter(
     (g) => isAfter(new Date(g.date), today) || isToday(new Date(g.date))
@@ -506,20 +511,49 @@ export default function Index() {
                 <h1 className="text-2xl font-bold">Season Schedule</h1>
                 <p className="text-muted-foreground">
                   {upcomingGames.length} upcoming games
-                  {tournamentFilter !== 'all' && ` in ${tournamentFilter}`}
+                  {teamFilter !== 'all' && ` • ${teams.find(t => t.id === teamFilter)?.name || 'Unassigned'}`}
+                  {tournamentFilter !== 'all' && ` • ${tournamentFilter}`}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
+                {/* Team Filter */}
+                {teams.length > 1 && (
+                  <div className="flex items-center gap-1">
+                    <Select value={teamFilter} onValueChange={setTeamFilter}>
+                      <SelectTrigger className="w-[160px]">
+                        <Users className="w-4 h-4 mr-2 text-muted-foreground" />
+                        <SelectValue placeholder="All Teams" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Teams</SelectItem>
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                        ))}
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {teamFilter !== 'all' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setTeamFilter('all')}
+                        className="h-9 w-9"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                )}
                 {/* Tag Filter */}
                 {tournaments.length > 0 && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <Select value={tournamentFilter} onValueChange={setTournamentFilter}>
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-[160px]">
                         <Trophy className="w-4 h-4 mr-2 text-muted-foreground" />
                         <SelectValue placeholder="All Tags" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Games</SelectItem>
+                        <SelectItem value="all">All Tags</SelectItem>
                         {tournaments.map((t) => (
                           <SelectItem key={t} value={t}>{t}</SelectItem>
                         ))}

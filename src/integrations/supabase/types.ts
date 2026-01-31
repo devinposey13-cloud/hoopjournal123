@@ -930,6 +930,7 @@ export type Database = {
           notes: string | null
           opponent: string
           season_id: string | null
+          team_id: string | null
           time: string
           tournament: string | null
           user_id: string
@@ -943,6 +944,7 @@ export type Database = {
           notes?: string | null
           opponent: string
           season_id?: string | null
+          team_id?: string | null
           time: string
           tournament?: string | null
           user_id: string
@@ -956,6 +958,7 @@ export type Database = {
           notes?: string | null
           opponent?: string
           season_id?: string | null
+          team_id?: string | null
           time?: string
           tournament?: string | null
           user_id?: string
@@ -966,6 +969,13 @@ export type Database = {
             columns: ["season_id"]
             isOneToOne: false
             referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_games_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "player_teams"
             referencedColumns: ["id"]
           },
         ]
