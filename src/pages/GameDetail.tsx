@@ -1021,6 +1021,7 @@ export default function GameDetail() {
           playerName={profile?.name}
           playerTeam={profile?.team}
           parentEmail={profile?.parentEmail}
+          receiveGameSummaries={profile?.receiveGameSummaries}
         />
 
         {/* Post Game Talk - Reflection with Coach AI */}

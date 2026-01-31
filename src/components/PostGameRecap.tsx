@@ -22,9 +22,10 @@ interface PostGameRecapProps {
   playerName?: string;
   playerTeam?: string;
   parentEmail?: string | null;
+  receiveGameSummaries?: boolean;
 }
 
-export function PostGameRecap({ game, earnedMilestones, onRecapChange, playerName, playerTeam, parentEmail }: PostGameRecapProps) {
+export function PostGameRecap({ game, earnedMilestones, onRecapChange, playerName, playerTeam, parentEmail, receiveGameSummaries }: PostGameRecapProps) {
   const [recap, setRecap] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
@@ -34,6 +35,9 @@ export function PostGameRecap({ game, earnedMilestones, onRecapChange, playerNam
   // Parent email sending state
   const [isSendingToParent, setIsSendingToParent] = useState(false);
   const [hasSentToParent, setHasSentToParent] = useState(false);
+  
+  // Self email state (auto-send)
+  const [hasSentToSelf, setHasSentToSelf] = useState(false);
   
   // Voice playback
   const { playingIndex, isLoadingAudio, playVoice, stopVoice } = useCoachVoice();
@@ -117,6 +121,57 @@ export function PostGameRecap({ game, earnedMilestones, onRecapChange, playerNam
       setIsLoading(false);
     }
   };
+
+  // Send recap to player's own email (auto-triggered)
+  const sendToSelf = async () => {
+    if (!playerName || !playerTeam || hasSentToSelf) return;
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-parent-recap`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          gameStats: {
+            opponent: game.opponent,
+            points: game.points,
+            rebounds: game.rebounds,
+            assists: game.assists,
+            steals: game.steals,
+            blocks: game.blocks,
+            isWin: game.isWin,
+            date: game.date,
+          },
+          recap,
+          playerName,
+          playerTeam,
+          sendToSelf: true,
+        }),
+      });
+
+      if (response.ok) {
+        setHasSentToSelf(true);
+        toast({
+          title: "Recap sent to your email!",
+          description: "Check your inbox for the game summary.",
+        });
+      }
+    } catch (err) {
+      console.error('Error auto-sending recap to self:', err);
+    }
+  };
+
+  // Auto-send to self when recap is generated and preference is enabled
+  useEffect(() => {
+    if (hasGenerated && recap && receiveGameSummaries && !hasSentToSelf && playerName && playerTeam) {
+      sendToSelf();
+    }
+  }, [hasGenerated, recap, receiveGameSummaries, hasSentToSelf, playerName, playerTeam]);
 
   const sendToParent = async () => {
     if (!playerName || !playerTeam) {
