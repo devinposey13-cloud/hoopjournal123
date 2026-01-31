@@ -324,11 +324,27 @@ export function EmptyDashboardWelcome({
                         }
                       }}
                     >
-                      <Avatar className="w-28 h-28 border-2 border-dashed border-muted-foreground/30">
-                        <AvatarFallback className="bg-muted">
-                          <User className="w-12 h-12 text-muted-foreground/50" />
-                        </AvatarFallback>
-                      </Avatar>
+                      <motion.div
+                        animate={{
+                          boxShadow: [
+                            '0 0 0 0 hsl(var(--primary) / 0)',
+                            '0 0 0 8px hsl(var(--primary) / 0.15)',
+                            '0 0 0 0 hsl(var(--primary) / 0)'
+                          ]
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                        className="rounded-full"
+                      >
+                        <Avatar className="w-28 h-28 border-2 border-dashed border-primary/50 animate-pulse">
+                          <AvatarFallback className="bg-muted">
+                            <User className="w-12 h-12 text-muted-foreground/50" />
+                          </AvatarFallback>
+                        </Avatar>
+                      </motion.div>
                     </motion.div>
                   )}
                 </AnimatePresence>
