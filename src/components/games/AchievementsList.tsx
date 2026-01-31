@@ -93,10 +93,11 @@ export function AchievementsList() {
                 <Card
                   key={achievement.id}
                   className={cn(
-                    'transition-all',
+                    'transition-all duration-300 ease-out cursor-default',
+                    'hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5',
                     unlocked
-                      ? 'bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30'
-                      : 'opacity-60'
+                      ? 'bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30 hover:border-yellow-500/50'
+                      : 'opacity-60 hover:border-primary/30'
                   )}
                 >
                   <CardContent className="p-4 flex items-center gap-4">
