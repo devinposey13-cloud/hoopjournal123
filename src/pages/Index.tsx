@@ -286,8 +286,8 @@ export default function Index() {
                 <div className="px-6 md:px-10 py-8">
                   {/* Journal-style header - centered with decorative basketball */}
                   <div className="pb-6 border-b border-amber-800/20 mb-6 text-center relative">
-                    {/* Decorative basketball icon */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10">
+                    {/* Decorative basketball icon with gentle bounce */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 animate-[bounce_3s_ease-in-out_infinite]">
                       <span className="text-6xl md:text-7xl">🏀</span>
                     </div>
                     <h1 
@@ -299,7 +299,7 @@ export default function Index() {
                     {/* Decorative divider with basketball accents */}
                     <div className="flex items-center justify-center gap-3 my-4">
                       <div className="w-8 h-0.5 bg-amber-800/30" />
-                      <span className="text-amber-800/40 text-sm">🏀</span>
+                      <span className="text-amber-800/40 text-sm animate-pulse">🏀</span>
                       <div className="w-8 h-0.5 bg-amber-800/30" />
                     </div>
                     <p 
