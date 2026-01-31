@@ -39,6 +39,7 @@ import { EditScheduleDialog } from '@/components/EditScheduleDialog';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2 } from 'lucide-react';
 import { QuickDuplicateDialog } from '@/components/QuickDuplicateDialog';
+import { MilestoneCard } from '@/components/milestones/MilestoneCard';
 import { toast } from 'sonner';
 
 export default function GameDetail() {
@@ -433,12 +434,21 @@ export default function GameDetail() {
       return;
     }
     
+    // Get milestones earned in this game for PDF
+    const gameMilestones = earnedMilestones
+      .filter(m => m.gameId === game.id && m.milestone)
+      .map(m => ({
+        milestone: m.milestone!,
+        earnedAt: m.earnedAt,
+      }));
+    
     toast.info('Generating PDF...');
     await exportGameBoxScorePdf(profile, {
       game,
       firstHalf: halfData?.firstHalf,
       secondHalf: halfData?.secondHalf,
       coachRecap: includeRecapInPdf ? coachRecap : undefined,
+      milestones: gameMilestones.length > 0 ? gameMilestones : undefined,
     });
     toast.success('Box score PDF exported!');
   };
@@ -882,18 +892,13 @@ export default function GameDetail() {
           <p className="text-primary-foreground/80 uppercase tracking-wider text-sm mt-1">Points Scored</p>
         </div>
 
-        {/* Main Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <StatBox icon={Repeat} label="Rebounds" value={game.rebounds} />
-          <StatBox icon={Zap} label="Assists" value={game.assists} />
-          <StatBox icon={Shield} label="Steals" value={game.steals} />
-          <StatBox icon={HandMetal} label="Blocks" value={game.blocks} />
-        </div>
-
-        {/* Shooting Stats */}
+        {/* Post Game Report - Consolidated Stats and Milestones */}
         <div className="stat-card mb-6">
-          <h2 className="text-lg font-semibold mb-4">Shooting Performance</h2>
-          <div className="grid grid-cols-3 gap-6">
+          <h2 className="text-xl font-bold mb-6">Post Game Report</h2>
+          
+          {/* Shooting Performance */}
+          <h3 className="text-lg font-semibold mb-4">Shooting Performance</h3>
+          <div className="grid grid-cols-3 gap-6 mb-6">
             <ShootingStatBox
               label="Field Goals"
               made={totalFgMade}
@@ -913,12 +918,10 @@ export default function GameDetail() {
               percentage={ftPct}
             />
           </div>
-        </div>
 
-        {/* Other Stats */}
-        <div className="stat-card mb-6">
-          <h2 className="text-lg font-semibold mb-4">Performance Stats</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {/* Performance Stats */}
+          <h3 className="text-lg font-semibold mb-4">Performance Stats</h3>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <div className="text-center p-4 bg-secondary/30 rounded-lg">
               <Repeat className="w-6 h-6 mx-auto mb-2 text-blue-400" />
               <p className="text-3xl font-bold">{game.rebounds}</p>
@@ -950,21 +953,21 @@ export default function GameDetail() {
               <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">Turnovers</p>
             </div>
           </div>
-        </div>
-        <div className="stat-card">
-          <h2 className="text-lg font-semibold mb-4">Game Summary</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Turnovers</p>
-              <p className="text-2xl font-bold">{game.turnovers}</p>
+
+          {/* Game Summary */}
+          <h3 className="text-lg font-semibold mb-4">Game Summary</h3>
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="text-center p-4 bg-secondary/30 rounded-lg">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Personal Fouls</p>
+              <p className="text-2xl font-bold">{game.fouls ?? 0}</p>
             </div>
-            <div>
+            <div className="text-center p-4 bg-secondary/30 rounded-lg">
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Efficiency</p>
               <p className="text-2xl font-bold">
                 {game.points + game.rebounds + game.assists + game.steals + game.blocks - game.turnovers}
               </p>
             </div>
-            <div>
+            <div className="text-center p-4 bg-secondary/30 rounded-lg">
               <p className="text-xs text-muted-foreground uppercase tracking-wider">True Shooting</p>
               <p className="text-2xl font-bold">
                 {totalFgAttempted + (0.44 * game.ftAttempted) > 0
@@ -973,6 +976,32 @@ export default function GameDetail() {
               </p>
             </div>
           </div>
+
+          {/* Milestones Earned in This Game */}
+          {earnedMilestones.filter(m => m.gameId === game.id).length > 0 && (
+            <>
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-primary" />
+                Milestones Earned
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {earnedMilestones
+                  .filter(m => m.gameId === game.id)
+                  .map((earned) => (
+                    earned.milestone && (
+                      <MilestoneCard
+                        key={earned.id}
+                        milestone={earned.milestone}
+                        earnedAt={earned.earnedAt}
+                        statsSnapshot={earned.statsSnapshot}
+                        gameOpponent={game.opponent}
+                        isEarned={true}
+                      />
+                    )
+                  ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Post Game Recap from Coach AI */}

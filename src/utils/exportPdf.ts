@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { SeasonStats, PlayerProfile, GameStats, HalfStats } from '@/types/basketball';
+import { MilestoneDefinition, MilestoneRarity } from '@/types/milestone';
 import { format } from 'date-fns';
 
 // Logo as base64 - will be loaded dynamically
@@ -219,12 +220,18 @@ export async function exportSeasonStatsPdf(
   doc.save(fileName);
 }
 
+interface EarnedMilestoneForPdf {
+  milestone: MilestoneDefinition;
+  earnedAt: string;
+}
+
 interface GameBoxScoreData {
   game: GameStats;
   firstHalf?: HalfStats;
   secondHalf?: HalfStats;
   coachRecap?: string | null;
   gamePhotoUrl?: string;
+  milestones?: EarnedMilestoneForPdf[];
 }
 
 export async function exportGameBoxScorePdf(
@@ -234,7 +241,7 @@ export async function exportGameBoxScorePdf(
   const doc = new jsPDF({ orientation: 'landscape' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const { game, firstHalf, secondHalf, coachRecap, gamePhotoUrl } = gameData;
+  const { game, firstHalf, secondHalf, coachRecap, gamePhotoUrl, milestones } = gameData;
 
   // Load and add watermark + header logo to first page
   const logoData = await getLogoBase64();
@@ -537,6 +544,78 @@ export async function exportGameBoxScorePdf(
         console.error('Failed to add game photo to PDF:', e);
       }
     }
+  }
+
+  // Add Milestones Earned if available
+  if (milestones && milestones.length > 0) {
+    doc.addPage();
+    
+    // Add watermark and header logo to this page
+    if (logoData) {
+      addWatermarkToPage(doc, logoData);
+      addHeaderLogo(doc, logoData);
+    }
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Milestones Earned', pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${profile.team} vs ${game.opponent} - ${format(new Date(game.date), 'MMMM d, yyyy')}`, pageWidth / 2, 28, { align: 'center' });
+
+    // Rarity colors for badges
+    const rarityColors: Record<MilestoneRarity, [number, number, number]> = {
+      common: [100, 116, 139],
+      uncommon: [34, 197, 94],
+      rare: [245, 158, 11],
+      epic: [168, 85, 247],
+      legendary: [249, 115, 22],
+    };
+
+    let currentY = 40;
+    const cardWidth = 85;
+    const cardHeight = 35;
+    const cardsPerRow = 3;
+    const startX = (pageWidth - (cardWidth * cardsPerRow + 10 * (cardsPerRow - 1))) / 2;
+
+    milestones.forEach((earned, index) => {
+      const row = Math.floor(index / cardsPerRow);
+      const col = index % cardsPerRow;
+      const x = startX + col * (cardWidth + 10);
+      const y = currentY + row * (cardHeight + 8);
+
+      const color = rarityColors[earned.milestone.rarity] || rarityColors.common;
+      
+      // Card background
+      doc.setFillColor(240, 240, 240);
+      doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'F');
+      
+      // Left accent bar with rarity color
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.rect(x, y, 4, cardHeight, 'F');
+      
+      // Milestone name
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      const nameLines = doc.splitTextToSize(earned.milestone.name, cardWidth - 12);
+      doc.text(nameLines[0], x + 8, y + 12);
+      
+      // Rarity label
+      doc.setFontSize(7);
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(earned.milestone.rarity.toUpperCase(), x + 8, y + 18);
+      
+      // Description
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80, 80, 80);
+      const descLines = doc.splitTextToSize(earned.milestone.description, cardWidth - 12);
+      doc.text(descLines.slice(0, 2).join('\n'), x + 8, y + 25);
+      
+      doc.setTextColor(0, 0, 0);
+    });
   }
 
   // Add Coach AI Recap if included
