@@ -24,6 +24,7 @@ import { FireCelebration } from './FireCelebration';
 import { StatFlash, getFlashConfig } from './StatFlash';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
+import { useLiveStatsAutosave } from '@/hooks/useLiveStatsAutosave';
 import { HalfStats } from '@/types/basketball';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -123,20 +124,100 @@ export function LiveStatCapture({
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
   const [isWin, setIsWin] = useState<boolean | null>(null);
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(false);
+  const [hasRestoredFromAutosave, setHasRestoredFromAutosave] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { playSound } = useSoundEffects();
   const { triggerHaptic } = useHapticFeedback();
+  const { getSavedData, saveData, immediateSave, clearSavedData } = useLiveStatsAutosave(opponent);
 
   // Initialize with any passed initial stats (goes to first half)
   // Using a ref to track if we've initialized to prevent re-running on every render
   const hasInitialized = useRef(false);
   
+  // Restore from autosave on mount
   useEffect(() => {
-    if (initialStats && !hasInitialized.current) {
+    if (hasInitialized.current) return;
+    
+    const savedData = getSavedData();
+    if (savedData) {
+      // Restore all state from autosave
+      setCurrentHalf(savedData.currentHalf);
+      setFirstHalfStats(savedData.firstHalfStats);
+      setSecondHalfStats(savedData.secondHalfStats);
+      setHistory(savedData.history);
+      setGamePhoto(savedData.gamePhoto);
+      setIsWin(savedData.isWin);
+      setSoundEffectsEnabled(savedData.soundEffectsEnabled);
+      setHasRestoredFromAutosave(true);
+      
+      toast.success('Restored your stats from autosave!', {
+        description: 'Your previous session was recovered.',
+        duration: 3000,
+      });
+      
+      hasInitialized.current = true;
+    } else if (initialStats) {
       hasInitialized.current = true;
       setFirstHalfStats(prev => ({ ...prev, ...initialStats }));
     }
-  }, [initialStats]);
+  }, [getSavedData, initialStats]);
+
+  // Autosave on state changes (debounced)
+  useEffect(() => {
+    if (!hasInitialized.current) return;
+    
+    saveData({
+      opponent,
+      currentHalf,
+      firstHalfStats,
+      secondHalfStats,
+      history,
+      gamePhoto,
+      isWin,
+      soundEffectsEnabled,
+    });
+  }, [opponent, currentHalf, firstHalfStats, secondHalfStats, history, gamePhoto, isWin, soundEffectsEnabled, saveData]);
+
+  // Immediate save when page becomes hidden (user switches tabs, receives call, etc.)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        immediateSave({
+          opponent,
+          currentHalf,
+          firstHalfStats,
+          secondHalfStats,
+          history,
+          gamePhoto,
+          isWin,
+          soundEffectsEnabled,
+        });
+      }
+    };
+
+    const handlePageHide = () => {
+      immediateSave({
+        opponent,
+        currentHalf,
+        firstHalfStats,
+        secondHalfStats,
+        history,
+        gamePhoto,
+        isWin,
+        soundEffectsEnabled,
+      });
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('beforeunload', handlePageHide);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('beforeunload', handlePageHide);
+    };
+  }, [opponent, currentHalf, firstHalfStats, secondHalfStats, history, gamePhoto, isWin, soundEffectsEnabled, immediateSave]);
 
   // Calculate total stats from both halves
   const totalStats: LiveStats = {
@@ -365,7 +446,7 @@ export function LiveStatCapture({
   };
 
   const handleSave = (isGameOver: boolean) => {
-    const saveData: LiveStatsSaveData = {
+    const savePayload: LiveStatsSaveData = {
       total: totalStats,
       firstHalf: firstHalfStats,
       secondHalf: secondHalfStats,
@@ -373,7 +454,11 @@ export function LiveStatCapture({
       isWin: isWin ?? undefined,
     };
     setShowGameOverDialog(false);
-    onSave(totalStats, saveData, isGameOver);
+    
+    // Clear autosave data when successfully saving
+    clearSavedData();
+    
+    onSave(totalStats, savePayload, isGameOver);
   };
 
   const fgPct = currentStats.fgAttempted > 0 ? Math.round((currentStats.fgMade / currentStats.fgAttempted) * 100) : 0;
