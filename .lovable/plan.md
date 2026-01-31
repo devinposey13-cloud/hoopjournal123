@@ -115,4 +115,3 @@ The avatar will be:
 - **User deletes their avatar**: The upload card stays hidden because they previously skipped; they can re-add via Settings
 - **User already has avatar**: Upload card is already hidden; avatar shows in header
 - **New users who don't skip**: Upload card continues to show until they upload or skip
-

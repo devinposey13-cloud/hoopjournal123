@@ -66,6 +66,7 @@ export interface PlayerProfile {
   isProfilePublic?: boolean;
   themeMusicUrl?: string;
   instagramUrl?: string;
+  avatarSkippedAt?: string;
   // Onboarding fields
   courtRole?: string;
   playingLevel?: string;

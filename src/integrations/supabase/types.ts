@@ -483,6 +483,7 @@ export type Database = {
       }
       player_settings: {
         Row: {
+          avatar_skipped_at: string | null
           avatar_url: string | null
           court_role: string | null
           created_at: string
@@ -508,6 +509,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          avatar_skipped_at?: string | null
           avatar_url?: string | null
           court_role?: string | null
           created_at?: string
@@ -533,6 +535,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          avatar_skipped_at?: string | null
           avatar_url?: string | null
           court_role?: string | null
           created_at?: string

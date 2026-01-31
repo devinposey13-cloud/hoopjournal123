@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 interface EmptyDashboardWelcomeProps {
   playerName: string;
   avatarUrl?: string;
+  hasSkippedAvatar?: boolean;
   onLogFirstGame: () => void;
   onPregameTalk: () => void;
   onUploadPhoto: () => void;
@@ -24,6 +25,7 @@ type AvatarState = 'idle' | 'generating' | 'preview' | 'uploading';
 export function EmptyDashboardWelcome({ 
   playerName, 
   avatarUrl,
+  hasSkippedAvatar,
   onLogFirstGame, 
   onPregameTalk,
   onUploadPhoto,
@@ -33,6 +35,8 @@ export function EmptyDashboardWelcome({
   onAvatarDeleted
 }: EmptyDashboardWelcomeProps) {
   const hasAvatar = Boolean(avatarUrl);
+  // Hide avatar card if user has skipped and has no avatar
+  const shouldShowAvatarCard = hasAvatar || !hasSkippedAvatar;
   const [avatarState, setAvatarState] = useState<AvatarState>('idle');
   const [generatedPreview, setGeneratedPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -185,7 +189,7 @@ export function EmptyDashboardWelcome({
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col items-center justify-center py-12 px-4"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
+      <div className={`grid gap-4 w-full max-w-2xl ${shouldShowAvatarCard ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 max-w-md mx-auto'}`}>
         {/* Coach AI Card */}
         <Card className="bg-gradient-to-br from-card to-card/80 border-2 border-primary/20 shadow-lg">
           <CardContent className="pt-8 pb-6 px-6 text-center">
@@ -254,14 +258,15 @@ export function EmptyDashboardWelcome({
           </CardContent>
         </Card>
 
-        {/* Avatar Upload/Generate Card */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="bg-gradient-to-br from-card to-card/80 border-2 border-muted shadow-lg h-full">
-            <CardContent className="pt-8 pb-6 px-6 text-center flex flex-col h-full">
+        {/* Avatar Upload/Generate Card - only show if not skipped or has avatar */}
+        {shouldShowAvatarCard && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="bg-gradient-to-br from-card to-card/80 border-2 border-muted shadow-lg h-full">
+              <CardContent className="pt-8 pb-6 px-6 text-center flex flex-col h-full">
               {/* Avatar Preview - show different states with animations */}
               <div className="mx-auto mb-8 h-36 flex items-center justify-center">
                 <AnimatePresence mode="wait">
@@ -585,6 +590,7 @@ export function EmptyDashboardWelcome({
             </CardContent>
           </Card>
         </motion.div>
+        )}
       </div>
 
       {/* Motivational subtext */}
