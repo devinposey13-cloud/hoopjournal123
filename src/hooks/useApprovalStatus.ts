@@ -30,8 +30,16 @@ export function useApprovalStatus() {
         return;
       }
 
+      // If no settings data exists yet (trigger may not have completed), user needs approval
+      if (!settingsData) {
+        console.log('No player_settings found - user needs approval');
+        setIsApproved(false);
+        setLoading(false);
+        return;
+      }
+
       // If already approved, we're done
-      if (settingsData?.is_approved) {
+      if (settingsData.is_approved) {
         setIsApproved(true);
         setLoading(false);
         return;
