@@ -102,13 +102,19 @@ export function AchievementsList() {
                 >
                   <CardContent className="p-4 flex items-center gap-4">
                     <div className={cn(
-                      'w-12 h-12 rounded-xl flex items-center justify-center',
+                      'relative w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden',
                       unlocked
                         ? 'bg-gradient-to-br from-yellow-500 to-orange-500'
                         : 'bg-secondary'
                     )}>
+                      {unlocked && (
+                        <div 
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"
+                          style={{ backgroundSize: '200% 100%' }}
+                        />
+                      )}
                       {unlocked ? (
-                        <IconComponent className="w-6 h-6 text-white" />
+                        <IconComponent className="w-6 h-6 text-white relative z-10" />
                       ) : (
                         <Lock className="w-5 h-5 text-muted-foreground" />
                       )}
