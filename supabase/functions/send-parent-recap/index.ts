@@ -25,6 +25,7 @@ interface RecapRequest {
   recap: string;
   playerName: string;
   playerTeam: string;
+  sendToSelf?: boolean; // If true, send to player's own email instead of parent
 }
 
 function formatDate(dateString: string): string {
@@ -41,7 +42,8 @@ function generateEmailHtml(
   playerName: string,
   playerTeam: string,
   gameStats: GameStats,
-  recap: string
+  recap: string,
+  isSelfEmail: boolean = false
 ): string {
   const result = gameStats.isWin ? "WIN" : "LOSS";
   const resultColor = gameStats.isWin ? "#22c55e" : "#ef4444";
@@ -141,7 +143,10 @@ function generateEmailHtml(
           <tr>
             <td style="padding: 24px 32px; background-color: #151515; border-top: 1px solid #2a2a2a;">
               <p style="margin: 0 0 16px; color: #71717a; font-size: 14px; text-align: center; line-height: 1.6;">
-                Keep supporting ${playerName}'s basketball journey! 🌟
+                ${isSelfEmail 
+                  ? `Great game, ${playerName}! Keep pushing yourself! 🌟`
+                  : `Keep supporting ${playerName}'s basketball journey! 🌟`
+                }
               </p>
               <p style="margin: 0; color: #52525b; font-size: 12px; text-align: center;">
                 Sent from <a href="https://hoopjournal123.lovable.app" style="color: #f97316; text-decoration: none;">Hoop Journal</a> — Your Basketball Story
@@ -193,7 +198,7 @@ const handler = async (req: Request): Promise<Response> => {
     const userId = user.id;
 
     // Parse request body
-    const { gameStats, recap, playerName, playerTeam }: RecapRequest = await req.json();
+    const { gameStats, recap, playerName, playerTeam, sendToSelf }: RecapRequest = await req.json();
 
     if (!gameStats || !recap || !playerName || !playerTeam) {
       return new Response(
@@ -202,26 +207,43 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Fetch parent email from player_settings
-    const { data: settings, error: settingsError } = await supabase
-      .from("player_settings")
-      .select("parent_email")
-      .eq("user_id", userId)
-      .single();
+    let recipientEmail: string;
+    let isSelfEmail = false;
 
-    if (settingsError || !settings?.parent_email) {
-      return new Response(
-        JSON.stringify({ error: "No parent email configured" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (sendToSelf) {
+      // Send to the player's own email (from auth)
+      recipientEmail = user.email!;
+      isSelfEmail = true;
+      
+      if (!recipientEmail) {
+        return new Response(
+          JSON.stringify({ error: "No email found for your account" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else {
+      // Send to parent email from player_settings
+      const { data: settings, error: settingsError } = await supabase
+        .from("player_settings")
+        .select("parent_email")
+        .eq("user_id", userId)
+        .single();
+
+      if (settingsError || !settings?.parent_email) {
+        return new Response(
+          JSON.stringify({ error: "No parent email configured" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      recipientEmail = settings.parent_email;
     }
 
-    const parentEmail = settings.parent_email;
     const result = gameStats.isWin ? "WIN" : "LOSS";
     const subject = `${playerName}'s Game Recap - ${result} vs ${gameStats.opponent}`;
 
     // Generate email HTML
-    const htmlContent = generateEmailHtml(playerName, playerTeam, gameStats, recap);
+    const htmlContent = generateEmailHtml(playerName, playerTeam, gameStats, recap, isSelfEmail);
 
     // Send email via Resend using fetch
     const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -232,7 +254,7 @@ const handler = async (req: Request): Promise<Response> => {
       },
       body: JSON.stringify({
         from: "Hoop Journal <noreply@hoopjournal.me>",
-        to: [parentEmail],
+        to: [recipientEmail],
         subject: subject,
         html: htmlContent,
       }),
@@ -246,7 +268,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResult = await emailResponse.json();
 
-    console.log("Parent recap email sent successfully:", emailResult);
+    console.log("Recap email sent successfully to:", recipientEmail, emailResult);
 
     return new Response(
       JSON.stringify({ success: true }),
