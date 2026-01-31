@@ -4,14 +4,17 @@ import { Trophy, TrendingUp, FileDown, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { exportSeasonStatsPdf } from '@/utils/exportPdf';
+import { LevelBadge } from '@/components/xp/LevelBadge';
+import type { XpProgress } from '@/types/xp';
 
 interface PlayerHeaderProps {
   profile: PlayerProfile;
   seasonStats: SeasonStats;
   games: GameStats[];
+  xpProgress?: XpProgress | null;
 }
 
-export function PlayerHeader({ profile, seasonStats, games }: PlayerHeaderProps) {
+export function PlayerHeader({ profile, seasonStats, games, xpProgress }: PlayerHeaderProps) {
   const [showAvatarPreview, setShowAvatarPreview] = useState(false);
 
   const handleExport = () => {
@@ -44,9 +47,14 @@ export function PlayerHeader({ profile, seasonStats, games }: PlayerHeaderProps)
 
           {/* Player Info */}
           <div className="flex-1">
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-              {profile.name}
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                {profile.name}
+              </h1>
+              {xpProgress && (
+                <LevelBadge level={xpProgress.current_level} size="sm" />
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
               <span className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground font-medium">
                 #{profile.number}
