@@ -1,112 +1,163 @@
 
-
-# Add Countdown Timer to Delete Account Confirmation
+# Parent Email Notification Feature
 
 ## Overview
-Add a 5-second countdown timer that starts after the user types "DELETE" in the confirmation dialog. This provides an additional safety buffer, giving users one last chance to reconsider before permanently deleting their account.
+Send a summary of the post-game AI recap to the parent's email address (collected during onboarding) whenever a player generates their Coach AI recap. This allows parents to stay connected to their child's basketball journey without needing to access the app.
 
-## Current Behavior
-- User opens the Delete Account dialog
-- User types "DELETE" in the input field
-- The "Delete My Account" button becomes immediately enabled
-- User can click to delete right away
+## User Flow
+1. Player completes a game and views the Game Detail page
+2. Player clicks "Generate My Recap" to get Coach AI feedback
+3. After the recap is generated, a "Share with Family" button appears
+4. Player clicks the button to send a beautifully formatted email summary to their parent
+5. Parent receives an email with the game stats and AI recap
 
-## New Behavior
-- User opens the Delete Account dialog
-- User types "DELETE" in the input field
-- A 5-second countdown timer starts automatically
-- The button shows "Wait 5s..." then "Wait 4s..." etc.
-- After countdown completes, button shows "Delete My Account" and becomes clickable
-- If user clears/changes the input, the countdown resets
+## Why Button-Triggered (Not Automatic)
+- Gives player control over what gets shared
+- Avoids spam if player regenerates recap multiple times
+- Lets player review the recap before sharing
+- Respects player privacy and autonomy
 
-## Changes
+---
 
-### Update `src/components/settings/DangerZoneSection.tsx`
+## Technical Implementation
 
-**New State:**
-- `deleteCountdown: number | null` - Tracks remaining seconds (null when not counting)
+### 1. New Edge Function: `send-parent-recap`
 
-**New Effect:**
-Add a `useEffect` that:
-1. Watches for `deleteConfirmText === 'DELETE'`
-2. When matched, starts a countdown from 5
-3. Uses `setInterval` to decrement every second
-4. Cleans up interval when countdown reaches 0 or text changes
-5. Resets countdown to null if user changes the input text
+Create a new edge function at `supabase/functions/send-parent-recap/index.ts` that:
+- Accepts game stats, recap text, and player info
+- Validates the user is authenticated
+- Fetches the parent_email from player_settings
+- Generates a branded HTML email with:
+  - Player name and team
+  - Game result (win/loss) and opponent
+  - Key stats highlights (points, rebounds, assists)
+  - The full Coach AI recap
+  - A motivational closing
+- Sends via Resend using the existing RESEND_API_KEY
 
-**Updated Button Logic:**
-- Disabled when: text !== 'DELETE' OR countdown > 0 OR isDeletingAccount
-- Button text shows:
-  - `Wait ${countdown}s...` when counting down
-  - `Delete My Account` when countdown complete
-  - `Deleting...` with spinner when in progress
+### 2. Update PostGameRecap Component
 
-## Visual Design
+Modify `src/components/PostGameRecap.tsx` to:
+- Accept new props: `playerName`, `playerTeam`, `parentEmail`
+- Add state: `isSendingToParent`, `hasSentToParent`
+- After recap is generated and if `parentEmail` exists, show a "Share with Family" button
+- On click, call the new edge function
+- Show success/error toast feedback
+- Disable button after successful send to prevent duplicates
+
+### 3. Update GameDetail Page
+
+Modify `src/pages/GameDetail.tsx` to:
+- Pass the player profile info (name, team, parentEmail) to PostGameRecap component
+
+---
+
+## Email Template Design
+
+The email will follow the existing Hoop Journal branding:
+- Dark theme matching other transactional emails
+- Hoop Journal logo header
+- Player name and game info section
+- Stats highlights in a styled card
+- Full AI recap text
+- Encouraging footer message
+- Link to the app
 
 ```text
-Before countdown (text not matching):
-[Cancel]  [Delete My Account] (disabled, grayed out)
+Subject: "{PlayerName}'s Game Recap - {Result} vs {Opponent}"
 
-During countdown:
-[Cancel]  [Wait 4s...] (disabled, showing countdown)
-
-After countdown:
-[Cancel]  [Delete My Account] (enabled, destructive red)
+Example: "Marcus's Game Recap - WIN vs Eagles"
 ```
 
-## Technical Details
+---
 
-**Import Addition:**
-- Add `useEffect` to the React import
+## Files to Create/Modify
 
-**Timer Implementation:**
+### New Files
+1. `supabase/functions/send-parent-recap/index.ts` - Edge function for sending parent emails
+
+### Modified Files
+1. `src/components/PostGameRecap.tsx` - Add "Share with Family" button and logic
+2. `src/pages/GameDetail.tsx` - Pass profile data to PostGameRecap
+
+### Configuration
+3. `supabase/config.toml` - Add config for new edge function (verify_jwt = false)
+
+---
+
+## Edge Function Details
+
 ```text
-useEffect(() => {
-  // Only start countdown when DELETE is typed
-  if (deleteConfirmText === 'DELETE' && !isDeletingAccount) {
-    setDeleteCountdown(5);
-    
-    const interval = setInterval(() => {
-      setDeleteCountdown(prev => {
-        if (prev === null || prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  } else {
-    // Reset countdown if text changes
-    setDeleteCountdown(null);
-  }
-}, [deleteConfirmText, isDeletingAccount]);
-```
+Endpoint: POST /functions/v1/send-parent-recap
+Authentication: Required (Bearer token)
 
-**Button Disabled Condition:**
-```text
-disabled={
-  deleteConfirmText !== 'DELETE' || 
-  (deleteCountdown !== null && deleteCountdown > 0) || 
-  isDeletingAccount
+Request Body:
+{
+  gameStats: {
+    opponent: string,
+    points: number,
+    rebounds: number,
+    assists: number,
+    steals: number,
+    blocks: number,
+    isWin: boolean,
+    date: string
+  },
+  recap: string,
+  playerName: string,
+  playerTeam: string
 }
+
+Response:
+{ success: true } or { error: "message" }
 ```
 
-**Button Text Logic:**
+The function will:
+1. Verify the JWT and get user ID
+2. Fetch parent_email from player_settings for that user
+3. If no parent_email, return error
+4. Format and send email via Resend
+5. Return success/error
+
+---
+
+## UI Changes in PostGameRecap
+
+After the "Listen to Recap" button, add a new section:
+
 ```text
-{isDeletingAccount ? (
-  <><Loader2 className="animate-spin" /> Deleting...</>
-) : deleteCountdown !== null && deleteCountdown > 0 ? (
-  `Wait ${deleteCountdown}s...`
-) : (
-  'Delete My Account'
-)}
+[existing recap content]
+
+[Listen to Recap button]
+
+--- divider ---
+
+Share with Family
+[Mail icon] Send to Parent    (or "Sent!" after success)
+
+"Your parent will receive an email with this game summary"
 ```
 
-## Edge Cases Handled
-- **User types DELETE then changes it**: Countdown resets to null
-- **User closes dialog during countdown**: Effect cleanup clears interval
-- **User reopens dialog**: Fresh state, countdown starts again when DELETE typed
-- **Countdown at 0**: Button becomes enabled (0 is falsy but we check > 0)
+The button will be:
+- Hidden if no parentEmail is configured
+- Shows loading spinner while sending
+- Changes to "Sent!" with checkmark after success
+- Disabled after successful send (per session)
 
+---
+
+## Security Considerations
+
+- JWT authentication required to prevent unauthorized sends
+- Parent email is never exposed to frontend - fetched server-side
+- Rate limiting: One send per game recap session (frontend state)
+- Only the authenticated user can trigger sends for their own profile
+
+---
+
+## Error Handling
+
+1. **No parent email configured**: Show toast "No parent email set up. Add one in Settings."
+2. **Email send fails**: Show toast "Failed to send. Try again later."
+3. **Network error**: Show toast with retry option
+4. **Success**: Show toast "Game recap sent to your parent!"
