@@ -39,6 +39,8 @@ import { EditScheduleDialog } from '@/components/EditScheduleDialog';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { QuickDuplicateDialog } from '@/components/QuickDuplicateDialog';
 import { MilestoneCard } from '@/components/milestones/MilestoneCard';
@@ -74,6 +76,7 @@ export default function GameDetail() {
   const [halfData, setHalfData] = useState<LiveStatsSaveData | null>(null);
   const [coachRecap, setCoachRecap] = useState<string | null>(null);
   const [includeRecapInPdf, setIncludeRecapInPdf] = useState(false);
+  const [includeMilestonesInPdf, setIncludeMilestonesInPdf] = useState(true);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [showDeletePhotoDialog, setShowDeletePhotoDialog] = useState(false);
@@ -476,7 +479,7 @@ export default function GameDetail() {
       firstHalf: halfData?.firstHalf,
       secondHalf: halfData?.secondHalf,
       coachRecap: includeRecapInPdf ? coachRecap : undefined,
-      milestones: gameMilestones.length > 0 ? gameMilestones : undefined,
+      milestones: includeMilestonesInPdf && gameMilestones.length > 0 ? gameMilestones : undefined,
     });
     toast.success('Box score PDF exported!');
   };
@@ -1066,10 +1069,22 @@ export default function GameDetail() {
           {/* Milestones Earned in This Game */}
           {earnedMilestones.filter(m => m.gameId === game.id).length > 0 && (
             <>
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-primary" />
-                Milestones Earned
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-primary" />
+                  Milestones Earned
+                </h3>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="include-milestones-pdf"
+                    checked={includeMilestonesInPdf}
+                    onCheckedChange={setIncludeMilestonesInPdf}
+                  />
+                  <Label htmlFor="include-milestones-pdf" className="text-sm text-muted-foreground">
+                    Include in PDF
+                  </Label>
+                </div>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {earnedMilestones
                   .filter(m => m.gameId === game.id)
