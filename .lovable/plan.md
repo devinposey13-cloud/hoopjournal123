@@ -1,163 +1,218 @@
 
-# Parent Email Notification Feature
 
-## Overview
-Send a summary of the post-game AI recap to the parent's email address (collected during onboarding) whenever a player generates their Coach AI recap. This allows parents to stay connected to their child's basketball journey without needing to access the app.
+# Milestone System Expansion: New Creative Cards + Monthly Challenges
 
-## User Flow
-1. Player completes a game and views the Game Detail page
-2. Player clicks "Generate My Recap" to get Coach AI feedback
-3. After the recap is generated, a "Share with Family" button appears
-4. Player clicks the button to send a beautifully formatted email summary to their parent
-5. Parent receives an email with the game stats and AI recap
+## Current State Analysis
 
-## Why Button-Triggered (Not Automatic)
-- Gives player control over what gets shared
-- Avoids spam if player regenerates recap multiple times
-- Lets player review the recap before sharing
-- Respects player privacy and autonomy
+Your milestone system is already robust with **87 total milestones** across three categories:
+- **52 Single-Game** milestones (performance in one game)
+- **13 Multi-Game** milestones (streaks, consistency)
+- **22 Season** milestones (cumulative totals)
+
+There are **31 check types** currently implemented, covering points, rebounds, assists, steals, blocks, 3-pointers, efficiency, and various combinations.
 
 ---
 
-## Technical Implementation
+## Expansion Opportunities
 
-### 1. New Edge Function: `send-parent-recap`
+### New Creative Milestone Ideas (40+ New Cards)
 
-Create a new edge function at `supabase/functions/send-parent-recap/index.ts` that:
-- Accepts game stats, recap text, and player info
-- Validates the user is authenticated
-- Fetches the parent_email from player_settings
-- Generates a branded HTML email with:
-  - Player name and team
-  - Game result (win/loss) and opponent
-  - Key stats highlights (points, rebounds, assists)
-  - The full Coach AI recap
-  - A motivational closing
-- Sends via Resend using the existing RESEND_API_KEY
+**1. Comeback & Clutch Milestones (Single-Game)**
+| Name | Description | Rarity |
+|------|-------------|--------|
+| Comeback Kid | Win after being down at halftime | Rare |
+| Clutch Performer | Score 5+ points in final quarter | Uncommon |
+| Closer | Hit game-winning shot | Epic |
+| Ice in Veins | Make 2+ clutch free throws (90%+ FT in a win) | Rare |
 
-### 2. Update PostGameRecap Component
+**2. Efficiency & Smart Play (Single-Game)**
+| Name | Description | Rarity |
+|------|-------------|--------|
+| Turnover-Free Zone | Play 20+ minutes with 0 turnovers | Uncommon |
+| Ball Security | 5+ assists with 0 turnovers | Rare |
+| Floor General | 8+ assists in a single game | Rare |
+| Facilitator | More assists than field goal attempts | Epic |
+| Efficient Engine | 15+ points on 60%+ shooting | Rare |
+| Perfect Touch | 100% FT with 5+ attempts | Rare |
 
-Modify `src/components/PostGameRecap.tsx` to:
-- Accept new props: `playerName`, `playerTeam`, `parentEmail`
-- Add state: `isSendingToParent`, `hasSentToParent`
-- After recap is generated and if `parentEmail` exists, show a "Share with Family" button
-- On click, call the new edge function
-- Show success/error toast feedback
-- Disable button after successful send to prevent duplicates
+**3. Defensive Excellence (Single-Game)**
+| Name | Description | Rarity |
+|------|-------------|--------|
+| Lockdown Defender | 3+ steals and 2+ blocks | Epic |
+| Pickpocket | 5+ steals in a game | Rare |
+| Rim Protector | 4+ blocks in a game | Epic |
+| Glass Cleaner | 15+ rebounds | Epic |
+| Pest | 4+ steals in a win | Rare |
 
-### 3. Update GameDetail Page
+**4. Rare Achievements (Single-Game)**
+| Name | Description | Rarity |
+|------|-------------|--------|
+| 30-Point Explosion | Score 30+ points | Epic |
+| 40-Point Eruption | Score 40+ points | Legendary |
+| 5x5 | 5+ in all 5 major stats | Legendary |
+| 20-20 Club | 20+ points and 20+ rebounds | Legendary |
+| Triple-Threat | 20+ pts, 5+ reb, 5+ ast | Rare |
 
-Modify `src/pages/GameDetail.tsx` to:
-- Pass the player profile info (name, team, parentEmail) to PostGameRecap component
+**5. Streak & Consistency (Multi-Game)**
+| Name | Description | Rarity |
+|------|-------------|--------|
+| Rebound Streak | 8+ rebounds in 3 consecutive games | Rare |
+| Defensive Streak | 2+ steals in 5 straight games | Epic |
+| Double-Double Streak | Double-double in 3 straight games | Legendary |
+| Consistency King | 10+ pts, 5+ reb, 3+ ast in 5 straight | Legendary |
+| Hot Hand | 3+ threes in 3 consecutive games | Rare |
+| Iron Will | Play 20+ min in 10 straight games | Epic |
+
+**6. Season Cumulative (Season)**
+| Name | Description | Rarity |
+|------|-------------|--------|
+| Century Club | 100 total rebounds in a season | Rare |
+| Assist Master | 100 assists in a season | Epic |
+| Swiper | 50 steals in a season | Rare |
+| Shot Blocker | 25 blocks in a season | Rare |
+| Sharpshooter Season | 50 three-pointers made | Uncommon |
+| 1000 Point Season | Score 1000 points | Legendary |
 
 ---
 
-## Email Template Design
+## Monthly Challenge System
 
-The email will follow the existing Hoop Journal branding:
-- Dark theme matching other transactional emails
-- Hoop Journal logo header
-- Player name and game info section
-- Stats highlights in a styled card
-- Full AI recap text
-- Encouraging footer message
-- Link to the app
+### Concept: Rotating Challenges
+
+Each month, a fresh set of **3-5 time-limited challenges** appear. They reset automatically on the 1st of each month, creating urgency and replay value.
+
+### Architecture
 
 ```text
-Subject: "{PlayerName}'s Game Recap - {Result} vs {Opponent}"
++-------------------+     +----------------------+     +-------------------+
+| monthly_challenges|---->| challenge_progress   |---->| challenge_rewards |
+|                   |     | (per-user tracking)  |     | (badges earned)   |
++-------------------+     +----------------------+     +-------------------+
+     |
+     v
+ Rotates monthly via
+ pg_cron scheduled job
+```
 
-Example: "Marcus's Game Recap - WIN vs Eagles"
+**New Database Tables:**
+
+1. **monthly_challenges** - Defines each month's active challenges
+   - `id`, `name`, `description`, `icon`, `check_type`, `threshold`
+   - `month` (e.g., "2026-02"), `reward_points`, `difficulty`
+   - `is_active` boolean
+
+2. **challenge_progress** - Tracks user progress
+   - `user_id`, `challenge_id`, `current_value`, `is_completed`
+   - `completed_at`, `created_at`
+
+3. **challenge_history** - Archive of past completed challenges
+
+### Example Monthly Challenge Sets
+
+**February 2026 - "Winter Grind"**
+| Challenge | Goal | Reward |
+|-----------|------|--------|
+| Scoring Surge | Score 100 total points this month | 50 pts |
+| Board Collector | Grab 50 rebounds this month | 40 pts |
+| 3-Point February | Make 20 three-pointers | 60 pts |
+| Win Streak | Win 3 games in a row | 75 pts |
+| Perfect Game | 0 turnovers in any game | 30 pts |
+
+**March 2026 - "March Madness"**
+| Challenge | Goal | Reward |
+|-----------|------|--------|
+| Bracket Buster | Win 5 games this month | 60 pts |
+| Assist Machine | Dish 30 assists | 50 pts |
+| Defensive March | Get 25 steals + blocks combined | 55 pts |
+| Hot Shooting | Shoot 50%+ FG for the month | 70 pts |
+| Ironman | Log 8+ games this month | 80 pts |
+
+### Auto-Rotation Logic
+
+A backend job (pg_cron) runs on the 1st of each month to:
+1. Archive current month's challenges to history
+2. Activate next month's pre-seeded challenges
+3. Reset all user progress for new month
+
+---
+
+## Implementation Plan
+
+### Phase 1: Add New Static Milestones
+1. Create database migration to insert 40+ new milestone definitions
+2. Add new check types to `milestoneChecker.ts`:
+   - `comeback_win` - requires halftime tracking (future)
+   - `assist_to_turnover` - ratio-based check
+   - `defensive_double` - steals + blocks combo
+   - `minutes_streak` - playing time consistency
+   - `rebound_streak` - multi-game rebound check
+
+### Phase 2: Monthly Challenge Infrastructure
+1. Create `monthly_challenges` and `challenge_progress` tables
+2. Build `useMonthlyChallenges` hook for fetching and tracking
+3. Create `MonthlyChallengesCard` component for dashboard display
+4. Add progress tracking when games are logged
+
+### Phase 3: Challenge Rotation Automation
+1. Create edge function `rotate-monthly-challenges`
+2. Set up pg_cron job to run on 1st of each month
+3. Pre-seed challenge templates for 6+ months ahead
+
+### Phase 4: UI Integration
+1. Add "Monthly Challenges" section to Milestones tab
+2. Show countdown timer to month end
+3. Display completion badges in collection
+4. Add celebration animation for challenge completion
+
+---
+
+## Technical Considerations
+
+### Check Type Extensions Needed
+
+```typescript
+// New check types to add to milestoneChecker.ts
+case 'ast_to_to_ratio':
+  return game.turnovers === 0 || 
+    (game.assists / Math.max(game.turnovers, 1)) >= def.threshold;
+
+case 'combined_defensive':
+  return (game.steals + game.blocks) >= def.threshold;
+
+case 'minutes_gte':
+  return game.minutesPlayed >= def.threshold;
+
+case 'five_by_five':
+  return game.points >= 5 && game.rebounds >= 5 && 
+    game.assists >= 5 && game.steals >= 5 && game.blocks >= 5;
+
+case 'twenty_twenty':
+  return game.points >= 20 && game.rebounds >= 20;
+```
+
+### Monthly Challenge Progress Hook
+
+```typescript
+// useMonthlyChallenge hook pattern
+const updateChallengeProgress = async (gameStats: GameStats) => {
+  // Fetch active challenges for current month
+  // Calculate contribution from this game
+  // Update progress in challenge_progress table
+  // Check for completions and award if threshold met
+};
 ```
 
 ---
 
-## Files to Create/Modify
+## Summary
 
-### New Files
-1. `supabase/functions/send-parent-recap/index.ts` - Edge function for sending parent emails
+| Category | Current | Proposed New | Total |
+|----------|---------|--------------|-------|
+| Single-Game | 52 | 25 | 77 |
+| Multi-Game | 13 | 10 | 23 |
+| Season | 22 | 8 | 30 |
+| Monthly Challenges | 0 | 5/month | 60/year |
+| **Total Static** | 87 | 43 | **130** |
 
-### Modified Files
-1. `src/components/PostGameRecap.tsx` - Add "Share with Family" button and logic
-2. `src/pages/GameDetail.tsx` - Pass profile data to PostGameRecap
+This expansion adds **43 new permanent milestones** plus a **rotating monthly challenge system** that keeps players engaged with fresh goals every month.
 
-### Configuration
-3. `supabase/config.toml` - Add config for new edge function (verify_jwt = false)
-
----
-
-## Edge Function Details
-
-```text
-Endpoint: POST /functions/v1/send-parent-recap
-Authentication: Required (Bearer token)
-
-Request Body:
-{
-  gameStats: {
-    opponent: string,
-    points: number,
-    rebounds: number,
-    assists: number,
-    steals: number,
-    blocks: number,
-    isWin: boolean,
-    date: string
-  },
-  recap: string,
-  playerName: string,
-  playerTeam: string
-}
-
-Response:
-{ success: true } or { error: "message" }
-```
-
-The function will:
-1. Verify the JWT and get user ID
-2. Fetch parent_email from player_settings for that user
-3. If no parent_email, return error
-4. Format and send email via Resend
-5. Return success/error
-
----
-
-## UI Changes in PostGameRecap
-
-After the "Listen to Recap" button, add a new section:
-
-```text
-[existing recap content]
-
-[Listen to Recap button]
-
---- divider ---
-
-Share with Family
-[Mail icon] Send to Parent    (or "Sent!" after success)
-
-"Your parent will receive an email with this game summary"
-```
-
-The button will be:
-- Hidden if no parentEmail is configured
-- Shows loading spinner while sending
-- Changes to "Sent!" with checkmark after success
-- Disabled after successful send (per session)
-
----
-
-## Security Considerations
-
-- JWT authentication required to prevent unauthorized sends
-- Parent email is never exposed to frontend - fetched server-side
-- Rate limiting: One send per game recap session (frontend state)
-- Only the authenticated user can trigger sends for their own profile
-
----
-
-## Error Handling
-
-1. **No parent email configured**: Show toast "No parent email set up. Add one in Settings."
-2. **Email send fails**: Show toast "Failed to send. Try again later."
-3. **Network error**: Show toast with retry option
-4. **Success**: Show toast "Game recap sent to your parent!"
