@@ -418,6 +418,73 @@ export function GamesHubTabSkeleton() {
   );
 }
 
+function ChatMessageSkeleton({ isUser = false }: { isUser?: boolean }) {
+  return (
+    <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
+      <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
+      <div className={`space-y-2 ${isUser ? 'items-end' : ''}`}>
+        <Skeleton className={`h-4 ${isUser ? 'w-32' : 'w-48'}`} />
+        <Skeleton className={`h-4 ${isUser ? 'w-24' : 'w-64'}`} />
+        {!isUser && <Skeleton className="h-4 w-40" />}
+      </div>
+    </div>
+  );
+}
+
+export function CoachTabSkeleton() {
+  return (
+    <motion.div 
+      className="space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      {/* Header */}
+      <motion.div variants={itemVariants} className="space-y-1">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-4 w-80" />
+      </motion.div>
+
+      {/* Tabs */}
+      <motion.div variants={itemVariants}>
+        <Skeleton className="h-10 w-full max-w-lg rounded-lg" />
+      </motion.div>
+
+      {/* Chat Interface */}
+      <motion.div variants={itemVariants} className="max-w-2xl space-y-4">
+        {/* Chat Area */}
+        <div className="bg-card rounded-xl border border-border p-4 space-y-6 min-h-[300px]">
+          {/* Welcome Message */}
+          <div className="flex items-start gap-3">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          </div>
+
+          {/* Suggested Prompts */}
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-32" />
+            <div className="flex flex-wrap gap-2">
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-8 w-32 rounded-full" />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Input Area */}
+        <div className="flex gap-2">
+          <Skeleton className="h-12 flex-1 rounded-lg" />
+          <Skeleton className="h-12 w-12 rounded-lg" />
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // Export individual skeletons for reuse
 export { 
   StatCardSkeleton, 
@@ -427,5 +494,6 @@ export {
   CalendarSkeleton,
   PlayerHeaderSkeleton,
   MilestoneCardSkeleton,
-  MiniGameCardSkeleton
+  MiniGameCardSkeleton,
+  ChatMessageSkeleton
 };
