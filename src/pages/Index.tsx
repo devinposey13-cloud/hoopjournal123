@@ -404,10 +404,29 @@ export default function Index() {
             </div>
 
             {games.length === 0 ? (
-              <div className="stat-card text-center py-16">
-                <p className="text-muted-foreground text-lg">No games recorded yet.</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Start tracking your season by adding your first game!
+              <div className="stat-card text-center py-12 space-y-6">
+                <div className="space-y-2">
+                  <p className="text-muted-foreground text-lg">No games recorded yet.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Start tracking your season by adding your first game!
+                  </p>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Button
+                    onClick={handleQuickLiveStatsClick}
+                    className="gradient-primary gap-2 w-full sm:w-auto"
+                    size="lg"
+                  >
+                    <Radio className="w-5 h-5" />
+                    Start Live Stats
+                  </Button>
+                  <span className="text-muted-foreground text-sm">or</span>
+                  <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+                </div>
+                
+                <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                  Use <strong>Live Stats</strong> to track your game in real-time, or <strong>Log Game</strong> to add stats after the game.
                 </p>
               </div>
             ) : (
