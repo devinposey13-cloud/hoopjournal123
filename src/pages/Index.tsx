@@ -41,6 +41,7 @@ import { LogOut, Trophy, X, Radio } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { AnimatedContainer, AnimatedItem, AnimatedSection } from '@/components/ui/animated-container';
 import {
   Select,
   SelectContent,
@@ -347,46 +348,60 @@ export default function Index() {
                   </div>
 
                   {/* Season Averages */}
-                  <section className="journal-section">
+                  <AnimatedSection className="journal-section" delay={0.1}>
                     <h2 className="journal-heading">Season Averages</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                      <StatCard label="Points" value={seasonStats.avgPoints} icon={Target} className="journal-card" />
-                      <StatCard label="Rebounds" value={seasonStats.avgRebounds} icon={Repeat} className="journal-card" />
-                      <StatCard label="Assists" value={seasonStats.avgAssists} icon={Zap} className="journal-card" />
-                      <StatCard label="Steals" value={seasonStats.avgSteals} icon={Shield} className="journal-card" />
-                      <StatCard label="Blocks" value={seasonStats.avgBlocks} icon={HandMetal} className="journal-card" />
-                      <StatCard label="FG%" value={seasonStats.fgPercentage} suffix="%" icon={Percent} className="journal-card" />
-                    </div>
-                  </section>
+                    <AnimatedContainer className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                      <AnimatedItem>
+                        <StatCard label="Points" value={seasonStats.avgPoints} icon={Target} className="journal-card" />
+                      </AnimatedItem>
+                      <AnimatedItem>
+                        <StatCard label="Rebounds" value={seasonStats.avgRebounds} icon={Repeat} className="journal-card" />
+                      </AnimatedItem>
+                      <AnimatedItem>
+                        <StatCard label="Assists" value={seasonStats.avgAssists} icon={Zap} className="journal-card" />
+                      </AnimatedItem>
+                      <AnimatedItem>
+                        <StatCard label="Steals" value={seasonStats.avgSteals} icon={Shield} className="journal-card" />
+                      </AnimatedItem>
+                      <AnimatedItem>
+                        <StatCard label="Blocks" value={seasonStats.avgBlocks} icon={HandMetal} className="journal-card" />
+                      </AnimatedItem>
+                      <AnimatedItem>
+                        <StatCard label="FG%" value={seasonStats.fgPercentage} suffix="%" icon={Percent} className="journal-card" />
+                      </AnimatedItem>
+                    </AnimatedContainer>
+                  </AnimatedSection>
 
                   {/* Performance Charts */}
-                  <section className="journal-section">
+                  <AnimatedSection className="journal-section" delay={0.3}>
                     <h2 className="journal-heading">Performance Trends</h2>
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div className="journal-card p-4 rounded-xl">
+                    <AnimatedContainer className="grid md:grid-cols-3 gap-4">
+                      <AnimatedItem className="journal-card p-4 rounded-xl">
                         <StatsChart games={games} stat="points" />
-                      </div>
-                      <div className="journal-card p-4 rounded-xl">
+                      </AnimatedItem>
+                      <AnimatedItem className="journal-card p-4 rounded-xl">
                         <StatsChart games={games} stat="rebounds" />
-                      </div>
-                      <div className="journal-card p-4 rounded-xl">
+                      </AnimatedItem>
+                      <AnimatedItem className="journal-card p-4 rounded-xl">
                         <StatsChart games={games} stat="assists" />
-                      </div>
-                    </div>
-                  </section>
+                      </AnimatedItem>
+                    </AnimatedContainer>
+                  </AnimatedSection>
 
                   {/* Recent Games */}
-                  <section className="journal-section">
+                  <AnimatedSection className="journal-section" delay={0.5}>
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="journal-heading mb-0">Recent Games</h2>
                       <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
                     </div>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <AnimatedContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {games.slice(0, 6).map((game) => (
-                        <GameCard key={game.id} game={game} profile={profile} onDelete={deleteGame} />
+                        <AnimatedItem key={game.id}>
+                          <GameCard game={game} profile={profile} onDelete={deleteGame} />
+                        </AnimatedItem>
                       ))}
-                    </div>
-                  </section>
+                    </AnimatedContainer>
+                  </AnimatedSection>
                 </div>
               </div>
             )}
