@@ -1,206 +1,86 @@
 
 
-# Fix Public Profile Stats, Highlights & Add Privacy-Respecting Milestone Cards
+# Improve PublicMilestoneCard Mobile Responsiveness
 
-## Problem Summary
+## Current Issues
 
-The public profile page (`/:username`) has the following issues:
+After reviewing the code, the `PublicMilestoneCard` has these mobile responsiveness concerns:
 
-1. **Stats not displaying**: The games data exists in the database and RLS policies are correct, but there may be silent failures or the data isn't being rendered properly
-2. **Highlights not displaying**: The video clips fetch appears correct but clips must have `is_public = true` (current test clip has `is_public = false`)
-3. **Milestones not displayed at all**: The page doesn't fetch or display milestone cards
+1. **Fixed height (180px)** may cause text overflow on small screens when the milestone description is long
+2. **Rarity badge text (10px)** may be too small on mobile
+3. **Icon size (text-3xl)** could be optimized for compact mobile layouts
+4. **No minimum width constraint** - cards can get very narrow on 2-column mobile grids
+5. **Padding (p-4)** may be too generous for narrow mobile cards
 
-Additionally, the user wants milestone cards on public profiles to show **only the title and requirement description** - no game-specific information (opponent, date, stats) to protect privacy.
+## Proposed Changes
 
-## Root Cause Analysis
+### File: `src/components/milestones/PublicMilestoneCard.tsx`
 
-After investigating:
-- The RLS policies are correctly configured for public access
-- The `public_player_profiles` view works with `security_invoker = false` 
-- Games and player_milestones have "Anyone can view...of public profiles" policies
-- Video clips require `is_public = true` on the clip itself (separate from profile public setting)
-
-The core issue is likely:
-1. The page may be silently swallowing errors
-2. Milestones are not being fetched at all
-3. Need a simplified milestone card variant for public display
-
-## Solution
-
-### Part 1: Debug & Fix Data Fetching in PublicProfile.tsx
-
-Add proper error logging and ensure the data fetching works correctly:
-
-```typescript
-// Add better error handling
-const { data: gamesData, error: gamesError } = await supabase
-  .from('games')
-  .select('*')
-  .eq('user_id', profileData.user_id);
-
-if (gamesError) {
-  console.error('Error fetching games:', gamesError);
-}
+```text
+Mobile-Optimized Layout:
++------------------------+
+| [UNCOMMON]       [3×]  |  <- Smaller badges on mobile
+|                        |
+|        [🎯]            |  <- Slightly smaller icon
+|   "Sharpshooter"       |  <- Truncated if too long
+|                        |
+| Made 2+ three-pointers |  <- Scrollable if needed
+| in one game            |
++------------------------+
 ```
 
-### Part 2: Fetch Milestones for Public Profile
+**Changes:**
 
-Add milestone fetching to the `fetchPublicProfile` function:
+1. **Use min-height instead of fixed height**: Change `h-[180px]` to `min-h-[160px] sm:min-h-[180px]` to allow cards to expand for longer content while maintaining consistency
 
-```typescript
-interface PublicMilestone {
-  id: string;
-  milestoneId: string;
-  milestoneName: string;
-  milestoneDescription: string;
-  milestoneRarity: MilestoneRarity;
-  milestoneIcon: string;
-  earnedAt: string;
-}
+2. **Responsive padding**: Change `p-4` to `p-3 sm:p-4` for tighter mobile padding
 
-// Fetch milestones with joined definitions
-const { data: milestonesData } = await supabase
-  .from('player_milestones')
-  .select(`
-    id,
-    milestone_id,
-    earned_at,
-    milestone_definitions (
-      name,
-      description,
-      rarity,
-      icon
-    )
-  `)
-  .eq('user_id', profileData.user_id);
-```
+3. **Responsive icon size**: Change `text-3xl` to `text-2xl sm:text-3xl` for a slightly smaller icon on mobile
 
-### Part 3: Create a Privacy-Respecting Public Milestone Card
+4. **Responsive badge sizing**: Adjust badge positioning with `top-1.5 left-1.5 sm:top-2 sm:left-2` 
 
-Create a new component `PublicMilestoneCard` that shows only:
-- Milestone name (title)
-- Requirement description
-- Rarity badge
-- Icon
+5. **Name text handling**: Add `line-clamp-2` to the milestone name to prevent long titles from breaking layout
 
-It explicitly excludes:
-- Stats snapshot (points, rebounds, etc.)
-- Opponent name
-- Earned date
-- Game-specific details
-- Flip functionality (no history log)
+6. **Description text handling**: Add `line-clamp-3 sm:line-clamp-none` to limit description on mobile but show full text on larger screens
 
-```typescript
-// src/components/milestones/PublicMilestoneCard.tsx
-interface PublicMilestoneCardProps {
-  name: string;
-  description: string;
-  rarity: MilestoneRarity;
-  icon: string;
-}
+7. **Responsive margins**: Adjust `mt-4 mb-2` to `mt-3 mb-1.5 sm:mt-4 sm:mb-2`
 
-export function PublicMilestoneCard({ name, description, rarity, icon }: PublicMilestoneCardProps) {
-  // Simplified display with only title, description, icon, and rarity
-  // No stats, no opponent, no date, no flip animation
-}
-```
+### File: `src/pages/PublicProfile.tsx`
 
-### Part 4: Add Milestones Tab to Public Profile
+Update the milestones grid for better mobile spacing:
 
-Update the Tabs component to include a third tab for Milestones:
-
-```typescript
-<TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-6">
-  <TabsTrigger value="stats">Stats</TabsTrigger>
-  <TabsTrigger value="highlights">Highlights</TabsTrigger>
-  <TabsTrigger value="milestones">Milestones</TabsTrigger>
-</TabsList>
-
-<TabsContent value="milestones">
-  {milestones.length > 0 ? (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {milestones.map((m) => (
-        <PublicMilestoneCard
-          key={m.id}
-          name={m.milestoneName}
-          description={m.milestoneDescription}
-          rarity={m.milestoneRarity}
-          icon={m.milestoneIcon}
-        />
-      ))}
-    </div>
-  ) : (
-    <div className="stat-card text-center py-12">
-      <p className="text-muted-foreground">No milestones earned yet.</p>
-    </div>
-  )}
-</TabsContent>
-```
-
-### Part 5: Group Repeated Milestones with Count Badge
-
-Since a player can earn the same milestone multiple times, group them and show a count:
-
-```typescript
-// Group milestones by milestone_id and count occurrences
-const groupedMilestones = useMemo(() => {
-  const groups = new Map<string, { ...milestone, count: number }>();
-  milestonesData.forEach(m => {
-    const existing = groups.get(m.milestone_id);
-    if (existing) {
-      existing.count++;
-    } else {
-      groups.set(m.milestone_id, { ...m, count: 1 });
-    }
-  });
-  return Array.from(groups.values());
-}, [milestonesData]);
-```
-
-The `PublicMilestoneCard` will show a "5x" badge for repeated achievements.
+- Change `gap-4` to `gap-3 sm:gap-4` for tighter mobile gaps
+- Keep `grid-cols-2 md:grid-cols-3 lg:grid-cols-4` layout
 
 ## Summary of Changes
 
 | File | Change |
 |------|--------|
-| `src/pages/PublicProfile.tsx` | Add milestone fetching, add Milestones tab, improve error handling |
-| `src/components/milestones/PublicMilestoneCard.tsx` | **New file** - Privacy-respecting card showing only title + description |
+| `src/components/milestones/PublicMilestoneCard.tsx` | Responsive padding, icon size, text handling, and min-height |
+| `src/pages/PublicProfile.tsx` | Adjust grid gap for mobile |
 
-## Visual Design
+## Visual Comparison
 
 ```text
-Public Profile Milestone Card:
-+------------------------+
-|   [UNCOMMON]           |
-|                        |
-|      [🎯 Icon]         |
-|                        |
-|    "Sharpshooter"      |
-|                        |
-| Made 2+ three-pointers |
-| in one game            |
-|                        |
-|      [5x badge]        |
-+------------------------+
-
-What's shown:
-✓ Milestone name
-✓ Full requirement description
-✓ Rarity label
-✓ Icon
-✓ Occurrence count (5x)
-
-What's hidden:
-✗ Stats (27 PTS, 8 REB)
-✗ Opponent (vs Rebels)
-✗ Date earned (Jan 5, 2026)
-✗ Flip animation / history
+BEFORE (Mobile 390px width)        AFTER (Mobile 390px width)
++----------+ +----------+          +----------+ +----------+
+| [UNCOMMON]         [3×]|          |[UNCOM...]       [3×]|
+|                       |          |                      |
+|        [🎯]           |          |       [🎯]          |
+|   "Sharpshooter"      |          |  "Sharpshooter"     |
+|                       |          |                      |
+| Made 2+ three-pointers|          | Made 2+ three-      |
+| in one game           |  ----→   | pointers in one...  |
+|                       |          |                      |
++----------+ +----------+          +----------+ +----------+
+h=180px (may overflow)             min-h=160px (flexible)
+p=16px (cramped)                   p=12px (comfortable)
 ```
 
-## Technical Considerations
+## Technical Notes
 
-1. **RLS Policies**: Already in place - "Anyone can view milestones of public profiles" allows this
-2. **Type Safety**: Use proper typing for the milestone data joined with definitions
-3. **Performance**: Group milestones client-side after fetching to reduce query complexity
-4. **Privacy**: The `PublicMilestoneCard` intentionally receives no game-specific props
+- Using Tailwind responsive prefixes (`sm:`, `md:`) for clean mobile-first approach
+- Line clamping uses `-webkit-line-clamp` which has excellent browser support
+- Min-height allows cards to grow if content requires more space
+- All changes follow the existing mobile-responsive patterns in the codebase (as noted in the style/responsive-interface memory)
 
