@@ -38,7 +38,10 @@ export function ClipCard({ clip, onDelete, showPlayerInfo }: ClipCardProps) {
 
   return (
     <>
-      <div className="clip-card group cursor-pointer" onClick={() => setShowVideo(true)}>
+      <div 
+        className="clip-card group cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5" 
+        onClick={() => setShowVideo(true)}
+      >
         <div className="aspect-video bg-muted relative overflow-hidden">
           {clip.thumbnail ? (
             <img
