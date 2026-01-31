@@ -37,7 +37,8 @@ import { useApprovalStatus } from '@/hooks/useApprovalStatus';
 import { useFirstLogin } from '@/hooks/useFirstLogin';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { LogOut, Loader2, Trophy, X, Radio } from 'lucide-react';
+import { LogOut, Trophy, X, Radio } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Select,
@@ -105,11 +106,7 @@ export default function Index() {
 
   // Show auth form if not logged in
   if (authLoading || approvalLoading || introLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingSpinner fullScreen size="lg" />;
   }
 
   if (!user) {
@@ -238,14 +235,7 @@ export default function Index() {
   };
 
   if (dataLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading your stats...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner fullScreen size="lg" message="Loading your stats..." />;
   }
 
   // Show Quick Live Capture fullscreen mode

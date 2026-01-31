@@ -38,6 +38,7 @@ import { SeasonAveragesCard } from '@/components/SeasonAveragesCard';
 import { EditScheduleDialog } from '@/components/EditScheduleDialog';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { QuickDuplicateDialog } from '@/components/QuickDuplicateDialog';
 import { MilestoneCard } from '@/components/milestones/MilestoneCard';
 import { toast } from 'sonner';
@@ -193,11 +194,7 @@ export default function GameDetail() {
   };
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingSpinner fullScreen size="lg" />;
   }
 
   if (!user) {
