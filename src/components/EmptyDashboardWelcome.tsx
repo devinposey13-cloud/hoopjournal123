@@ -14,6 +14,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -52,6 +56,7 @@ export function EmptyDashboardWelcome({
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
+  const [showAvatarPreview, setShowAvatarPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAvatarClick = () => {
@@ -397,7 +402,10 @@ export function EmptyDashboardWelcome({
                       transition={{ duration: 0.4, ease: "easeOut" }}
                       className="relative group"
                     >
-                      <Avatar className="w-28 h-28 border-3 border-primary/30 shadow-lg">
+                      <Avatar 
+                        className="w-28 h-28 border-3 border-primary/30 shadow-lg cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                        onClick={() => setShowAvatarPreview(true)}
+                      >
                         <AvatarImage src={avatarUrl} alt={playerName} />
                         <AvatarFallback className="bg-muted">
                           <User className="w-12 h-12 text-muted-foreground/50" />
@@ -638,6 +646,25 @@ export function EmptyDashboardWelcome({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Avatar Enlargement Dialog */}
+      <Dialog open={showAvatarPreview} onOpenChange={setShowAvatarPreview}>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-transparent border-none shadow-none">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{ type: "spring", duration: 0.4 }}
+            className="flex items-center justify-center"
+          >
+            <img 
+              src={avatarUrl} 
+              alt={playerName}
+              className="w-72 h-72 md:w-80 md:h-80 rounded-full object-cover border-4 border-primary/30 shadow-2xl"
+            />
+          </motion.div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
