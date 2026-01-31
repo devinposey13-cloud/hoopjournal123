@@ -11,6 +11,14 @@ interface PasswordResetPayload {
   turnstileToken: string;
 }
 
+// Get client IP from request headers
+function getClientIP(req: Request): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+         req.headers.get('x-real-ip') || 
+         req.headers.get('cf-connecting-ip') ||
+         'unknown';
+}
+
 async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
   const secretKey = Deno.env.get('TURNSTILE_SECRET_KEY');
   
@@ -47,6 +55,41 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Create Supabase client with service role for database access
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const clientIP = getClientIP(req);
+
+    // Check IP-based rate limit first (10 attempts per 15 minutes, 30 min block)
+    const { data: rateLimitResult, error: rateLimitError } = await supabaseClient
+      .rpc('check_rate_limit', {
+        p_identifier: clientIP,
+        p_action: 'password_reset_request',
+        p_max_attempts: 10,
+        p_window_seconds: 900,
+        p_block_seconds: 1800
+      });
+
+    if (rateLimitError) {
+      console.error("Rate limit check error:", rateLimitError);
+      // Continue without rate limiting if there's an error
+    } else if (rateLimitResult && !rateLimitResult.allowed) {
+      return new Response(
+        JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'Retry-After': String(rateLimitResult.retry_after || 1800)
+          } 
+        }
+      );
+    }
+
     const { phone, playerName, turnstileToken }: PasswordResetPayload = await req.json();
 
     // Validate required fields
@@ -81,11 +124,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get client IP for Turnstile verification
-    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown';
-
     // Verify Turnstile CAPTCHA
     const isCaptchaValid = await verifyTurnstile(turnstileToken, clientIP);
     if (!isCaptchaValid) {
@@ -94,12 +132,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Create Supabase client with service role for database access
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     // Normalize phone number
     let normalizedPhone = phone.replace(/\D/g, '');
@@ -120,7 +152,7 @@ Deno.serve(async (req) => {
       .eq('phone', normalizedPhone)
       .maybeSingle();
 
-    // Check for recent requests from same phone (rate limiting)
+    // Check for recent requests from same phone (per-phone rate limiting)
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { data: recentRequests } = await supabaseClient
       .from('password_reset_requests')

@@ -12,6 +12,14 @@ interface ValidateTokenRequest {
   newPassword?: string;
 }
 
+// Get client IP from request headers
+function getClientIP(req: Request): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+         req.headers.get('x-real-ip') || 
+         req.headers.get('cf-connecting-ip') ||
+         'unknown';
+}
+
 serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -30,11 +38,52 @@ serve(async (req: Request): Promise<Response> => {
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
+    const clientIP = getClientIP(req);
+
+    // Check rate limit before processing (5 attempts per 5 minutes, 15 min block)
+    const { data: rateLimitResult, error: rateLimitError } = await supabaseAdmin
+      .rpc('check_rate_limit', {
+        p_identifier: clientIP,
+        p_action: 'validate_reset_token',
+        p_max_attempts: 5,
+        p_window_seconds: 300,
+        p_block_seconds: 900
+      });
+
+    if (rateLimitError) {
+      console.error("Rate limit check error:", rateLimitError);
+      // Continue without rate limiting if there's an error
+    } else if (rateLimitResult && !rateLimitResult.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          valid: false, 
+          error: rateLimitResult.message || "Too many attempts. Please try again later.",
+          retry_after: rateLimitResult.retry_after
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "Retry-After": String(rateLimitResult.retry_after || 900)
+          } 
+        }
+      );
+    }
+
     const { token, newPassword }: ValidateTokenRequest = await req.json();
 
     if (!token) {
       return new Response(
         JSON.stringify({ valid: false, error: "Token is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate token format (should be 64 hex characters)
+    if (!/^[a-f0-9]{64}$/i.test(token)) {
+      return new Response(
+        JSON.stringify({ valid: false, error: "Invalid token format" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

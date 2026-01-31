@@ -12,6 +12,14 @@ interface PasswordResetRequest {
   email: string;
 }
 
+// Get client IP from request headers
+function getClientIP(req: Request): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+         req.headers.get('x-real-ip') || 
+         req.headers.get('cf-connecting-ip') ||
+         'unknown';
+}
+
 serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -35,15 +43,48 @@ serve(async (req: Request): Promise<Response> => {
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
+    const clientIP = getClientIP(req);
+
+    // Check IP-based rate limit (10 attempts per 15 minutes, 30 min block)
+    const { data: rateLimitResult, error: rateLimitError } = await supabaseAdmin
+      .rpc('check_rate_limit', {
+        p_identifier: clientIP,
+        p_action: 'send_password_reset',
+        p_max_attempts: 10,
+        p_window_seconds: 900,
+        p_block_seconds: 1800
+      });
+
+    if (rateLimitError) {
+      console.error("Rate limit check error:", rateLimitError);
+      // Continue without rate limiting if there's an error
+    } else if (rateLimitResult && !rateLimitResult.allowed) {
+      // Return success for email enumeration protection, but don't actually send
+      return new Response(
+        JSON.stringify({ success: true, message: "If this email exists, a reset link has been sent." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { email }: PasswordResetRequest = await req.json();
 
     if (!email) {
       throw new Error("Email is required");
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      // Return success for email enumeration protection
+      return new Response(
+        JSON.stringify({ success: true, message: "If this email exists, a reset link has been sent." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Rate limiting: check if a reset was requested in the last 5 minutes
+    // Check per-email rate limiting: check if a reset was requested in the last 5 minutes
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { data: recentTokens } = await supabaseAdmin
       .from("password_reset_tokens")
