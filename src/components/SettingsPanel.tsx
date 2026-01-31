@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from 'next-themes';
 import { PlayerProfile } from '@/types/basketball';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Save, Camera, Loader2, User, Copy, ExternalLink, AtSign, Check, X, Crown, CreditCard, Trash2 } from 'lucide-react';
+import { Save, Camera, Loader2, User, Copy, ExternalLink, AtSign, Check, X, Crown, CreditCard, Trash2, Sun, Moon, Monitor } from 'lucide-react';
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -47,6 +48,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { isSubscribed, planType, subscriptionEnd, isLoading: subLoading, openCustomerPortal } = useSubscription();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const getUser = async () => {
@@ -503,6 +505,42 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
             <Save className="w-4 h-4 mr-2" />
             Save Profile
           </Button>
+
+          {/* Appearance Section */}
+          <Separator className="my-6" />
+          
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Appearance</Label>
+            <div className="flex gap-2">
+              <Button
+                variant={theme === 'light' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTheme('light')}
+                className="flex-1"
+              >
+                <Sun className="w-4 h-4 mr-2" />
+                Light
+              </Button>
+              <Button
+                variant={theme === 'dark' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTheme('dark')}
+                className="flex-1"
+              >
+                <Moon className="w-4 h-4 mr-2" />
+                Dark
+              </Button>
+              <Button
+                variant={theme === 'system' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTheme('system')}
+                className="flex-1"
+              >
+                <Monitor className="w-4 h-4 mr-2" />
+                System
+              </Button>
+            </div>
+          </div>
 
           {/* Subscription Section */}
           <Separator className="my-6" />
