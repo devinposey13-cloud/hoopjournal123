@@ -28,7 +28,6 @@ import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { PendingApproval } from '@/components/PendingApproval';
-import { FirstLoginIntro } from '@/components/FirstLoginIntro';
 import { OnboardingFlow, OnboardingData } from '@/components/OnboardingFlow';
 import { EmptyDashboardWelcome } from '@/components/EmptyDashboardWelcome';
 import { useAuth } from '@/hooks/useAuth';
@@ -99,7 +98,7 @@ export default function Index() {
   } = useGameWithMilestones();
 
   // useFirstLogin now uses database as source of truth
-  const { showIntro, showOnboarding, loading: introLoading, completeIntro, completeOnboarding } = useFirstLogin({
+  const { showOnboarding, loading: introLoading, completeOnboarding } = useFirstLogin({
     profile,
     profileLoading: dataLoading,
   });
@@ -120,11 +119,6 @@ export default function Index() {
   // Show pending approval screen if not approved (admins bypass this)
   if (!isApproved && !isAdmin) {
     return <PendingApproval onRefresh={refetchApproval} />;
-  }
-
-  // Show first login intro animation for new users
-  if (showIntro) {
-    return <FirstLoginIntro onComplete={completeIntro} />;
   }
 
   // Show onboarding flow after intro
