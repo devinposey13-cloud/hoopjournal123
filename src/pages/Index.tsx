@@ -69,7 +69,6 @@ export default function Index() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const { isApproved, loading: approvalLoading, refetch: refetchApproval } = useApprovalStatus();
-  const { showIntro, showOnboarding, loading: introLoading, completeIntro, completeOnboarding } = useFirstLogin();
   const {
     games,
     clips,
@@ -97,6 +96,12 @@ export default function Index() {
     showReveal,
     closeReveal,
   } = useGameWithMilestones();
+
+  // useFirstLogin now uses database as source of truth
+  const { showIntro, showOnboarding, loading: introLoading, completeIntro, completeOnboarding } = useFirstLogin({
+    profile,
+    profileLoading: dataLoading,
+  });
 
   // Show auth form if not logged in
   if (authLoading || approvalLoading || introLoading) {
