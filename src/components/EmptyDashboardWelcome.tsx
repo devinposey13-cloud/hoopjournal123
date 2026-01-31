@@ -274,8 +274,21 @@ export function EmptyDashboardWelcome({
               transition={{ delay: 0.3 }}
               className="mb-4"
             >
-              <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-1">
-                Coach AI
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="text-xs uppercase tracking-wider text-primary font-semibold">
+                  Coach AI
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-primary"
+                  onClick={() => playVoice(INTRO_MESSAGE, -1)}
+                  disabled={isLoadingAudio || playingIndex === -1}
+                  title="Replay intro message"
+                >
+                  <Volume2 className="h-3.5 w-3.5" />
+                  <span className="sr-only">Replay intro message</span>
+                </Button>
               </div>
               <h3 
                 className="text-2xl text-foreground"
