@@ -59,10 +59,10 @@ export const ScheduleCard = forwardRef<HTMLDivElement, ScheduleCardProps>(
             {linkedGame && (
               <div
                 className={cn(
-                  'px-2 py-1 rounded text-xs font-bold uppercase',
+                  'px-2 py-1 rounded text-xs font-bold uppercase transition-all duration-300',
                   linkedGame.isWin
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'bg-red-500/20 text-red-400'
+                    ? 'bg-green-500/20 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)] group-hover:shadow-[0_0_15px_rgba(34,197,94,0.5)]'
+                    : 'bg-red-500/20 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.3)] group-hover:shadow-[0_0_15px_rgba(239,68,68,0.5)]'
                 )}
               >
                 {linkedGame.isWin ? 'W' : 'L'} - {linkedGame.points} pts
