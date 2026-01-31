@@ -103,6 +103,17 @@ export function AdminPanel() {
   const [selectedFeedback, setSelectedFeedback] = useState<UserFeedback | null>(null);
   const [feedbackNotes, setFeedbackNotes] = useState('');
   const [orphanUserId, setOrphanUserId] = useState('');
+  const [orphanedUsers, setOrphanedUsers] = useState<Array<{
+    id: string;
+    email: string | null;
+    phone: string | null;
+    provider: string;
+    created_at: string;
+    last_sign_in_at: string | null;
+    user_metadata: { full_name: string | null; name: string | null };
+  }>>([]);
+  const [loadingOrphans, setLoadingOrphans] = useState(false);
+  const [orphansLoaded, setOrphansLoaded] = useState(false);
   const [deletingOrphan, setDeletingOrphan] = useState(false);
 
   // Fetch users and reports
@@ -265,9 +276,35 @@ export function AdminPanel() {
     }
   }
 
+  // Fetch orphaned auth users
+  async function fetchOrphanedUsers() {
+    setLoadingOrphans(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-orphaned-users`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch orphaned users');
+
+      setOrphanedUsers(data.orphanedUsers || []);
+      setOrphansLoaded(true);
+    } catch (error) {
+      console.error('Error fetching orphaned users:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to fetch orphaned users');
+    } finally {
+      setLoadingOrphans(false);
+    }
+  }
+
   // Delete orphaned auth user (exists in auth.users but not in player_settings)
-  async function handleDeleteOrphanUser() {
-    if (!orphanUserId.trim()) {
+  async function handleDeleteOrphanUser(userId?: string) {
+    const targetId = userId || orphanUserId.trim();
+    if (!targetId) {
       toast.error('Please enter a user ID');
       return;
     }
@@ -282,7 +319,7 @@ export function AdminPanel() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ targetUserId: orphanUserId.trim() }),
+        body: JSON.stringify({ targetUserId: targetId }),
       });
 
       const data = await response.json();
@@ -290,6 +327,8 @@ export function AdminPanel() {
 
       toast.success('Orphaned user deleted - they can now sign up again');
       setOrphanUserId('');
+      // Remove from local state
+      setOrphanedUsers(prev => prev.filter(u => u.id !== targetId));
     } catch (error) {
       console.error('Error deleting orphan user:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to delete orphan user');
@@ -773,48 +812,132 @@ export function AdminPanel() {
           )}
         </TabsContent>
 
-        {/* Users Tab */}
         <TabsContent value="users" className="space-y-4">
-          {/* Orphan User Cleanup */}
-          <Card className="border-dashed border-amber-500/50">
+          {/* Orphaned Users Detection */}
+          <Card className="border-amber-500/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-500" />
-                Delete Orphaned Auth User
+                Orphaned Auth Users
               </CardTitle>
               <CardDescription className="text-xs">
-                For users deleted from the app but still in auth system (can't re-register)
+                Users in Cloud auth without application records (can't use the app properly)
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Enter auth user ID (UUID)"
-                  value={orphanUserId}
-                  onChange={(e) => setOrphanUserId(e.target.value)}
-                  className="max-w-md font-mono text-sm"
-                />
                 <Button
-                  variant="destructive"
-                  onClick={handleDeleteOrphanUser}
-                  disabled={deletingOrphan || !orphanUserId.trim()}
+                  variant="outline"
+                  onClick={fetchOrphanedUsers}
+                  disabled={loadingOrphans}
                 >
-                  {deletingOrphan ? (
+                  {loadingOrphans ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Deleting...
+                      Scanning...
                     </>
                   ) : (
                     <>
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete Auth User
+                      <Search className="w-4 h-4 mr-2" />
+                      Scan for Orphaned Users
                     </>
                   )}
                 </Button>
+                {orphansLoaded && (
+                  <span className="text-sm text-muted-foreground">
+                    Found {orphanedUsers.length} orphaned user{orphanedUsers.length !== 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Use this for auth users that exist but have no player profile.
-              </p>
+
+              {orphanedUsers.length > 0 && (
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="text-left p-2 font-medium">Email</th>
+                        <th className="text-left p-2 font-medium">Provider</th>
+                        <th className="text-left p-2 font-medium">Name</th>
+                        <th className="text-left p-2 font-medium">Created</th>
+                        <th className="text-right p-2 font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orphanedUsers.map((orphan) => (
+                        <tr key={orphan.id} className="border-t">
+                          <td className="p-2">
+                            <div className="font-mono text-xs">{orphan.email || orphan.phone || 'N/A'}</div>
+                          </td>
+                          <td className="p-2">
+                            <Badge variant="outline" className="text-xs capitalize">
+                              {orphan.provider}
+                            </Badge>
+                          </td>
+                          <td className="p-2 text-muted-foreground">
+                            {orphan.user_metadata?.full_name || orphan.user_metadata?.name || '—'}
+                          </td>
+                          <td className="p-2 text-muted-foreground text-xs">
+                            {format(new Date(orphan.created_at), 'MMM d, yyyy')}
+                          </td>
+                          <td className="p-2 text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 text-xs"
+                              onClick={() => handleDeleteOrphanUser(orphan.id)}
+                              disabled={deletingOrphan}
+                            >
+                              {deletingOrphan ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <>
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  Delete
+                                </>
+                              )}
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Manual fallback */}
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
+                    <ChevronDown className="w-3 h-3 mr-1" />
+                    Manual UUID Entry
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Enter auth user ID (UUID)"
+                      value={orphanUserId}
+                      onChange={(e) => setOrphanUserId(e.target.value)}
+                      className="max-w-md font-mono text-sm"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteOrphanUser()}
+                      disabled={deletingOrphan || !orphanUserId.trim()}
+                    >
+                      {deletingOrphan ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </CardContent>
           </Card>
 
