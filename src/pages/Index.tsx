@@ -39,7 +39,7 @@ import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-
 import { Button } from '@/components/ui/button';
 import { LogOut, Trophy, X, Radio } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton, MilestonesTabSkeleton, GamesHubTabSkeleton, CoachTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
+import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton, MilestonesTabSkeleton, GamesHubTabSkeleton, CoachTabSkeleton, ClipsTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AnimatedContainer, AnimatedItem, AnimatedSection } from '@/components/ui/animated-container';
 import {
@@ -249,6 +249,8 @@ export default function Index() {
         return <GamesHubTabSkeleton />;
       case 'coach':
         return <CoachTabSkeleton />;
+      case 'clips':
+        return <ClipsTabSkeleton />;
       default:
         return <DashboardSkeleton />;
     }
