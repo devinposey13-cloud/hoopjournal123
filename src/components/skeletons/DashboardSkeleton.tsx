@@ -485,6 +485,52 @@ export function CoachTabSkeleton() {
   );
 }
 
+function ClipCardSkeleton() {
+  return (
+    <div className="bg-card rounded-xl overflow-hidden border border-border">
+      {/* Video Thumbnail */}
+      <Skeleton className="aspect-video w-full" />
+      {/* Content */}
+      <div className="p-3 space-y-2">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-1/2" />
+      </div>
+    </div>
+  );
+}
+
+export function ClipsTabSkeleton() {
+  return (
+    <motion.div 
+      className="space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      {/* Header */}
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
+        <div className="space-y-1">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-4 w-28" />
+        </div>
+        <Skeleton className="h-10 w-28 rounded-md" />
+      </motion.div>
+
+      {/* Tabs */}
+      <motion.div variants={itemVariants}>
+        <Skeleton className="h-10 w-full max-w-md rounded-lg" />
+      </motion.div>
+
+      {/* Clips Grid */}
+      <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {[...Array(8)].map((_, i) => (
+          <ClipCardSkeleton key={i} />
+        ))}
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // Export individual skeletons for reuse
 export { 
   StatCardSkeleton, 
@@ -495,5 +541,6 @@ export {
   PlayerHeaderSkeleton,
   MilestoneCardSkeleton,
   MiniGameCardSkeleton,
-  ChatMessageSkeleton
+  ChatMessageSkeleton,
+  ClipCardSkeleton
 };
