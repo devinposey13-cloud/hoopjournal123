@@ -74,6 +74,7 @@ export default function Index() {
   const [isSavingQuickCapture, setIsSavingQuickCapture] = useState(false);
   const [tournamentFilter, setTournamentFilter] = useState<string>('all');
   const [teamFilter, setTeamFilter] = useState<string>('all');
+  const [dashboardTeamFilter, setDashboardTeamFilter] = useState<string>('all');
   const [justCompletedOnboarding, setJustCompletedOnboarding] = useState(false);
   const { user, loading: authLoading, signOut } = useAuth();
   const { teams } = usePlayerTeams();
@@ -164,7 +165,7 @@ export default function Index() {
   // Get unique tags for filter dropdown
   const tournaments = [...new Set(schedule.filter(g => g.tournament).map(g => g.tournament!))].sort();
   
-  // Apply filters (team + tag)
+  // Apply filters (team + tag) for schedule
   const filteredSchedule = schedule.filter(g => {
     const matchesTeam = teamFilter === 'all' || g.teamId === teamFilter || (!g.teamId && teamFilter === 'unassigned');
     const matchesTournament = tournamentFilter === 'all' || g.tournament === tournamentFilter;
@@ -180,6 +181,81 @@ export default function Index() {
   
   // Get today's games specifically for Quick Live Stats
   const todayGames = schedule.filter((g) => isToday(new Date(g.date)));
+
+  // Filter games for dashboard by team
+  const dashboardFilteredGames = dashboardTeamFilter === 'all' 
+    ? games 
+    : games.filter(g => 
+        dashboardTeamFilter === 'unassigned' 
+          ? !g.teamId 
+          : g.teamId === dashboardTeamFilter
+      );
+
+  // Calculate filtered stats for dashboard
+  const calculateFilteredStats = (filteredGames: typeof games) => {
+    if (filteredGames.length === 0) {
+      return {
+        gamesPlayed: 0,
+        wins: 0,
+        losses: 0,
+        avgPoints: 0,
+        avgRebounds: 0,
+        avgAssists: 0,
+        avgSteals: 0,
+        avgBlocks: 0,
+        fgPercentage: 0,
+        threePtPercentage: 0,
+        ftPercentage: 0,
+      };
+    }
+
+    const totals = filteredGames.reduce(
+      (acc, game) => ({
+        points: acc.points + game.points,
+        rebounds: acc.rebounds + game.rebounds,
+        assists: acc.assists + game.assists,
+        steals: acc.steals + game.steals,
+        blocks: acc.blocks + game.blocks,
+        fgMade: acc.fgMade + game.fgMade,
+        fgAttempted: acc.fgAttempted + game.fgAttempted,
+        threePtMade: acc.threePtMade + game.threePtMade,
+        threePtAttempted: acc.threePtAttempted + game.threePtAttempted,
+        ftMade: acc.ftMade + game.ftMade,
+        ftAttempted: acc.ftAttempted + game.ftAttempted,
+        wins: acc.wins + (game.isWin ? 1 : 0),
+      }),
+      {
+        points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0,
+        fgMade: 0, fgAttempted: 0, threePtMade: 0, threePtAttempted: 0,
+        ftMade: 0, ftAttempted: 0, wins: 0,
+      }
+    );
+
+    const gamesPlayed = filteredGames.length;
+    return {
+      gamesPlayed,
+      wins: totals.wins,
+      losses: gamesPlayed - totals.wins,
+      avgPoints: Math.round((totals.points / gamesPlayed) * 10) / 10,
+      avgRebounds: Math.round((totals.rebounds / gamesPlayed) * 10) / 10,
+      avgAssists: Math.round((totals.assists / gamesPlayed) * 10) / 10,
+      avgSteals: Math.round((totals.steals / gamesPlayed) * 10) / 10,
+      avgBlocks: Math.round((totals.blocks / gamesPlayed) * 10) / 10,
+      fgPercentage: totals.fgAttempted > 0
+        ? Math.round((totals.fgMade / totals.fgAttempted) * 1000) / 10
+        : 0,
+      threePtPercentage: totals.threePtAttempted > 0
+        ? Math.round((totals.threePtMade / totals.threePtAttempted) * 1000) / 10
+        : 0,
+      ftPercentage: totals.ftAttempted > 0
+        ? Math.round((totals.ftMade / totals.ftAttempted) * 1000) / 10
+        : 0,
+    };
+  };
+
+  const dashboardStats = dashboardTeamFilter === 'all' 
+    ? seasonStats 
+    : calculateFilteredStats(dashboardFilteredGames);
 
   // Helper to find a linked played game for a scheduled game
   const findLinkedGame = (scheduledGame: { opponent: string; date: string }) => {
@@ -369,11 +445,32 @@ export default function Index() {
               /* Full journal page wrapper - existing content */
               <div className="journal-page rounded-2xl overflow-hidden">
                 <div className="px-6 md:px-10 py-8 space-y-8">
-                  <JournalHeader playerName={profile.name} />
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <JournalHeader playerName={profile.name} />
+                    
+                    {/* Team Filter for Dashboard */}
+                    {teams.length > 0 && (
+                      <Select value={dashboardTeamFilter} onValueChange={setDashboardTeamFilter}>
+                        <SelectTrigger className="w-[180px] bg-background/80">
+                          <Users className="w-4 h-4 mr-2 text-muted-foreground" />
+                          <SelectValue placeholder="All Teams" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Teams</SelectItem>
+                          {teams.map((team) => (
+                            <SelectItem key={team.id} value={team.id}>
+                              {team.name} {team.is_primary && '★'}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
 
                   {/* Player Header - styled for journal */}
                   <div className="journal-section">
-                    <PlayerHeader profile={profile} seasonStats={seasonStats} games={games} xpProgress={xpProgress} />
+                    <PlayerHeader profile={profile} seasonStats={dashboardStats} games={dashboardFilteredGames} xpProgress={xpProgress} />
                   </div>
 
                   {/* Quarterly XP Progress */}
@@ -385,25 +482,34 @@ export default function Index() {
 
                   {/* Season Averages */}
                   <AnimatedSection className="journal-section" delay={0.1}>
-                    <h2 className="journal-heading">Season Averages</h2>
+                    <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+                      <h2 className="journal-heading mb-0">
+                        {dashboardTeamFilter === 'all' ? 'Season Averages' : 'Team Averages'}
+                      </h2>
+                      {dashboardTeamFilter !== 'all' && (
+                        <span className="text-sm text-muted-foreground">
+                          {dashboardFilteredGames.length} game{dashboardFilteredGames.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
                     <AnimatedContainer className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                       <AnimatedItem>
-                        <StatCard label="Points" value={seasonStats.avgPoints} icon={Target} className="journal-card" />
+                        <StatCard label="Points" value={dashboardStats.avgPoints} icon={Target} className="journal-card" />
                       </AnimatedItem>
                       <AnimatedItem>
-                        <StatCard label="Rebounds" value={seasonStats.avgRebounds} icon={Repeat} className="journal-card" />
+                        <StatCard label="Rebounds" value={dashboardStats.avgRebounds} icon={Repeat} className="journal-card" />
                       </AnimatedItem>
                       <AnimatedItem>
-                        <StatCard label="Assists" value={seasonStats.avgAssists} icon={Zap} className="journal-card" />
+                        <StatCard label="Assists" value={dashboardStats.avgAssists} icon={Zap} className="journal-card" />
                       </AnimatedItem>
                       <AnimatedItem>
-                        <StatCard label="Steals" value={seasonStats.avgSteals} icon={Shield} className="journal-card" />
+                        <StatCard label="Steals" value={dashboardStats.avgSteals} icon={Shield} className="journal-card" />
                       </AnimatedItem>
                       <AnimatedItem>
-                        <StatCard label="Blocks" value={seasonStats.avgBlocks} icon={HandMetal} className="journal-card" />
+                        <StatCard label="Blocks" value={dashboardStats.avgBlocks} icon={HandMetal} className="journal-card" />
                       </AnimatedItem>
                       <AnimatedItem>
-                        <StatCard label="FG%" value={seasonStats.fgPercentage} suffix="%" icon={Percent} className="journal-card" />
+                        <StatCard label="FG%" value={dashboardStats.fgPercentage} suffix="%" icon={Percent} className="journal-card" />
                       </AnimatedItem>
                     </AnimatedContainer>
                   </AnimatedSection>
@@ -413,13 +519,13 @@ export default function Index() {
                     <h2 className="journal-heading">Performance Trends</h2>
                     <AnimatedContainer className="grid md:grid-cols-3 gap-4">
                       <AnimatedItem className="journal-card p-4 rounded-xl">
-                        <StatsChart games={games} stat="points" />
+                        <StatsChart games={dashboardFilteredGames} stat="points" />
                       </AnimatedItem>
                       <AnimatedItem className="journal-card p-4 rounded-xl">
-                        <StatsChart games={games} stat="rebounds" />
+                        <StatsChart games={dashboardFilteredGames} stat="rebounds" />
                       </AnimatedItem>
                       <AnimatedItem className="journal-card p-4 rounded-xl">
-                        <StatsChart games={games} stat="assists" />
+                        <StatsChart games={dashboardFilteredGames} stat="assists" />
                       </AnimatedItem>
                     </AnimatedContainer>
                   </AnimatedSection>
@@ -430,13 +536,19 @@ export default function Index() {
                       <h2 className="journal-heading mb-0">Recent Games</h2>
                       <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
                     </div>
-                    <AnimatedContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {games.slice(0, 6).map((game) => (
-                        <AnimatedItem key={game.id}>
-                          <GameCard game={game} profile={profile} onDelete={deleteGame} />
-                        </AnimatedItem>
-                      ))}
-                    </AnimatedContainer>
+                    {dashboardFilteredGames.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">
+                        No games found for this team.
+                      </p>
+                    ) : (
+                      <AnimatedContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {dashboardFilteredGames.slice(0, 6).map((game) => (
+                          <AnimatedItem key={game.id}>
+                            <GameCard game={game} profile={profile} onDelete={deleteGame} />
+                          </AnimatedItem>
+                        ))}
+                      </AnimatedContainer>
+                    )}
                   </AnimatedSection>
                 </div>
               </div>
