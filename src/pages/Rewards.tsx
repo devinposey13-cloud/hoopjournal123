@@ -203,8 +203,8 @@ export default function Rewards() {
         </div>
 
         {/* Current Progress Card */}
-        <Card className="mb-6 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-yellow-500/5" />
+        <Card className="mb-6 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-yellow-500/5 pointer-events-none" />
           <CardContent className="pt-6 relative">
             <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
               {/* Level Badge */}
