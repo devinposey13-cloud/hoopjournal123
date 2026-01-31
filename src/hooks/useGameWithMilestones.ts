@@ -2,18 +2,24 @@ import { useState, useCallback } from 'react';
 import { useCloudData } from './useCloudData';
 import { useMilestones } from './useMilestones';
 import { useXpProgress } from './useXpProgress';
+import { useTierAchievements } from './useTierAchievements';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { findInvalidMilestones } from '@/utils/milestoneValidator';
 import { calculatePerformance } from '@/utils/performanceScoring';
 import type { GameStats } from '@/types/basketball';
 import type { NewMilestoneResult } from '@/types/milestone';
-import type { PerformanceResult, XpGainResult } from '@/types/xp';
+import type { PerformanceResult, XpGainResult, PerformanceTier } from '@/types/xp';
 import { toast } from 'sonner';
 
 interface GameWithId extends GameStats {
   id: string;
   seasonId?: string;
+}
+
+interface PendingTierCelebration {
+  tier: PerformanceTier;
+  performanceScore: number;
 }
 
 export function useGameWithMilestones() {
@@ -32,6 +38,7 @@ export function useGameWithMilestones() {
   } = useMilestones(cloudData.activeSeason?.id);
   
   const xpProgress = useXpProgress();
+  const tierAchievements = useTierAchievements();
   
   const [pendingMilestones, setPendingMilestones] = useState<NewMilestoneResult[]>([]);
   const [showReveal, setShowReveal] = useState(false);
@@ -43,6 +50,10 @@ export function useGameWithMilestones() {
   } | null>(null);
   const [showXpReveal, setShowXpReveal] = useState(false);
   const [showLevelUpCelebration, setShowLevelUpCelebration] = useState(false);
+  
+  // Tier celebration state
+  const [pendingTierCelebration, setPendingTierCelebration] = useState<PendingTierCelebration | null>(null);
+  const [showTierCelebration, setShowTierCelebration] = useState(false);
 
   const addGameWithMilestones = useCallback(async (game: Omit<GameStats, 'id'>) => {
     // First, save the game using the original addGame
@@ -87,21 +98,46 @@ export function useGameWithMilestones() {
     const performance = calculatePerformance(savedGame);
     const xpResult = await xpProgress.addXp(performance.xpEarned, performance.finalScore);
     
+    // Check for first-time tier achievement
+    const isNewTier = !tierAchievements.hasTierBeenAchieved(performance.tier);
+    if (isNewTier) {
+      await tierAchievements.recordTierAchievement(
+        performance.tier,
+        performance.finalScore,
+        savedGame.id
+      );
+      setPendingTierCelebration({
+        tier: performance.tier,
+        performanceScore: performance.finalScore,
+      });
+    }
+    
     if (xpResult) {
       setPendingXpResult({ performance, xpResult });
       // Show XP reveal after milestone reveal closes (or immediately if no milestones)
-      if (toReveal.length === 0) {
+      if (toReveal.length === 0 && !isNewTier) {
         setShowXpReveal(true);
       }
     }
 
     return savedGame;
-  }, [cloudData, checkAndAwardMilestones, getOccurrenceCount, xpProgress]);
+  }, [cloudData, checkAndAwardMilestones, getOccurrenceCount, xpProgress, tierAchievements]);
 
   const closeReveal = useCallback(() => {
     setShowReveal(false);
     setPendingMilestones([]);
-    // Show XP reveal after milestone reveal if we have pending XP
+    // Chain: milestone reveal -> tier celebration -> XP reveal
+    if (pendingTierCelebration) {
+      setShowTierCelebration(true);
+    } else if (pendingXpResult) {
+      setShowXpReveal(true);
+    }
+  }, [pendingTierCelebration, pendingXpResult]);
+
+  const closeTierCelebration = useCallback(() => {
+    setShowTierCelebration(false);
+    setPendingTierCelebration(null);
+    // Continue chain to XP reveal
     if (pendingXpResult) {
       setShowXpReveal(true);
     }
@@ -222,6 +258,11 @@ export function useGameWithMilestones() {
     closeXpReveal,
     showLevelUpCelebration,
     closeLevelUpCelebration,
+    // Tier celebration
+    pendingTierCelebration,
+    showTierCelebration,
+    closeTierCelebration,
+    achievedTiers: tierAchievements.achievedTiers,
   };
 }
 
