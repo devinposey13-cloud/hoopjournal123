@@ -321,6 +321,9 @@ export default function Index() {
                       updateProfile({ ...profile, avatar: newUrl });
                     }}
                     onAvatarUploaded={uploadAvatar}
+                    onAvatarDeleted={async () => {
+                      await updateProfile({ ...profile, avatar: undefined });
+                    }}
                   />
                 </div>
               </div>
