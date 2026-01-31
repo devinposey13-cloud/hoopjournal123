@@ -129,7 +129,7 @@ export const MilestoneCard = forwardRef<HTMLDivElement, MilestoneCardProps>(({
     <div
       ref={ref}
       className={cn(
-        'relative h-[200px]',
+        'relative h-[220px]',
         'cursor-pointer',
         className
       )}
@@ -164,84 +164,80 @@ export const MilestoneCard = forwardRef<HTMLDivElement, MilestoneCardProps>(({
             />
           )}
 
-          <div className="relative p-4 flex flex-col items-center text-center h-full">
-            {/* Occurrence count badge */}
-            {hasMultipleOccurrences && isEarned && (
+          <div className="relative p-3 flex flex-col items-center text-center h-full">
+            {/* Top row: Count badge (left), Rarity (right) */}
+            <div className="w-full flex justify-between items-start mb-2">
+              <div className="min-w-[32px]">
+                {hasMultipleOccurrences && isEarned && (
+                  <div className={cn(
+                    'px-1.5 py-0.5 rounded-full text-[10px] font-bold inline-flex',
+                    'bg-primary/20 text-primary border border-primary/30'
+                  )}>
+                    {count}×
+                  </div>
+                )}
+                {showFlipHint && canFlip && !isFlipped && !hasMultipleOccurrences && (
+                  <RotateCw className="w-3.5 h-3.5 text-muted-foreground animate-pulse" />
+                )}
+              </div>
               <div className={cn(
-                'absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold',
-                'bg-primary/20 text-primary border border-primary/30'
+                'text-[10px] font-bold tracking-wider',
+                rarity.text
               )}>
-                {count}×
+                {rarity.label}
               </div>
-            )}
-            
-            {/* Flip hint */}
-            {showFlipHint && canFlip && !isFlipped && (
-              <div className="absolute top-2 left-2">
-                <RotateCw className="w-3.5 h-3.5 text-muted-foreground animate-pulse" />
-              </div>
-            )}
-
-            {/* Rarity label */}
-            <div className={cn(
-              'absolute top-2 right-2 text-[10px] font-bold tracking-wider',
-              rarity.text
-            )}>
-              {rarity.label}
             </div>
 
             {/* Icon */}
             <div className={cn(
-              'w-14 h-14 rounded-full flex items-center justify-center mb-2',
+              'w-12 h-12 rounded-full flex items-center justify-center mb-2 shrink-0',
               isEarned 
                 ? `bg-gradient-to-br ${rarity.gradient}` 
                 : 'bg-muted'
             )}>
               <IconComponent className={cn(
-                'w-7 h-7',
+                'w-6 h-6',
                 isEarned ? 'text-white' : 'text-muted-foreground'
               )} />
             </div>
 
             {/* Name */}
             <h3 className={cn(
-              'font-bold text-base mb-1 line-clamp-1',
+              'font-bold text-sm leading-tight mb-1 line-clamp-1',
               isEarned ? 'text-foreground' : 'text-muted-foreground'
             )}>
               {milestone.name}
             </h3>
 
-            {/* Description */}
-            <p className="text-xs text-muted-foreground mb-2 line-clamp-2 flex-1">
+            {/* Requirement description - more prominent */}
+            <p className={cn(
+              'text-xs leading-snug mb-auto px-1',
+              isEarned ? 'text-muted-foreground' : 'text-muted-foreground/70'
+            )}>
               {milestone.description}
             </p>
 
-            {/* Stats snapshot (if earned) */}
+            {/* Stats snapshot (if earned) - compact */}
             {isEarned && statsSnapshot && (
-              <div className="w-full pt-2 border-t border-border/50">
+              <div className="w-full pt-2 mt-2 border-t border-border/50 text-[11px]">
                 {statsSnapshot.points !== undefined && (
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-muted-foreground truncate">
                     <span className="font-medium text-foreground">
                       {statsSnapshot.points} PTS
                     </span>
-                    {statsSnapshot.rebounds !== undefined && (
+                    {statsSnapshot.rebounds !== undefined && statsSnapshot.rebounds > 0 && (
                       <span> • {statsSnapshot.rebounds} REB</span>
                     )}
-                    {statsSnapshot.assists !== undefined && (
+                    {statsSnapshot.assists !== undefined && statsSnapshot.assists > 0 && (
                       <span> • {statsSnapshot.assists} AST</span>
                     )}
                   </div>
                 )}
-                {displayOpponent && (
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    vs {displayOpponent}
-                  </div>
-                )}
-                {earnedAt && (
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {format(new Date(earnedAt), 'MMM d, yyyy')}
-                  </div>
-                )}
+                <div className="text-muted-foreground/80 truncate">
+                  {displayOpponent && <span>vs {displayOpponent}</span>}
+                  {displayOpponent && earnedAt && <span> • </span>}
+                  {earnedAt && <span>{format(new Date(earnedAt), 'MMM d, yyyy')}</span>}
+                </div>
               </div>
             )}
 
