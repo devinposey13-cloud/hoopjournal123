@@ -650,7 +650,17 @@ export default function Index() {
                 Sign Out
               </Button>
             </div>
-            <SettingsPanel profile={profile} onUpdateProfile={updateProfile} onUploadAvatar={uploadAvatar} />
+            <SettingsPanel 
+              profile={profile} 
+              onUpdateProfile={updateProfile} 
+              onUploadAvatar={uploadAvatar}
+              onStartOver={() => {
+                // Clear the localStorage intro flag
+                localStorage.removeItem('hoopjournal_intro_seen');
+                // Force page reload to trigger fresh onboarding detection
+                window.location.reload();
+              }}
+            />
           </div>
         )}
 

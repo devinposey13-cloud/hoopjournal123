@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Save, Camera, Loader2, User, Copy, ExternalLink, AtSign, Check, X, Crown, CreditCard, Trash2 } from 'lucide-react';
+import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
@@ -26,12 +27,13 @@ interface SettingsPanelProps {
   profile: PlayerProfile;
   onUpdateProfile: (updates: Partial<PlayerProfile>) => void;
   onUploadAvatar?: (file: File) => Promise<string | null>;
+  onStartOver?: () => void;
 }
 
 const positions = ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center', 'Guard', 'Forward'];
 const grades = ['1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
-export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: SettingsPanelProps) {
+export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStartOver }: SettingsPanelProps) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState(profile);
   const [isUploading, setIsUploading] = useState(false);
@@ -575,6 +577,11 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
             </div>
             <FeedbackDialog />
           </div>
+
+          {/* Danger Zone Section */}
+          {userId && (
+            <DangerZoneSection userId={userId} onStartOver={onStartOver} />
+          )}
         </div>
       </div>
     </div>
