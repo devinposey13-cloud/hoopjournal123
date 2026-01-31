@@ -284,31 +284,7 @@ export default function Index() {
             {games.length === 0 ? (
               <div className="journal-page rounded-2xl overflow-hidden">
                 <div className="px-6 md:px-10 py-8">
-                  {/* Journal-style header - centered with decorative basketball */}
-                  <div className="pb-6 border-b border-amber-800/20 mb-6 text-center relative">
-                    {/* Decorative basketball icon with gentle bounce */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 animate-[bounce_3s_ease-in-out_infinite]">
-                      <span className="text-6xl md:text-7xl">🏀</span>
-                    </div>
-                    <h1 
-                      className="text-4xl md:text-5xl lg:text-6xl mb-2 relative"
-                      style={{ fontFamily: "'Dancing Script', cursive" }}
-                    >
-                      Dear Basketball,
-                    </h1>
-                    {/* Decorative divider with basketball accents */}
-                    <div className="flex items-center justify-center gap-3 my-4">
-                      <div className="w-8 h-0.5 bg-amber-800/30" />
-                      <span className="text-amber-800/40 text-sm animate-pulse">🏀</span>
-                      <div className="w-8 h-0.5 bg-amber-800/30" />
-                    </div>
-                    <p 
-                      className="text-lg md:text-xl opacity-80"
-                      style={{ fontFamily: "'Dancing Script', cursive" }}
-                    >
-                      {profile.name ? `${profile.name}'s Journey` : 'My Basketball Journey'}
-                    </p>
-                  </div>
+                  <JournalHeader playerName={profile.name} className="mb-6" />
                   
                   <EmptyDashboardWelcome
                     playerName={profile.name || 'Player'}
@@ -342,31 +318,7 @@ export default function Index() {
               /* Full journal page wrapper - existing content */
               <div className="journal-page rounded-2xl overflow-hidden">
                 <div className="px-6 md:px-10 py-8 space-y-8">
-                  {/* Journal-style header - centered with decorative basketball */}
-                  <div className="pb-6 border-b border-amber-800/20 text-center relative">
-                    {/* Decorative basketball icon with gentle bounce */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 animate-[bounce_3s_ease-in-out_infinite]">
-                      <span className="text-6xl md:text-7xl">🏀</span>
-                    </div>
-                    <h1 
-                      className="text-4xl md:text-5xl lg:text-6xl mb-2 relative"
-                      style={{ fontFamily: "'Dancing Script', cursive" }}
-                    >
-                      Dear Basketball,
-                    </h1>
-                    {/* Decorative divider with basketball accents */}
-                    <div className="flex items-center justify-center gap-3 my-4">
-                      <div className="w-8 h-0.5 bg-amber-800/30" />
-                      <span className="text-amber-800/40 text-sm animate-pulse">🏀</span>
-                      <div className="w-8 h-0.5 bg-amber-800/30" />
-                    </div>
-                    <p 
-                      className="text-lg md:text-xl opacity-80"
-                      style={{ fontFamily: "'Dancing Script', cursive" }}
-                    >
-                      {profile.name ? `${profile.name}'s Journey` : 'My Basketball Journey'}
-                    </p>
-                  </div>
+                  <JournalHeader playerName={profile.name} />
 
                   {/* Player Header - styled for journal */}
                   <div className="journal-section">
