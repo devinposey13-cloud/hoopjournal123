@@ -3,8 +3,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useCloudData } from '@/hooks/useCloudData';
-import { useMilestones } from '@/hooks/useMilestones';
+import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
+import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
 import { GameStats, ScheduledGame } from '@/types/basketball';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -46,8 +46,19 @@ export default function GameDetail() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { user, loading: authLoading } = useAuth();
-  const { profile, seasonStats, activeSeason, updateScheduledGame, addScheduledGame } = useCloudData();
-  const { earnedMilestones } = useMilestones(activeSeason?.id);
+  const { 
+    profile, 
+    seasonStats, 
+    activeSeason, 
+    updateScheduledGame, 
+    addScheduledGame,
+    addGame,
+    pendingMilestones,
+    showReveal,
+    closeReveal,
+    earnedMilestones,
+  } = useGameWithMilestones();
+  const [lastSavedGameId, setLastSavedGameId] = useState<string | null>(null);
   const [game, setGame] = useState<GameStats | null>(null);
   const [scheduledGame, setScheduledGame] = useState<ScheduledGame | null>(null);
   const [loading, setLoading] = useState(true);
@@ -155,42 +166,20 @@ export default function GameDetail() {
     
     setIsSubmitting(true);
     try {
-      const { data, error: insertError } = await supabase
-        .from('games')
-        .insert({
-          user_id: user.id,
-          season_id: activeSeason?.id || null,
-          date: gameData.date,
-          opponent: gameData.opponent,
-          points: gameData.points,
-          rebounds: gameData.rebounds,
-          assists: gameData.assists,
-          steals: gameData.steals,
-          blocks: gameData.blocks,
-          turnovers: gameData.turnovers,
-          fouls: gameData.fouls ?? 0,
-          minutes_played: gameData.minutesPlayed,
-          fg_made: gameData.fgMade,
-          fg_attempted: gameData.fgAttempted,
-          three_pt_made: gameData.threePtMade,
-          three_pt_attempted: gameData.threePtAttempted,
-          ft_made: gameData.ftMade,
-          ft_attempted: gameData.ftAttempted,
-          is_win: gameData.isWin,
-          game_photo_url: gameData.gamePhotoUrl,
-        })
-        .select()
-        .single();
+      // Use milestone-aware addGame from hook
+      const savedGame = await addGame(gameData);
 
-      if (insertError) throw insertError;
-
-      toast.success('Game stats saved!');
-      setShowAddStatsDialog(false);
-      setShowLiveCapture(false);
-      
-      // Navigate to the new game detail page
-      if (data) {
-        navigate(`/game/${data.id}`, { replace: true });
+      if (savedGame) {
+        setLastSavedGameId(savedGame.id);
+        toast.success('Game stats saved!');
+        setShowAddStatsDialog(false);
+        setShowLiveCapture(false);
+        
+        // Navigate to the new game detail page (but don't navigate if milestones are showing)
+        // The milestone reveal will handle navigation when closed
+        if (!showReveal) {
+          navigate(`/game/${savedGame.id}`, { replace: true });
+        }
       }
     } catch (err) {
       console.error('Error adding game:', err);
@@ -1003,6 +992,24 @@ export default function GameDetail() {
           seasonId={activeSeason?.id}
         />
       </div>
+
+      {/* Milestone Reveal Modal */}
+      {showReveal && pendingMilestones.length > 0 && (
+        <MilestoneReveal
+          milestones={pendingMilestones.map(m => ({
+            milestone: m.milestone,
+            statsSnapshot: m.statsSnapshot,
+            gameId: lastSavedGameId || undefined,
+          }))}
+          onComplete={() => {
+            closeReveal();
+            // Navigate to game detail after closing reveal
+            if (lastSavedGameId && !id) {
+              navigate(`/game/${lastSavedGameId}`, { replace: true });
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
