@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -6,6 +6,7 @@ export function useApprovalStatus() {
   const { user } = useAuth();
   const [isApproved, setIsApproved] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const notificationSentRef = useRef<Set<string>>(new Set());
 
   const checkApprovalStatus = useCallback(async () => {
     if (!user) {
@@ -18,7 +19,7 @@ export function useApprovalStatus() {
       // First check player_settings for is_approved flag
       const { data: settingsData, error: settingsError } = await supabase
         .from('player_settings')
-        .select('is_approved')
+        .select('is_approved, username')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -60,7 +61,42 @@ export function useApprovalStatus() {
         setIsApproved(true);
       } else {
         // No games and not approved - they need approval
-        setIsApproved(settingsData ? false : false);
+        setIsApproved(false);
+        
+        // For OAuth users: Check if admin notification was already sent for this session
+        // The trigger creates records but can't call edge functions
+        // Send notification if we haven't already in this session
+        if (settingsData && !notificationSentRef.current.has(user.id)) {
+          // Check approval request status to see if it's still pending (newly created)
+          const { data: approvalData } = await supabase
+            .from('account_approval_requests')
+            .select('created_at')
+            .eq('user_id', user.id)
+            .eq('status', 'pending')
+            .maybeSingle();
+          
+          if (approvalData) {
+            // Check if created within last 5 minutes (likely an OAuth signup needing notification)
+            const createdAt = new Date(approvalData.created_at);
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+            
+            if (createdAt > fiveMinutesAgo) {
+              // Send admin notification for OAuth signup
+              notificationSentRef.current.add(user.id);
+              try {
+                await supabase.functions.invoke('notify-admin-signup', {
+                  body: {
+                    username: settingsData.username || 'Unknown',
+                    email: user.email || null,
+                  },
+                });
+                console.log('Admin notification sent for OAuth signup');
+              } catch (notifyError) {
+                console.error('Error sending admin notification:', notifyError);
+              }
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Error checking approval status:', error);
