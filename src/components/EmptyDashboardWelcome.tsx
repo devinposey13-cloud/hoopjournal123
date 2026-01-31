@@ -208,7 +208,7 @@ export function EmptyDashboardWelcome({
           <Card className="bg-gradient-to-br from-card to-card/80 border-2 border-muted shadow-lg h-full">
             <CardContent className="pt-8 pb-6 px-6 text-center flex flex-col h-full">
               {/* Avatar Preview - show different states with animations */}
-              <div className="mx-auto mb-6 h-24 flex items-center justify-center">
+              <div className="mx-auto mb-8 h-36 flex items-center justify-center">
                 <AnimatePresence mode="wait">
                   {avatarState === 'generating' ? (
                     <motion.div
@@ -220,7 +220,7 @@ export function EmptyDashboardWelcome({
                       className="relative"
                     >
                       <motion.div 
-                        className="w-20 h-20 rounded-full bg-gradient-to-r from-primary/20 to-primary/40"
+                        className="w-28 h-28 rounded-full bg-gradient-to-r from-primary/20 to-primary/40"
                         animate={{ 
                           scale: [1, 1.05, 1],
                           opacity: [0.5, 1, 0.5]
@@ -231,7 +231,7 @@ export function EmptyDashboardWelcome({
                           ease: "easeInOut"
                         }}
                       />
-                      <Loader2 className="w-6 h-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin text-primary" />
+                      <Loader2 className="w-8 h-8 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin text-primary" />
                     </motion.div>
                   ) : avatarState === 'preview' && generatedPreview ? (
                     <motion.div 
@@ -240,7 +240,7 @@ export function EmptyDashboardWelcome({
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ duration: 0.4, ease: "easeOut" }}
-                      className="flex items-center gap-3"
+                      className="flex items-center gap-4"
                     >
                       <motion.div 
                         className="text-center"
@@ -248,14 +248,14 @@ export function EmptyDashboardWelcome({
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ delay: 0.1, duration: 0.3 }}
                       >
-                        <Avatar className="w-14 h-14 border-2 border-muted">
+                        <Avatar className="w-20 h-20 border-2 border-muted">
                           <AvatarImage src={avatarUrl} alt="Original" />
-                          <AvatarFallback><User className="w-5 h-5" /></AvatarFallback>
+                          <AvatarFallback><User className="w-7 h-7" /></AvatarFallback>
                         </Avatar>
-                        <p className="text-[10px] text-muted-foreground mt-1">Original</p>
+                        <p className="text-xs text-muted-foreground mt-2">Original</p>
                       </motion.div>
                       <motion.div 
-                        className="text-muted-foreground text-sm"
+                        className="text-muted-foreground text-lg"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
@@ -274,19 +274,19 @@ export function EmptyDashboardWelcome({
                             scale: [1, 1.08, 1],
                             boxShadow: [
                               '0 0 0 0 hsl(var(--primary) / 0)',
-                              '0 0 20px 4px hsl(var(--primary) / 0.4)',
-                              '0 0 15px 2px hsl(var(--primary) / 0.25)'
+                              '0 0 25px 6px hsl(var(--primary) / 0.4)',
+                              '0 0 20px 4px hsl(var(--primary) / 0.25)'
                             ]
                           }}
                           transition={{ delay: 0.4, duration: 0.6 }}
                           className="rounded-full"
                         >
-                          <Avatar className="w-14 h-14 border-2 border-primary ring-2 ring-primary/30 shadow-[0_0_15px_2px_hsl(var(--primary)/0.25)]">
+                          <Avatar className="w-20 h-20 border-2 border-primary ring-2 ring-primary/30 shadow-[0_0_20px_4px_hsl(var(--primary)/0.25)]">
                             <AvatarImage src={generatedPreview} alt="AI Generated" />
-                            <AvatarFallback><Sparkles className="w-5 h-5" /></AvatarFallback>
+                            <AvatarFallback><Sparkles className="w-7 h-7" /></AvatarFallback>
                           </Avatar>
                         </motion.div>
-                        <p className="text-[10px] text-primary mt-1 font-medium">AI</p>
+                        <p className="text-xs text-primary mt-2 font-medium">AI</p>
                       </motion.div>
                     </motion.div>
                   ) : hasAvatar ? (
@@ -297,10 +297,10 @@ export function EmptyDashboardWelcome({
                       exit={{ opacity: 0, scale: 0.8, rotateY: 90 }}
                       transition={{ duration: 0.4, ease: "easeOut" }}
                     >
-                      <Avatar className="w-20 h-20 border-2 border-primary/30">
+                      <Avatar className="w-28 h-28 border-3 border-primary/30 shadow-lg">
                         <AvatarImage src={avatarUrl} alt={playerName} />
                         <AvatarFallback className="bg-muted">
-                          <User className="w-8 h-8 text-muted-foreground/50" />
+                          <User className="w-12 h-12 text-muted-foreground/50" />
                         </AvatarFallback>
                       </Avatar>
                     </motion.div>
@@ -312,9 +312,9 @@ export function EmptyDashboardWelcome({
                       exit={{ opacity: 0, scale: 0.8 }}
                       transition={{ duration: 0.3, ease: "easeOut" }}
                     >
-                      <Avatar className="w-20 h-20 border-2 border-dashed border-muted-foreground/30">
+                      <Avatar className="w-28 h-28 border-2 border-dashed border-muted-foreground/30">
                         <AvatarFallback className="bg-muted">
-                          <User className="w-8 h-8 text-muted-foreground/50" />
+                          <User className="w-12 h-12 text-muted-foreground/50" />
                         </AvatarFallback>
                       </Avatar>
                     </motion.div>
