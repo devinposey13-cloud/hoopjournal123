@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Mic, Camera, User, Sparkles, Loader2, Check, X, RefreshCw } from 'lucide-react';
@@ -207,51 +207,112 @@ export function EmptyDashboardWelcome({
         >
           <Card className="bg-gradient-to-br from-card to-card/80 border-2 border-muted shadow-lg h-full">
             <CardContent className="pt-8 pb-6 px-6 text-center flex flex-col h-full">
-              {/* Avatar Preview - show different states */}
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', delay: 0.4 }}
-                className="mx-auto mb-6"
-              >
-                {avatarState === 'generating' ? (
-                  <div className="relative">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-r from-primary/20 to-primary/40 animate-pulse" />
-                    <Loader2 className="w-6 h-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin text-primary" />
-                  </div>
-                ) : avatarState === 'preview' && generatedPreview ? (
-                  <div className="flex items-center gap-3">
-                    <div className="text-center">
-                      <Avatar className="w-14 h-14 border-2 border-muted">
-                        <AvatarImage src={avatarUrl} alt="Original" />
-                        <AvatarFallback><User className="w-5 h-5" /></AvatarFallback>
+              {/* Avatar Preview - show different states with animations */}
+              <div className="mx-auto mb-6 h-24 flex items-center justify-center">
+                <AnimatePresence mode="wait">
+                  {avatarState === 'generating' ? (
+                    <motion.div
+                      key="generating"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      className="relative"
+                    >
+                      <motion.div 
+                        className="w-20 h-20 rounded-full bg-gradient-to-r from-primary/20 to-primary/40"
+                        animate={{ 
+                          scale: [1, 1.05, 1],
+                          opacity: [0.5, 1, 0.5]
+                        }}
+                        transition={{ 
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      />
+                      <Loader2 className="w-6 h-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin text-primary" />
+                    </motion.div>
+                  ) : avatarState === 'preview' && generatedPreview ? (
+                    <motion.div 
+                      key="preview"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                      className="flex items-center gap-3"
+                    >
+                      <motion.div 
+                        className="text-center"
+                        initial={{ x: 20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.1, duration: 0.3 }}
+                      >
+                        <Avatar className="w-14 h-14 border-2 border-muted">
+                          <AvatarImage src={avatarUrl} alt="Original" />
+                          <AvatarFallback><User className="w-5 h-5" /></AvatarFallback>
+                        </Avatar>
+                        <p className="text-[10px] text-muted-foreground mt-1">Original</p>
+                      </motion.div>
+                      <motion.div 
+                        className="text-muted-foreground text-sm"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+                      >
+                        →
+                      </motion.div>
+                      <motion.div 
+                        className="text-center"
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.3, duration: 0.3 }}
+                      >
+                        <motion.div
+                          initial={{ scale: 0.8 }}
+                          animate={{ scale: [1, 1.08, 1] }}
+                          transition={{ delay: 0.4, duration: 0.5 }}
+                        >
+                          <Avatar className="w-14 h-14 border-2 border-primary ring-2 ring-primary/20">
+                            <AvatarImage src={generatedPreview} alt="AI Generated" />
+                            <AvatarFallback><Sparkles className="w-5 h-5" /></AvatarFallback>
+                          </Avatar>
+                        </motion.div>
+                        <p className="text-[10px] text-primary mt-1 font-medium">AI</p>
+                      </motion.div>
+                    </motion.div>
+                  ) : hasAvatar ? (
+                    <motion.div
+                      key="hasAvatar"
+                      initial={{ opacity: 0, scale: 0.8, rotateY: -90 }}
+                      animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, rotateY: 90 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                    >
+                      <Avatar className="w-20 h-20 border-2 border-primary/30">
+                        <AvatarImage src={avatarUrl} alt={playerName} />
+                        <AvatarFallback className="bg-muted">
+                          <User className="w-8 h-8 text-muted-foreground/50" />
+                        </AvatarFallback>
                       </Avatar>
-                      <p className="text-[10px] text-muted-foreground mt-1">Original</p>
-                    </div>
-                    <div className="text-muted-foreground text-sm">→</div>
-                    <div className="text-center">
-                      <Avatar className="w-14 h-14 border-2 border-primary ring-2 ring-primary/20">
-                        <AvatarImage src={generatedPreview} alt="AI Generated" />
-                        <AvatarFallback><Sparkles className="w-5 h-5" /></AvatarFallback>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="noAvatar"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                    >
+                      <Avatar className="w-20 h-20 border-2 border-dashed border-muted-foreground/30">
+                        <AvatarFallback className="bg-muted">
+                          <User className="w-8 h-8 text-muted-foreground/50" />
+                        </AvatarFallback>
                       </Avatar>
-                      <p className="text-[10px] text-primary mt-1 font-medium">AI</p>
-                    </div>
-                  </div>
-                ) : hasAvatar ? (
-                  <Avatar className="w-20 h-20 border-2 border-primary/30">
-                    <AvatarImage src={avatarUrl} alt={playerName} />
-                    <AvatarFallback className="bg-muted">
-                      <User className="w-8 h-8 text-muted-foreground/50" />
-                    </AvatarFallback>
-                  </Avatar>
-                ) : (
-                  <Avatar className="w-20 h-20 border-2 border-dashed border-muted-foreground/30">
-                    <AvatarFallback className="bg-muted">
-                      <User className="w-8 h-8 text-muted-foreground/50" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-              </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {/* Header */}
               <motion.div
