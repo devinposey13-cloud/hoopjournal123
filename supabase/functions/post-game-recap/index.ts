@@ -46,7 +46,13 @@ serve(async (req) => {
       });
     }
 
-    const { gameStats, earnedMilestones, playerName, courtRole, seasonGoals } = await req.json();
+    const { gameStats, earnedMilestones, playerName, courtRole, seasonGoals, halftimeScoreUs, halftimeScoreThem, finalScoreUs, finalScoreThem } = await req.json();
+    
+    // Merge team scores into gameStats for processing
+    if (halftimeScoreUs !== undefined) gameStats.halftimeScoreUs = halftimeScoreUs;
+    if (halftimeScoreThem !== undefined) gameStats.halftimeScoreThem = halftimeScoreThem;
+    if (finalScoreUs !== undefined) gameStats.finalScoreUs = finalScoreUs;
+    if (finalScoreThem !== undefined) gameStats.finalScoreThem = finalScoreThem;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -137,9 +143,18 @@ ${earnedMilestones && earnedMilestones.length > 0 ? '3. **🏆 Milestones Unlock
 
 Keep the response under 300 words but make every word count!`;
 
+    // Build team score section
+    let teamScoreSection = '';
+    if (gameStats.finalScoreUs !== undefined && gameStats.finalScoreThem !== undefined) {
+      teamScoreSection = `\nTEAM SCORE: Final ${gameStats.finalScoreUs} - ${gameStats.finalScoreThem}`;
+      if (gameStats.halftimeScoreUs !== undefined && gameStats.halftimeScoreThem !== undefined) {
+        teamScoreSection += ` (Halftime: ${gameStats.halftimeScoreUs} - ${gameStats.halftimeScoreThem})`;
+      }
+    }
+
     const userMessage = `Here are the game stats for my post-game recap:
 
-GAME RESULT: ${gameStats.isWin ? '🏆 WIN!' : 'Tough game'} vs ${gameStats.opponent}
+GAME RESULT: ${gameStats.isWin ? '🏆 WIN!' : 'Tough game'} vs ${gameStats.opponent}${teamScoreSection}
 
 SCORING:
 - Points: ${gameStats.points}

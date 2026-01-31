@@ -302,12 +302,24 @@ export async function exportGameBoxScorePdf(
   doc.setFont('helvetica', 'bold');
   doc.text('Official Basketball Box Score - Game Totals - Final Statistics', pageWidth / 2, 12, { align: 'center' });
   
+  // Build match title with final score if available
+  let matchTitle = `${profile.team} vs ${game.opponent}`;
+  if (game.finalScoreUs !== undefined && game.finalScoreThem !== undefined) {
+    matchTitle = `${profile.team} ${game.finalScoreUs} - ${game.finalScoreThem} ${game.opponent}`;
+  }
+  
   doc.setFontSize(14);
-  doc.text(`${profile.team} vs ${game.opponent}`, pageWidth / 2, 20, { align: 'center' });
+  doc.text(matchTitle, pageWidth / 2, 20, { align: 'center' });
+  
+  // Date and halftime score
+  let dateInfo = format(new Date(game.date), 'M/d/yy');
+  if (game.halftimeScoreUs !== undefined && game.halftimeScoreThem !== undefined) {
+    dateInfo += `  •  Halftime: ${game.halftimeScoreUs} - ${game.halftimeScoreThem}`;
+  }
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(format(new Date(game.date), 'M/d/yy'), pageWidth / 2, 27, { align: 'center' });
+  doc.text(dateInfo, pageWidth / 2, 27, { align: 'center' });
 
   // Add player avatar in top-right corner
   if (avatarData) {

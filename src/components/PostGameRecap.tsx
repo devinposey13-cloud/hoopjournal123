@@ -61,7 +61,7 @@ export function PostGameRecap({ game, earnedMilestones, onRecapChange, playerNam
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ gameStats: game, earnedMilestones, playerName, courtRole, seasonGoals }),
+        body: JSON.stringify({ gameStats: game, earnedMilestones, playerName, courtRole, seasonGoals, halftimeScoreUs: game.halftimeScoreUs, halftimeScoreThem: game.halftimeScoreThem, finalScoreUs: game.finalScoreUs, finalScoreThem: game.finalScoreThem }),
       });
 
       if (!response.ok) {
