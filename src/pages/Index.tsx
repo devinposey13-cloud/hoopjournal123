@@ -493,13 +493,6 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Quick Live Stats Dialog */}
-            <QuickLiveStatsDialog
-              open={showQuickLiveStatsDialog}
-              onOpenChange={setShowQuickLiveStatsDialog}
-              todayGames={todayGames}
-              onStartCapture={handleStartQuickCapture}
-            />
 
             {/* Calendar View */}
             <section>
@@ -714,6 +707,14 @@ export default function Index() {
           </div>
         )}
       </main>
+
+      {/* Quick Live Stats Dialog - OUTSIDE tab switching */}
+      <QuickLiveStatsDialog
+        open={showQuickLiveStatsDialog}
+        onOpenChange={setShowQuickLiveStatsDialog}
+        todayGames={todayGames}
+        onStartCapture={handleStartQuickCapture}
+      />
 
       {/* Persistent music bar - OUTSIDE tab switching */}
       <PersistentMusicBar url={profile.themeMusicUrl} />
