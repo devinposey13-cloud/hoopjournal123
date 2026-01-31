@@ -114,10 +114,10 @@ export function useCloudData() {
         teamName: (g.player_teams as any)?.name || undefined,
       })) || []);
 
-      // Fetch scheduled games (filtered by season)
+      // Fetch scheduled games (filtered by season) with team info
       let scheduleQuery = supabase
         .from('scheduled_games')
-        .select('*')
+        .select('*, player_teams(name)')
         .order('date', { ascending: true });
       
       if (currentSeasonId) {
@@ -137,6 +137,8 @@ export function useCloudData() {
         isHome: s.is_home,
         notes: s.notes || undefined,
         tournament: (s as any).tournament || undefined,
+        teamId: (s as any).team_id || undefined,
+        teamName: (s.player_teams as any)?.name || undefined,
       })) || []);
 
       // Fetch video clips (filtered by user_id and season)
@@ -469,7 +471,7 @@ export function useCloudData() {
     }
   };
 
-  // Add scheduled game (now with season_id)
+  // Add scheduled game (now with season_id and team_id)
   const addScheduledGame = async (game: Omit<ScheduledGame, 'id'>) => {
     if (!user) return null;
 
@@ -479,6 +481,7 @@ export function useCloudData() {
         .insert({
           user_id: user.id,
           season_id: activeSeason?.id || null,
+          team_id: game.teamId || null,
           date: game.date,
           time: game.time,
           opponent: game.opponent,
@@ -488,7 +491,7 @@ export function useCloudData() {
           // Auto-fill tag with opponent if not provided
           tournament: game.tournament || game.opponent,
         })
-        .select()
+        .select('*, player_teams(name)')
         .single();
 
       if (error) throw error;
@@ -502,6 +505,8 @@ export function useCloudData() {
         isHome: data.is_home,
         notes: data.notes || undefined,
         tournament: (data as any).tournament || undefined,
+        teamId: (data as any).team_id || undefined,
+        teamName: (data.player_teams as any)?.name || game.teamName,
       };
 
       setSchedule(prev => [...prev, newGame].sort((a, b) => 
@@ -524,6 +529,7 @@ export function useCloudData() {
       const inserts = games.map((game) => ({
         user_id: user.id,
         season_id: activeSeason?.id || null,
+        team_id: game.teamId || null,
         date: game.date,
         time: game.time,
         opponent: game.opponent,
@@ -537,7 +543,7 @@ export function useCloudData() {
       const { data, error } = await supabase
         .from('scheduled_games')
         .insert(inserts)
-        .select();
+        .select('*, player_teams(name)');
 
       if (error) throw error;
 
@@ -550,6 +556,8 @@ export function useCloudData() {
         isHome: g.is_home,
         notes: g.notes || undefined,
         tournament: (g as any).tournament || undefined,
+        teamId: (g as any).team_id || undefined,
+        teamName: (g.player_teams as any)?.name || undefined,
       }));
 
       setSchedule((prev) =>
@@ -577,12 +585,13 @@ export function useCloudData() {
       if (updates.isHome !== undefined) dbUpdates.is_home = updates.isHome;
       if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
       if (updates.tournament !== undefined) dbUpdates.tournament = updates.tournament;
+      if (updates.teamId !== undefined) dbUpdates.team_id = updates.teamId;
 
       const { data, error } = await supabase
         .from('scheduled_games')
         .update(dbUpdates)
         .eq('id', id)
-        .select()
+        .select('*, player_teams(name)')
         .single();
 
       if (error) throw error;
@@ -596,6 +605,8 @@ export function useCloudData() {
         isHome: data.is_home,
         notes: data.notes || undefined,
         tournament: (data as any).tournament || undefined,
+        teamId: (data as any).team_id || undefined,
+        teamName: (data.player_teams as any)?.name || undefined,
       };
 
       setSchedule(prev => prev.map(g => g.id === id ? updatedGame : g).sort(
