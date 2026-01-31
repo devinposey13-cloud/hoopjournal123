@@ -413,7 +413,7 @@ export default function Index() {
             {games.length === 0 ? (
               <div className="journal-page rounded-2xl overflow-hidden">
                 <div className="px-6 md:px-10 py-8">
-                  <JournalHeader playerName={profile.name} className="mb-6" />
+                  <JournalHeader playerName={profile.name} className="mb-6 animate-fade-in" />
                   
                   <EmptyDashboardWelcome
                     playerName={profile.name || 'Player'}
@@ -452,7 +452,7 @@ export default function Index() {
               /* Full journal page wrapper - existing content */
               <div className="journal-page rounded-2xl overflow-hidden">
                 <div className="px-6 md:px-10 py-8 space-y-8">
-                  <JournalHeader playerName={profile.name} className="mb-2" />
+                  <JournalHeader playerName={profile.name} className="mb-2 animate-fade-in" />
                   
                   <div className="flex items-center justify-end flex-wrap gap-4">
                     
