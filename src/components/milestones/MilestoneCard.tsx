@@ -145,12 +145,14 @@ export const MilestoneCard = forwardRef<HTMLDivElement, MilestoneCardProps>(({
         {/* FRONT SIDE */}
         <div
           className={cn(
-            'absolute inset-0 overflow-hidden rounded-xl transition-all duration-300',
+            'absolute inset-0 overflow-hidden rounded-xl',
             'border bg-card',
+            'transition-all duration-300 ease-out',
             isEarned ? rarity.border : 'border-border/30',
             isEarned ? rarity.glow : '',
             isLocked && 'opacity-40 grayscale',
-            !isLocked && !isFlipped && 'hover:scale-[1.02] hover:border-primary/50',
+            !isLocked && !isFlipped && 'hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5',
+            !isLocked && !isFlipped && (isEarned ? 'hover:border-primary/50' : 'hover:border-primary/30'),
           )}
           style={{ backfaceVisibility: 'hidden' }}
         >
