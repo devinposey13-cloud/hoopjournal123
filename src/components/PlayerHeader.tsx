@@ -5,16 +5,22 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { exportSeasonStatsPdf } from '@/utils/exportPdf';
 import { LevelBadge } from '@/components/xp/LevelBadge';
+import { TierBadges } from '@/components/xp/TierBadges';
 import type { XpProgress } from '@/types/xp';
+
+interface TierAchievement {
+  tier: string;
+}
 
 interface PlayerHeaderProps {
   profile: PlayerProfile;
   seasonStats: SeasonStats;
   games: GameStats[];
   xpProgress?: XpProgress | null;
+  tierAchievements?: TierAchievement[];
 }
 
-export function PlayerHeader({ profile, seasonStats, games, xpProgress }: PlayerHeaderProps) {
+export function PlayerHeader({ profile, seasonStats, games, xpProgress, tierAchievements = [] }: PlayerHeaderProps) {
   const [showAvatarPreview, setShowAvatarPreview] = useState(false);
 
   const handleExport = () => {
@@ -47,7 +53,7 @@ export function PlayerHeader({ profile, seasonStats, games, xpProgress }: Player
 
           {/* Player Info */}
           <div className="flex-1">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                 {profile.name}
               </h1>
@@ -76,6 +82,10 @@ export function PlayerHeader({ profile, seasonStats, games, xpProgress }: Player
                 </a>
               )}
             </div>
+            {/* Tier Achievement Badges */}
+            {tierAchievements.length > 0 && (
+              <TierBadges achievedTiers={tierAchievements} size="sm" className="mt-3" />
+            )}
           </div>
 
           {/* Season Record & Export */}
