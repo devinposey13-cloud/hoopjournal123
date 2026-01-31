@@ -203,6 +203,7 @@ export function useCloudData() {
           isProfilePublic: settingsData.is_profile_public ?? false,
           themeMusicUrl: settingsData.theme_music_url || undefined,
           instagramUrl: settingsData.instagram_url || undefined,
+          avatarSkippedAt: settingsData.avatar_skipped_at || undefined,
           // Onboarding fields
           courtRole: settingsData.court_role || undefined,
           playingLevel: settingsData.playing_level || undefined,
@@ -730,6 +731,7 @@ export function useCloudData() {
             is_profile_public: updates.isProfilePublic ?? profile.isProfilePublic ?? false,
             theme_music_url: updates.themeMusicUrl ?? profile.themeMusicUrl ?? null,
             instagram_url: updates.instagramUrl ?? profile.instagramUrl ?? null,
+            avatar_skipped_at: updates.avatarSkippedAt ?? profile.avatarSkippedAt ?? null,
             // Onboarding fields
             court_role: updates.courtRole ?? profile.courtRole ?? null,
             playing_level: updates.playingLevel ?? profile.playingLevel ?? null,
