@@ -23,9 +23,11 @@ interface PostGameRecapProps {
   playerTeam?: string;
   parentEmail?: string | null;
   receiveGameSummaries?: boolean;
+  courtRole?: string | null;
+  seasonGoals?: string[] | null;
 }
 
-export function PostGameRecap({ game, earnedMilestones, onRecapChange, playerName, playerTeam, parentEmail, receiveGameSummaries }: PostGameRecapProps) {
+export function PostGameRecap({ game, earnedMilestones, onRecapChange, playerName, playerTeam, parentEmail, receiveGameSummaries, courtRole, seasonGoals }: PostGameRecapProps) {
   const [recap, setRecap] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
@@ -59,7 +61,7 @@ export function PostGameRecap({ game, earnedMilestones, onRecapChange, playerNam
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ gameStats: game, earnedMilestones }),
+        body: JSON.stringify({ gameStats: game, earnedMilestones, playerName, courtRole, seasonGoals }),
       });
 
       if (!response.ok) {

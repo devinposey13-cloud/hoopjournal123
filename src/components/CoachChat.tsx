@@ -266,6 +266,9 @@ export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
           playerStats: latestGame,
           seasonStats,
           playerGrade: profile.grade,
+          playerName: profile.name,
+          courtRole: profile.courtRole,
+          seasonGoals: profile.seasonGoals,
           videoFrames: videoFrames.length > 0 ? videoFrames : undefined,
         }),
       });
