@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Save, Camera, Loader2, User, Copy, ExternalLink, AtSign, Check, X, Crown, CreditCard } from 'lucide-react';
+import { Save, Camera, Loader2, User, Copy, ExternalLink, AtSign, Check, X, Crown, CreditCard, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
@@ -35,6 +35,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
   const navigate = useNavigate();
   const [formData, setFormData] = useState(profile);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
@@ -155,6 +156,34 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
     }
   };
 
+  const handleDeleteAvatar = async () => {
+    if (!formData.avatar || !userId) return;
+    
+    setIsDeleting(true);
+    try {
+      // Extract the file path from the URL if it's a Supabase storage URL
+      const avatarUrl = formData.avatar;
+      if (avatarUrl.includes('avatars/')) {
+        const pathMatch = avatarUrl.match(/avatars\/(.+)$/);
+        if (pathMatch) {
+          const filePath = pathMatch[1];
+          // Try to delete from storage
+          await supabase.storage.from('avatars').remove([filePath]);
+        }
+      }
+      
+      // Update profile to remove avatar
+      setFormData(prev => ({ ...prev, avatar: undefined }));
+      onUpdateProfile({ avatar: undefined });
+      toast.success('Profile photo removed');
+    } catch (error: any) {
+      console.error('Error deleting avatar:', error);
+      toast.error('Failed to remove photo');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="stat-card">
@@ -190,9 +219,27 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
                 className="hidden"
               />
             </div>
-            <p className="text-sm text-muted-foreground">
-              Click to upload a profile photo
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground">
+                Click to upload a profile photo
+              </p>
+              {formData.avatar && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleDeleteAvatar}
+                  disabled={isDeleting}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 px-2"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                  <span className="ml-1 text-xs">Remove</span>
+                </Button>
+              )}
+            </div>
             
             {/* AI Avatar Generator */}
             <AvatarGenerator
