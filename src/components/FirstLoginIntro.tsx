@@ -1,5 +1,6 @@
 import { useState, useEffect, Suspense, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { EffectComposer, DepthOfField, Vignette } from '@react-three/postprocessing';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
@@ -147,6 +148,16 @@ export function FirstLoginIntro({ onComplete }: FirstLoginIntroProps) {
             <RealisticBasketball startBounce={phase >= 1} />
             <CourtFloor />
           </Suspense>
+          
+          {/* Cinematic post-processing effects */}
+          <EffectComposer>
+            <DepthOfField
+              focusDistance={0.02}
+              focalLength={0.05}
+              bokehScale={3}
+            />
+            <Vignette darkness={0.5} offset={0.3} />
+          </EffectComposer>
         </Canvas>
       </div>
 
