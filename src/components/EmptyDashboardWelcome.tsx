@@ -4,6 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Mic, Camera, User, Sparkles, Loader2, Check, X, RefreshCw, Trash2 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -41,10 +51,16 @@ export function EmptyDashboardWelcome({
   const [generatedPreview, setGeneratedPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleConfirmSkip = () => {
+    setShowSkipConfirm(false);
+    onSkipPhoto();
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -578,7 +594,7 @@ export function EmptyDashboardWelcome({
                       Upload a photo
                     </Button>
                     <Button
-                      onClick={onSkipPhoto}
+                      onClick={() => setShowSkipConfirm(true)}
                       variant="ghost"
                       className="w-full h-12 text-muted-foreground"
                     >
@@ -603,6 +619,25 @@ export function EmptyDashboardWelcome({
       >
         "Every expert was once a beginner."
       </motion.p>
+
+      {/* Skip Confirmation Dialog */}
+      <AlertDialog open={showSkipConfirm} onOpenChange={setShowSkipConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Skip adding a photo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your avatar helps personalize your journal and makes it feel more like yours. 
+              You can always add a photo later in Settings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go back</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSkip}>
+              Skip for now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
