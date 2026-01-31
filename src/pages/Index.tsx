@@ -390,7 +390,17 @@ export default function Index() {
                   {games.length} games recorded
                 </p>
               </div>
-              <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleQuickLiveStatsClick}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Radio className="w-4 h-4" />
+                  <span className="hidden sm:inline">Live Stats</span>
+                </Button>
+                <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+              </div>
             </div>
 
             {games.length === 0 ? (
