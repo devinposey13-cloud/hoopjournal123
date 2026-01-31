@@ -119,6 +119,24 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        "fire-flicker": {
+          "0%, 100%": { 
+            opacity: "1",
+            transform: "scaleY(1) translateY(0)",
+          },
+          "25%": { 
+            opacity: "0.8",
+            transform: "scaleY(1.1) translateY(-2px)",
+          },
+          "50%": { 
+            opacity: "0.9",
+            transform: "scaleY(0.95) translateY(1px)",
+          },
+          "75%": { 
+            opacity: "0.85",
+            transform: "scaleY(1.05) translateY(-1px)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -131,6 +149,7 @@ export default {
         "intro-bounce": "intro-bounce 1.5s ease-out forwards",
         "spotlight-on": "spotlight-on 1s ease-out forwards",
         "shimmer": "shimmer 2s linear infinite",
+        "fire-flicker": "fire-flicker 0.5s ease-in-out infinite",
       },
     },
   },

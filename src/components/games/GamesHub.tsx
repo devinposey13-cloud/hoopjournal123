@@ -122,25 +122,45 @@ export function GamesHub() {
           </p>
         </div>
         <div className={cn(
-          'bg-card rounded-xl p-4 border transition-all duration-300',
+          'bg-card rounded-xl p-4 border transition-all duration-300 relative overflow-hidden',
           (userStats?.current_streak || 0) > 0
             ? 'border-orange-500/50 animate-pulse-glow'
             : 'border-border'
         )}>
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            {(userStats?.current_streak || 0) > 0 ? (
-              <Flame className="w-4 h-4 text-orange-500" />
-            ) : (
-              <Zap className="w-4 h-4" />
-            )}
-            <span className="text-sm">Current Streak</span>
+          {/* Fire background effect for high streaks */}
+          {(userStats?.current_streak || 0) >= 3 && (
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-16 animate-fire-flicker">
+                <div className="absolute inset-0 bg-gradient-to-t from-orange-600/40 via-orange-500/20 to-transparent rounded-full blur-xl" />
+              </div>
+              <div className="absolute bottom-0 left-1/3 w-16 h-12 animate-fire-flicker" style={{ animationDelay: '0.15s' }}>
+                <div className="absolute inset-0 bg-gradient-to-t from-red-500/30 via-orange-400/15 to-transparent rounded-full blur-lg" />
+              </div>
+              <div className="absolute bottom-0 right-1/3 w-16 h-12 animate-fire-flicker" style={{ animationDelay: '0.3s' }}>
+                <div className="absolute inset-0 bg-gradient-to-t from-yellow-500/30 via-orange-400/15 to-transparent rounded-full blur-lg" />
+              </div>
+            </div>
+          )}
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              {(userStats?.current_streak || 0) > 0 ? (
+                <Flame className={cn(
+                  'w-4 h-4 text-orange-500',
+                  (userStats?.current_streak || 0) >= 3 && 'animate-fire-flicker'
+                )} />
+              ) : (
+                <Zap className="w-4 h-4" />
+              )}
+              <span className="text-sm">Current Streak</span>
+            </div>
+            <p className={cn(
+              'text-2xl font-bold',
+              (userStats?.current_streak || 0) > 0 && 'text-orange-500',
+              (userStats?.current_streak || 0) >= 3 && 'drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]'
+            )}>
+              {userStats?.current_streak || 0} days
+            </p>
           </div>
-          <p className={cn(
-            'text-2xl font-bold',
-            (userStats?.current_streak || 0) > 0 && 'text-orange-500'
-          )}>
-            {userStats?.current_streak || 0} days
-          </p>
         </div>
       </div>
 
