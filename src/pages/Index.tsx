@@ -303,12 +303,19 @@ export default function Index() {
                   
                   <EmptyDashboardWelcome
                     playerName={profile.name || 'Player'}
+                    avatarUrl={profile.avatar}
                     onLogFirstGame={() => {
                       // Trigger add game dialog - navigate to games tab
                       setActiveTab('games');
                     }}
                     onPregameTalk={() => {
                       setActiveTab('coach');
+                    }}
+                    onUploadPhoto={() => {
+                      setActiveTab('settings');
+                    }}
+                    onSkipPhoto={() => {
+                      // Just dismiss - user can add later
                     }}
                   />
                 </div>
