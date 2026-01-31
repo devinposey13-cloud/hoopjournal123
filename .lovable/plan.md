@@ -1,38 +1,67 @@
 
-# First Login Basketball Animation Experience
+
+# Guided Player Setup: Card-Based Onboarding Experience
 
 ## Overview
 
-Create a cinematic 5-7 second basketball animation that plays the first time a user logs in. This will be a clean, minimal, 2K-style introduction sequence that sets the emotional tone before any onboarding forms appear.
+Redesign the first-time user flow from a single animation that dumps users into settings, to a **card-based, one-question-at-a-time** onboarding that builds identity, creates emotional buy-in, and delivers an instant payoff.
 
 ## User Flow
 
 ```text
-User Signs In
+User Signs In (first time)
      ↓
-Check if first login (no games recorded yet OR first session)
+Basketball Animation (existing, 5-7 sec)
      ↓
-[YES] → Show Basketball Intro Animation (5-7 sec)
-                    ↓
-         "Every game tells a story."
-                    ↓
-         [Start My Journey] button
-                    ↓
-         Proceed to Dashboard
+"Start My Journey" button
      ↓
-[NO] → Skip directly to Dashboard
+Card 1: "Who's the hooper?" (name/nickname)
+     ↓
+Card 2: "How do you see yourself?" (role selection)
+     ↓
+Card 3: "What level are you playing at?" (level selection)
+     ↓
+Card 4: "What are you chasing?" (goals multi-select)
+     ↓
+Card 5: "Share with family?" (optional parent email)
+     ↓
+Transition: "Profile created. Season loading..."
+     ↓
+Dashboard with Coach AI welcome card
 ```
 
-## Animation Sequence (5-7 seconds)
+## Card Design Specifications
 
-| Time | Visual | Audio |
-|------|--------|-------|
-| 0-1s | Dark screen with subtle court texture fade-in | Silence |
-| 1-3s | Basketball bounces into frame (3D animation) | Single bounce echo |
-| 3-5s | Stat overlays flash across screen (PTS, REB, AST) | Subtle swoosh sounds |
-| 5-6s | Court spotlight illuminates the center | Soft arena ambience |
-| 6-7s | Text fades in: "Every game tells a story." | Silence |
-| 7s+ | "Start My Journey" button appears | — |
+### Visual Layout (Each Card)
+```text
++------------------------------------------+
+|         ● ● ● ○ ○                        |  <- Progress dots
+|                                          |
+|    "How do you see yourself             |
+|         on the court?"                   |  <- Question text
+|                                          |
+|  +----------+  +----------+              |
+|  |    🏀    |  |    🎯    |              |  <- Tappable cards
+|  |  Scorer  |  | Playmaker|              |
+|  +----------+  +----------+              |
+|                                          |
+|  +----------+  +----------+              |
+|  |    🛡️    |  |    🔥    |              |
+|  | Lockdown |  |  Energy  |              |
+|  +----------+  +----------+              |
+|                                          |
++------------------------------------------+
+```
+
+### Card Content
+
+| Card | Question | Input Type | Options |
+|------|----------|------------|---------|
+| 1 | "Who's the hooper?" | Text input | Name/nickname |
+| 2 | "How do you see yourself on the court?" | Single tap cards | Scorer, Playmaker, Lockdown Defender, Energy Player |
+| 3 | "What level are you playing at right now?" | Single tap cards | Middle School, Freshman/JV, Varsity, AAU/Club |
+| 4 | "What are you chasing this season?" | Multi-select cards | More confidence, More minutes, Better stats, Better defense, Making the team, Just getting better |
+| 5 | "Want to share this journey with family?" | Optional email input | Add parent email OR Skip |
 
 ## Technical Implementation
 
@@ -40,186 +69,251 @@ Check if first login (no games recorded yet OR first session)
 
 | File | Purpose |
 |------|---------|
-| `src/components/FirstLoginIntro.tsx` | Main full-screen intro component with 3D basketball animation |
-| `src/hooks/useFirstLogin.ts` | Hook to detect if this is the user's first session |
+| `src/components/OnboardingFlow.tsx` | Main card-based onboarding container |
+| `src/components/onboarding/OnboardingCard.tsx` | Reusable animated card wrapper |
+| `src/components/onboarding/IdentityCard.tsx` | Card 1 - Name input |
+| `src/components/onboarding/RoleCard.tsx` | Card 2 - Court role selection |
+| `src/components/onboarding/LevelCard.tsx` | Card 3 - Playing level selection |
+| `src/components/onboarding/GoalsCard.tsx` | Card 4 - Season goals multi-select |
+| `src/components/onboarding/FamilyCard.tsx` | Card 5 - Parent email (optional) |
+| `src/components/onboarding/TransitionScreen.tsx` | "Season loading..." animation |
+| `src/components/EmptyDashboardWelcome.tsx` | Coach AI welcome card for empty state |
 
 ### Modified Files
 
 | File | Change |
 |------|--------|
-| `src/pages/Index.tsx` | Add first-login check before showing dashboard |
-| `src/hooks/useSoundEffects.ts` | Add `bounce_echo` and `arena_ambience` synthetic sounds |
-| `tailwind.config.ts` | Add new keyframes for intro animations |
+| `src/components/FirstLoginIntro.tsx` | Update to transition to onboarding flow instead of completing |
+| `src/hooks/useFirstLogin.ts` | Add onboarding step tracking (intro_seen, onboarding_complete) |
+| `src/pages/Index.tsx` | Add onboarding flow between intro and dashboard, show welcome state |
+| `src/types/basketball.ts` | Add new profile fields (courtRole, playingLevel, seasonGoals, parentEmail) |
+| `src/hooks/useCloudData.ts` | Update profile saving to include new fields |
+| `tailwind.config.ts` | Add card-swipe and slide animations |
 
-## Component Design: `FirstLoginIntro.tsx`
+### Database Migration
+
+Add new columns to `player_settings` table:
+
+```sql
+ALTER TABLE player_settings
+ADD COLUMN IF NOT EXISTS court_role TEXT,
+ADD COLUMN IF NOT EXISTS playing_level TEXT,
+ADD COLUMN IF NOT EXISTS season_goals TEXT[],
+ADD COLUMN IF NOT EXISTS parent_email TEXT,
+ADD COLUMN IF NOT EXISTS onboarding_completed_at TIMESTAMP WITH TIME ZONE;
+```
+
+## Component Design Details
+
+### OnboardingFlow.tsx
+
+Main orchestrator component that:
+- Tracks current step (1-5)
+- Manages form data state
+- Handles step transitions with Framer Motion AnimatePresence
+- Shows progress indicator (dots)
+- Saves profile data on completion
+
+```typescript
+interface OnboardingData {
+  name: string;
+  courtRole: 'scorer' | 'playmaker' | 'defender' | 'energy';
+  playingLevel: 'middle_school' | 'freshman_jv' | 'varsity' | 'aau_club';
+  seasonGoals: string[];
+  parentEmail?: string;
+}
+```
+
+### Progress Indicator
+
+```text
+Step 1: ● ○ ○ ○ ○
+Step 2: ● ● ○ ○ ○
+Step 3: ● ● ● ○ ○
+Step 4: ● ● ● ● ○
+Step 5: ● ● ● ● ●
+```
+
+### Card Animations
+
+Using Framer Motion for smooth transitions:
+
+```typescript
+const cardVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 300 : -300,
+    opacity: 0
+  }),
+  center: {
+    x: 0,
+    opacity: 1
+  },
+  exit: (direction: number) => ({
+    x: direction < 0 ? 300 : -300,
+    opacity: 0
+  })
+};
+```
+
+### Role Selection Cards (Card 2)
+
+```typescript
+const roles = [
+  { id: 'scorer', icon: '🏀', label: 'Scorer', description: 'Put the ball in the bucket' },
+  { id: 'playmaker', icon: '🎯', label: 'Playmaker', description: 'Set up teammates for success' },
+  { id: 'defender', icon: '🛡️', label: 'Lockdown Defender', description: 'Shut down the opposition' },
+  { id: 'energy', icon: '🔥', label: 'Energy Player', description: 'Hustle and heart every play' },
+];
+```
+
+### Level Selection Cards (Card 3)
+
+```typescript
+const levels = [
+  { id: 'middle_school', label: 'Middle School', subtext: 'Grades 6-8' },
+  { id: 'freshman_jv', label: 'Freshman / JV', subtext: 'High school development' },
+  { id: 'varsity', label: 'Varsity', subtext: 'Top high school level' },
+  { id: 'aau_club', label: 'AAU / Club', subtext: 'Travel & competitive ball' },
+];
+```
+
+### Goals Multi-Select (Card 4)
+
+```typescript
+const goals = [
+  { id: 'confidence', label: 'More confidence', icon: '💪' },
+  { id: 'minutes', label: 'More minutes', icon: '⏱️' },
+  { id: 'stats', label: 'Better stats', icon: '📊' },
+  { id: 'defense', label: 'Better defense', icon: '🛡️' },
+  { id: 'make_team', label: 'Making the team', icon: '✅' },
+  { id: 'improve', label: 'Just getting better', icon: '📈' },
+];
+```
+
+### Empty Dashboard Welcome (EmptyDashboardWelcome.tsx)
+
+When user completes onboarding but has no games:
 
 ```text
 +------------------------------------------+
 |                                          |
-|           [Dark background]              |
+|    🏀 Coach AI                           |
 |                                          |
-|              🏀 (bouncing)               |
+|    "First game hasn't been logged yet —  |
+|     but every season starts somewhere.   |
+|     Let me know when you're ready."      |
 |                                          |
-|    [PTS] [REB] [AST] flash overlays      |
-|                                          |
-|       "Every game tells a story."        |
-|                                          |
-|        [ Start My Journey ]              |
+|    [ Log First Game ]  [ Pregame Talk ]  |
 |                                          |
 +------------------------------------------+
 ```
 
-**Animation Techniques:**
-- 3D bouncing basketball using React Three Fiber (reuse existing patterns from `BasketballHoop3D.tsx`)
-- Stat overlays use Framer Motion `staggerChildren` for sequential flash effect
-- Text fade uses existing `animate-fade-in` with delay
-- Button slides up from bottom with scale effect
-
-## First Login Detection Logic
-
-We'll create a custom hook `useFirstLogin` that checks:
-
-1. **LocalStorage flag**: `hoopjournal_intro_seen` - persists across sessions
-2. **Backup check**: If user has 0 games recorded, they're likely new
+## First Login Hook Updates
 
 ```typescript
 // src/hooks/useFirstLogin.ts
+interface FirstLoginState {
+  showIntro: boolean;      // Show basketball animation
+  showOnboarding: boolean; // Show card-based setup
+  loading: boolean;
+}
+
 export function useFirstLogin() {
-  const [showIntro, setShowIntro] = useState(false);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    const hasSeenIntro = localStorage.getItem('hoopjournal_intro_seen');
-    if (!hasSeenIntro) {
-      setShowIntro(true);
-    }
-    setLoading(false);
-  }, []);
+  // Check localStorage keys:
+  // - hoopjournal_intro_seen (animation watched)
+  // - hoopjournal_onboarding_complete (setup finished)
   
   const completeIntro = () => {
     localStorage.setItem('hoopjournal_intro_seen', 'true');
-    setShowIntro(false);
+    // Now show onboarding
   };
   
-  return { showIntro, loading, completeIntro };
+  const completeOnboarding = () => {
+    localStorage.setItem('hoopjournal_onboarding_complete', 'true');
+    // Now show dashboard
+  };
 }
 ```
 
-## 3D Basketball Animation Component
-
-Reusing patterns from `BasketballHoop3D.tsx`:
+## Animation Additions (tailwind.config.ts)
 
 ```typescript
-function BouncingBasketball() {
-  const meshRef = useRef<THREE.Mesh>(null);
-  
-  useFrame((state) => {
-    if (!meshRef.current) return;
-    // Bounce animation: starts high, bounces with decreasing amplitude
-    const t = state.clock.elapsedTime;
-    const bounceHeight = Math.abs(Math.sin(t * 4)) * Math.exp(-t * 0.3);
-    meshRef.current.position.y = bounceHeight * 2 - 0.5;
-    meshRef.current.rotation.x += 0.05;
-  });
-  
-  return (
-    <mesh ref={meshRef}>
-      <sphereGeometry args={[0.5, 32, 32]} />
-      <meshStandardMaterial color="#ff6b00" roughness={0.8} />
-    </mesh>
-  );
-}
-```
-
-## Stat Flash Overlays
-
-Reusing pattern from `StatFlash.tsx`:
-
-```typescript
-const stats = [
-  { label: 'PTS', delay: 0 },
-  { label: 'REB', delay: 0.2 },
-  { label: 'AST', delay: 0.4 },
-];
-
-{stats.map((stat) => (
-  <motion.div
-    key={stat.label}
-    initial={{ opacity: 0, scale: 0.5 }}
-    animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 1] }}
-    transition={{ delay: 3 + stat.delay, duration: 0.8 }}
-    className="text-6xl font-black text-primary/30"
-  >
-    {stat.label}
-  </motion.div>
-))}
-```
-
-## Sound Effects
-
-Add to `useSoundEffects.ts`:
-
-```typescript
-case 'bounce_echo':
-  // Deep basketball bounce with reverb
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(120, now);
-  oscillator.frequency.exponentialRampToValueAtTime(60, now + 0.3);
-  gainNode.gain.setValueAtTime(0.4, now);
-  gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-  break;
-```
-
-## Integration in Index.tsx
-
-```typescript
-export default function Index() {
-  const { showIntro, loading: introLoading, completeIntro } = useFirstLogin();
-  // ... existing code
-  
-  // Show intro animation for first-time users
-  if (!authLoading && user && showIntro) {
-    return <FirstLoginIntro onComplete={completeIntro} />;
+keyframes: {
+  "card-slide-in": {
+    "0%": { transform: "translateX(100%)", opacity: "0" },
+    "100%": { transform: "translateX(0)", opacity: "1" }
+  },
+  "card-slide-out": {
+    "0%": { transform: "translateX(0)", opacity: "1" },
+    "100%": { transform: "translateX(-100%)", opacity: "0" }
+  },
+  "option-pop": {
+    "0%": { transform: "scale(0.8)", opacity: "0" },
+    "100%": { transform: "scale(1)", opacity: "1" }
+  },
+  "dot-fill": {
+    "0%": { backgroundColor: "transparent" },
+    "100%": { backgroundColor: "hsl(var(--primary))" }
+  },
+  "loading-pulse": {
+    "0%, 100%": { opacity: "0.4" },
+    "50%": { opacity: "1" }
   }
-  
-  // ... rest of existing logic
 }
 ```
 
-## Visual Design Notes
+## Transition Screen Design
 
-- **Color palette**: Dark background (`hsl(220 20% 6%)`), orange accents (`hsl(24 100% 50%)`)
-- **Typography**: "Every game tells a story." uses existing Dancing Script cursive font
-- **Button**: Uses existing `gradient-primary` class with scale-in animation
-- **No cartoonish elements**: Clean geometric shapes, subtle shadows, professional feel
-- **Court texture hint**: Subtle wood grain gradient at bottom of screen
+After Card 5, before dashboard:
 
-## Tailwind Animation Additions
-
-```typescript
-// In tailwind.config.ts keyframes
-"intro-bounce": {
-  "0%": { transform: "translateY(-100vh)", opacity: "0" },
-  "20%": { transform: "translateY(0)", opacity: "1" },
-  "40%": { transform: "translateY(-30%)" },
-  "60%": { transform: "translateY(0)" },
-  "80%": { transform: "translateY(-10%)" },
-  "100%": { transform: "translateY(0)" }
-},
-"spotlight-on": {
-  "0%": { opacity: "0", transform: "scale(0.5)" },
-  "100%": { opacity: "0.3", transform: "scale(1)" }
-}
+```text
++------------------------------------------+
+|                                          |
+|              [Basketball]                |
+|            (brief bounce)                |
+|                                          |
+|     "Profile created. Season loading…"   |
+|                                          |
+|         [Loading bar animation]          |
+|                                          |
++------------------------------------------+
 ```
 
-## Summary
+Duration: 2-3 seconds with animated progress bar
+
+## Summary of Changes
 
 | Aspect | Implementation |
 |--------|----------------|
-| Detection | LocalStorage flag + `useFirstLogin` hook |
-| Animation | React Three Fiber 3D basketball + Framer Motion overlays |
-| Duration | 5-7 seconds, auto-progressing with button option |
-| Audio | Synthetic bounce echo + swoosh using Web Audio API |
-| Style | 2K-inspired, minimal, dark with orange accents |
-| Text | "Every game tells a story." in cursive |
-| CTA | "Start My Journey" button |
+| Detection | Separate flags for intro_seen and onboarding_complete |
+| Card Flow | 5 cards with swipe/tap navigation |
+| Progress | Dot indicator at top of each card |
+| Animations | Framer Motion for card transitions |
+| Data | New profile fields for role, level, goals |
+| Payoff | Coach AI welcome card on empty dashboard |
+| Style | 2K/Duolingo-inspired, fun not form-like |
+
+## Files Summary
+
+**New Files (9):**
+- `src/components/OnboardingFlow.tsx`
+- `src/components/onboarding/OnboardingCard.tsx`
+- `src/components/onboarding/IdentityCard.tsx`
+- `src/components/onboarding/RoleCard.tsx`
+- `src/components/onboarding/LevelCard.tsx`
+- `src/components/onboarding/GoalsCard.tsx`
+- `src/components/onboarding/FamilyCard.tsx`
+- `src/components/onboarding/TransitionScreen.tsx`
+- `src/components/EmptyDashboardWelcome.tsx`
+
+**Modified Files (6):**
+- `src/components/FirstLoginIntro.tsx`
+- `src/hooks/useFirstLogin.ts`
+- `src/pages/Index.tsx`
+- `src/types/basketball.ts`
+- `src/hooks/useCloudData.ts`
+- `tailwind.config.ts`
+
+**Database Migration:**
+- Add columns: court_role, playing_level, season_goals, parent_email, onboarding_completed_at
+
