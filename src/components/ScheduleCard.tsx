@@ -31,7 +31,7 @@ export const ScheduleCard = forwardRef<HTMLDivElement, ScheduleCardProps>(
         )}
       >
         {isTodayGame && (
-          <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full gradient-primary text-xs font-bold text-primary-foreground">
+          <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full gradient-primary text-xs font-bold text-primary-foreground animate-pulse">
             TODAY
           </div>
         )}
