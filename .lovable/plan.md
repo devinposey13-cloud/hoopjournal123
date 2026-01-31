@@ -1,133 +1,81 @@
 
-# Plan: Enhance Intro Basketball Realism & Audio
+
+# Multi-Team Support Implementation Plan
 
 ## Overview
-Upgrade the first-login intro animation with a photorealistic 3D basketball using PBR textures and replace synthetic audio with AI-generated sound effects using ElevenLabs.
+This plan adds the ability for players to belong to multiple teams (e.g., school team, travel team, AAU team) and select which team they played for when logging a game.
 
 ---
 
-## Part 1: Realistic 3D Basketball
+## What You'll See
 
-### Current Issues
-- Basketball is a plain orange sphere with simple torus rings
-- No surface texture (leather grain, pebbling)
-- Basic flat lighting without shadows
-- Seams don't look authentic
+### In Settings
+- A new "My Teams" section where you can add and remove teams
+- Your existing team name will be automatically migrated as your first team
+- Add new teams with a simple text input
+- Remove teams you no longer play for
 
-### Solution: Procedural PBR Basketball
+### When Adding a Game
+- A new dropdown labeled "Team" will appear at the top of the game form
+- Your default/primary team will be pre-selected
+- Select a different team if logging a game for another squad
 
-Using `@react-three/drei` (already installed), we'll create a realistic basketball with:
+### On Game Cards
+- Games will show which team you played for (if you have multiple teams)
 
-1. **Procedural Leather Texture**
-   - Generate a canvas-based texture for the leather pebble pattern
-   - Apply as both color map and bump/normal map for depth
+---
 
-2. **Realistic Seam Lines**
-   - Use `Line` component from drei for smooth curved seams
-   - Proper basketball seam layout (8 panels)
+## Technical Details
 
-3. **Enhanced Materials**
-   - `MeshPhysicalMaterial` for subsurface scattering effect
-   - Proper roughness map for worn leather look
-   - Environment reflections for gymnasium lighting
+### Database Changes
 
-4. **Better Lighting**
-   - `Environment` preset for realistic reflections
-   - Soft shadows on the court floor
-   - Rim lighting for drama
-
+**New Table: `player_teams`**
 ```text
-┌─────────────────────────────────────┐
-│         Enhanced Basketball         │
-├─────────────────────────────────────┤
-│  • Procedural leather texture       │
-│  • 8-panel seam layout              │
-│  • Bump mapping for pebble grain    │
-│  • Environment reflections          │
-│  • Soft shadows                     │
-└─────────────────────────────────────┘
++------------------+----------+--------------------------------+
+| Column           | Type     | Description                    |
++------------------+----------+--------------------------------+
+| id               | uuid     | Primary key                    |
+| user_id          | uuid     | References the user            |
+| name             | text     | Team name (e.g., "Lakers AAU") |
+| is_primary       | boolean  | Default team for new games     |
+| created_at       | timestamp| When team was added            |
++------------------+----------+--------------------------------+
 ```
 
----
+**Games Table Update**
+- Add `team_id` column (uuid, nullable) referencing `player_teams.id`
+- Existing games will have `team_id` set to null initially
 
-## Part 2: Professional Audio
+**Data Migration**
+- If user has existing `team` value in `player_settings`, create a `player_teams` entry and mark as primary
+- Existing games will be linked to this primary team
 
-### Current Issues
-- `bounce_echo` and `arena_ambience` use Web Audio API oscillators
-- Sounds are synthetic and robotic
-- No court impact sounds
+### Files to Create/Modify
 
-### Solution: ElevenLabs Sound Effects API
+**New Files:**
+- `src/hooks/usePlayerTeams.ts` - Hook to manage player teams
 
-Create a new edge function to generate high-quality sound effects:
+**Modified Files:**
+- `src/types/basketball.ts` - Add `PlayerTeam` type and update `GameStats`
+- `src/components/SettingsPanel.tsx` - Add teams management section
+- `src/components/GameStatsForm.tsx` - Add team dropdown
+- `src/hooks/useCloudData.ts` - Fetch teams, include team_id when adding games
+- `src/components/GameCard.tsx` - Display team name if multiple teams exist
+- `src/integrations/supabase/types.ts` - Auto-updated with new schema
 
-| Sound | Prompt | Duration |
-|-------|--------|----------|
-| Bounce Echo | "Basketball bouncing on hardwood gymnasium floor with reverb echo in empty arena" | 3s |
-| Arena Ambience | "Quiet basketball arena crowd murmur with distant sneaker squeaks" | 5s |
-| Swoosh | "Basketball swishing through net clean shot" | 2s |
-
-**Implementation:**
-1. Create `elevenlabs-sfx` edge function
-2. Generate sounds on first app load and cache in localStorage
-3. Fall back to synthetic sounds if API fails
-
----
-
-## Technical Implementation
-
-### Files to Create
-| File | Purpose |
-|------|---------|
-| `supabase/functions/elevenlabs-sfx/index.ts` | Edge function for sound generation |
-| `src/components/RealisticBasketball.tsx` | New 3D basketball component |
-
-### Files to Modify
-| File | Changes |
-|------|---------|
-| `src/components/FirstLoginIntro.tsx` | Use new basketball component, add sound preloading |
-| `src/hooks/useSoundEffects.ts` | Add ElevenLabs sound fetching with caching |
+### RLS Policies
+- Users can only CRUD their own teams
+- Same isolation pattern as other user data
 
 ---
 
-## Detailed Steps
+## Implementation Steps
 
-### Step 1: Create ElevenLabs SFX Edge Function
-- New edge function calling ElevenLabs Sound Effects API
-- Returns MP3 audio buffer
-- Supports custom prompts and durations
+1. Create database migration for `player_teams` table and games column
+2. Add data migration to convert existing team data
+3. Create the `usePlayerTeams` hook for CRUD operations
+4. Update TypeScript types
+5. Add teams management UI to Settings
+6. Add team dropdown to GameStatsForm
+7. Update game display to show team when relevant
 
-### Step 2: Build Realistic Basketball Component
-- Use `MeshPhysicalMaterial` with:
-  - Base orange color
-  - Roughness: 0.8 for matte leather
-  - Clearcoat: 0.1 for subtle shine
-- Create procedural bump map using canvas:
-  - Perlin noise pattern for leather pebbling
-  - Higher frequency for realistic grain
-- Draw proper 8-panel seam lines using drei `Line`
-- Add subtle environment reflections
-
-### Step 3: Enhance Scene Lighting
-- Add `Environment` from drei with "warehouse" preset
-- Enable shadows on floor mesh
-- Add secondary fill light for depth
-
-### Step 4: Integrate AI Sound Effects
-- On intro start, fetch sounds from edge function
-- Cache in localStorage as base64 for instant replay
-- Use Web Audio API for precise timing
-- Keep synthetic fallback for offline/error cases
-
-### Step 5: Improve Animation Timing
-- Add slight squash on ground impact
-- Sync bounce sounds with animation frames
-- Add subtle camera follow movement
-
----
-
-## Expected Results
-- Basketball looks like a real NBA game ball with visible leather texture
-- Bounce sounds feel like you're in a gymnasium
-- Arena ambience creates immersive atmosphere
-- Smooth 60fps animation with physics-based bouncing
