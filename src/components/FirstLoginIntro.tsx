@@ -1,56 +1,12 @@
-import { useRef, useState, useEffect, Suspense } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { useState, useEffect, Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
-import * as THREE from 'three';
+import { RealisticBasketball } from '@/components/RealisticBasketball';
 
 interface FirstLoginIntroProps {
   onComplete: () => void;
-}
-
-// 3D Bouncing Basketball Component
-function BouncingBasketball({ startBounce }: { startBounce: boolean }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const startTimeRef = useRef<number | null>(null);
-
-  useFrame((state) => {
-    if (!meshRef.current || !startBounce) return;
-
-    if (startTimeRef.current === null) {
-      startTimeRef.current = state.clock.elapsedTime;
-    }
-
-    const t = state.clock.elapsedTime - startTimeRef.current;
-    
-    // Bouncing physics with damping
-    const bounceHeight = Math.abs(Math.sin(t * 3.5)) * Math.exp(-t * 0.4);
-    meshRef.current.position.y = bounceHeight * 2.5 - 0.5;
-    
-    // Rotation while bouncing
-    meshRef.current.rotation.x += 0.03;
-    meshRef.current.rotation.z += 0.01;
-  });
-
-  return (
-    <mesh ref={meshRef} position={[0, 3, 0]}>
-      <sphereGeometry args={[0.6, 32, 32]} />
-      <meshStandardMaterial 
-        color="hsl(24, 100%, 50%)" 
-        roughness={0.7}
-        metalness={0.1}
-      />
-      {/* Basketball lines */}
-      <mesh rotation={[0, 0, Math.PI / 2]}>
-        <torusGeometry args={[0.61, 0.02, 8, 32]} />
-        <meshStandardMaterial color="hsl(24, 30%, 20%)" />
-      </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.61, 0.02, 8, 32]} />
-        <meshStandardMaterial color="hsl(24, 30%, 20%)" />
-      </mesh>
-    </mesh>
-  );
 }
 
 // Court floor hint
@@ -85,7 +41,7 @@ function Spotlight({ visible }: { visible: boolean }) {
 }
 
 export function FirstLoginIntro({ onComplete }: FirstLoginIntroProps) {
-  const { playSound } = useSoundEffects();
+  const { playSound, preloadIntroSounds } = useSoundEffects();
   const [phase, setPhase] = useState(0);
   // Phase 0: Dark fade-in
   // Phase 1: Basketball bouncing
@@ -94,8 +50,11 @@ export function FirstLoginIntro({ onComplete }: FirstLoginIntroProps) {
   // Phase 4: Button appears
 
   useEffect(() => {
+    // Preload AI-generated sounds in the background
+    preloadIntroSounds();
+    
     // Phase timing
-    const timers: NodeJS.Timeout[] = [];
+    const timers: ReturnType<typeof setTimeout>[] = [];
 
     // Phase 1: Start bounce at 1s
     timers.push(setTimeout(() => {
@@ -120,7 +79,7 @@ export function FirstLoginIntro({ onComplete }: FirstLoginIntroProps) {
     }, 6500));
 
     return () => timers.forEach(clearTimeout);
-  }, [playSound]);
+  }, [playSound, preloadIntroSounds]);
 
   const stats = [
     { label: 'PTS', delay: 0 },
@@ -142,7 +101,7 @@ export function FirstLoginIntro({ onComplete }: FirstLoginIntroProps) {
           <pointLight position={[5, 5, 5]} intensity={0.5} />
           <Spotlight visible={phase >= 3} />
           <Suspense fallback={null}>
-            <BouncingBasketball startBounce={phase >= 1} />
+            <RealisticBasketball startBounce={phase >= 1} />
             <CourtFloor />
           </Suspense>
         </Canvas>
