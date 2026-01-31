@@ -66,6 +66,12 @@ export interface PlayerProfile {
   isProfilePublic?: boolean;
   themeMusicUrl?: string;
   instagramUrl?: string;
+  // Onboarding fields
+  courtRole?: string;
+  playingLevel?: string;
+  seasonGoals?: string[];
+  parentEmail?: string;
+  onboardingCompletedAt?: string;
 }
 
 export interface SeasonStats {

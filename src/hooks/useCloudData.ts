@@ -203,6 +203,12 @@ export function useCloudData() {
           isProfilePublic: settingsData.is_profile_public ?? false,
           themeMusicUrl: settingsData.theme_music_url || undefined,
           instagramUrl: settingsData.instagram_url || undefined,
+          // Onboarding fields
+          courtRole: settingsData.court_role || undefined,
+          playingLevel: settingsData.playing_level || undefined,
+          seasonGoals: settingsData.season_goals || undefined,
+          parentEmail: settingsData.parent_email || undefined,
+          onboardingCompletedAt: settingsData.onboarding_completed_at || undefined,
         });
       }
     } catch (error) {
@@ -724,6 +730,12 @@ export function useCloudData() {
             is_profile_public: updates.isProfilePublic ?? profile.isProfilePublic ?? false,
             theme_music_url: updates.themeMusicUrl ?? profile.themeMusicUrl ?? null,
             instagram_url: updates.instagramUrl ?? profile.instagramUrl ?? null,
+            // Onboarding fields
+            court_role: updates.courtRole ?? profile.courtRole ?? null,
+            playing_level: updates.playingLevel ?? profile.playingLevel ?? null,
+            season_goals: updates.seasonGoals ?? profile.seasonGoals ?? null,
+            parent_email: updates.parentEmail ?? profile.parentEmail ?? null,
+            onboarding_completed_at: updates.onboardingCompletedAt ?? profile.onboardingCompletedAt ?? null,
           },
           { onConflict: 'user_id' }
         );
