@@ -37,6 +37,11 @@ const grades = ['1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade',
 export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStartOver }: SettingsPanelProps) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState(profile);
+  
+  // Sync formData with profile prop when it changes externally (e.g., avatar deleted from dashboard)
+  useEffect(() => {
+    setFormData(profile);
+  }, [profile]);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [newUsername, setNewUsername] = useState('');
