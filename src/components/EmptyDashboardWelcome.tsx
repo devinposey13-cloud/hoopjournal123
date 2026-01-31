@@ -270,10 +270,18 @@ export function EmptyDashboardWelcome({
                       >
                         <motion.div
                           initial={{ scale: 0.8 }}
-                          animate={{ scale: [1, 1.08, 1] }}
-                          transition={{ delay: 0.4, duration: 0.5 }}
+                          animate={{ 
+                            scale: [1, 1.08, 1],
+                            boxShadow: [
+                              '0 0 0 0 hsl(var(--primary) / 0)',
+                              '0 0 20px 4px hsl(var(--primary) / 0.4)',
+                              '0 0 15px 2px hsl(var(--primary) / 0.25)'
+                            ]
+                          }}
+                          transition={{ delay: 0.4, duration: 0.6 }}
+                          className="rounded-full"
                         >
-                          <Avatar className="w-14 h-14 border-2 border-primary ring-2 ring-primary/20">
+                          <Avatar className="w-14 h-14 border-2 border-primary ring-2 ring-primary/30 shadow-[0_0_15px_2px_hsl(var(--primary)/0.25)]">
                             <AvatarImage src={generatedPreview} alt="AI Generated" />
                             <AvatarFallback><Sparkles className="w-5 h-5" /></AvatarFallback>
                           </Avatar>
