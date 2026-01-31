@@ -4,6 +4,7 @@ import { EffectComposer, DepthOfField, Vignette } from '@react-three/postprocess
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
+import { useHapticFeedback } from '@/hooks/useHapticFeedback';
 import { RealisticBasketball } from '@/components/RealisticBasketball';
 import * as THREE from 'three';
 
@@ -79,6 +80,7 @@ function Spotlight({ visible }: { visible: boolean }) {
 
 export function FirstLoginIntro({ onComplete }: FirstLoginIntroProps) {
   const { playSound, preloadIntroSounds } = useSoundEffects();
+  const { triggerHaptic } = useHapticFeedback();
   const [phase, setPhase] = useState(0);
   // Phase 0: Dark fade-in
   // Phase 1: Basketball bouncing
@@ -119,6 +121,7 @@ export function FirstLoginIntro({ onComplete }: FirstLoginIntroProps) {
   }, [playSound, preloadIntroSounds]);
 
   const handleComplete = () => {
+    triggerHaptic('success');
     playSound('net_swoosh');
     // Small delay to let sound play before transitioning
     setTimeout(onComplete, 300);
