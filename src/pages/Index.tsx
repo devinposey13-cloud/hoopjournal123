@@ -39,7 +39,7 @@ import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-
 import { Button } from '@/components/ui/button';
 import { LogOut, Trophy, X, Radio } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { DashboardSkeleton } from '@/components/skeletons/DashboardSkeleton';
+import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Select,
@@ -235,6 +235,18 @@ export default function Index() {
     setQuickCaptureScheduledGameId(undefined);
   };
 
+  // Render skeleton based on active tab
+  const renderLoadingSkeleton = () => {
+    switch (activeTab) {
+      case 'games':
+        return <GamesTabSkeleton />;
+      case 'schedule':
+        return <ScheduleTabSkeleton />;
+      default:
+        return <DashboardSkeleton />;
+    }
+  };
+
   if (dataLoading) {
     return (
       <div className="min-h-screen bg-background pb-14">
@@ -249,7 +261,7 @@ export default function Index() {
           isAdmin={isAdmin}
         />
         <main className="container mx-auto px-4 py-6">
-          <DashboardSkeleton />
+          {renderLoadingSkeleton()}
         </main>
       </div>
     );

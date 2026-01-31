@@ -34,7 +34,7 @@ function ChartCardSkeleton() {
 
 function GameCardSkeleton() {
   return (
-    <div className="journal-card p-4 rounded-xl space-y-3">
+    <div className="stat-card p-4 rounded-xl space-y-3">
       <div className="flex items-center justify-between">
         <Skeleton className="h-5 w-24" />
         <Skeleton className="h-5 w-16 rounded-full" />
@@ -46,6 +46,51 @@ function GameCardSkeleton() {
         <Skeleton className="h-12 rounded-lg" />
       </div>
       <Skeleton className="h-3 w-20" />
+    </div>
+  );
+}
+
+function ScheduleCardSkeleton() {
+  return (
+    <div className="stat-card p-4 rounded-xl space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-10 w-10 rounded-lg" />
+          <div className="space-y-1">
+            <Skeleton className="h-5 w-28" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+        </div>
+        <Skeleton className="h-6 w-14 rounded-full" />
+      </div>
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-4 w-4 rounded" />
+        <Skeleton className="h-3 w-32" />
+      </div>
+    </div>
+  );
+}
+
+function CalendarSkeleton() {
+  return (
+    <div className="stat-card p-4 rounded-xl">
+      <div className="flex items-center justify-between mb-4">
+        <Skeleton className="h-6 w-32" />
+        <div className="flex gap-2">
+          <Skeleton className="h-8 w-8 rounded" />
+          <Skeleton className="h-8 w-8 rounded" />
+        </div>
+      </div>
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((_, i) => (
+          <Skeleton key={i} className="h-6 w-full rounded" />
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {[...Array(35)].map((_, i) => (
+          <Skeleton key={i} className="h-10 w-full rounded" />
+        ))}
+      </div>
     </div>
   );
 }
@@ -151,5 +196,82 @@ export function DashboardSkeleton() {
   );
 }
 
+export function GamesTabSkeleton() {
+  return (
+    <motion.div 
+      className="space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      {/* Header */}
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
+        <div className="space-y-1">
+          <Skeleton className="h-7 w-28" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-9 w-24 rounded-md" />
+          <Skeleton className="h-9 w-24 rounded-md" />
+        </div>
+      </motion.div>
+
+      {/* Game Cards Grid */}
+      <motion.div variants={itemVariants} className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[...Array(6)].map((_, i) => (
+          <GameCardSkeleton key={i} />
+        ))}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+export function ScheduleTabSkeleton() {
+  return (
+    <motion.div 
+      className="space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      {/* Header */}
+      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <Skeleton className="h-7 w-36" />
+          <Skeleton className="h-4 w-28" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-9 w-[180px] rounded-md" />
+          <Skeleton className="h-9 w-24 rounded-md" />
+          <Skeleton className="h-9 w-24 rounded-md" />
+        </div>
+      </motion.div>
+
+      {/* Calendar View */}
+      <motion.section variants={itemVariants}>
+        <Skeleton className="h-5 w-28 mb-4" />
+        <CalendarSkeleton />
+      </motion.section>
+
+      {/* Upcoming Games */}
+      <motion.section variants={itemVariants}>
+        <Skeleton className="h-5 w-32 mb-4" />
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <ScheduleCardSkeleton key={i} />
+          ))}
+        </div>
+      </motion.section>
+    </motion.div>
+  );
+}
+
 // Export individual skeletons for reuse
-export { StatCardSkeleton, ChartCardSkeleton, GameCardSkeleton, PlayerHeaderSkeleton };
+export { 
+  StatCardSkeleton, 
+  ChartCardSkeleton, 
+  GameCardSkeleton, 
+  ScheduleCardSkeleton,
+  CalendarSkeleton,
+  PlayerHeaderSkeleton 
+};
