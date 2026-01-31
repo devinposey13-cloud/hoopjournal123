@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Radio, Play, UserPlus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Radio, Play, UserPlus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,32 +10,52 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { ScheduledGame } from '@/types/basketball';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import type { ScheduledGame, PlayerTeam } from '@/types/basketball';
 
 interface QuickLiveStatsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   todayGames: ScheduledGame[];
-  onStartCapture: (opponent: string, scheduledGameId?: string) => void;
+  teams?: PlayerTeam[];
+  onStartCapture: (opponent: string, scheduledGameId?: string, teamId?: string) => void;
 }
 
 export function QuickLiveStatsDialog({
   open,
   onOpenChange,
   todayGames,
+  teams = [],
   onStartCapture,
 }: QuickLiveStatsDialogProps) {
   const [manualOpponent, setManualOpponent] = useState('');
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const [showManualEntry, setShowManualEntry] = useState(todayGames.length === 0);
 
+  // Set default team to primary team when dialog opens
+  useEffect(() => {
+    if (open && teams.length > 0) {
+      const primaryTeam = teams.find(t => t.is_primary);
+      setSelectedTeamId(primaryTeam?.id || teams[0]?.id || '');
+    }
+  }, [open, teams]);
+
   const handleStartWithGame = (game: ScheduledGame) => {
-    onStartCapture(game.opponent, game.id);
+    // Use the game's team if available, otherwise use selected team
+    const teamId = game.teamId || selectedTeamId || undefined;
+    onStartCapture(game.opponent, game.id, teamId);
     onOpenChange(false);
   };
 
   const handleStartManual = () => {
     if (manualOpponent.trim()) {
-      onStartCapture(manualOpponent.trim());
+      onStartCapture(manualOpponent.trim(), undefined, selectedTeamId || undefined);
       onOpenChange(false);
       setManualOpponent('');
     }
@@ -65,6 +85,28 @@ export function QuickLiveStatsDialog({
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
+          {/* Team selector - show when teams exist */}
+          {teams.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="team" className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" />
+                Playing for
+              </Label>
+              <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+                <SelectTrigger id="team">
+                  <SelectValue placeholder="Select team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name} {team.is_primary && '(Primary)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Today's scheduled games */}
           {todayGames.length > 0 && !showManualEntry && (
             <div className="space-y-2">
@@ -82,6 +124,7 @@ export function QuickLiveStatsDialog({
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {game.time} • {game.location}
+                      {game.teamName && ` • ${game.teamName}`}
                     </p>
                   </div>
                   <Play className="w-4 h-4 text-primary" />

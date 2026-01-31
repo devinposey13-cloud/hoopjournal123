@@ -72,6 +72,7 @@ export default function Index() {
   const [showQuickLiveCapture, setShowQuickLiveCapture] = useState(false);
   const [quickCaptureOpponent, setQuickCaptureOpponent] = useState('');
   const [quickCaptureScheduledGameId, setQuickCaptureScheduledGameId] = useState<string | undefined>();
+  const [quickCaptureTeamId, setQuickCaptureTeamId] = useState<string | undefined>();
   const [isSavingQuickCapture, setIsSavingQuickCapture] = useState(false);
   const [tournamentFilter, setTournamentFilter] = useState<string>('all');
   const [teamFilter, setTeamFilter] = useState<string>('all');
@@ -283,6 +284,7 @@ export default function Index() {
     if (todayGames.length === 1) {
       setQuickCaptureOpponent(todayGames[0].opponent);
       setQuickCaptureScheduledGameId(todayGames[0].id);
+      setQuickCaptureTeamId(todayGames[0].teamId);
       setShowQuickLiveCapture(true);
     } else {
       // Otherwise show the dialog
@@ -290,9 +292,10 @@ export default function Index() {
     }
   };
 
-  const handleStartQuickCapture = (opponent: string, scheduledGameId?: string) => {
+  const handleStartQuickCapture = (opponent: string, scheduledGameId?: string, teamId?: string) => {
     setQuickCaptureOpponent(opponent);
     setQuickCaptureScheduledGameId(scheduledGameId);
+    setQuickCaptureTeamId(teamId);
     setShowQuickLiveCapture(true);
   };
 
@@ -320,6 +323,7 @@ export default function Index() {
         offensiveRebounds: halfData?.total.offensiveRebounds ?? stats.offensiveRebounds,
         defensiveRebounds: halfData?.total.defensiveRebounds ?? stats.defensiveRebounds,
         gamePhotoUrl: halfData?.gamePhotoUrl,
+        teamId: quickCaptureTeamId,
       };
 
       await addGame(gameData);
@@ -327,6 +331,7 @@ export default function Index() {
       setShowQuickLiveCapture(false);
       setQuickCaptureOpponent('');
       setQuickCaptureScheduledGameId(undefined);
+      setQuickCaptureTeamId(undefined);
     } catch (error) {
       console.error('Error saving game:', error);
       toast.error('Failed to save game');
@@ -339,6 +344,7 @@ export default function Index() {
     setShowQuickLiveCapture(false);
     setQuickCaptureOpponent('');
     setQuickCaptureScheduledGameId(undefined);
+    setQuickCaptureTeamId(undefined);
   };
 
   // Render skeleton based on active tab
@@ -998,6 +1004,7 @@ export default function Index() {
         open={showQuickLiveStatsDialog}
         onOpenChange={setShowQuickLiveStatsDialog}
         todayGames={todayGames}
+        teams={teams}
         onStartCapture={handleStartQuickCapture}
       />
 
