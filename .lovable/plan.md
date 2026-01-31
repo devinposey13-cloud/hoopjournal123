@@ -1,164 +1,232 @@
 
-# Delete Retroactive Edge Function & Add Milestone Cleanup on Game Deletion
+# Track Milestone History with Flip-Card Log
 
 ## Overview
-This plan addresses two requirements:
-1. Delete the one-time `award-retroactive-milestones` edge function
-2. Implement milestone recalculation when games are deleted, so cards that no longer qualify return to "locked" status
+This feature changes how repeatable milestones are handled to keep reveals "limited and desirable":
 
-## Current Problem
-When a game is deleted:
-- The game is removed from the database
-- But milestones earned from that game **remain in the database**
-- Multi-game milestones (e.g., "Win Streak") may no longer be valid if the deleted game broke the streak
-- Season milestones may no longer be valid if cumulative totals drop below thresholds
+| Category | First Earn | Subsequent Earns | Milestones Tab |
+|----------|-----------|------------------|----------------|
+| Single-Game Repeatable | Full reveal animation | Silently recorded, toast notification only | Flip card shows history log |
+| Multi-Game Streaks | Full reveal animation | Full reveal animation (always) | Flip card shows streak games |
+| Season Cumulative | Full reveal animation | N/A (one-time) | Flip card shows season stats |
 
-## Solution
+## Current Behavior
+- All repeatable milestones trigger the reveal animation every time they're earned
+- The MilestoneCard shows only the most recent occurrence
+- No flip interaction exists on milestone cards
 
-### Part 1: Delete the Edge Function
-Delete the one-time retroactive milestone script that has already been run.
+## Proposed Changes
 
-| Action | Path |
-|--------|------|
-| Delete folder | `supabase/functions/award-retroactive-milestones/` |
-
-### Part 2: Create Milestone-Aware Game Deletion
-
-**File: `src/hooks/useGameWithMilestones.ts`**
-
-Add a new `deleteGameWithMilestones` function that:
-
-1. **Deletes the game** from the database (using existing `cloudData.deleteGame`)
-2. **Deletes all milestones linked to that game** (single-game milestones stored with `game_id`)
-3. **Re-evaluates remaining milestones** against the updated game list:
-   - For multi-game milestones (streaks, games played): Check if conditions still met
-   - For season milestones: Recalculate totals and check thresholds
-4. **Removes invalidated milestones** from the database
-5. **Refreshes the milestone state** so UI updates immediately
-
-```typescript
-const deleteGameWithMilestones = useCallback(async (gameId: string) => {
-  if (!user) return;
-
-  // 1. Delete milestones directly linked to this game
-  await supabase
-    .from('player_milestones')
-    .delete()
-    .eq('game_id', gameId);
-
-  // 2. Delete the game
-  await cloudData.deleteGame(gameId);
-
-  // 3. Re-evaluate remaining multi-game and season milestones
-  const remainingGames = cloudData.games.filter(g => g.id !== gameId);
-  const invalidMilestoneIds = await findInvalidMilestones(
-    remainingGames,
-    definitions,
-    earnedMilestones,
-    cloudData.activeSeason?.id
-  );
-
-  // 4. Remove invalidated milestones
-  if (invalidMilestoneIds.length > 0) {
-    await supabase
-      .from('player_milestones')
-      .delete()
-      .in('id', invalidMilestoneIds);
-  }
-
-  // 5. Refresh milestone state
-  await refreshMilestones();
-}, [user, cloudData, definitions, earnedMilestones, refreshMilestones]);
-```
+### Part 1: Modify Reveal Logic for Single-Game vs Multi-Game
 
 **File: `src/hooks/useMilestones.ts`**
 
-Add a helper function to identify invalidated milestones:
+Update `checkAndAwardMilestones` to return two separate result sets:
 
 ```typescript
-function findInvalidMilestones(
-  currentGames: GameWithId[],
-  definitions: MilestoneDefinition[],
-  earnedMilestones: PlayerMilestone[],
-  seasonId?: string
-): string[] {
-  const invalidIds: string[] = [];
-  
-  // Check each earned milestone
-  for (const earned of earnedMilestones) {
-    const def = definitions.find(d => d.id === earned.milestoneId);
-    if (!def) continue;
-    
-    // Skip single-game milestones (already handled by cascade)
-    if (def.category === 'single_game') continue;
-    
-    // Check multi-game milestones
-    if (def.category === 'multi_game') {
-      const stillValid = checkMultiGameMilestoneValidity(currentGames, def);
-      if (!stillValid) invalidIds.push(earned.id);
-    }
-    
-    // Check season milestones
-    if (def.category === 'season') {
-      const seasonGames = currentGames.filter(g => seasonId && g.seasonId === seasonId);
-      const stillValid = checkSeasonMilestoneValidity(seasonGames, def);
-      if (!stillValid) invalidIds.push(earned.id);
-    }
-  }
-  
-  return invalidIds;
+interface MilestoneCheckResult {
+  toReveal: NewMilestoneResult[];      // Show in reveal animation
+  silentlyRecorded: NewMilestoneResult[]; // Just saved, no reveal
 }
 ```
 
-### Part 3: Update Components to Use New Delete Function
+Logic:
+- **Single-game repeatable milestones**: Check if EVER earned before
+  - First time → add to `toReveal`
+  - Subsequent → add to `silentlyRecorded` (still save to DB)
+- **Multi-game streak milestones**: Always add to `toReveal` (patterns across games deserve celebration each time)
+- **Season milestones**: Check if earned → add to `toReveal` (one-time only)
 
-**File: `src/pages/Index.tsx`**
+### Part 2: Update MilestoneCard with Flip Animation
 
-Update the `useGameWithMilestones` destructuring to include the new delete function:
+**File: `src/components/milestones/MilestoneCard.tsx`**
+
+Add a 3D flip card with two sides:
+
+```text
+FRONT (existing design)          BACK (new history log)
++------------------------+       +------------------------+
+|         [Icon]         |       |    Earned 5x           |
+|    Milestone Name      |  ↔    |                        |
+|        EPIC            |       | • vs Rebels - Jan 5    |
+|                        |       |   27 PTS, 14 REB       |
+| 27 PTS, 14 REB, 8 AST  |       | • vs Bison - Jan 7     |
+| vs Rebels · Jan 5      |       |   23 PTS, 7 REB        |
++------------------------+       | • vs Falcons - Jan 9   |
+                                 |   14 PTS, 4 REB        |
+                                 +------------------------+
+```
+
+New props:
+```typescript
+interface MilestoneCardProps {
+  // ... existing props
+  allOccurrences?: PlayerMilestone[]; // All times this milestone was earned
+  showFlipHint?: boolean;             // Show tap indicator for multi-occurrence cards
+}
+```
+
+Animation implementation:
+- Use CSS 3D transforms with `transform-style: preserve-3d`
+- Click/tap toggles `rotateY(180deg)`
+- Framer Motion for smooth transitions
+- Back side has ScrollArea for long history logs
+
+### Part 3: Add Occurrence Grouping to useMilestones
+
+**File: `src/hooks/useMilestones.ts`**
+
+Add helper to group earned milestones by definition ID:
 
 ```typescript
-const {
-  games,
-  // ... other props
-  deleteGame: deleteGameWithMilestones, // Use milestone-aware delete
-  // ...
-} = useGameWithMilestones();
+const getOccurrencesByMilestoneId = useCallback((): Map<string, PlayerMilestone[]> => {
+  const map = new Map<string, PlayerMilestone[]>();
+  for (const pm of earnedMilestones) {
+    const list = map.get(pm.milestoneId) || [];
+    list.push(pm);
+    map.set(pm.milestoneId, list);
+  }
+  return map;
+}, [earnedMilestones]);
 ```
+
+Export this from the hook so MilestoneCollection can use it.
+
+### Part 4: Update MilestoneCollection UI
+
+**File: `src/components/milestones/MilestoneCollection.tsx`**
+
+- Pass `allOccurrences` array to each MilestoneCard
+- Show occurrence count badge (e.g., "5x") in corner for cards with multiple occurrences
+- Add visual hint that multi-occurrence cards are tappable
+
+```typescript
+const occurrenceMap = useMemo(() => {
+  const map = new Map<string, PlayerMilestone[]>();
+  earnedMilestones.forEach(pm => {
+    const list = map.get(pm.milestoneId) || [];
+    list.push(pm);
+    map.set(pm.milestoneId, list);
+  });
+  return map;
+}, [earnedMilestones]);
+
+// In render:
+<MilestoneCard
+  milestone={def}
+  allOccurrences={occurrenceMap.get(def.id) || []}
+  showFlipHint={(occurrenceMap.get(def.id)?.length || 0) > 1}
+/>
+```
+
+### Part 5: Update useGameWithMilestones Hook
 
 **File: `src/hooks/useGameWithMilestones.ts`**
 
-Export the new function alongside existing exports:
+Update to handle the new return structure:
+- Only show reveal for `toReveal` milestones
+- Show toast for `silentlyRecorded` milestones: "Double Digit Scorer achieved again! (5th time)"
 
-```typescript
-return {
-  ...cloudData,
-  addGame: addGameWithMilestones,
-  deleteGame: deleteGameWithMilestones, // Override with milestone-aware version
-  // ... other milestone props
-};
-```
+### Part 6: Update Game Detail Post-Game Report
+
+**File: `src/pages/GameDetail.tsx`**
+
+Keep showing ALL milestones earned for this game in the "Milestones Earned" section (including repeated ones). The distinction is only about the reveal animation, not the permanent record.
+
+Optionally add a visual indicator for repeated achievements:
+- First-time milestones: Normal display
+- Repeated milestones: Small badge showing "×3" or similar
+
+### Part 7: PDF Export Updates
+
+**File: `src/utils/exportPdf.ts`**
+
+No changes needed - the PDF already exports all milestones linked to the game ID. We continue to show all earned milestones in exports.
 
 ## Summary of Changes
 
 | File | Change |
 |------|--------|
-| `supabase/functions/award-retroactive-milestones/` | **Delete** entire folder |
-| `src/hooks/useGameWithMilestones.ts` | Add `deleteGameWithMilestones` function, export as `deleteGame` |
-| `src/hooks/useMilestones.ts` | Add `findInvalidMilestones` helper and export it |
+| `src/hooks/useMilestones.ts` | Split return into `toReveal` and `silentlyRecorded`; add occurrence grouping helper |
+| `src/components/milestones/MilestoneCard.tsx` | Add flip animation with history log on back |
+| `src/components/milestones/MilestoneCollection.tsx` | Pass occurrence data; add "×N" badge |
+| `src/hooks/useGameWithMilestones.ts` | Handle new return structure; show toast for silent records |
+| `src/pages/GameDetail.tsx` | Minor badge indicator for repeated milestones (optional) |
 
-## How It Works After Implementation
+## Technical Details
 
-1. User deletes a game from the GameCard or Index page
-2. `deleteGameWithMilestones()` is called instead of the basic `deleteGame()`
-3. Milestones linked to that specific game are removed
-4. Remaining milestones are re-evaluated:
-   - "Win Streak" (3 wins) → If deleted game broke the streak, milestone is removed
-   - "100 Season Points" → If total drops below 100, milestone is removed
-5. UI automatically updates as `refreshMilestones()` is called
-6. Previously earned cards that no longer qualify return to "locked" status
+### Flip Animation CSS
 
-## Edge Cases Handled
-- Deleting a game that was part of a streak invalidates streak milestones
-- Deleting a high-scoring game may invalidate season cumulative milestones
-- Single-game milestones are always deleted when their linked game is deleted
-- UI state refreshes immediately after deletion
+```css
+.card-container {
+  perspective: 1000px;
+}
+.card-inner {
+  transform-style: preserve-3d;
+  transition: transform 0.6s ease;
+}
+.card-inner.flipped {
+  transform: rotateY(180deg);
+}
+.card-front, .card-back {
+  position: absolute;
+  backface-visibility: hidden;
+  width: 100%;
+  height: 100%;
+}
+.card-back {
+  transform: rotateY(180deg);
+}
+```
+
+### Multi-Game Milestone Detection
+
+In `useMilestones.ts`, detect category to determine reveal behavior:
+
+```typescript
+const isMultiGameMilestone = (def: MilestoneDefinition) => 
+  def.category === 'multi_game';
+
+// For multi-game milestones, ALWAYS reveal
+// For single-game repeatable, only reveal FIRST time
+```
+
+### History Log Entry Format
+
+Each entry in the flip-card back shows:
+- Opponent name
+- Date earned
+- Key stats (PTS, REB, AST if applicable)
+
+For streak milestones, show the games that comprised the streak.
+
+## User Experience After Implementation
+
+### During a game with repeated single-game milestone:
+1. Player scores 20+ points again (has done this before)
+2. "Double Digit Scorer" is recorded in database
+3. Reveal animation does NOT play
+4. Toast: "Double Digit Scorer achieved again! (5th time)"
+
+### During a game completing a streak:
+1. Player makes a 3-pointer for the 3rd straight game
+2. "3-Point Streak" is recorded
+3. Reveal animation DOES play (streaks always celebrate)
+
+### In Milestones tab:
+1. Card shows "5×" badge in corner
+2. Tapping card flips to reveal history
+3. Back shows all games with dates and stats
+
+### On Game Detail page:
+1. All milestones earned in that game are shown
+2. Repeated milestones show a small "×5" indicator
+
+## Edge Cases
+
+| Scenario | Handling |
+|----------|----------|
+| Season milestones (non-game specific) | Show season totals on back, not game list |
+| Cards with only one occurrence | Still flippable, back shows "Earned 1 time" |
+| Multi-game milestones without specific games | Show general stats instead of game list |
+| User views card immediately after earning | Front shows latest occurrence, back shows full history |
