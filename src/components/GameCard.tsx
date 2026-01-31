@@ -141,8 +141,13 @@ export function GameCard({ game, profile, onDelete, teams, onTeamChange }: GameC
         
         <div className="mb-4">
           <h3 className="font-semibold text-lg">vs {game.opponent}</h3>
-          {game.teamName && (
+          {game.teamName ? (
             <p className="text-xs text-muted-foreground">Playing for {game.teamName}</p>
+          ) : (
+            <p className="text-xs text-amber-500/80 flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              No team assigned
+            </p>
           )}
         </div>
         
