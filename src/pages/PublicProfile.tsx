@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Loader2, ArrowLeft, Target, Repeat, Zap, Shield, HandMetal, Percent, Instagram } from 'lucide-react';
+import { User, ArrowLeft, Target, Repeat, Zap, Shield, HandMetal, Percent, Instagram } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { StatCard } from '@/components/StatCard';
 import { ClipCard } from '@/components/ClipCard';
 import { PublicMilestoneCard } from '@/components/milestones/PublicMilestoneCard';
@@ -252,11 +253,7 @@ export default function PublicProfile() {
   }, [username]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingSpinner fullScreen size="lg" />;
   }
 
   if (notFound || !profile) {

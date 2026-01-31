@@ -1,25 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
-
-// Import the dotlottie-wc web component
 import '@lottiefiles/dotlottie-wc';
-
-// Declare the custom element for TypeScript
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'dotlottie-wc': React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement> & {
-          src?: string;
-          autoplay?: boolean;
-          loop?: boolean;
-        },
-        HTMLElement
-      >;
-    }
-  }
-}
 
 interface TransitionScreenProps {
   playerName: string;
