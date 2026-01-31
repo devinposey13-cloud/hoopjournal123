@@ -276,8 +276,10 @@ export async function exportGameBoxScorePdf(
   doc.setFont('helvetica', 'bold');
   doc.text(`${profile.team} ${game.points}`, 14, 40);
 
-  // Calculate percentages
-  const fgPct = game.fgAttempted > 0 ? ((game.fgMade / game.fgAttempted) * 100).toFixed(1) : '0.0';
+  // Calculate TOTAL field goals (2PT + 3PT combined) for display
+  const totalFgMade = game.fgMade + game.threePtMade;
+  const totalFgAttempted = game.fgAttempted + game.threePtAttempted;
+  const totalFgPct = totalFgAttempted > 0 ? ((totalFgMade / totalFgAttempted) * 100).toFixed(1) : '0.0';
   const threePct = game.threePtAttempted > 0 ? ((game.threePtMade / game.threePtAttempted) * 100).toFixed(1) : '0.0';
   const ftPct = game.ftAttempted > 0 ? ((game.ftMade / game.ftAttempted) * 100).toFixed(1) : '0.0';
 
@@ -294,7 +296,7 @@ export async function exportGameBoxScorePdf(
       [
         profile.number.toString().padStart(2, '0'),
         profile.name,
-        `${game.fgMade}-${game.fgAttempted}`,
+        `${totalFgMade}-${totalFgAttempted}`,
         `${game.threePtMade}-${game.threePtAttempted}`,
         `${game.ftMade}-${game.ftAttempted}`,
         (game.offensiveRebounds || 0).toString(),
@@ -311,7 +313,7 @@ export async function exportGameBoxScorePdf(
     ],
     foot: [[
       '', 'Totals',
-      `${game.fgMade}-${game.fgAttempted}`,
+      `${totalFgMade}-${totalFgAttempted}`,
       `${game.threePtMade}-${game.threePtAttempted}`,
       `${game.ftMade}-${game.ftAttempted}`,
       (game.offensiveRebounds || 0).toString(),
@@ -497,7 +499,7 @@ export async function exportGameBoxScorePdf(
     doc.setFont('helvetica', 'normal');
     
     const shootingY = tableEndY + 8;
-    doc.text(`FG %: ${game.fgMade}-${game.fgAttempted}  ${fgPct}%`, 14, shootingY);
+    doc.text(`FG %: ${totalFgMade}-${totalFgAttempted}  ${totalFgPct}%`, 14, shootingY);
     doc.text(`3FG %: ${game.threePtMade}-${game.threePtAttempted}  ${threePct}%`, 14, shootingY + 5);
     doc.text(`FT %: ${game.ftMade}-${game.ftAttempted}  ${ftPct}%`, 14, shootingY + 10);
   }
