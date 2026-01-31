@@ -243,10 +243,14 @@ export type Database = {
           date: string
           fg_attempted: number
           fg_made: number
+          final_score_them: number | null
+          final_score_us: number | null
           fouls: number
           ft_attempted: number
           ft_made: number
           game_photo_url: string | null
+          halftime_score_them: number | null
+          halftime_score_us: number | null
           id: string
           is_win: boolean
           minutes_played: number
@@ -269,10 +273,14 @@ export type Database = {
           date: string
           fg_attempted?: number
           fg_made?: number
+          final_score_them?: number | null
+          final_score_us?: number | null
           fouls?: number
           ft_attempted?: number
           ft_made?: number
           game_photo_url?: string | null
+          halftime_score_them?: number | null
+          halftime_score_us?: number | null
           id?: string
           is_win?: boolean
           minutes_played?: number
@@ -295,10 +303,14 @@ export type Database = {
           date?: string
           fg_attempted?: number
           fg_made?: number
+          final_score_them?: number | null
+          final_score_us?: number | null
           fouls?: number
           ft_attempted?: number
           ft_made?: number
           game_photo_url?: string | null
+          halftime_score_them?: number | null
+          halftime_score_us?: number | null
           id?: string
           is_win?: boolean
           minutes_played?: number

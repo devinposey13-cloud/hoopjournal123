@@ -124,6 +124,10 @@ export default function GameDetail() {
               gamePhotoUrl: data.game_photo_url,
               teamId: data.team_id || undefined,
               teamName: (data.player_teams as any)?.name || undefined,
+              halftimeScoreUs: data.halftime_score_us ?? undefined,
+              halftimeScoreThem: data.halftime_score_them ?? undefined,
+              finalScoreUs: data.final_score_us ?? undefined,
+              finalScoreThem: data.final_score_them ?? undefined,
             });
           } else {
             setError('Game not found');
@@ -282,6 +286,10 @@ export default function GameDetail() {
               ft_attempted: gameData.ftAttempted,
               is_win: gameData.isWin,
               game_photo_url: gameData.gamePhotoUrl,
+              halftime_score_us: saveData?.halftimeScore?.us ?? null,
+              halftime_score_them: saveData?.halftimeScore?.them ?? null,
+              final_score_us: saveData?.finalScore?.us ?? null,
+              final_score_them: saveData?.finalScore?.them ?? null,
             })
             .eq('id', game.id)
             .select()
@@ -313,6 +321,10 @@ export default function GameDetail() {
               ftAttempted: data.ft_attempted,
               isWin: data.is_win,
               gamePhotoUrl: data.game_photo_url,
+              halftimeScoreUs: data.halftime_score_us ?? undefined,
+              halftimeScoreThem: data.halftime_score_them ?? undefined,
+              finalScoreUs: data.final_score_us ?? undefined,
+              finalScoreThem: data.final_score_them ?? undefined,
             });
           }
         } catch (err) {
@@ -351,6 +363,10 @@ export default function GameDetail() {
               ft_attempted: gameData.ftAttempted,
               is_win: gameData.isWin,
               game_photo_url: gameData.gamePhotoUrl,
+              halftime_score_us: saveData?.halftimeScore?.us ?? null,
+              halftime_score_them: saveData?.halftimeScore?.them ?? null,
+              final_score_us: saveData?.finalScore?.us ?? null,
+              final_score_them: saveData?.finalScore?.them ?? null,
             })
             .eq('id', game.id)
             .select()
@@ -383,6 +399,10 @@ export default function GameDetail() {
               ft_attempted: gameData.ftAttempted,
               is_win: gameData.isWin,
               game_photo_url: gameData.gamePhotoUrl,
+              halftime_score_us: saveData?.halftimeScore?.us ?? null,
+              halftime_score_them: saveData?.halftimeScore?.them ?? null,
+              final_score_us: saveData?.finalScore?.us ?? null,
+              final_score_them: saveData?.finalScore?.them ?? null,
             })
             .select()
             .single();
@@ -416,6 +436,10 @@ export default function GameDetail() {
             ftAttempted: data.ft_attempted,
             isWin: data.is_win,
             gamePhotoUrl: data.game_photo_url,
+            halftimeScoreUs: data.halftime_score_us ?? undefined,
+            halftimeScoreThem: data.halftime_score_them ?? undefined,
+            finalScoreUs: data.final_score_us ?? undefined,
+            finalScoreThem: data.final_score_them ?? undefined,
           });
           // Update URL to reflect the saved game (only if it was a new game)
           if (!game?.id) {
@@ -897,6 +921,49 @@ export default function GameDetail() {
             </AlertDialog>
             <div className="p-3 text-center text-sm text-muted-foreground">
               📸 Game Day Photo
+            </div>
+          </div>
+        )}
+
+        {/* Team Scores Display */}
+        {(game.finalScoreUs !== undefined || game.halftimeScoreUs !== undefined) && (
+          <div className="stat-card mb-6">
+            <h3 className="text-lg font-semibold mb-4 text-center">Team Scores</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {/* Final Score */}
+              {game.finalScoreUs !== undefined && game.finalScoreThem !== undefined && (
+                <div className="text-center p-4 bg-secondary/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Final Score</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-primary">{game.finalScoreUs}</p>
+                      <p className="text-xs text-muted-foreground">Us</p>
+                    </div>
+                    <span className="text-muted-foreground text-lg">-</span>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold">{game.finalScoreThem}</p>
+                      <p className="text-xs text-muted-foreground">Them</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* Halftime Score */}
+              {game.halftimeScoreUs !== undefined && game.halftimeScoreThem !== undefined && (
+                <div className="text-center p-4 bg-secondary/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Halftime</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-primary">{game.halftimeScoreUs}</p>
+                      <p className="text-xs text-muted-foreground">Us</p>
+                    </div>
+                    <span className="text-muted-foreground text-lg">-</span>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold">{game.halftimeScoreThem}</p>
+                      <p className="text-xs text-muted-foreground">Them</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
