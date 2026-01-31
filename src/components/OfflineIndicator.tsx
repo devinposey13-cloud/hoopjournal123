@@ -1,0 +1,77 @@
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { WifiOff, Wifi, CheckCircle2, XCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+const offlineFeatures = [
+  { name: "Live Stats Capture", available: true, description: "Track stats during games" },
+  { name: "View Saved Games", available: true, description: "Access previously loaded data" },
+  { name: "Settings", available: true, description: "Change app preferences" },
+  { name: "Sync New Games", available: false, description: "Requires connection" },
+  { name: "Coach Chat", available: false, description: "AI features need internet" },
+  { name: "Video Uploads", available: false, description: "Requires connection" },
+];
+
+export const OfflineIndicator = () => {
+  const { isOnline, wasOffline } = useOnlineStatus();
+
+  return (
+    <AnimatePresence>
+      {!isOnline && (
+        <motion.div
+          initial={{ y: -100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -100, opacity: 0 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 dark:bg-amber-600 text-amber-950 shadow-lg"
+        >
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <WifiOff className="h-5 w-5" />
+                <span className="font-medium">You're offline</span>
+              </div>
+              <span className="text-sm opacity-80">Some features limited</span>
+            </div>
+            
+            <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2">
+              {offlineFeatures.map((feature) => (
+                <div
+                  key={feature.name}
+                  className={`flex items-center gap-2 text-sm rounded-lg px-2 py-1.5 ${
+                    feature.available
+                      ? "bg-amber-400/50 dark:bg-amber-500/30"
+                      : "bg-amber-600/30 dark:bg-amber-700/30 opacity-60"
+                  }`}
+                >
+                  {feature.available ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-700 dark:text-green-400 shrink-0" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-amber-800 dark:text-amber-300 shrink-0" />
+                  )}
+                  <span className="truncate">{feature.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {isOnline && wasOffline && (
+        <motion.div
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -50, opacity: 0 }}
+          className="fixed top-0 left-0 right-0 z-[100] bg-green-500 dark:bg-green-600 text-white shadow-lg"
+        >
+          <div className="container mx-auto px-4 py-2">
+            <div className="flex items-center justify-center gap-2">
+              <Wifi className="h-4 w-4" />
+              <span className="font-medium">Back online!</span>
+              <span className="text-sm opacity-80">Syncing your data...</span>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
