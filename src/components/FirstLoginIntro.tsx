@@ -491,15 +491,15 @@ export function FirstLoginIntro({ onComplete }: FirstLoginIntroProps) {
         }}
       />
 
-      {/* Text and Button */}
-      <div className="relative z-10 text-center mt-40 md:mt-52 px-6">
+      {/* Text and Button - positioned at bottom third of screen */}
+      <div className="absolute bottom-[15%] left-0 right-0 z-10 text-center px-6">
         <AnimatePresence>
           {phase >= 4 && (
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-              className="text-2xl md:text-4xl lg:text-5xl text-white/90 mb-10 font-light tracking-wide"
+              className="text-2xl md:text-4xl lg:text-5xl text-white/90 mb-8 font-light tracking-wide"
               style={{ 
                 fontFamily: "'Georgia', 'Times New Roman', serif",
                 letterSpacing: '0.05em'
