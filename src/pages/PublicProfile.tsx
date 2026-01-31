@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Loader2, ArrowLeft, Target, Repeat, Zap, Shield, HandMetal, Percent, Instagram } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
 import { ClipCard } from '@/components/ClipCard';
+import { PublicMilestoneCard } from '@/components/milestones/PublicMilestoneCard';
+import { MilestoneRarity } from '@/types/milestone';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 
 interface PublicProfileData {
@@ -42,13 +44,41 @@ interface SeasonStats {
   fgPercentage: number;
 }
 
+interface PublicMilestone {
+  id: string;
+  milestoneId: string;
+  milestoneName: string;
+  milestoneDescription: string;
+  milestoneRarity: MilestoneRarity;
+  milestoneIcon: string;
+}
+
+interface GroupedMilestone extends PublicMilestone {
+  count: number;
+}
+
 export default function PublicProfile() {
   const { username } = useParams<{ username: string }>();
   const [profile, setProfile] = useState<PublicProfileData | null>(null);
   const [clips, setClips] = useState<PublicClip[]>([]);
   const [stats, setStats] = useState<SeasonStats | null>(null);
+  const [milestones, setMilestones] = useState<PublicMilestone[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  // Group milestones by milestone_id and count occurrences
+  const groupedMilestones = useMemo((): GroupedMilestone[] => {
+    const groups = new Map<string, GroupedMilestone>();
+    milestones.forEach(m => {
+      const existing = groups.get(m.milestoneId);
+      if (existing) {
+        existing.count++;
+      } else {
+        groups.set(m.milestoneId, { ...m, count: 1 });
+      }
+    });
+    return Array.from(groups.values());
+  }, [milestones]);
 
   useEffect(() => {
     async function fetchPublicProfile() {
@@ -66,7 +96,10 @@ export default function PublicProfile() {
           .eq('username', username.toLowerCase())
           .maybeSingle();
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          throw profileError;
+        }
 
         if (!profileData) {
           setNotFound(true);
@@ -87,12 +120,16 @@ export default function PublicProfile() {
         });
 
         // Fetch public clips for this user
-        const { data: clipsData } = await supabase
+        const { data: clipsData, error: clipsError } = await supabase
           .from('video_clips')
           .select('*')
           .eq('user_id', profileData.user_id)
           .eq('is_public', true)
           .order('created_at', { ascending: false });
+
+        if (clipsError) {
+          console.error('Error fetching clips:', clipsError);
+        }
 
         if (clipsData) {
           const clipsWithUrls = await Promise.all(
@@ -118,10 +155,14 @@ export default function PublicProfile() {
         }
 
         // Fetch games for stats calculation
-        const { data: gamesData } = await supabase
+        const { data: gamesData, error: gamesError } = await supabase
           .from('games')
           .select('*')
           .eq('user_id', profileData.user_id);
+
+        if (gamesError) {
+          console.error('Error fetching games:', gamesError);
+        }
 
         if (gamesData && gamesData.length > 0) {
           const totals = gamesData.reduce(
@@ -164,6 +205,40 @@ export default function PublicProfile() {
             avgBlocks: 0,
             fgPercentage: 0,
           });
+        }
+
+        // Fetch milestones with joined definitions
+        const { data: milestonesData, error: milestonesError } = await supabase
+          .from('player_milestones')
+          .select(`
+            id,
+            milestone_id,
+            earned_at,
+            milestone_definitions (
+              name,
+              description,
+              rarity,
+              icon
+            )
+          `)
+          .eq('user_id', profileData.user_id);
+
+        if (milestonesError) {
+          console.error('Error fetching milestones:', milestonesError);
+        }
+
+        if (milestonesData) {
+          const parsedMilestones: PublicMilestone[] = milestonesData
+            .filter(m => m.milestone_definitions)
+            .map(m => ({
+              id: m.id,
+              milestoneId: m.milestone_id,
+              milestoneName: (m.milestone_definitions as any).name,
+              milestoneDescription: (m.milestone_definitions as any).description,
+              milestoneRarity: (m.milestone_definitions as any).rarity as MilestoneRarity,
+              milestoneIcon: (m.milestone_definitions as any).icon,
+            }));
+          setMilestones(parsedMilestones);
         }
       } catch (error) {
         console.error('Error fetching public profile:', error);
@@ -249,11 +324,12 @@ export default function PublicProfile() {
           </div>
         </div>
 
-        {/* Tabs for Stats and Highlights */}
+        {/* Tabs for Stats, Highlights, and Milestones */}
         <Tabs defaultValue="stats" className="max-w-4xl mx-auto">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-6">
             <TabsTrigger value="stats">Stats</TabsTrigger>
             <TabsTrigger value="highlights">Highlights</TabsTrigger>
+            <TabsTrigger value="milestones">Milestones</TabsTrigger>
           </TabsList>
 
           <TabsContent value="stats">
@@ -294,6 +370,27 @@ export default function PublicProfile() {
             ) : (
               <div className="stat-card text-center py-12">
                 <p className="text-muted-foreground">No public highlights yet.</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="milestones">
+            {groupedMilestones.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {groupedMilestones.map((m) => (
+                  <PublicMilestoneCard
+                    key={m.milestoneId}
+                    name={m.milestoneName}
+                    description={m.milestoneDescription}
+                    rarity={m.milestoneRarity}
+                    icon={m.milestoneIcon}
+                    count={m.count}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="stat-card text-center py-12">
+                <p className="text-muted-foreground">No milestones earned yet.</p>
               </div>
             )}
           </TabsContent>
