@@ -583,8 +583,8 @@ export function LiveStatCapture({
             <span>{currentStats.blocks} BLK</span>
           </div>
           <div className="flex justify-center gap-4 text-xs text-muted-foreground mt-1">
-            <span>2PT: {currentStats.fgAttempted - currentStats.threePtAttempted > 0 
-              ? Math.round(((currentStats.fgMade - currentStats.threePtMade) / (currentStats.fgAttempted - currentStats.threePtAttempted)) * 100) 
+            <span>2PT: {currentStats.fgAttempted > 0 
+              ? Math.round((currentStats.fgMade / currentStats.fgAttempted) * 100) 
               : 0}%</span>
             <span>3PT: {currentStats.threePtAttempted > 0 
               ? Math.round((currentStats.threePtMade / currentStats.threePtAttempted) * 100) 
@@ -604,7 +604,7 @@ export function LiveStatCapture({
                 <span className="font-medium">2PT Field Goals</span>
               </div>
               <span className="text-sm text-muted-foreground">
-                {currentStats.fgMade - currentStats.threePtMade}/{currentStats.fgAttempted - currentStats.threePtAttempted} ({fgPct}%)
+                {currentStats.fgMade}/{currentStats.fgAttempted} ({fgPct}%)
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3">
