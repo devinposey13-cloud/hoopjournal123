@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useCoachVoice } from '@/hooks/useCoachVoice';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Users, Loader2, Volume2, VolumeX, ExternalLink, TrendingUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
@@ -108,24 +109,23 @@ export function PlayerComparison({ seasonStats, profile }: PlayerComparisonProps
                 </div>
               </div>
               
-              <Button 
-                onClick={handleCompare} 
-                disabled={isLoading}
-                className="w-full gap-2"
-                size="lg"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Finding Similar Players...
-                  </>
-                ) : (
-                  <>
-                    <Users className="w-4 h-4" />
-                    Find Similar NBA/WNBA Players
-                  </>
-                )}
-              </Button>
+              {isLoading ? (
+                <Card>
+                  <CardContent className="py-8">
+                    <LoadingSpinner size="sm" message="Finding similar NBA/WNBA players..." />
+                  </CardContent>
+                </Card>
+              ) : (
+                <Button 
+                  onClick={handleCompare} 
+                  disabled={isLoading}
+                  className="w-full gap-2"
+                  size="lg"
+                >
+                  <Users className="w-4 h-4" />
+                  Find Similar NBA/WNBA Players
+                </Button>
+              )}
             </>
           )}
         </CardContent>
