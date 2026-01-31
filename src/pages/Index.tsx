@@ -66,6 +66,7 @@ export default function Index() {
   const [quickCaptureScheduledGameId, setQuickCaptureScheduledGameId] = useState<string | undefined>();
   const [isSavingQuickCapture, setIsSavingQuickCapture] = useState(false);
   const [tournamentFilter, setTournamentFilter] = useState<string>('all');
+  const [justCompletedOnboarding, setJustCompletedOnboarding] = useState(false);
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const { isApproved, loading: approvalLoading, refetch: refetchApproval } = useApprovalStatus();
@@ -137,6 +138,8 @@ export default function Index() {
       parentEmail: data.parentEmail || undefined,
       onboardingCompletedAt: new Date().toISOString(),
     });
+    // Mark that user just completed onboarding for Coach AI intro
+    setJustCompletedOnboarding(true);
     completeOnboarding();
   };
 
@@ -290,6 +293,7 @@ export default function Index() {
                     playerName={profile.name || 'Player'}
                     avatarUrl={profile.avatar}
                     hasSkippedAvatar={Boolean(profile.avatarSkippedAt)}
+                    isFirstTimeAfterOnboarding={justCompletedOnboarding}
                     onLogFirstGame={() => {
                       // Trigger add game dialog - navigate to games tab
                       setActiveTab('games');
@@ -310,6 +314,10 @@ export default function Index() {
                     onAvatarUploaded={uploadAvatar}
                     onAvatarDeleted={async () => {
                       await updateProfile({ ...profile, avatar: undefined });
+                    }}
+                    onIntroPlayed={() => {
+                      // Clear the flag after intro is played
+                      setJustCompletedOnboarding(false);
                     }}
                   />
                 </div>
