@@ -210,6 +210,8 @@ export function useCloudData() {
           seasonGoals: settingsData.season_goals || undefined,
           parentEmail: settingsData.parent_email || undefined,
           onboardingCompletedAt: settingsData.onboarding_completed_at || undefined,
+          // Notification preferences
+          receiveGameSummaries: settingsData.receive_game_summaries ?? false,
         });
       }
     } catch (error) {
@@ -738,6 +740,8 @@ export function useCloudData() {
             season_goals: updates.seasonGoals ?? profile.seasonGoals ?? null,
             parent_email: updates.parentEmail ?? profile.parentEmail ?? null,
             onboarding_completed_at: updates.onboardingCompletedAt ?? profile.onboardingCompletedAt ?? null,
+            // Notification preferences
+            receive_game_summaries: updates.receiveGameSummaries ?? profile.receiveGameSummaries ?? false,
           },
           { onConflict: 'user_id' }
         );

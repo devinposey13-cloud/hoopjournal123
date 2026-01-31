@@ -506,6 +506,49 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
             </p>
           </div>
 
+          {/* Family Sharing Section */}
+          <Separator className="my-6" />
+          
+          <div className="stat-card bg-secondary/30 p-4 rounded-lg space-y-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              📧 Game Recap Sharing
+            </h3>
+            
+            {/* Parent Email */}
+            <div className="space-y-2">
+              <Label htmlFor="parentEmail">Parent/Guardian Email</Label>
+              <Input
+                id="parentEmail"
+                type="email"
+                value={formData.parentEmail || ''}
+                onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })}
+                placeholder="parent@email.com"
+              />
+              <p className="text-xs text-muted-foreground">
+                Share your game recaps with a parent or guardian. They'll receive an email when you click "Share with Family" after a game.
+              </p>
+            </div>
+
+            {/* Self Email Notification Toggle */}
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <Label htmlFor="receive-summaries" className="text-sm font-medium">
+                  Send me game summaries
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Receive your Coach AI recaps directly to your email
+                </p>
+              </div>
+              <Switch
+                id="receive-summaries"
+                checked={formData.receiveGameSummaries ?? false}
+                onCheckedChange={(checked) => 
+                  setFormData({ ...formData, receiveGameSummaries: checked })
+                }
+              />
+            </div>
+          </div>
+
           <Button onClick={handleSave} className="w-full gradient-primary font-semibold mt-6">
             <Save className="w-4 h-4 mr-2" />
             Save Profile
