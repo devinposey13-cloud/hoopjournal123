@@ -163,17 +163,29 @@ export function useGameWithMilestones() {
   }, [markAsViewed]);
 
   /**
-   * Delete a game with milestone cleanup
-   * 1. Deletes milestones linked directly to this game
-   * 2. Deletes the game from the database
-   * 3. Re-evaluates multi-game and season milestones
-   * 4. Removes any milestones that are no longer valid
-   * 5. Refreshes milestone state so UI updates immediately
+   * Delete a game with milestone and XP cleanup
+   * 1. Recalculates XP by removing the XP earned from this game
+   * 2. Deletes milestones linked directly to this game
+   * 3. Deletes the game from the database
+   * 4. Re-evaluates multi-game and season milestones
+   * 5. Removes any milestones that are no longer valid
+   * 6. Refreshes milestone state so UI updates immediately
    */
   const deleteGameWithMilestones = useCallback(async (gameId: string) => {
     if (!user) return;
 
     try {
+      // Find the game to get its stats for XP calculation
+      const gameToDelete = cloudData.games.find(g => g.id === gameId);
+      
+      if (gameToDelete) {
+        // Calculate the performance/XP that was earned from this game
+        const performance = calculatePerformance(gameToDelete);
+        
+        // Remove XP from this game
+        await xpProgress.removeXp(performance.xpEarned, performance.finalScore);
+      }
+
       // 1. Delete milestones directly linked to this game (single-game milestones)
       const { error: deleteMilestonesError } = await supabase
         .from('player_milestones')
@@ -221,11 +233,13 @@ export function useGameWithMilestones() {
 
       // 6. Refresh milestone state so UI updates
       await refreshMilestones();
+      
+      toast.success('Game deleted and XP adjusted');
     } catch (error) {
       console.error('Error in deleteGameWithMilestones:', error);
       toast.error('Failed to delete game');
     }
-  }, [user, cloudData, definitions, earnedMilestones, refreshMilestones]);
+  }, [user, cloudData, definitions, earnedMilestones, refreshMilestones, xpProgress]);
 
   return {
     // Spread all cloudData properties

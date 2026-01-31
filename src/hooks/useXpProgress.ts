@@ -184,6 +184,59 @@ export function useXpProgress() {
   }, [user, progress, rewards, unlockedRewards, currentQuarter, initializeProgress]);
 
   /**
+   * Remove XP (when a game is deleted)
+   * Recalculates level and removes rewards that are no longer valid
+   */
+  const removeXp = useCallback(async (
+    xpAmount: number,
+    performanceScore: number
+  ): Promise<boolean> => {
+    if (!user || !progress) return false;
+
+    const newXp = Math.max(0, progress.current_xp - xpAmount);
+    const newLevel = Math.max(1, getLevelFromXp(newXp));
+    const newGamesLogged = Math.max(0, progress.games_logged - 1);
+    const newTotalPerformance = Math.max(0, progress.total_performance_score - performanceScore);
+
+    // Update progress in database
+    const { error: updateError } = await supabase
+      .from('player_xp_progress')
+      .update({
+        current_xp: newXp,
+        current_level: newLevel,
+        games_logged: newGamesLogged,
+        total_performance_score: newTotalPerformance,
+      })
+      .eq('id', progress.id);
+
+    if (updateError) {
+      console.error('Error removing XP:', updateError);
+      return false;
+    }
+
+    // Remove rewards that are no longer valid (above new level)
+    const rewardsToRemove = unlockedRewards.filter(ur => {
+      const reward = rewards.find(r => r.id === ur.reward_id);
+      return reward && reward.level_required > newLevel;
+    });
+
+    if (rewardsToRemove.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('player_level_rewards')
+        .delete()
+        .in('id', rewardsToRemove.map(r => r.id));
+
+      if (deleteError) {
+        console.error('Error removing level rewards:', deleteError);
+      }
+    }
+
+    // Refresh data
+    await fetchXpData();
+    return true;
+  }, [user, progress, rewards, unlockedRewards, fetchXpData]);
+
+  /**
    * Get career peak level across all quarters
    */
   const getCareerPeakLevel = useCallback((): number => {
@@ -225,6 +278,7 @@ export function useXpProgress() {
     quarterInfo,
     currentQuarter,
     addXp,
+    removeXp,
     initializeProgress,
     getCareerPeakLevel,
     getAvailableRewards,

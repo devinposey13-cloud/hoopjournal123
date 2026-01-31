@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { CalendarDays, TrendingUp, Trophy, Target } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CalendarDays, TrendingUp, Trophy, Target, Gift, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LevelBadge } from './LevelBadge';
 import { XpProgressBar } from './XpProgressBar';
@@ -93,6 +94,16 @@ export function QuarterlyProgress({ progress, quarterInfo, className }: Quarterl
           ~{gamesToMax} games to Level 50 at current pace
         </div>
       )}
+
+      {/* View Rewards Link */}
+      <Link 
+        to="/rewards" 
+        className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors text-primary text-sm font-medium group"
+      >
+        <Gift className="w-4 h-4" />
+        <span>View All Rewards</span>
+        <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+      </Link>
     </motion.div>
   );
 }
