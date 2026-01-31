@@ -4,7 +4,7 @@ import { useMilestones } from './useMilestones';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { findInvalidMilestones } from '@/utils/milestoneValidator';
-import type { GameStats, SeasonStats } from '@/types/basketball';
+import type { GameStats } from '@/types/basketball';
 import type { NewMilestoneResult } from '@/types/milestone';
 import { toast } from 'sonner';
 
@@ -23,6 +23,8 @@ export function useGameWithMilestones() {
     earnedMilestones,
     definitions,
     getSeasonProgress,
+    getOccurrencesByMilestoneId,
+    getOccurrenceCount,
     refreshMilestones,
   } = useMilestones(cloudData.activeSeason?.id);
   
@@ -43,22 +45,33 @@ export function useGameWithMilestones() {
       id: g.id,
     }));
 
-    // Check for milestones
-    const newMilestones = await checkAndAwardMilestones(
+    // Check for milestones - now returns split result
+    const { toReveal, silentlyRecorded } = await checkAndAwardMilestones(
       { ...savedGame, id: savedGame.id },
       allGames,
       cloudData.seasonStats,
       cloudData.activeSeason?.id
     );
 
-    // If milestones were earned, show the reveal
-    if (newMilestones.length > 0) {
-      setPendingMilestones(newMilestones);
+    // Show toast for silently recorded milestones (repeat single-game achievements)
+    if (silentlyRecorded.length > 0) {
+      for (const result of silentlyRecorded) {
+        const count = getOccurrenceCount(result.milestone.id);
+        toast.success(
+          `${result.milestone.name} achieved again! (${count}${getOrdinalSuffix(count)} time)`,
+          { duration: 4000 }
+        );
+      }
+    }
+
+    // If new milestones were earned (first-time or streaks), show the reveal
+    if (toReveal.length > 0) {
+      setPendingMilestones(toReveal);
       setShowReveal(true);
     }
 
     return savedGame;
-  }, [cloudData, checkAndAwardMilestones]);
+  }, [cloudData, checkAndAwardMilestones, getOccurrenceCount]);
 
   const closeReveal = useCallback(() => {
     setShowReveal(false);
@@ -151,6 +164,15 @@ export function useGameWithMilestones() {
     earnedMilestones,
     definitions,
     getSeasonProgress,
+    getOccurrencesByMilestoneId,
+    getOccurrenceCount,
     refreshMilestones,
   };
+}
+
+// Helper function for ordinal suffixes
+function getOrdinalSuffix(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
 }

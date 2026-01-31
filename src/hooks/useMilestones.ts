@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { toast } from 'sonner';
 import type { 
   MilestoneDefinition, 
   PlayerMilestone, 
   MilestoneCategory,
-  NewMilestoneResult 
+  NewMilestoneResult,
+  MilestoneCheckResult 
 } from '@/types/milestone';
 import type { GameStats, SeasonStats } from '@/types/basketball';
 import { 
@@ -104,14 +104,26 @@ export function useMilestones(seasonId?: string) {
     return mapped;
   }, [user, seasonId]);
 
+  // Group earned milestones by milestone definition ID
+  const getOccurrencesByMilestoneId = useMemo(() => {
+    const map = new Map<string, PlayerMilestone[]>();
+    for (const pm of earnedMilestones) {
+      const list = map.get(pm.milestoneId) || [];
+      list.push(pm);
+      map.set(pm.milestoneId, list);
+    }
+    return map;
+  }, [earnedMilestones]);
+
   // Check and award milestones after a game is logged
+  // Returns split result: toReveal (for animation) and silentlyRecorded (for toast only)
   const checkAndAwardMilestones = useCallback(async (
     newGame: GameWithId,
     allGames: GameWithId[],
     seasonStats: SeasonStats,
     currentSeasonId?: string
-  ): Promise<NewMilestoneResult[]> => {
-    if (!user) return [];
+  ): Promise<MilestoneCheckResult> => {
+    if (!user) return { toReveal: [], silentlyRecorded: [] };
 
     const defs = definitions.length > 0 ? definitions : await fetchDefinitions();
     const earned = earnedMilestones.length > 0 ? earnedMilestones : await fetchEarnedMilestones();
@@ -130,7 +142,35 @@ export function useMilestones(seasonId?: string) {
 
     const allResults = [...singleGameResults, ...multiGameResults, ...seasonResults];
 
-    // Save new milestones to database
+    // Split results into: toReveal (first-time or multi-game) and silentlyRecorded (repeat single-game)
+    const toReveal: NewMilestoneResult[] = [];
+    const silentlyRecorded: NewMilestoneResult[] = [];
+
+    for (const result of allResults) {
+      const def = result.milestone;
+      const wasEverEarned = earnedIdsEver.has(def.id);
+      
+      // Multi-game milestones (streaks) ALWAYS get revealed - they represent patterns across games
+      if (def.category === 'multi_game') {
+        toReveal.push(result);
+      }
+      // Single-game repeatable milestones: only reveal first time
+      else if (def.category === 'single_game' && def.isRepeatable) {
+        if (wasEverEarned) {
+          // This is a repeat earn - record silently
+          silentlyRecorded.push(result);
+        } else {
+          // First time earning - show reveal
+          toReveal.push(result);
+        }
+      }
+      // Season milestones and non-repeatable single-game: always reveal (they're one-time only)
+      else {
+        toReveal.push(result);
+      }
+    }
+
+    // Save ALL milestones to database (both revealed and silent)
     if (allResults.length > 0) {
       const inserts = allResults.map(r => ({
         user_id: user.id,
@@ -154,7 +194,7 @@ export function useMilestones(seasonId?: string) {
       }
     }
 
-    return allResults;
+    return { toReveal, silentlyRecorded };
   }, [user, definitions, earnedMilestones, fetchDefinitions, fetchEarnedMilestones]);
 
   // Mark milestones as viewed
@@ -224,6 +264,11 @@ export function useMilestones(seasonId?: string) {
     });
   }, [definitions, earnedMilestones]);
 
+  // Get occurrence count for a specific milestone
+  const getOccurrenceCount = useCallback((milestoneDefId: string): number => {
+    return getOccurrencesByMilestoneId.get(milestoneDefId)?.length || 0;
+  }, [getOccurrencesByMilestoneId]);
+
   // Initial fetch
   useEffect(() => {
     const init = async () => {
@@ -242,6 +287,8 @@ export function useMilestones(seasonId?: string) {
     checkAndAwardMilestones,
     markAsViewed,
     getSeasonProgress,
+    getOccurrencesByMilestoneId,
+    getOccurrenceCount,
     refreshMilestones: fetchEarnedMilestones,
   };
 }

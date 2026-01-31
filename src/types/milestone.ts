@@ -53,6 +53,12 @@ export interface NewMilestoneResult {
   gameId?: string;
 }
 
+// New interface for split reveal results
+export interface MilestoneCheckResult {
+  toReveal: NewMilestoneResult[];      // Show in reveal animation
+  silentlyRecorded: NewMilestoneResult[]; // Just saved, no reveal (but toast notification)
+}
+
 // Rarity styling configuration
 export const RARITY_STYLES: Record<MilestoneRarity, {
   gradient: string;
