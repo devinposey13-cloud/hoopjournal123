@@ -1028,7 +1028,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
-          display_name?: string | null
+          display_name?: never
           grade?: string | null
           height?: string | null
           id?: string | null
@@ -1046,7 +1046,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
-          display_name?: string | null
+          display_name?: never
           grade?: string | null
           height?: string | null
           id?: string | null
