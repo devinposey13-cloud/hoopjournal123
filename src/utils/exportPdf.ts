@@ -73,6 +73,22 @@ function addHeaderLogo(doc: jsPDF, logoData: string) {
   }
 }
 
+// Helper function to load image as base64 (shared utility)
+async function loadImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function exportSeasonStatsPdf(
   profile: PlayerProfile,
   seasonStats: SeasonStats,
@@ -88,25 +104,50 @@ export async function exportSeasonStatsPdf(
     addHeaderLogo(doc, logoData);
   }
 
+  // Load player avatar if available
+  let avatarData: string | null = null;
+  if (profile.avatar) {
+    avatarData = await loadImageAsBase64(profile.avatar);
+  }
+
   // Title
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.text('Season Stats Report', pageWidth / 2, 20, { align: 'center' });
 
-  // Player Info
+  // Player Avatar and Info
+  const avatarSize = 25;
+  const avatarX = 14;
+  const avatarY = 28;
+  
+  if (avatarData) {
+    try {
+      // Draw circular avatar with clipping
+      doc.saveGraphicsState();
+      doc.addImage(avatarData, 'JPEG', avatarX, avatarY, avatarSize, avatarSize);
+      doc.restoreGraphicsState();
+    } catch (e) {
+      console.error('Failed to add avatar to PDF:', e);
+    }
+  }
+
+  // Player name and info - adjust position if avatar exists
+  const textStartX = avatarData ? avatarX + avatarSize + 8 : pageWidth / 2;
+  const textAlign = avatarData ? 'left' : 'center';
+  
   doc.setFontSize(16);
-  doc.text(profile.name, pageWidth / 2, 32, { align: 'center' });
+  doc.text(profile.name, textStartX, avatarData ? avatarY + 8 : 32, { align: textAlign as any });
 
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.text(
     `#${profile.number} | ${profile.position} | ${profile.team}`,
-    pageWidth / 2,
-    40,
-    { align: 'center' }
+    textStartX,
+    avatarData ? avatarY + 16 : 40,
+    { align: textAlign as any }
   );
-  doc.text(`${profile.grade} | ${profile.height}`, pageWidth / 2, 47, {
-    align: 'center',
+  doc.text(`${profile.grade} | ${profile.height}`, textStartX, avatarData ? avatarY + 23 : 47, {
+    align: textAlign as any,
   });
 
   // Generated date
@@ -115,7 +156,7 @@ export async function exportSeasonStatsPdf(
   doc.text(
     `Generated: ${format(new Date(), 'MMMM d, yyyy')}`,
     pageWidth / 2,
-    55,
+    avatarData ? avatarY + avatarSize + 8 : 55,
     { align: 'center' }
   );
   doc.setTextColor(0);
@@ -250,23 +291,13 @@ export async function exportGameBoxScorePdf(
     addHeaderLogo(doc, logoData);
   }
 
-  // Helper function to load image as base64
-  const loadImageAsBase64 = async (url: string): Promise<string | null> => {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = () => resolve(null);
-        reader.readAsDataURL(blob);
-      });
-    } catch {
-      return null;
-    }
-  };
+  // Load player avatar if available
+  let avatarData: string | null = null;
+  if (profile.avatar) {
+    avatarData = await loadImageAsBase64(profile.avatar);
+  }
 
-  // Title Header
+  // Title Header with Avatar
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('Official Basketball Box Score - Game Totals - Final Statistics', pageWidth / 2, 12, { align: 'center' });
@@ -277,6 +308,18 @@ export async function exportGameBoxScorePdf(
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(format(new Date(game.date), 'M/d/yy'), pageWidth / 2, 27, { align: 'center' });
+
+  // Add player avatar in top-right corner
+  if (avatarData) {
+    const avatarSize = 18;
+    const avatarX = pageWidth - avatarSize - 8;
+    const avatarY = 8;
+    try {
+      doc.addImage(avatarData, 'JPEG', avatarX, avatarY, avatarSize, avatarSize);
+    } catch (e) {
+      console.error('Failed to add avatar to PDF:', e);
+    }
+  }
 
   // Team name and score
   doc.setFontSize(14);
