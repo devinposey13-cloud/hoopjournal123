@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,28 @@ export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProp
   const [isStartingOver, setIsStartingOver] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [startOverConfirmText, setStartOverConfirmText] = useState('');
+  const [deleteCountdown, setDeleteCountdown] = useState<number | null>(null);
+
+  // Countdown timer for delete confirmation
+  useEffect(() => {
+    if (deleteConfirmText === 'DELETE' && !isDeletingAccount) {
+      setDeleteCountdown(5);
+      
+      const interval = setInterval(() => {
+        setDeleteCountdown(prev => {
+          if (prev === null || prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    } else {
+      setDeleteCountdown(null);
+    }
+  }, [deleteConfirmText, isDeletingAccount]);
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== 'DELETE') return;
@@ -267,7 +289,11 @@ export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProp
                 e.preventDefault();
                 handleDeleteAccount();
               }}
-              disabled={deleteConfirmText !== 'DELETE' || isDeletingAccount}
+              disabled={
+                deleteConfirmText !== 'DELETE' || 
+                (deleteCountdown !== null && deleteCountdown > 0) || 
+                isDeletingAccount
+              }
               className="bg-destructive hover:bg-destructive/90"
             >
               {isDeletingAccount ? (
@@ -275,6 +301,8 @@ export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProp
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   Deleting...
                 </>
+              ) : deleteCountdown !== null && deleteCountdown > 0 ? (
+                `Wait ${deleteCountdown}s...`
               ) : (
                 'Delete My Account'
               )}
