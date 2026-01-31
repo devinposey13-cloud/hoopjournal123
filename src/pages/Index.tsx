@@ -39,6 +39,7 @@ import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-
 import { Button } from '@/components/ui/button';
 import { LogOut, Trophy, X, Radio } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { DashboardSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Select,
@@ -235,7 +236,23 @@ export default function Index() {
   };
 
   if (dataLoading) {
-    return <LoadingSpinner fullScreen size="lg" message="Loading your stats..." />;
+    return (
+      <div className="min-h-screen bg-background pb-14">
+        <Navigation 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab}
+          seasons={seasons}
+          activeSeason={activeSeason}
+          onSeasonChange={switchSeason}
+          onCreateSeason={async (name) => { await createSeason(name); }}
+          onDeleteSeason={deleteSeason}
+          isAdmin={isAdmin}
+        />
+        <main className="container mx-auto px-4 py-6">
+          <DashboardSkeleton />
+        </main>
+      </div>
+    );
   }
 
   // Show Quick Live Capture fullscreen mode
