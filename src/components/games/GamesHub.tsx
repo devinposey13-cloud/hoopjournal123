@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Gamepad2, Target, Brain, Zap, HelpCircle, TrendingUp, Trophy, Medal, Flame } from 'lucide-react';
+import { Gamepad2, Target, Brain, Zap, HelpCircle, TrendingUp, Trophy, Medal, Flame, Star } from 'lucide-react';
 import { GameCard } from './GameCard';
 import { FreeThrowGame } from './FreeThrowGame';
 import { MemoryMatchGame } from './MemoryMatchGame';
@@ -8,6 +8,7 @@ import { TriviaGame } from './TriviaGame';
 import { StatsPredictorGame } from './StatsPredictorGame';
 import { Leaderboard } from './Leaderboard';
 import { AchievementsList } from './AchievementsList';
+import { SeasonLeaderboard } from '@/components/xp/SeasonLeaderboard';
 import { cn } from '@/lib/utils';
 import { useGameData } from '@/hooks/useGameData';
 import { useAchievements } from '@/hooks/useAchievements';
@@ -166,8 +167,12 @@ export function GamesHub() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="games">Mini-Games</TabsTrigger>
+          <TabsTrigger value="season">
+            <Star className="w-4 h-4 mr-1" />
+            Season
+          </TabsTrigger>
           <TabsTrigger value="badges">Badges</TabsTrigger>
           <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
         </TabsList>
@@ -188,6 +193,10 @@ export function GamesHub() {
               />
             ))}
           </div>
+        </TabsContent>
+
+        <TabsContent value="season" className="mt-6">
+          <SeasonLeaderboard />
         </TabsContent>
 
         <TabsContent value="badges" className="mt-6">

@@ -25,6 +25,9 @@ import { GamesHub } from '@/components/games/GamesHub';
 import { MilestoneCollection } from '@/components/milestones/MilestoneCollection';
 import { PersistentMusicBar } from '@/components/PersistentMusicBar';
 import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
+import { PostGameXpReveal } from '@/components/xp/PostGameXpReveal';
+import { LevelUpCelebration } from '@/components/xp/LevelUpCelebration';
+import { QuarterlyProgress } from '@/components/xp/QuarterlyProgress';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { PendingApproval } from '@/components/PendingApproval';
@@ -98,6 +101,14 @@ export default function Index() {
     pendingMilestones,
     showReveal,
     closeReveal,
+    // XP-related
+    xpProgress,
+    xpQuarterInfo,
+    pendingXpResult,
+    showXpReveal,
+    closeXpReveal,
+    showLevelUpCelebration,
+    closeLevelUpCelebration,
   } = useGameWithMilestones();
 
   // useFirstLogin now uses database as source of truth
@@ -352,8 +363,15 @@ export default function Index() {
 
                   {/* Player Header - styled for journal */}
                   <div className="journal-section">
-                    <PlayerHeader profile={profile} seasonStats={seasonStats} games={games} />
+                    <PlayerHeader profile={profile} seasonStats={seasonStats} games={games} xpProgress={xpProgress} />
                   </div>
+
+                  {/* Quarterly XP Progress */}
+                  {xpQuarterInfo && (
+                    <AnimatedSection className="journal-section" delay={0.05}>
+                      <QuarterlyProgress progress={xpProgress} quarterInfo={xpQuarterInfo} />
+                    </AnimatedSection>
+                  )}
 
                   {/* Season Averages */}
                   <AnimatedSection className="journal-section" delay={0.1}>
@@ -761,6 +779,29 @@ export default function Index() {
           <MilestoneReveal
             milestones={pendingMilestones}
             onComplete={closeReveal}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* XP Reveal Modal */}
+      <AnimatePresence>
+        {showXpReveal && pendingXpResult && (
+          <PostGameXpReveal
+            performance={pendingXpResult.performance}
+            xpResult={pendingXpResult.xpResult}
+            onClose={closeXpReveal}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Level Up Celebration */}
+      <AnimatePresence>
+        {showLevelUpCelebration && pendingXpResult && (
+          <LevelUpCelebration
+            previousLevel={pendingXpResult.xpResult.previousLevel}
+            newLevel={pendingXpResult.xpResult.newLevel}
+            newRewards={pendingXpResult.xpResult.newRewards}
+            onComplete={closeLevelUpCelebration}
           />
         )}
       </AnimatePresence>

@@ -1,11 +1,14 @@
 import { useState, useCallback } from 'react';
 import { useCloudData } from './useCloudData';
 import { useMilestones } from './useMilestones';
+import { useXpProgress } from './useXpProgress';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { findInvalidMilestones } from '@/utils/milestoneValidator';
+import { calculatePerformance } from '@/utils/performanceScoring';
 import type { GameStats } from '@/types/basketball';
 import type { NewMilestoneResult } from '@/types/milestone';
+import type { PerformanceResult, XpGainResult } from '@/types/xp';
 import { toast } from 'sonner';
 
 interface GameWithId extends GameStats {
@@ -28,8 +31,18 @@ export function useGameWithMilestones() {
     refreshMilestones,
   } = useMilestones(cloudData.activeSeason?.id);
   
+  const xpProgress = useXpProgress();
+  
   const [pendingMilestones, setPendingMilestones] = useState<NewMilestoneResult[]>([]);
   const [showReveal, setShowReveal] = useState(false);
+  
+  // XP reveal state
+  const [pendingXpResult, setPendingXpResult] = useState<{
+    performance: PerformanceResult;
+    xpResult: XpGainResult;
+  } | null>(null);
+  const [showXpReveal, setShowXpReveal] = useState(false);
+  const [showLevelUpCelebration, setShowLevelUpCelebration] = useState(false);
 
   const addGameWithMilestones = useCallback(async (game: Omit<GameStats, 'id'>) => {
     // First, save the game using the original addGame
@@ -70,12 +83,43 @@ export function useGameWithMilestones() {
       setShowReveal(true);
     }
 
+    // Calculate performance and award XP
+    const performance = calculatePerformance(savedGame);
+    const xpResult = await xpProgress.addXp(performance.xpEarned, performance.finalScore);
+    
+    if (xpResult) {
+      setPendingXpResult({ performance, xpResult });
+      // Show XP reveal after milestone reveal closes (or immediately if no milestones)
+      if (toReveal.length === 0) {
+        setShowXpReveal(true);
+      }
+    }
+
     return savedGame;
-  }, [cloudData, checkAndAwardMilestones, getOccurrenceCount]);
+  }, [cloudData, checkAndAwardMilestones, getOccurrenceCount, xpProgress]);
 
   const closeReveal = useCallback(() => {
     setShowReveal(false);
     setPendingMilestones([]);
+    // Show XP reveal after milestone reveal if we have pending XP
+    if (pendingXpResult) {
+      setShowXpReveal(true);
+    }
+  }, [pendingXpResult]);
+
+  const closeXpReveal = useCallback(() => {
+    setShowXpReveal(false);
+    // If leveled up, show celebration
+    if (pendingXpResult?.xpResult.didLevelUp) {
+      setShowLevelUpCelebration(true);
+    } else {
+      setPendingXpResult(null);
+    }
+  }, [pendingXpResult]);
+
+  const closeLevelUpCelebration = useCallback(() => {
+    setShowLevelUpCelebration(false);
+    setPendingXpResult(null);
   }, []);
 
   const handleMilestoneViewed = useCallback(async (milestoneIds: string[]) => {
@@ -167,6 +211,17 @@ export function useGameWithMilestones() {
     getOccurrencesByMilestoneId,
     getOccurrenceCount,
     refreshMilestones,
+    // XP system
+    xpProgress: xpProgress.progress,
+    xpQuarterInfo: xpProgress.quarterInfo,
+    xpHistory: xpProgress.history,
+    xpRewards: xpProgress.rewards,
+    xpUnlockedRewards: xpProgress.unlockedRewards,
+    pendingXpResult,
+    showXpReveal,
+    closeXpReveal,
+    showLevelUpCelebration,
+    closeLevelUpCelebration,
   };
 }
 
