@@ -125,6 +125,47 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_progress: {
+        Row: {
+          challenge_id: string
+          completed_at: string | null
+          created_at: string
+          current_value: number
+          id: string
+          is_completed: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number
+          id?: string
+          is_completed?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string | null
+          created_at?: string
+          current_value?: number
+          id?: string
+          is_completed?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_progress_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_reports: {
         Row: {
           admin_notes: string | null
@@ -318,6 +359,54 @@ export type Database = {
           name?: string
           rarity?: string
           secondary_threshold?: number | null
+          threshold?: number
+        }
+        Relationships: []
+      }
+      monthly_challenges: {
+        Row: {
+          check_type: string
+          created_at: string
+          description: string
+          difficulty: string
+          icon: string
+          id: string
+          is_active: boolean
+          month: string
+          name: string
+          reward_points: number
+          secondary_threshold: number | null
+          theme_name: string | null
+          threshold: number
+        }
+        Insert: {
+          check_type: string
+          created_at?: string
+          description: string
+          difficulty?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          month: string
+          name: string
+          reward_points?: number
+          secondary_threshold?: number | null
+          theme_name?: string | null
+          threshold?: number
+        }
+        Update: {
+          check_type?: string
+          created_at?: string
+          description?: string
+          difficulty?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          month?: string
+          name?: string
+          reward_points?: number
+          secondary_threshold?: number | null
+          theme_name?: string | null
           threshold?: number
         }
         Relationships: []

@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.send-parent-recap]
 verify_jwt = false
+
+[functions.rotate-monthly-challenges]
+verify_jwt = false
