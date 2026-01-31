@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Mic, Camera, User } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Plus, Mic, Camera, User, Sparkles, Loader2, Check, X, RefreshCw } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface EmptyDashboardWelcomeProps {
   playerName: string;
@@ -11,7 +14,10 @@ interface EmptyDashboardWelcomeProps {
   onPregameTalk: () => void;
   onUploadPhoto: () => void;
   onSkipPhoto: () => void;
+  onAvatarGenerated?: (newAvatarUrl: string) => void;
 }
+
+type AvatarState = 'idle' | 'generating' | 'preview';
 
 export function EmptyDashboardWelcome({ 
   playerName, 
@@ -19,9 +25,104 @@ export function EmptyDashboardWelcome({
   onLogFirstGame, 
   onPregameTalk,
   onUploadPhoto,
-  onSkipPhoto
+  onSkipPhoto,
+  onAvatarGenerated
 }: EmptyDashboardWelcomeProps) {
   const hasAvatar = Boolean(avatarUrl);
+  const [avatarState, setAvatarState] = useState<AvatarState>('idle');
+  const [generatedPreview, setGeneratedPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const generateAvatar = async () => {
+    if (!avatarUrl) {
+      toast.error('Please upload a profile photo first');
+      return;
+    }
+
+    setAvatarState('generating');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-avatar', {
+        body: { imageUrl: avatarUrl }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to generate avatar');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (!data?.imageData) {
+        throw new Error('No avatar image received');
+      }
+
+      setGeneratedPreview(data.imageData);
+      setAvatarState('preview');
+      toast.success('Avatar generated! Preview it below.');
+    } catch (error: any) {
+      console.error('Avatar generation error:', error);
+      toast.error(error.message || 'Failed to generate avatar');
+      setAvatarState('idle');
+    }
+  };
+
+  const acceptGeneratedAvatar = async () => {
+    if (!generatedPreview || !onAvatarGenerated) return;
+
+    setIsUploading(true);
+
+    try {
+      // Convert base64 to blob
+      const base64Data = generatedPreview.replace(/^data:image\/\w+;base64,/, '');
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/png' });
+
+      // Get user ID for file path
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Upload to Supabase storage
+      const fileName = `${user.id}/ai-avatar-${Date.now()}.png`;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, blob, {
+          contentType: 'image/png',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with new avatar
+      onAvatarGenerated(publicUrl);
+      
+      setAvatarState('idle');
+      setGeneratedPreview(null);
+      toast.success('AI avatar saved!');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error('Failed to save avatar');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const cancelPreview = () => {
+    setAvatarState('idle');
+    setGeneratedPreview(null);
+  };
 
   return (
     <motion.div
@@ -98,78 +199,181 @@ export function EmptyDashboardWelcome({
           </CardContent>
         </Card>
 
-        {/* Avatar Upload Card */}
-        {!hasAvatar && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card className="bg-gradient-to-br from-card to-card/80 border-2 border-muted shadow-lg h-full">
-              <CardContent className="pt-8 pb-6 px-6 text-center flex flex-col h-full">
-                {/* Avatar Preview */}
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', delay: 0.4 }}
-                  className="mx-auto mb-6"
-                >
+        {/* Avatar Upload/Generate Card */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="bg-gradient-to-br from-card to-card/80 border-2 border-muted shadow-lg h-full">
+            <CardContent className="pt-8 pb-6 px-6 text-center flex flex-col h-full">
+              {/* Avatar Preview - show different states */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', delay: 0.4 }}
+                className="mx-auto mb-6"
+              >
+                {avatarState === 'generating' ? (
+                  <div className="relative">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-r from-primary/20 to-primary/40 animate-pulse" />
+                    <Loader2 className="w-6 h-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin text-primary" />
+                  </div>
+                ) : avatarState === 'preview' && generatedPreview ? (
+                  <div className="flex items-center gap-3">
+                    <div className="text-center">
+                      <Avatar className="w-14 h-14 border-2 border-muted">
+                        <AvatarImage src={avatarUrl} alt="Original" />
+                        <AvatarFallback><User className="w-5 h-5" /></AvatarFallback>
+                      </Avatar>
+                      <p className="text-[10px] text-muted-foreground mt-1">Original</p>
+                    </div>
+                    <div className="text-muted-foreground text-sm">→</div>
+                    <div className="text-center">
+                      <Avatar className="w-14 h-14 border-2 border-primary ring-2 ring-primary/20">
+                        <AvatarImage src={generatedPreview} alt="AI Generated" />
+                        <AvatarFallback><Sparkles className="w-5 h-5" /></AvatarFallback>
+                      </Avatar>
+                      <p className="text-[10px] text-primary mt-1 font-medium">AI</p>
+                    </div>
+                  </div>
+                ) : hasAvatar ? (
+                  <Avatar className="w-20 h-20 border-2 border-primary/30">
+                    <AvatarImage src={avatarUrl} alt={playerName} />
+                    <AvatarFallback className="bg-muted">
+                      <User className="w-8 h-8 text-muted-foreground/50" />
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
                   <Avatar className="w-20 h-20 border-2 border-dashed border-muted-foreground/30">
                     <AvatarFallback className="bg-muted">
                       <User className="w-8 h-8 text-muted-foreground/50" />
                     </AvatarFallback>
                   </Avatar>
-                </motion.div>
+                )}
+              </motion.div>
 
-                {/* Header */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="mb-4"
-                >
-                  <h3 className="text-xl font-semibold text-foreground">
-                    Add a face to the journey
-                  </h3>
-                </motion.div>
+              {/* Header */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="mb-4"
+              >
+                <h3 className="text-xl font-semibold text-foreground">
+                  {avatarState === 'generating' 
+                    ? 'Creating your avatar...'
+                    : avatarState === 'preview'
+                    ? 'Your AI avatar is ready!'
+                    : hasAvatar 
+                    ? 'Looking good!' 
+                    : 'Add a face to the journey'}
+                </h3>
+              </motion.div>
 
-                {/* Message */}
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                  className="text-muted-foreground mb-8 leading-relaxed text-sm flex-1"
-                >
-                  This helps your Hoop Journal player card feel like you.
-                  Upload a photo to see your avatar.
-                </motion.p>
+              {/* Message */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="text-muted-foreground mb-8 leading-relaxed text-sm flex-1"
+              >
+                {avatarState === 'generating'
+                  ? 'AI is transforming your photo into a basketball-themed avatar...'
+                  : avatarState === 'preview'
+                  ? 'Choose to use the AI-generated avatar or keep your original photo.'
+                  : hasAvatar
+                  ? 'Want to level up? Generate an AI avatar to make your player card pop!'
+                  : 'This helps your Hoop Journal player card feel like you. Upload a photo to see your avatar.'}
+              </motion.p>
 
-                {/* Action Buttons */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 }}
-                  className="flex flex-col gap-3 mt-auto"
-                >
-                  <Button
-                    onClick={onUploadPhoto}
-                    className="w-full h-12 gradient-primary"
-                  >
-                    <Camera className="w-4 h-4 mr-2" />
-                    Upload a photo
+              {/* Action Buttons */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                className="flex flex-col gap-3 mt-auto"
+              >
+                {avatarState === 'preview' && generatedPreview ? (
+                  <>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={cancelPreview}
+                        variant="outline"
+                        disabled={isUploading}
+                        className="flex-1 h-12"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Keep Original
+                      </Button>
+                      <Button
+                        onClick={acceptGeneratedAvatar}
+                        disabled={isUploading}
+                        className="flex-1 h-12 gradient-primary"
+                      >
+                        {isUploading ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Check className="w-4 h-4 mr-2" />
+                        )}
+                        Use This
+                      </Button>
+                    </div>
+                    <Button
+                      onClick={generateAvatar}
+                      variant="ghost"
+                      disabled={isUploading}
+                      className="w-full h-10 text-muted-foreground"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Regenerate
+                    </Button>
+                  </>
+                ) : avatarState === 'generating' ? (
+                  <Button disabled className="w-full h-12">
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
                   </Button>
-                  <Button
-                    onClick={onSkipPhoto}
-                    variant="ghost"
-                    className="w-full h-12 text-muted-foreground"
-                  >
-                    Skip for now
-                  </Button>
-                </motion.div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+                ) : hasAvatar ? (
+                  <>
+                    <Button
+                      onClick={generateAvatar}
+                      className="w-full h-12 gradient-primary"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate AI Avatar
+                    </Button>
+                    <Button
+                      onClick={onUploadPhoto}
+                      variant="ghost"
+                      className="w-full h-10 text-muted-foreground"
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      Change photo
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      onClick={onUploadPhoto}
+                      className="w-full h-12 gradient-primary"
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      Upload a photo
+                    </Button>
+                    <Button
+                      onClick={onSkipPhoto}
+                      variant="ghost"
+                      className="w-full h-12 text-muted-foreground"
+                    >
+                      Skip for now
+                    </Button>
+                  </>
+                )}
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
       {/* Motivational subtext */}

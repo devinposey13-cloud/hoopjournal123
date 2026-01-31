@@ -317,6 +317,9 @@ export default function Index() {
                     onSkipPhoto={() => {
                       // Just dismiss - user can add later
                     }}
+                    onAvatarGenerated={(newUrl) => {
+                      updateProfile({ ...profile, avatar: newUrl });
+                    }}
                   />
                 </div>
               </div>
