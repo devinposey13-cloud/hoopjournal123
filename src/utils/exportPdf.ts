@@ -548,22 +548,6 @@ export async function exportGameBoxScorePdf(
 
   // Add Milestones Earned if available
   if (milestones && milestones.length > 0) {
-    doc.addPage();
-    
-    // Add watermark and header logo to this page
-    if (logoData) {
-      addWatermarkToPage(doc, logoData);
-      addHeaderLogo(doc, logoData);
-    }
-    
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Milestones Earned', pageWidth / 2, 20, { align: 'center' });
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${profile.team} vs ${game.opponent} - ${format(new Date(game.date), 'MMMM d, yyyy')}`, pageWidth / 2, 28, { align: 'center' });
-
     // Rarity colors for badges
     const rarityColors: Record<MilestoneRarity, [number, number, number]> = {
       common: [100, 116, 139],
@@ -573,49 +557,88 @@ export async function exportGameBoxScorePdf(
       legendary: [249, 115, 22],
     };
 
-    let currentY = 40;
     const cardWidth = 85;
     const cardHeight = 35;
     const cardsPerRow = 3;
+    const rowsPerPage = 4;
+    const cardsPerPage = cardsPerRow * rowsPerPage;
     const startX = (pageWidth - (cardWidth * cardsPerRow + 10 * (cardsPerRow - 1))) / 2;
+    const startY = 40;
 
-    milestones.forEach((earned, index) => {
-      const row = Math.floor(index / cardsPerRow);
-      const col = index % cardsPerRow;
-      const x = startX + col * (cardWidth + 10);
-      const y = currentY + row * (cardHeight + 8);
+    // Sort milestones by rarity (legendary first, common last)
+    const rarityOrder: Record<string, number> = {
+      legendary: 0,
+      epic: 1,
+      rare: 2,
+      uncommon: 3,
+      common: 4,
+    };
+    const sortedMilestones = [...milestones].sort((a, b) => 
+      (rarityOrder[a.milestone.rarity] || 4) - (rarityOrder[b.milestone.rarity] || 4)
+    );
 
-      const color = rarityColors[earned.milestone.rarity] || rarityColors.common;
+    const totalPages = Math.ceil(sortedMilestones.length / cardsPerPage);
+
+    for (let page = 0; page < totalPages; page++) {
+      doc.addPage();
       
-      // Card background
-      doc.setFillColor(240, 240, 240);
-      doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'F');
+      // Add watermark and header logo to this page
+      if (logoData) {
+        addWatermarkToPage(doc, logoData);
+        addHeaderLogo(doc, logoData);
+      }
       
-      // Left accent bar with rarity color
-      doc.setFillColor(color[0], color[1], color[2]);
-      doc.rect(x, y, 4, cardHeight, 'F');
-      
-      // Milestone name
-      doc.setFontSize(10);
+      doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0);
-      const nameLines = doc.splitTextToSize(earned.milestone.name, cardWidth - 12);
-      doc.text(nameLines[0], x + 8, y + 12);
+      const pageLabel = totalPages > 1 ? ` (${page + 1}/${totalPages})` : '';
+      doc.text(`Milestones Earned${pageLabel}`, pageWidth / 2, 20, { align: 'center' });
       
-      // Rarity label
-      doc.setFontSize(7);
-      doc.setTextColor(color[0], color[1], color[2]);
-      doc.text(earned.milestone.rarity.toUpperCase(), x + 8, y + 18);
-      
-      // Description
-      doc.setFontSize(8);
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(80, 80, 80);
-      const descLines = doc.splitTextToSize(earned.milestone.description, cardWidth - 12);
-      doc.text(descLines.slice(0, 2).join('\n'), x + 8, y + 25);
-      
-      doc.setTextColor(0, 0, 0);
-    });
+      doc.text(`${profile.team} vs ${game.opponent} - ${format(new Date(game.date), 'MMMM d, yyyy')}`, pageWidth / 2, 28, { align: 'center' });
+
+      // Get milestones for this page
+      const pageStartIndex = page * cardsPerPage;
+      const pageMilestones = sortedMilestones.slice(pageStartIndex, pageStartIndex + cardsPerPage);
+
+      pageMilestones.forEach((earned, index) => {
+        const row = Math.floor(index / cardsPerRow);
+        const col = index % cardsPerRow;
+        const x = startX + col * (cardWidth + 10);
+        const y = startY + row * (cardHeight + 8);
+
+        const color = rarityColors[earned.milestone.rarity] || rarityColors.common;
+        
+        // Card background
+        doc.setFillColor(240, 240, 240);
+        doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'F');
+        
+        // Left accent bar with rarity color
+        doc.setFillColor(color[0], color[1], color[2]);
+        doc.rect(x, y, 4, cardHeight, 'F');
+        
+        // Milestone name
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        const nameLines = doc.splitTextToSize(earned.milestone.name, cardWidth - 12);
+        doc.text(nameLines[0], x + 8, y + 12);
+        
+        // Rarity label
+        doc.setFontSize(7);
+        doc.setTextColor(color[0], color[1], color[2]);
+        doc.text(earned.milestone.rarity.toUpperCase(), x + 8, y + 18);
+        
+        // Description
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        const descLines = doc.splitTextToSize(earned.milestone.description, cardWidth - 12);
+        doc.text(descLines.slice(0, 2).join('\n'), x + 8, y + 25);
+        
+        doc.setTextColor(0, 0, 0);
+      });
+    }
   }
 
   // Add Coach AI Recap if included
