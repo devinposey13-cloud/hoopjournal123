@@ -73,6 +73,8 @@ export interface PlayerProfile {
   seasonGoals?: string[];
   parentEmail?: string;
   onboardingCompletedAt?: string;
+  // Notification preferences
+  receiveGameSummaries?: boolean;
 }
 
 export interface SeasonStats {

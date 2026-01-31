@@ -501,6 +501,7 @@ export type Database = {
           phone: string | null
           playing_level: string | null
           position: string
+          receive_game_summaries: boolean
           season_goals: string[] | null
           team: string
           theme_music_url: string | null
@@ -527,6 +528,7 @@ export type Database = {
           phone?: string | null
           playing_level?: string | null
           position?: string
+          receive_game_summaries?: boolean
           season_goals?: string[] | null
           team?: string
           theme_music_url?: string | null
@@ -553,6 +555,7 @@ export type Database = {
           phone?: string | null
           playing_level?: string | null
           position?: string
+          receive_game_summaries?: boolean
           season_goals?: string[] | null
           team?: string
           theme_music_url?: string | null
