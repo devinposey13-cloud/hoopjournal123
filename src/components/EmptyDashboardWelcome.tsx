@@ -68,7 +68,7 @@ export function EmptyDashboardWelcome({
   // Coach voice for intro
   const { playVoice, playingIndex, isLoadingAudio } = useCoachVoice();
 
-  const INTRO_MESSAGE = "First game hasn't been logged yet — but every season starts somewhere. Let me know when you're ready.";
+  const INTRO_MESSAGE = `Hey ${playerName}! First game hasn't been logged yet — but every season starts somewhere. Let me know when you're ready.`;
 
   // Auto-play Coach AI intro voice after onboarding
   useEffect(() => {
