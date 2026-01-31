@@ -40,6 +40,7 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { useApprovalStatus } from '@/hooks/useApprovalStatus';
 import { useFirstLogin } from '@/hooks/useFirstLogin';
 import { usePlayerTeams } from '@/hooks/usePlayerTeams';
+import { useRetroactiveXp } from '@/hooks/useRetroactiveXp';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { LogOut, Trophy, X, Radio, Users } from 'lucide-react';
@@ -118,7 +119,12 @@ export default function Index() {
     pendingTierCelebration,
     showTierCelebration,
     closeTierCelebration,
+    // Tier achievements for badges
+    achievedTiers,
   } = useGameWithMilestones();
+
+  // Apply retroactive XP for games logged before XP system
+  useRetroactiveXp();
 
   // useFirstLogin now uses database as source of truth
   const { showOnboarding, loading: introLoading, completeOnboarding } = useFirstLogin({
@@ -470,7 +476,13 @@ export default function Index() {
 
                   {/* Player Header - styled for journal */}
                   <div className="journal-section">
-                    <PlayerHeader profile={profile} seasonStats={dashboardStats} games={dashboardFilteredGames} xpProgress={xpProgress} />
+                    <PlayerHeader 
+                      profile={profile} 
+                      seasonStats={dashboardStats} 
+                      games={dashboardFilteredGames} 
+                      xpProgress={xpProgress}
+                      tierAchievements={achievedTiers}
+                    />
                   </div>
 
                   {/* Quarterly XP Progress */}
