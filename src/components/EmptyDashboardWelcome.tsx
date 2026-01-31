@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Mic, Camera, User, Sparkles, Loader2, Check, X, RefreshCw } from 'lucide-react';
+import { Plus, Mic, Camera, User, Sparkles, Loader2, Check, X, RefreshCw, Trash2 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -16,6 +16,7 @@ interface EmptyDashboardWelcomeProps {
   onSkipPhoto: () => void;
   onAvatarGenerated?: (newAvatarUrl: string) => void;
   onAvatarUploaded?: (file: File) => Promise<string | null>;
+  onAvatarDeleted?: () => Promise<void>;
 }
 
 type AvatarState = 'idle' | 'generating' | 'preview' | 'uploading';
@@ -28,12 +29,14 @@ export function EmptyDashboardWelcome({
   onUploadPhoto,
   onSkipPhoto,
   onAvatarGenerated,
-  onAvatarUploaded
+  onAvatarUploaded,
+  onAvatarDeleted
 }: EmptyDashboardWelcomeProps) {
   const hasAvatar = Boolean(avatarUrl);
   const [avatarState, setAvatarState] = useState<AvatarState>('idle');
   const [generatedPreview, setGeneratedPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAvatarClick = () => {
@@ -70,6 +73,18 @@ export function EmptyDashboardWelcome({
     } else {
       // Fallback to settings panel
       onUploadPhoto();
+    }
+  };
+
+  const handleDeleteAvatar = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onAvatarDeleted) return;
+    
+    setIsDeleting(true);
+    try {
+      await onAvatarDeleted();
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -359,6 +374,7 @@ export function EmptyDashboardWelcome({
                       animate={{ opacity: 1, scale: 1, rotateY: 0 }}
                       exit={{ opacity: 0, scale: 0.8, rotateY: 90 }}
                       transition={{ duration: 0.4, ease: "easeOut" }}
+                      className="relative group"
                     >
                       <Avatar className="w-28 h-28 border-3 border-primary/30 shadow-lg">
                         <AvatarImage src={avatarUrl} alt={playerName} />
@@ -366,6 +382,23 @@ export function EmptyDashboardWelcome({
                           <User className="w-12 h-12 text-muted-foreground/50" />
                         </AvatarFallback>
                       </Avatar>
+                      {/* Delete button overlay */}
+                      {onAvatarDeleted && (
+                        <motion.button
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: 0.3 }}
+                          onClick={handleDeleteAvatar}
+                          disabled={isDeleting}
+                          className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-destructive flex items-center justify-center shadow-lg hover:scale-110 transition-transform disabled:opacity-50"
+                        >
+                          {isDeleting ? (
+                            <Loader2 className="w-4 h-4 text-destructive-foreground animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4 text-destructive-foreground" />
+                          )}
+                        </motion.button>
+                      )}
                     </motion.div>
                   ) : (
                     <motion.div
