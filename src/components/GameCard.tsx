@@ -1,9 +1,16 @@
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
-import { GameStats, PlayerProfile } from '@/types/basketball';
+import { GameStats, PlayerProfile, PlayerTeam } from '@/types/basketball';
 import { cn } from '@/lib/utils';
-import { Trash2, FileDown } from 'lucide-react';
+import { Trash2, FileDown, Users, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { toast } from 'sonner';
 
@@ -11,9 +18,18 @@ interface GameCardProps {
   game: GameStats;
   profile?: PlayerProfile;
   onDelete?: (id: string) => void;
+  teams?: PlayerTeam[];
+  onTeamChange?: (gameId: string, teamId: string | null) => void;
 }
 
-export function GameCard({ game, profile, onDelete }: GameCardProps) {
+export function GameCard({ game, profile, onDelete, teams, onTeamChange }: GameCardProps) {
+  const handleTeamChange = (teamId: string | null, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onTeamChange) {
+      onTeamChange(game.id, teamId);
+    }
+  };
   const handleExportPdf = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -52,7 +68,49 @@ export function GameCard({ game, profile, onDelete }: GameCardProps) {
               {format(new Date(game.date), 'MMM d, yyyy')}
             </span>
           </div>
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1">
+            {teams && teams.length > 0 && onTeamChange && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-primary"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    title="Assign Team"
+                  >
+                    <Users className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  align="end" 
+                  className="w-48 bg-popover border-border z-50"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <DropdownMenuItem
+                    onClick={(e) => handleTeamChange(null, e as unknown as React.MouseEvent)}
+                    className="flex items-center justify-between cursor-pointer"
+                  >
+                    <span className="text-muted-foreground">Unassigned</span>
+                    {!game.teamId && <Check className="w-4 h-4 text-primary" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {teams.map((team) => (
+                    <DropdownMenuItem
+                      key={team.id}
+                      onClick={(e) => handleTeamChange(team.id, e as unknown as React.MouseEvent)}
+                      className="flex items-center justify-between cursor-pointer"
+                    >
+                      <span>{team.name}</span>
+                      {game.teamId === team.id && <Check className="w-4 h-4 text-primary" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             {profile && (
               <Button
                 variant="ghost"
