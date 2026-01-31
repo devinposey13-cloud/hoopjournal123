@@ -759,7 +759,10 @@ export default function GameDetail() {
     );
   }
 
-  const fgPct = game.fgAttempted > 0 ? Math.round((game.fgMade / game.fgAttempted) * 100) : 0;
+  // Calculate TOTAL field goals (2PT + 3PT combined) for display
+  const totalFgMade = game.fgMade + game.threePtMade;
+  const totalFgAttempted = game.fgAttempted + game.threePtAttempted;
+  const totalFgPct = totalFgAttempted > 0 ? Math.round((totalFgMade / totalFgAttempted) * 100) : 0;
   const threePct = game.threePtAttempted > 0 ? Math.round((game.threePtMade / game.threePtAttempted) * 100) : 0;
   const ftPct = game.ftAttempted > 0 ? Math.round((game.ftMade / game.ftAttempted) * 100) : 0;
 
@@ -904,9 +907,9 @@ export default function GameDetail() {
           <div className="grid grid-cols-3 gap-6">
             <ShootingStatBox
               label="Field Goals"
-              made={game.fgMade}
-              attempted={game.fgAttempted}
-              percentage={fgPct}
+              made={totalFgMade}
+              attempted={totalFgAttempted}
+              percentage={totalFgPct}
             />
             <ShootingStatBox
               label="3-Pointers"
@@ -975,8 +978,8 @@ export default function GameDetail() {
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">True Shooting</p>
               <p className="text-2xl font-bold">
-                {game.fgAttempted + (0.44 * game.ftAttempted) > 0
-                  ? Math.round((game.points / (2 * (game.fgAttempted + 0.44 * game.ftAttempted))) * 100)
+                {totalFgAttempted + (0.44 * game.ftAttempted) > 0
+                  ? Math.round((game.points / (2 * (totalFgAttempted + 0.44 * game.ftAttempted))) * 100)
                   : 0}%
               </p>
             </div>
