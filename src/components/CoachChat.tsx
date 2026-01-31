@@ -12,6 +12,7 @@ import { ReportContentButton } from './ReportContentButton';
 import { useCoachVoice } from '@/hooks/useCoachVoice';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { AudioWaveform } from './AudioWaveform';
+import { InlineLoading } from '@/components/ui/loading-spinner';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -491,12 +492,9 @@ export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
                   <Bot className="w-4 h-4 text-primary-foreground" />
                 </div>
                 <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">
-                      {isExtractingFrames ? 'Analyzing video...' : 'Thinking...'}
-                    </span>
-                  </div>
+                  <InlineLoading 
+                    message={isExtractingFrames ? 'Analyzing video...' : 'Thinking...'} 
+                  />
                 </div>
               </div>
             )}
