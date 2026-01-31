@@ -81,6 +81,12 @@ export function FirstLoginIntro({ onComplete }: FirstLoginIntroProps) {
     return () => timers.forEach(clearTimeout);
   }, [playSound, preloadIntroSounds]);
 
+  const handleComplete = () => {
+    playSound('net_swoosh');
+    // Small delay to let sound play before transitioning
+    setTimeout(onComplete, 300);
+  };
+
   const stats = [
     { label: 'PTS', delay: 0 },
     { label: 'REB', delay: 0.2 },
@@ -170,7 +176,7 @@ export function FirstLoginIntro({ onComplete }: FirstLoginIntroProps) {
               transition={{ duration: 0.5, ease: 'easeOut' }}
             >
               <Button
-                onClick={onComplete}
+                onClick={handleComplete}
                 size="lg"
                 className="gradient-primary text-lg px-8 py-6 rounded-full shadow-lg hover:scale-105 transition-transform"
               >
