@@ -1017,7 +1017,10 @@ export default function GameDetail() {
               .filter(m => m.gameId === game.id)
               .map(m => ({ name: m.milestone?.name || '', rarity: m.milestone?.rarity || 'common' }))
           }
-          onRecapChange={handleRecapChange} 
+          onRecapChange={handleRecapChange}
+          playerName={profile?.name}
+          playerTeam={profile?.team}
+          parentEmail={profile?.parentEmail}
         />
 
         {/* Post Game Talk - Reflection with Coach AI */}

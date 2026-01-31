@@ -4,10 +4,11 @@ import { GameStats } from '@/types/basketball';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Loader2, Sparkles, RefreshCw, Volume2, VolumeX } from 'lucide-react';
+import { Loader2, Sparkles, RefreshCw, Volume2, VolumeX, Mail, CheckCircle2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useCoachVoice } from '@/hooks/useCoachVoice';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 interface EarnedMilestone {
   name: string;
@@ -18,14 +19,21 @@ interface PostGameRecapProps {
   game: GameStats;
   earnedMilestones?: EarnedMilestone[];
   onRecapChange?: (recap: string | null, includeInPdf: boolean) => void;
+  playerName?: string;
+  playerTeam?: string;
+  parentEmail?: string | null;
 }
 
-export function PostGameRecap({ game, earnedMilestones, onRecapChange }: PostGameRecapProps) {
+export function PostGameRecap({ game, earnedMilestones, onRecapChange, playerName, playerTeam, parentEmail }: PostGameRecapProps) {
   const [recap, setRecap] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [includeInPdf, setIncludeInPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Parent email sending state
+  const [isSendingToParent, setIsSendingToParent] = useState(false);
+  const [hasSentToParent, setHasSentToParent] = useState(false);
   
   // Voice playback
   const { playingIndex, isLoadingAudio, playVoice, stopVoice } = useCoachVoice();
@@ -107,6 +115,79 @@ export function PostGameRecap({ game, earnedMilestones, onRecapChange }: PostGam
       setError(err instanceof Error ? err.message : 'Failed to generate recap');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const sendToParent = async () => {
+    if (!playerName || !playerTeam) {
+      toast({
+        title: "Missing player info",
+        description: "Player name and team are required to send the recap.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingToParent(true);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Please sign in to send the recap');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-parent-recap`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          gameStats: {
+            opponent: game.opponent,
+            points: game.points,
+            rebounds: game.rebounds,
+            assists: game.assists,
+            steals: game.steals,
+            blocks: game.blocks,
+            isWin: game.isWin,
+            date: game.date,
+          },
+          recap,
+          playerName,
+          playerTeam,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (result.error === "No parent email configured") {
+          toast({
+            title: "No parent email set up",
+            description: "Add a parent email in Settings to share recaps.",
+            variant: "destructive",
+          });
+        } else {
+          throw new Error(result.error || 'Failed to send');
+        }
+        return;
+      }
+
+      setHasSentToParent(true);
+      toast({
+        title: "Recap sent!",
+        description: "Your game recap has been sent to your parent.",
+      });
+    } catch (err) {
+      console.error('Error sending to parent:', err);
+      toast({
+        title: "Failed to send",
+        description: err instanceof Error ? err.message : "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingToParent(false);
     }
   };
 
@@ -197,7 +278,7 @@ export function PostGameRecap({ game, earnedMilestones, onRecapChange }: PostGam
           </div>
           
           {/* Voice playback button */}
-          <div className="mt-4 pt-4 border-t border-border">
+          <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-3">
             <Button
               variant="outline"
               size="sm"
@@ -217,6 +298,29 @@ export function PostGameRecap({ game, earnedMilestones, onRecapChange }: PostGam
               )}
               {playingIndex === 0 ? 'Stop Playback' : 'Listen to Recap'}
             </Button>
+
+            {/* Share with Family button - only show if parent email exists */}
+            {parentEmail && (
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "gap-2",
+                  hasSentToParent && "text-green-500 border-green-500"
+                )}
+                onClick={sendToParent}
+                disabled={isSendingToParent || hasSentToParent}
+              >
+                {isSendingToParent ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : hasSentToParent ? (
+                  <CheckCircle2 className="w-4 h-4" />
+                ) : (
+                  <Mail className="w-4 h-4" />
+                )}
+                {hasSentToParent ? 'Sent to Parent!' : 'Share with Family'}
+              </Button>
+            )}
           </div>
         </div>
       )}
