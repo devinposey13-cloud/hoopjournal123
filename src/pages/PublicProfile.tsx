@@ -4,12 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, ArrowLeft, Target, Repeat, Zap, Shield, HandMetal, Percent, Instagram } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { User, ArrowLeft, Target, Repeat, Zap, Shield, HandMetal, Percent, Instagram, Trophy, Flame, Star, Crown, Gem } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { StatCard } from '@/components/StatCard';
 import { ClipCard } from '@/components/ClipCard';
 import { PublicMilestoneCard } from '@/components/milestones/PublicMilestoneCard';
 import { MilestoneRarity } from '@/types/milestone';
+import { cn } from '@/lib/utils';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 
 interface PublicProfileData {
@@ -58,14 +60,39 @@ interface GroupedMilestone extends PublicMilestone {
   count: number;
 }
 
+interface TierAchievement {
+  id: string;
+  tier: string;
+  performanceScore: number;
+  achievedAt: string;
+}
+
+const tierConfig: Record<string, { icon: React.ElementType; color: string; bgColor: string; label: string }> = {
+  'bronze': { icon: Trophy, color: 'text-orange-600', bgColor: 'bg-orange-500/20', label: 'Bronze' },
+  'silver': { icon: Star, color: 'text-slate-400', bgColor: 'bg-slate-400/20', label: 'Silver' },
+  'gold': { icon: Crown, color: 'text-yellow-500', bgColor: 'bg-yellow-500/20', label: 'Gold' },
+  'diamond': { icon: Gem, color: 'text-cyan-400', bgColor: 'bg-cyan-400/20', label: 'Diamond' },
+  'fire': { icon: Flame, color: 'text-red-500', bgColor: 'bg-red-500/20', label: 'On Fire' },
+};
+
 export default function PublicProfile() {
   const { username } = useParams<{ username: string }>();
   const [profile, setProfile] = useState<PublicProfileData | null>(null);
   const [clips, setClips] = useState<PublicClip[]>([]);
   const [stats, setStats] = useState<SeasonStats | null>(null);
   const [milestones, setMilestones] = useState<PublicMilestone[]>([]);
+  const [tierAchievements, setTierAchievements] = useState<TierAchievement[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  // Get unique tier counts
+  const tierCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    tierAchievements.forEach(t => {
+      counts[t.tier] = (counts[t.tier] || 0) + 1;
+    });
+    return counts;
+  }, [tierAchievements]);
 
   // Group milestones by milestone_id and count occurrences
   const groupedMilestones = useMemo((): GroupedMilestone[] => {
@@ -241,6 +268,25 @@ export default function PublicProfile() {
             }));
           setMilestones(parsedMilestones);
         }
+        // Fetch tier achievements
+        const { data: tierData, error: tierError } = await supabase
+          .from('player_tier_achievements')
+          .select('*')
+          .eq('user_id', profileData.user_id)
+          .order('achieved_at', { ascending: false });
+
+        if (tierError) {
+          console.error('Error fetching tier achievements:', tierError);
+        }
+
+        if (tierData) {
+          setTierAchievements(tierData.map(t => ({
+            id: t.id,
+            tier: t.tier,
+            performanceScore: Number(t.performance_score),
+            achievedAt: t.achieved_at,
+          })));
+        }
       } catch (error) {
         console.error('Error fetching public profile:', error);
         setNotFound(true);
@@ -319,6 +365,40 @@ export default function PublicProfile() {
               </a>
             )}
           </div>
+
+          {/* Tier Achievement Badges */}
+          {Object.keys(tierCounts).length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2 mt-4">
+              {Object.entries(tierCounts)
+                .sort((a, b) => {
+                  const order = ['fire', 'diamond', 'gold', 'silver', 'bronze'];
+                  return order.indexOf(a[0]) - order.indexOf(b[0]);
+                })
+                .map(([tier, count]) => {
+                  const config = tierConfig[tier];
+                  if (!config) return null;
+                  const Icon = config.icon;
+                  return (
+                    <Badge
+                      key={tier}
+                      variant="outline"
+                      className={cn(
+                        'flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold',
+                        config.bgColor,
+                        config.color,
+                        'border-current/30'
+                      )}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {config.label}
+                      {count > 1 && (
+                        <span className="ml-1 text-xs opacity-80">×{count}</span>
+                      )}
+                    </Badge>
+                  );
+                })}
+            </div>
+          )}
         </div>
 
         {/* Tabs for Stats, Highlights, and Milestones */}
