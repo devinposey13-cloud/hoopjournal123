@@ -80,7 +80,7 @@ export function useCloudData() {
       // Fetch games (filtered by season if one is active)
       let gamesQuery = supabase
         .from('games')
-        .select('*')
+        .select('*, player_teams(name)')
         .order('date', { ascending: false });
       
       if (currentSeasonId) {
@@ -110,6 +110,8 @@ export function useCloudData() {
         ftMade: g.ft_made,
         ftAttempted: g.ft_attempted,
         isWin: g.is_win,
+        teamId: g.team_id || undefined,
+        teamName: (g.player_teams as any)?.name || undefined,
       })) || []);
 
       // Fetch scheduled games (filtered by season)
@@ -382,7 +384,7 @@ export function useCloudData() {
     }
   };
 
-  // Add game (now with season_id)
+  // Add game (now with season_id and team_id)
   const addGame = async (game: Omit<GameStats, 'id'>) => {
     if (!user) return null;
 
@@ -392,6 +394,7 @@ export function useCloudData() {
         .insert({
           user_id: user.id,
           season_id: activeSeason?.id || null,
+          team_id: game.teamId || null,
           date: game.date,
           opponent: game.opponent,
           points: game.points,
@@ -410,7 +413,7 @@ export function useCloudData() {
           ft_attempted: game.ftAttempted,
           is_win: game.isWin,
         })
-        .select()
+        .select('*, player_teams(name)')
         .single();
 
       if (error) throw error;
@@ -434,6 +437,8 @@ export function useCloudData() {
         ftMade: data.ft_made,
         ftAttempted: data.ft_attempted,
         isWin: data.is_win,
+        teamId: data.team_id || undefined,
+        teamName: (data.player_teams as any)?.name || game.teamName,
       };
 
       setGames(prev => [newGame, ...prev]);

@@ -1,3 +1,11 @@
+export interface PlayerTeam {
+  id: string;
+  user_id: string;
+  name: string;
+  is_primary: boolean;
+  created_at: string;
+}
+
 export interface GameStats {
   id: string;
   date: string;
@@ -20,6 +28,8 @@ export interface GameStats {
   offensiveRebounds?: number;
   defensiveRebounds?: number;
   gamePhotoUrl?: string;
+  teamId?: string;
+  teamName?: string;
 }
 
 export interface HalfStats {

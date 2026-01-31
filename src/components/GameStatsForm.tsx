@@ -4,21 +4,29 @@ import { CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { GameStats } from '@/types/basketball';
+import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 
 interface GameStatsFormProps {
   onSubmit: (game: Omit<GameStats, 'id'>) => Promise<any> | any;
   initialData?: {
     date?: Date;
     opponent?: string;
+    teamId?: string;
   };
   submitLabel?: string;
 }
@@ -40,14 +48,24 @@ const defaultFormData = {
   ftMade: 0,
   ftAttempted: 0,
   isWin: true,
+  teamId: '',
 };
 
 export function GameStatsForm({ onSubmit, initialData, submitLabel = 'Save Game' }: GameStatsFormProps) {
+  const { teams, primaryTeam, loading: teamsLoading } = usePlayerTeams();
   const [date, setDate] = useState<Date>(initialData?.date || new Date());
   const [formData, setFormData] = useState({
     ...defaultFormData,
     opponent: initialData?.opponent || '',
+    teamId: initialData?.teamId || '',
   });
+
+  // Set default team when teams load
+  useEffect(() => {
+    if (!formData.teamId && primaryTeam) {
+      setFormData(prev => ({ ...prev, teamId: primaryTeam.id }));
+    }
+  }, [primaryTeam, formData.teamId]);
 
   useEffect(() => {
     if (initialData) {
@@ -55,15 +73,18 @@ export function GameStatsForm({ onSubmit, initialData, submitLabel = 'Save Game'
       setFormData(prev => ({
         ...prev,
         opponent: initialData.opponent || '',
+        teamId: initialData.teamId || prev.teamId,
       }));
     }
   }, [initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const selectedTeam = teams.find(t => t.id === formData.teamId);
     onSubmit({
       ...formData,
       date: date.toISOString(),
+      teamName: selectedTeam?.name,
     });
   };
 
@@ -73,6 +94,29 @@ export function GameStatsForm({ onSubmit, initialData, submitLabel = 'Save Game'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Team Selection - Only show if user has multiple teams */}
+      {teams.length > 1 && (
+        <div className="space-y-2">
+          <Label>Team</Label>
+          <Select
+            value={formData.teamId}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, teamId: value }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select team" />
+            </SelectTrigger>
+            <SelectContent>
+              {teams.map((team) => (
+                <SelectItem key={team.id} value={team.id}>
+                  {team.name}
+                  {team.is_primary && " (Default)"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Date and Opponent */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">

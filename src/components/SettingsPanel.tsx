@@ -15,6 +15,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Save, Camera, Loader2, User, Copy, ExternalLink, AtSign, Check, X, Crown, CreditCard, Trash2, Sun, Moon, Monitor } from 'lucide-react';
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
+import { TeamsManagement } from '@/components/settings/TeamsManagement';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
@@ -413,16 +414,12 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
             </div>
           </div>
 
+          {/* Teams Management */}
+          <div className="stat-card bg-secondary/30 p-4 rounded-lg">
+            <TeamsManagement />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="team">Team Name</Label>
-              <Input
-                id="team"
-                value={formData.team}
-                onChange={(e) => setFormData({ ...formData, team: e.target.value })}
-                placeholder="Enter team name"
-              />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="position">Position</Label>
               <Select
@@ -440,6 +437,17 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="number">Jersey Number</Label>
+              <Input
+                id="number"
+                type="number"
+                min={0}
+                max={99}
+                value={formData.number}
+                onChange={(e) => setFormData({ ...formData, number: parseInt(e.target.value) || 0 })}
+              />
             </div>
           </div>
 
