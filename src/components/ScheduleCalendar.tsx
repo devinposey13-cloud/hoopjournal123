@@ -7,7 +7,7 @@ import { ScheduledGame, GameStats } from '@/types/basketball';
 import { buttonVariants } from '@/components/ui/button';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Home, Plane, ChevronRight as ViewIcon, Plus, Pencil, Trophy } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Plane, ChevronRight as ViewIcon, Plus, Pencil, Trophy, Users } from 'lucide-react';
 import { QuickAddScheduleDialog } from './QuickAddScheduleDialog';
 import { EditScheduleDialog } from './EditScheduleDialog';
 
@@ -206,6 +206,12 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame, onAddG
                       )}
                     </div>
                     <span className="text-base font-semibold">vs {game.opponent}</span>
+                    {game.teamName && (
+                      <Badge variant="outline" className="text-xs flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {game.teamName}
+                      </Badge>
+                    )}
                     {game.tournament && (
                       <Badge variant="secondary" className="text-xs flex items-center gap-1">
                         <Trophy className="w-3 h-3" />
@@ -241,12 +247,6 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame, onAddG
                   </div>
                 </div>
                 <div className="mt-2 space-y-1">
-                  {game.tournament && (
-                    <p className="text-sm text-primary font-medium flex items-center gap-1">
-                      <Trophy className="w-3 h-3" />
-                      Tag: {game.tournament}
-                    </p>
-                  )}
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
                       {game.time} • {game.location}

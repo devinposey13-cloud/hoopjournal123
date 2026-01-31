@@ -3,8 +3,9 @@ import { format, isPast, isToday } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { ScheduledGame, GameStats } from '@/types/basketball';
 import { cn } from '@/lib/utils';
-import { Trash2, MapPin, Clock, Home, Plane, ChevronRight, Trophy } from 'lucide-react';
+import { Trash2, MapPin, Clock, Home, Plane, ChevronRight, Trophy, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface ScheduleCardProps {
   game: ScheduledGame;
@@ -92,12 +93,20 @@ export const ScheduleCard = forwardRef<HTMLDivElement, ScheduleCardProps>(
 
         <h3 className="font-semibold text-lg mb-2">vs {game.opponent}</h3>
 
-        {game.tournament && (
-          <div className="flex items-center gap-1.5 mb-2 text-sm text-primary font-medium">
-            <Trophy className="w-4 h-4" />
-            <span>Tag: {game.tournament}</span>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          {game.teamName && (
+            <Badge variant="outline" className="text-xs flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              {game.teamName}
+            </Badge>
+          )}
+          {game.tournament && (
+            <Badge variant="secondary" className="text-xs flex items-center gap-1">
+              <Trophy className="w-3 h-3" />
+              {game.tournament}
+            </Badge>
+          )}
+        </div>
 
         <div className="space-y-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
