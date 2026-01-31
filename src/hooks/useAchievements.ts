@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useConfetti } from './useConfetti';
 import type { Achievement, UserAchievement, GameResult } from '@/types/games';
 import { toast } from 'sonner';
 
 export function useAchievements() {
   const { user } = useAuth();
+  const { fireAchievementConfetti } = useConfetti();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +74,9 @@ export function useAchievements() {
 
       const achievement = achievements.find(a => a.id === achievementId);
       if (achievement) {
+        // Fire confetti for achievement unlock
+        fireAchievementConfetti();
+        
         toast.success(`🏆 Achievement Unlocked: ${achievement.name}!`, {
           description: `+${achievement.points} points`,
         });
