@@ -308,9 +308,21 @@ export function EmptyDashboardWelcome({
                     <motion.div
                       key="noAvatar"
                       initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
+                      animate={{ 
+                        opacity: 1, 
+                        scale: 1,
+                        y: [0, -8, 0]
+                      }}
                       exit={{ opacity: 0, scale: 0.8 }}
-                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      transition={{ 
+                        opacity: { duration: 0.3, ease: "easeOut" },
+                        scale: { duration: 0.3, ease: "easeOut" },
+                        y: { 
+                          duration: 2.5, 
+                          repeat: Infinity, 
+                          ease: "easeInOut"
+                        }
+                      }}
                     >
                       <Avatar className="w-28 h-28 border-2 border-dashed border-muted-foreground/30">
                         <AvatarFallback className="bg-muted">
