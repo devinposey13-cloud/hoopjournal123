@@ -76,6 +76,7 @@ export default function Index() {
   const [tournamentFilter, setTournamentFilter] = useState<string>('all');
   const [teamFilter, setTeamFilter] = useState<string>('all');
   const [dashboardTeamFilter, setDashboardTeamFilter] = useState<string>('all');
+  const [gamesTabTeamFilter, setGamesTabTeamFilter] = useState<string>('all');
   const [justCompletedOnboarding, setJustCompletedOnboarding] = useState(false);
   const { user, loading: authLoading, signOut } = useAuth();
   const { teams } = usePlayerTeams();
@@ -569,63 +570,115 @@ export default function Index() {
         )}
 
         {/* Games Tab */}
-        {activeTab === 'games' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold">Game Log</h1>
-                <p className="text-muted-foreground">
-                  {games.length} games recorded
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={handleQuickLiveStatsClick}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <Radio className="w-4 h-4" />
-                  <span className="hidden sm:inline">Live Stats</span>
-                </Button>
-                <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
-              </div>
-            </div>
+        {activeTab === 'games' && (() => {
+          // Filter games for Games tab by team
+          const gamesTabFilteredGames = gamesTabTeamFilter === 'all' 
+            ? games 
+            : games.filter(g => 
+                gamesTabTeamFilter === 'unassigned' 
+                  ? !g.teamId 
+                  : g.teamId === gamesTabTeamFilter
+              );
 
-            {games.length === 0 ? (
-              <div className="stat-card text-center py-12 space-y-6">
-                <div className="space-y-2">
-                  <p className="text-muted-foreground text-lg">No games recorded yet.</p>
-                  <p className="text-sm text-muted-foreground">
-                    Start tracking your season by adding your first game!
+          return (
+            <div className="space-y-6 animate-fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-bold">Game Log</h1>
+                  <p className="text-muted-foreground">
+                    {gamesTabFilteredGames.length} games recorded
+                    {gamesTabTeamFilter !== 'all' && ` • ${teams.find(t => t.id === gamesTabTeamFilter)?.name || 'Unassigned'}`}
                   </p>
                 </div>
-                
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Team Filter */}
+                  {teams.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Select value={gamesTabTeamFilter} onValueChange={setGamesTabTeamFilter}>
+                        <SelectTrigger className="w-[160px]">
+                          <Users className="w-4 h-4 mr-2 text-muted-foreground" />
+                          <SelectValue placeholder="All Teams" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Teams</SelectItem>
+                          {teams.map((team) => (
+                            <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                          ))}
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {gamesTabTeamFilter !== 'all' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setGamesTabTeamFilter('all')}
+                          className="h-9 w-9"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
                   <Button
                     onClick={handleQuickLiveStatsClick}
-                    className="gradient-primary gap-2 w-full sm:w-auto"
-                    size="lg"
+                    variant="outline"
+                    className="gap-2"
                   >
-                    <Radio className="w-5 h-5" />
-                    Start Live Stats
+                    <Radio className="w-4 h-4" />
+                    <span className="hidden sm:inline">Live Stats</span>
                   </Button>
-                  <span className="text-muted-foreground text-sm">or</span>
                   <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
                 </div>
-                
-                <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                  Use <strong>Live Stats</strong> to track your game in real-time, or <strong>Log Game</strong> to add stats after the game.
-                </p>
               </div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {games.map((game) => (
-                  <GameCard key={game.id} game={game} profile={profile} onDelete={deleteGame} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+
+              {gamesTabFilteredGames.length === 0 ? (
+                <div className="stat-card text-center py-12 space-y-6">
+                  <div className="space-y-2">
+                    <p className="text-muted-foreground text-lg">
+                      {gamesTabTeamFilter !== 'all' 
+                        ? `No games recorded for ${teams.find(t => t.id === gamesTabTeamFilter)?.name || 'Unassigned'}.`
+                        : 'No games recorded yet.'
+                      }
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {gamesTabTeamFilter !== 'all'
+                        ? 'Try selecting a different team or log a new game.'
+                        : 'Start tracking your season by adding your first game!'
+                      }
+                    </p>
+                  </div>
+                  
+                  {gamesTabTeamFilter === 'all' && (
+                    <>
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <Button
+                          onClick={handleQuickLiveStatsClick}
+                          className="gradient-primary gap-2 w-full sm:w-auto"
+                          size="lg"
+                        >
+                          <Radio className="w-5 h-5" />
+                          Start Live Stats
+                        </Button>
+                        <span className="text-muted-foreground text-sm">or</span>
+                        <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+                      </div>
+                      
+                      <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                        Use <strong>Live Stats</strong> to track your game in real-time, or <strong>Log Game</strong> to add stats after the game.
+                      </p>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {gamesTabFilteredGames.map((game) => (
+                    <GameCard key={game.id} game={game} profile={profile} onDelete={deleteGame} />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Schedule Tab */}
         {activeTab === 'schedule' && (
