@@ -25,7 +25,7 @@ export function GameCard({
   onClick,
 }: GameCardProps) {
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
+    <Card className="overflow-hidden transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 hover:-translate-y-0.5 cursor-pointer group">
       <div className={cn('h-2 bg-gradient-to-r', gradientClass)} />
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
