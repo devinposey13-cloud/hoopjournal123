@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.notify-admin-signup]
 verify_jwt = false
+
+[functions.generate-avatar]
+verify_jwt = false

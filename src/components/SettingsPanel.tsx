@@ -20,6 +20,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/useSubscription';
+import { AvatarGenerator } from '@/components/AvatarGenerator';
 
 interface SettingsPanelProps {
   profile: PlayerProfile;
@@ -192,6 +193,16 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar }: Sett
             <p className="text-sm text-muted-foreground">
               Click to upload a profile photo
             </p>
+            
+            {/* AI Avatar Generator */}
+            <AvatarGenerator
+              currentAvatarUrl={formData.avatar}
+              onAvatarGenerated={(newUrl) => {
+                setFormData(prev => ({ ...prev, avatar: newUrl }));
+                onUpdateProfile({ avatar: newUrl });
+              }}
+              playerName={formData.name}
+            />
           </div>
 
           {/* Username & Public Profile */}
