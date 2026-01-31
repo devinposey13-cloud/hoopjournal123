@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.delete-own-account]
 verify_jwt = false
+
+[functions.send-parent-recap]
+verify_jwt = false
