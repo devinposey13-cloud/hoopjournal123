@@ -37,7 +37,8 @@ import { SpotifyPlayer } from '@/components/SpotifyPlayer';
 import { SeasonAveragesCard } from '@/components/SeasonAveragesCard';
 import { EditScheduleDialog } from '@/components/EditScheduleDialog';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { QuickDuplicateDialog } from '@/components/QuickDuplicateDialog';
 import { MilestoneCard } from '@/components/milestones/MilestoneCard';
@@ -94,7 +95,7 @@ export default function GameDetail() {
         if (id) {
           const { data, error: fetchError } = await supabase
             .from('games')
-            .select('*')
+            .select('*, player_teams(name)')
             .eq('id', id)
             .maybeSingle();
 
@@ -121,6 +122,8 @@ export default function GameDetail() {
               ftAttempted: data.ft_attempted,
               isWin: data.is_win,
               gamePhotoUrl: data.game_photo_url,
+              teamId: data.team_id || undefined,
+              teamName: (data.player_teams as any)?.name || undefined,
             });
           } else {
             setError('Game not found');
@@ -131,7 +134,7 @@ export default function GameDetail() {
         if (scheduledId) {
           const { data, error: fetchError } = await supabase
             .from('scheduled_games')
-            .select('*')
+            .select('*, player_teams(name)')
             .eq('id', scheduledId)
             .maybeSingle();
 
@@ -147,6 +150,8 @@ export default function GameDetail() {
               isHome: data.is_home,
               notes: data.notes || undefined,
               tournament: (data as any).tournament || undefined,
+              teamId: data.team_id || undefined,
+              teamName: (data.player_teams as any)?.name || undefined,
             });
           } else {
             setError('Scheduled game not found');
@@ -582,6 +587,12 @@ export default function GameDetail() {
                     </>
                   )}
                 </div>
+                {scheduledGame.teamName && (
+                  <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                    <Users className="w-3 h-3" />
+                    {scheduledGame.teamName}
+                  </Badge>
+                )}
                 <span className="text-muted-foreground">
                   {format(new Date(scheduledGame.date), 'EEEE, MMMM d, yyyy')}
                 </span>
@@ -784,6 +795,12 @@ export default function GameDetail() {
               >
                 {game.isWin ? 'Victory' : 'Defeat'}
               </div>
+              {game.teamName && (
+                <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                  <Users className="w-3 h-3" />
+                  {game.teamName}
+                </Badge>
+              )}
               <span className="text-muted-foreground">
                 {format(new Date(game.date), 'EEEE, MMMM d, yyyy')}
               </span>
