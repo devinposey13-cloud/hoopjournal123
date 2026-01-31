@@ -76,6 +76,21 @@ function checkMultiGameMilestoneValidity(
       
     case 'fg_pct_streak':
       return checkFgPctStreak(sortedGames, def.threshold, def.secondaryThreshold || 2);
+
+    case 'rebound_streak':
+      return checkStatStreak(sortedGames, 'rebounds', def.threshold, def.secondaryThreshold || 3);
+
+    case 'steal_streak':
+      return checkStatStreak(sortedGames, 'steals', def.threshold, def.secondaryThreshold || 5);
+
+    case 'double_double_streak':
+      return checkDoubleDoubleStreak(sortedGames, def.secondaryThreshold || 3);
+
+    case 'consistency_streak':
+      return checkConsistencyStreak(sortedGames, def.secondaryThreshold || 5);
+
+    case 'minutes_streak':
+      return checkStatStreak(sortedGames, 'minutesPlayed', def.threshold, def.secondaryThreshold || 10);
       
     default:
       // Unknown check type - assume still valid
@@ -152,6 +167,59 @@ function checkFgPctStreak(games: GameWithId[], pctRequired: number, gamesRequire
       ? (game.fgMade / game.fgAttempted) * 100 
       : 0;
     if (fgPct >= pctRequired) {
+      currentStreak++;
+      if (currentStreak >= gamesRequired) return true;
+    } else {
+      currentStreak = 0;
+    }
+  }
+  return false;
+}
+
+function checkStatStreak(games: GameWithId[], stat: keyof GameWithId, threshold: number, gamesRequired: number): boolean {
+  if (games.length < gamesRequired) return false;
+  
+  let currentStreak = 0;
+  for (const game of games) {
+    const value = game[stat];
+    if (typeof value === 'number' && value >= threshold) {
+      currentStreak++;
+      if (currentStreak >= gamesRequired) return true;
+    } else {
+      currentStreak = 0;
+    }
+  }
+  return false;
+}
+
+function checkDoubleDoubleStreak(games: GameWithId[], gamesRequired: number): boolean {
+  if (games.length < gamesRequired) return false;
+  
+  let currentStreak = 0;
+  for (const game of games) {
+    let ddCount = 0;
+    if (game.points >= 10) ddCount++;
+    if (game.rebounds >= 10) ddCount++;
+    if (game.assists >= 10) ddCount++;
+    if (game.steals >= 10) ddCount++;
+    if (game.blocks >= 10) ddCount++;
+    
+    if (ddCount >= 2) {
+      currentStreak++;
+      if (currentStreak >= gamesRequired) return true;
+    } else {
+      currentStreak = 0;
+    }
+  }
+  return false;
+}
+
+function checkConsistencyStreak(games: GameWithId[], gamesRequired: number): boolean {
+  if (games.length < gamesRequired) return false;
+  
+  let currentStreak = 0;
+  for (const game of games) {
+    if (game.points >= 10 && game.rebounds >= 5 && game.assists >= 3) {
       currentStreak++;
       if (currentStreak >= gamesRequired) return true;
     } else {

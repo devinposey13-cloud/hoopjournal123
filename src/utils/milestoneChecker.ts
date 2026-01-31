@@ -110,6 +110,61 @@ export function checkMultiGameMilestones(
           });
         }
         break;
+
+      case 'rebound_streak':
+        // threshold+ rebounds in secondaryThreshold consecutive games
+        if (checkStatStreak(sortedGames, 'rebounds', def.threshold, def.secondaryThreshold || 3)) {
+          results.push({
+            milestone: def,
+            statsSnapshot: { gamesPlayed: games.length },
+            gameId: sortedGames[0]?.id,
+          });
+        }
+        break;
+
+      case 'steal_streak':
+        // threshold+ steals in secondaryThreshold consecutive games
+        if (checkStatStreak(sortedGames, 'steals', def.threshold, def.secondaryThreshold || 5)) {
+          results.push({
+            milestone: def,
+            statsSnapshot: { gamesPlayed: games.length },
+            gameId: sortedGames[0]?.id,
+          });
+        }
+        break;
+
+      case 'double_double_streak':
+        // Double-double in secondaryThreshold consecutive games
+        if (checkDoubleDoubleStreak(sortedGames, def.secondaryThreshold || 3)) {
+          results.push({
+            milestone: def,
+            statsSnapshot: { gamesPlayed: games.length },
+            gameId: sortedGames[0]?.id,
+          });
+        }
+        break;
+
+      case 'consistency_streak':
+        // 10+ pts, 5+ reb, 3+ ast in secondaryThreshold consecutive games
+        if (checkConsistencyStreak(sortedGames, def.secondaryThreshold || 5)) {
+          results.push({
+            milestone: def,
+            statsSnapshot: { gamesPlayed: games.length },
+            gameId: sortedGames[0]?.id,
+          });
+        }
+        break;
+
+      case 'minutes_streak':
+        // threshold+ minutes in secondaryThreshold consecutive games
+        if (checkStatStreak(sortedGames, 'minutesPlayed', def.threshold, def.secondaryThreshold || 10)) {
+          results.push({
+            milestone: def,
+            statsSnapshot: { gamesPlayed: games.length },
+            gameId: sortedGames[0]?.id,
+          });
+        }
+        break;
     }
   }
 
@@ -184,6 +239,7 @@ function checkMilestoneCondition(def: MilestoneDefinition, game: GameStats): boo
   const highDoubleCount = countHighStats(game, 15);
 
   switch (def.checkType) {
+    // Basic stat thresholds
     case 'points_gte':
       return game.points >= def.threshold;
     case 'rebounds_gte':
@@ -196,30 +252,73 @@ function checkMilestoneCondition(def: MilestoneDefinition, game: GameStats): boo
       return game.blocks >= def.threshold;
     case 'three_pt_made_gte':
       return game.threePtMade >= def.threshold;
+    
+    // Multi-stat achievements
     case 'double_double':
       return doubleDigitCount >= 2;
     case 'triple_double':
       return doubleDigitCount >= 3;
     case 'quadruple_double':
       return doubleDigitCount >= 4;
+    case 'high_double_double':
+      return highDoubleCount >= 2;
+    
+    // Efficiency & shooting
     case 'perfect_ft':
       return game.ftMade >= def.threshold && ftPct === 100;
     case 'efficient_scorer':
       return fgPct >= def.threshold && game.points >= 10;
-    case 'zero_turnovers':
-      return game.turnovers === 0;
     case 'perfect_fg':
       return fgPct === 100 && game.fgMade >= def.threshold;
     case 'ft_master':
       return game.ftMade >= def.threshold && ftPct >= 90;
-    case 'high_double_double':
-      return highDoubleCount >= 2;
+    case 'efficient_high_scorer':
+      // Score threshold points on secondaryThreshold% shooting
+      return game.points >= def.threshold && fgPct >= (def.secondaryThreshold || 60);
+    case 'clutch_ft':
+      // FT% threshold in a win with secondaryThreshold+ attempts
+      return game.isWin && ftPct >= def.threshold && game.ftAttempted >= (def.secondaryThreshold || 4);
+    
+    // Ball handling & assists
+    case 'zero_turnovers':
+      return game.turnovers === 0;
+    case 'zero_to_minutes':
+      // 0 turnovers with threshold+ minutes played
+      return game.turnovers === 0 && game.minutesPlayed >= def.threshold;
+    case 'ast_zero_to':
+      // threshold+ assists with 0 turnovers
+      return game.assists >= def.threshold && game.turnovers === 0;
+    case 'ast_gt_fga':
+      // More assists than field goal attempts
+      return game.assists > game.fgAttempted && game.assists >= 1;
+    
+    // Defensive excellence
+    case 'combined_defensive':
+      // threshold+ steals AND secondaryThreshold+ blocks
+      return game.steals >= def.threshold && game.blocks >= (def.secondaryThreshold || 2);
+    case 'steals_in_win':
+      // threshold+ steals in a win
+      return game.steals >= def.threshold && game.isWin;
+    
+    // Rare achievements
+    case 'five_by_five':
+      // 5+ in all 5 major stat categories
+      return game.points >= 5 && game.rebounds >= 5 && game.assists >= 5 && game.steals >= 5 && game.blocks >= 5;
+    case 'twenty_twenty':
+      // 20+ points AND 20+ rebounds
+      return game.points >= 20 && game.rebounds >= 20;
+    case 'triple_threat':
+      // 20+ pts, 5+ reb, 5+ ast
+      return game.points >= 20 && game.rebounds >= 5 && game.assists >= 5;
+    
+    // Complete game milestones
     case 'perfect_game':
       return game.points >= def.threshold && fgPct >= 60 && game.turnovers === 0 && game.isWin;
     case 'defensive_monster':
       return game.steals >= def.threshold && game.blocks >= 3;
     case 'all_around':
       return game.points >= 10 && game.rebounds >= 10 && game.assists >= 5 && game.steals >= 2 && game.blocks >= 2;
+    
     default:
       return false;
   }
@@ -268,6 +367,34 @@ function checkFgPctStreak(games: GameWithId[], pctRequired: number, gamesRequire
       ? (games[i].fgMade / games[i].fgAttempted) * 100 
       : 0;
     if (fgPct < pctRequired) return false;
+  }
+  return true;
+}
+
+function checkStatStreak(games: GameWithId[], stat: keyof GameStats, threshold: number, gamesRequired: number): boolean {
+  if (games.length < gamesRequired) return false;
+  for (let i = 0; i < gamesRequired; i++) {
+    const value = games[i][stat];
+    if (typeof value !== 'number' || value < threshold) return false;
+  }
+  return true;
+}
+
+function checkDoubleDoubleStreak(games: GameWithId[], gamesRequired: number): boolean {
+  if (games.length < gamesRequired) return false;
+  for (let i = 0; i < gamesRequired; i++) {
+    const g = games[i];
+    const ddCount = countDoubleDigitStats(g);
+    if (ddCount < 2) return false;
+  }
+  return true;
+}
+
+function checkConsistencyStreak(games: GameWithId[], gamesRequired: number): boolean {
+  if (games.length < gamesRequired) return false;
+  for (let i = 0; i < gamesRequired; i++) {
+    const g = games[i];
+    if (g.points < 10 || g.rebounds < 5 || g.assists < 3) return false;
   }
   return true;
 }

@@ -138,14 +138,24 @@ A backend job (pg_cron) runs on the 1st of each month to:
 
 ## Implementation Plan
 
-### Phase 1: Add New Static Milestones
-1. Create database migration to insert 40+ new milestone definitions
-2. Add new check types to `milestoneChecker.ts`:
-   - `comeback_win` - requires halftime tracking (future)
-   - `assist_to_turnover` - ratio-based check
-   - `defensive_double` - steals + blocks combo
-   - `minutes_streak` - playing time consistency
+### Phase 1: Add New Static Milestones ✅ COMPLETED
+1. ✅ Created database migration to insert 28 new milestone definitions
+2. ✅ Added new check types to `milestoneChecker.ts`:
+   - `zero_to_minutes` - 0 turnovers with X+ minutes
+   - `ast_zero_to` - assists with 0 turnovers
+   - `ast_gt_fga` - more assists than FGA
+   - `efficient_high_scorer` - points on high FG%
+   - `clutch_ft` - FT% in wins
+   - `combined_defensive` - steals + blocks combo
+   - `steals_in_win` - steals in a winning game
+   - `five_by_five` - 5+ in all 5 stats
+   - `twenty_twenty` - 20/20 club
+   - `triple_threat` - 20+ pts, 5+ reb, 5+ ast
    - `rebound_streak` - multi-game rebound check
+   - `steal_streak` - multi-game steal check
+   - `double_double_streak` - consecutive DD games
+   - `consistency_streak` - all-around consistency
+   - `minutes_streak` - playing time consistency
 
 ### Phase 2: Monthly Challenge Infrastructure
 1. Create `monthly_challenges` and `challenge_progress` tables
