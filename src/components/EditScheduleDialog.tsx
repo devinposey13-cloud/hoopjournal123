@@ -19,8 +19,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { ScheduledGame } from '@/types/basketball';
+import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 
 interface EditScheduleDialogProps {
   game: ScheduledGame;
@@ -30,6 +38,7 @@ interface EditScheduleDialogProps {
 }
 
 export function EditScheduleDialog({ game, onUpdate, onAddGame, trigger }: EditScheduleDialogProps) {
+  const { teams, primaryTeam } = usePlayerTeams();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>(new Date(game.date));
   const [formData, setFormData] = useState({
@@ -39,6 +48,7 @@ export function EditScheduleDialog({ game, onUpdate, onAddGame, trigger }: EditS
     isHome: game.isHome,
     notes: game.notes || '',
     tournament: game.tournament || '',
+    teamId: game.teamId || '',
   });
   const [showDuplicateForm, setShowDuplicateForm] = useState(false);
   const [duplicateDate, setDuplicateDate] = useState<Date>(new Date());
@@ -58,10 +68,11 @@ export function EditScheduleDialog({ game, onUpdate, onAddGame, trigger }: EditS
         isHome: game.isHome,
         notes: game.notes || '',
         tournament: game.tournament || '',
+        teamId: game.teamId || primaryTeam?.id || '',
       });
       setShowDuplicateForm(false);
     }
-  }, [game, open]);
+  }, [game, open, primaryTeam]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +95,7 @@ export function EditScheduleDialog({ game, onUpdate, onAddGame, trigger }: EditS
       isHome: formData.isHome,
       notes: '',
       tournament: formData.tournament,
+      teamId: formData.teamId || undefined,
     });
     
     // Reset duplicate form for another entry
@@ -118,6 +130,29 @@ export function EditScheduleDialog({ game, onUpdate, onAddGame, trigger }: EditS
         
         {!showDuplicateForm ? (
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+            {/* Team Selection - Only show if user has multiple teams */}
+            {teams.length > 1 && (
+              <div className="space-y-2">
+                <Label>Team</Label>
+                <Select
+                  value={formData.teamId}
+                  onValueChange={(value) => setFormData({ ...formData, teamId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select team" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                        {team.is_primary && " (Default)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {/* Tag */}
             <div className="space-y-2">
               <Label htmlFor="tournament">Tag (optional)</Label>
