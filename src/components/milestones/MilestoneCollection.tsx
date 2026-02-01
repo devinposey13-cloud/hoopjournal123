@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Trophy, Lock, TrendingUp } from 'lucide-react';
+import { Trophy, Lock, TrendingUp, Crown, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
@@ -107,6 +108,23 @@ export function MilestoneCollection() {
 
   return (
     <div className="space-y-6">
+      {/* Ring of Honor Link */}
+      <Link 
+        to="/ring-of-honor"
+        className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-all group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center">
+            <Crown className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">Ring of Honor</h3>
+            <p className="text-sm text-muted-foreground">View the legends who reached Level 50</p>
+          </div>
+        </div>
+        <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-amber-500 transition-colors" />
+      </Link>
+
       {/* XP Progress Section */}
       {xpQuarterInfo && (
         <QuarterlyProgress progress={xpProgress} quarterInfo={xpQuarterInfo} />
