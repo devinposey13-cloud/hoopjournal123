@@ -386,17 +386,39 @@ export function useCloudData() {
     }
   };
 
+  // Helper to get default team (single team auto-assignment)
+  const getDefaultTeamId = async (): Promise<string | null> => {
+    if (!user) return null;
+    
+    const { data: teams } = await supabase
+      .from('player_teams')
+      .select('id')
+      .eq('user_id', user.id);
+    
+    // If exactly one team exists, auto-assign it
+    if (teams && teams.length === 1) {
+      return teams[0].id;
+    }
+    return null;
+  };
+
   // Add game (now with season_id and team_id)
   const addGame = async (game: Omit<GameStats, 'id'>) => {
     if (!user) return null;
 
     try {
+      // Auto-assign team if only one exists and none specified
+      let teamId = game.teamId || null;
+      if (!teamId) {
+        teamId = await getDefaultTeamId();
+      }
+
       const { data, error } = await supabase
         .from('games')
         .insert({
           user_id: user.id,
           season_id: activeSeason?.id || null,
-          team_id: game.teamId || null,
+          team_id: teamId,
           date: game.date,
           opponent: game.opponent,
           points: game.points,
@@ -510,12 +532,18 @@ export function useCloudData() {
     if (!user) return null;
 
     try {
+      // Auto-assign team if only one exists and none specified
+      let teamId = game.teamId || null;
+      if (!teamId) {
+        teamId = await getDefaultTeamId();
+      }
+
       const { data, error } = await supabase
         .from('scheduled_games')
         .insert({
           user_id: user.id,
           season_id: activeSeason?.id || null,
-          team_id: game.teamId || null,
+          team_id: teamId,
           date: game.date,
           time: game.time,
           opponent: game.opponent,
@@ -560,10 +588,13 @@ export function useCloudData() {
     if (!user || games.length === 0) return [];
 
     try {
+      // Auto-assign team if only one exists
+      const defaultTeamId = await getDefaultTeamId();
+
       const inserts = games.map((game) => ({
         user_id: user.id,
         season_id: activeSeason?.id || null,
-        team_id: game.teamId || null,
+        team_id: game.teamId || defaultTeamId,
         date: game.date,
         time: game.time,
         opponent: game.opponent,
