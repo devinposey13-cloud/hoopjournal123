@@ -544,6 +544,32 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
                 </button>
               ))}
             </div>
+
+            {/* Coach Voice Gender Toggle */}
+            <div className="flex items-center justify-between pt-4 border-t border-border">
+              <div>
+                <Label className="text-sm font-medium">Coach Voice</Label>
+                <p className="text-xs text-muted-foreground">
+                  {formData.coachVoiceGender === 'female' 
+                    ? 'Sarah - Warm, encouraging female voice' 
+                    : 'Brian - Confident, energetic male voice'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs ${formData.coachVoiceGender !== 'female' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                  Male
+                </span>
+                <Switch
+                  checked={formData.coachVoiceGender === 'female'}
+                  onCheckedChange={(checked) => 
+                    setFormData({ ...formData, coachVoiceGender: checked ? 'female' : 'male' })
+                  }
+                />
+                <span className={`text-xs ${formData.coachVoiceGender === 'female' ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                  Female
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Instagram URL */}

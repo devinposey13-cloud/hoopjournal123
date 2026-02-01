@@ -7,15 +7,40 @@ const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tt
 interface UseCoachVoiceReturn {
   playingIndex: number | null;
   isLoadingAudio: boolean;
-  playVoice: (text: string, index: number) => Promise<void>;
+  playVoice: (text: string, index: number, overrideVoiceGender?: 'male' | 'female') => Promise<void>;
   stopVoice: () => void;
 }
 
 export function useCoachVoice(): UseCoachVoiceReturn {
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [userVoiceGender, setUserVoiceGender] = useState<'male' | 'female'>('male');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
+
+  // Fetch user's voice preference on mount
+  useEffect(() => {
+    const fetchVoicePreference = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data } = await supabase
+          .from('player_settings')
+          .select('coach_voice_gender')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (data?.coach_voice_gender) {
+          setUserVoiceGender(data.coach_voice_gender as 'male' | 'female');
+        }
+      } catch (error) {
+        console.error('Error fetching voice preference:', error);
+      }
+    };
+
+    fetchVoicePreference();
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -43,7 +68,9 @@ export function useCoachVoice(): UseCoachVoiceReturn {
     setPlayingIndex(null);
   }, []);
 
-  const playVoice = useCallback(async (text: string, index: number) => {
+  const playVoice = useCallback(async (text: string, index: number, overrideVoiceGender?: 'male' | 'female') => {
+    // Use override if provided, otherwise use user's stored preference
+    const voiceGender = overrideVoiceGender || userVoiceGender;
     // If already playing this message, stop it
     if (playingIndex === index) {
       stopVoice();
@@ -79,7 +106,7 @@ export function useCoachVoice(): UseCoachVoiceReturn {
           'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ text: cleanText }),
+        body: JSON.stringify({ text: cleanText, voiceGender }),
       });
 
       if (!response.ok) {
@@ -116,7 +143,7 @@ export function useCoachVoice(): UseCoachVoiceReturn {
     } finally {
       setIsLoadingAudio(false);
     }
-  }, [playingIndex, stopVoice]);
+  }, [playingIndex, stopVoice, userVoiceGender]);
 
   return {
     playingIndex,

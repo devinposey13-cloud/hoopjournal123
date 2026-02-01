@@ -698,6 +698,7 @@ export type Database = {
           avatar_skipped_at: string | null
           avatar_url: string | null
           coach_persona: string | null
+          coach_voice_gender: string
           court_role: string | null
           created_at: string
           display_name: string | null
@@ -727,6 +728,7 @@ export type Database = {
           avatar_skipped_at?: string | null
           avatar_url?: string | null
           coach_persona?: string | null
+          coach_voice_gender?: string
           court_role?: string | null
           created_at?: string
           display_name?: string | null
@@ -756,6 +758,7 @@ export type Database = {
           avatar_skipped_at?: string | null
           avatar_url?: string | null
           coach_persona?: string | null
+          coach_voice_gender?: string
           court_role?: string | null
           created_at?: string
           display_name?: string | null
