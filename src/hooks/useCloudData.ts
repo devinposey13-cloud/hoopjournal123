@@ -77,6 +77,29 @@ export function useCloudData() {
       const fetchedSeasons = await fetchSeasons();
       const currentSeasonId = seasonId || fetchedSeasons.find(s => s.isActive)?.id || fetchedSeasons[0]?.id;
 
+      // Check if user has exactly one team - if so, auto-assign any unassigned games/schedule
+      const { data: teamsData } = await supabase
+        .from('player_teams')
+        .select('id, name')
+        .eq('user_id', user.id);
+      
+      const singleTeam = teamsData && teamsData.length === 1 ? teamsData[0] : null;
+      
+      // Auto-assign unassigned games to the single team (if applicable)
+      if (singleTeam) {
+        await supabase
+          .from('games')
+          .update({ team_id: singleTeam.id })
+          .is('team_id', null)
+          .eq('user_id', user.id);
+        
+        await supabase
+          .from('scheduled_games')
+          .update({ team_id: singleTeam.id })
+          .is('team_id', null)
+          .eq('user_id', user.id);
+      }
+
       // Fetch games (filtered by season if one is active)
       let gamesQuery = supabase
         .from('games')
