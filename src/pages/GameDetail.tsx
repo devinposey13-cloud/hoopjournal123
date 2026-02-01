@@ -706,6 +706,7 @@ export default function GameDetail() {
               {teams.length > 0 && (
                 <div className="flex items-center gap-3">
                   <Users className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-muted-foreground">I am playing this game with</span>
                   <Select
                     value={scheduledGame.teamId || 'unassigned'}
                     onValueChange={async (value) => {
