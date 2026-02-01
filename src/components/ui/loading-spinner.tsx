@@ -10,11 +10,11 @@ interface LoadingSpinnerProps {
 }
 
 const sizeMap = {
-  xs: { width: 32, height: 32 },
-  sm: { width: 60, height: 60 },
-  md: { width: 100, height: 100 },
-  lg: { width: 150, height: 150 },
-  xl: { width: 200, height: 200 },
+  xs: { width: 48, height: 48 },
+  sm: { width: 80, height: 80 },
+  md: { width: 140, height: 140 },
+  lg: { width: 200, height: 200 },
+  xl: { width: 280, height: 280 },
 };
 
 export function LoadingSpinner({ 
@@ -75,7 +75,7 @@ export function InlineLoading({ message, className }: InlineLoadingProps) {
     <div className={`flex items-center gap-2 ${className || ''}`}>
       <dotlottie-wc
         src="https://lottie.host/dc3b3b08-d2bb-46f0-915d-c8d56d0dd2c1/lCHnsbvgB8.lottie"
-        style={{ width: '24px', height: '24px' }}
+        style={{ width: '32px', height: '32px' }}
         autoplay
         loop
       />
