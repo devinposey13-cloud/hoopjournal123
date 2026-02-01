@@ -6,6 +6,69 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface CoachMemory {
+  memory_type: string;
+  memory_key: string;
+  memory_value: string;
+  confidence: number;
+}
+
+// Get persona-specific style for recaps
+function getPersonaRecapStyle(persona: string): string {
+  const styles: Record<string, string> = {
+    'calm_mentor': `TONE: Calm Mentor 🧘
+- Speak with patience and steady encouragement
+- Use a thoughtful, measured tone throughout
+- Frame improvements as "areas we can grow together"
+- Be warm but not over-the-top`,
+
+    'tough_coach': `TONE: Tough Coach 💪
+- Be more direct about areas that need work
+- Don't over-celebrate average performances
+- Use phrases like "here's where you need to step up"
+- Still be constructive, but honest`,
+
+    'analyst': `TONE: Analyst 📊
+- Focus heavily on the numbers and percentages
+- Compare to averages and benchmarks
+- Be data-driven and precise
+- Less emotional, more factual`,
+
+    'motivator': `TONE: Motivator 🔥
+- Bring HIGH ENERGY to every section!
+- Use lots of exclamation points and hype!
+- Focus on positives and growth potential!
+- Celebrate effort and progress loudly!`,
+
+    'parent_friendly': `TONE: Parent-Friendly ❤️
+- Use warm, supportive language throughout
+- Frame everything gently and positively
+- Focus on effort, fun, and love of the game
+- Perfect for younger players and their families`,
+  };
+
+  return styles[persona] || styles['calm_mentor'];
+}
+
+// Format memories for recap context
+function formatMemoriesForRecap(memories: CoachMemory[]): string {
+  if (!memories || memories.length === 0) return '';
+
+  let context = '\n\nPLAYER HISTORY (Reference these to personalize the recap):';
+  
+  const patterns = memories.filter(m => m.memory_type === 'pattern');
+  if (patterns.length > 0) {
+    context += '\n- Past patterns: ' + patterns.map(p => p.memory_value).slice(0, 3).join('; ');
+  }
+  
+  const preferences = memories.filter(m => m.memory_type === 'preference');
+  if (preferences.length > 0) {
+    context += '\n- Known preferences: ' + preferences.map(p => `${p.memory_key}: ${p.memory_value}`).slice(0, 3).join('; ');
+  }
+
+  return context;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -63,11 +126,12 @@ serve(async (req) => {
     let verifiedName = playerName || '';
     let verifiedCourtRole = courtRole || '';
     let verifiedSeasonGoals: string[] = seasonGoals || [];
+    let verifiedPersona = 'calm_mentor';
     
     try {
       const { data: profileData } = await supabaseClient
         .from('player_settings')
-        .select('name, court_role, season_goals')
+        .select('name, court_role, season_goals, coach_persona')
         .eq('user_id', userId)
         .single();
       
@@ -75,9 +139,27 @@ serve(async (req) => {
         verifiedName = profileData.name || verifiedName;
         verifiedCourtRole = profileData.court_role || verifiedCourtRole;
         verifiedSeasonGoals = profileData.season_goals || verifiedSeasonGoals;
+        verifiedPersona = profileData.coach_persona || 'calm_mentor';
       }
     } catch (e) {
       console.log('Could not fetch profile from database, using client-provided data');
+    }
+
+    // Fetch coach memories for personalization
+    let memories: CoachMemory[] = [];
+    try {
+      const { data: memoryData } = await supabaseClient
+        .from('coach_memory')
+        .select('memory_type, memory_key, memory_value, confidence')
+        .eq('user_id', userId)
+        .order('last_updated_at', { ascending: false })
+        .limit(10);
+      
+      if (memoryData) {
+        memories = memoryData;
+      }
+    } catch (e) {
+      console.log('Could not fetch coach memories');
     }
 
     // Calculate some derived stats
@@ -121,9 +203,15 @@ IMPORTANT: Make sure to celebrate these achievements specifically! Mention each 
       goalsContext = `\nSEASON GOALS: ${verifiedSeasonGoals.join(', ')}. If any stats align with these goals, celebrate that progress specifically!`;
     }
 
+    const personaStyle = getPersonaRecapStyle(verifiedPersona);
+    const memoryContext = formatMemoriesForRecap(memories);
+
     const systemPrompt = `You are Coach AI, an incredibly supportive and encouraging youth basketball coach. Your job is to give a post-game recap that makes young players feel proud of their efforts while gently suggesting ways to improve.
 
 PLAYER: ${verifiedName || 'Player'}${roleContext}${goalsContext}
+
+${personaStyle}
+${memoryContext}
 
 CRITICAL GUIDELINES:
 - Address the player by name (${verifiedName || 'champ'}) to make it personal
@@ -135,6 +223,7 @@ CRITICAL GUIDELINES:
 - End with motivation and encouragement to keep working hard
 - Keep the tone fun, supportive, and like a friendly coach talking to their player after the game
 - If the player unlocked any milestones, celebrate them enthusiastically! These are special achievements.
+- Reference any past patterns or preferences you know about to make this feel personal
 
 STRUCTURE YOUR RESPONSE:
 1. **Great Job Today, ${verifiedName || 'Champ'}!** - Start with 2-3 specific things the player did well based on their stats
