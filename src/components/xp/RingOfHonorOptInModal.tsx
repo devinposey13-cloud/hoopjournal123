@@ -27,12 +27,14 @@ interface RingOfHonorOptInModalProps {
     finalXp: number;
     gamesPlayed: number;
   };
+  onSuccess?: () => void;
 }
 
 export function RingOfHonorOptInModal({
   open,
   onOpenChange,
   playerData,
+  onSuccess,
 }: RingOfHonorOptInModalProps) {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,6 +63,7 @@ export function RingOfHonorOptInModal({
       toast.success('Welcome to the Ring of Honor! 🏆', {
         description: 'Your legendary achievement has been immortalized.',
       });
+      onSuccess?.();
       onOpenChange(false);
     } catch (error) {
       console.error('Error joining Ring of Honor:', error);
