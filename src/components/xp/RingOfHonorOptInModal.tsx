@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Star, Crown, Sparkles, X } from 'lucide-react';
+import { Trophy, Star, Crown, Sparkles } from 'lucide-react';
+import { useConfetti } from '@/hooks/useConfetti';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ export function RingOfHonorOptInModal({
   onSuccess,
 }: RingOfHonorOptInModalProps) {
   const { user } = useAuth();
+  const { fireAchievementConfetti } = useConfetti();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
 
@@ -51,6 +53,9 @@ export function RingOfHonorOptInModal({
       });
 
       if (error) throw error;
+
+      // Fire celebratory confetti
+      fireAchievementConfetti();
 
       toast.success('Welcome to the Ring of Honor! 🏆', {
         description: 'Your legendary achievement has been immortalized.',
