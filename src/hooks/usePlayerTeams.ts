@@ -133,6 +133,22 @@ export function usePlayerTeams() {
         .eq('team_id', id)
         .eq('user_id', user.id);
 
+      // If only one team remains, also auto-assign any previously unassigned games/scheduled games
+      // to the remaining team so users don't see "No team assigned" anymore.
+      if (newTeamId) {
+        await supabase
+          .from('games')
+          .update({ team_id: newTeamId })
+          .is('team_id', null)
+          .eq('user_id', user.id);
+
+        await supabase
+          .from('scheduled_games')
+          .update({ team_id: newTeamId })
+          .is('team_id', null)
+          .eq('user_id', user.id);
+      }
+
       // Delete the team
       const { error } = await supabase
         .from('player_teams')
