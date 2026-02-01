@@ -31,15 +31,22 @@ export function LoadingSpinner({
       transition={{ duration: 0.3 }}
       className="flex flex-col items-center justify-center gap-3"
     >
-      <dotlottie-wc
-        src="https://lottie.host/dc3b3b08-d2bb-46f0-915d-c8d56d0dd2c1/lCHnsbvgB8.lottie"
-        style={{ 
-          width: `${dimensions.width}px`, 
-          height: `${dimensions.height}px` 
+      <div 
+        className="relative"
+        style={{
+          filter: 'drop-shadow(0 0 20px hsl(24 100% 50% / 0.4)) drop-shadow(0 0 40px hsl(24 100% 50% / 0.2))',
         }}
-        autoplay
-        loop
-      />
+      >
+        <dotlottie-wc
+          src="https://lottie.host/dc3b3b08-d2bb-46f0-915d-c8d56d0dd2c1/lCHnsbvgB8.lottie"
+          style={{ 
+            width: `${dimensions.width}px`, 
+            height: `${dimensions.height}px` 
+          }}
+          autoplay
+          loop
+        />
+      </div>
       {message && (
         <motion.p
           initial={{ opacity: 0, y: 10 }}
@@ -75,7 +82,11 @@ export function InlineLoading({ message, className }: InlineLoadingProps) {
     <div className={`flex items-center gap-2 ${className || ''}`}>
       <dotlottie-wc
         src="https://lottie.host/dc3b3b08-d2bb-46f0-915d-c8d56d0dd2c1/lCHnsbvgB8.lottie"
-        style={{ width: '32px', height: '32px' }}
+        style={{ 
+          width: '32px', 
+          height: '32px',
+          filter: 'drop-shadow(0 0 8px hsl(24 100% 50% / 0.3))',
+        }}
         autoplay
         loop
       />

@@ -47,12 +47,18 @@ export function TransitionScreen({ playerName, onComplete }: TransitionScreenPro
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className="mb-6"
       >
-        <dotlottie-wc
-          src="https://lottie.host/dc3b3b08-d2bb-46f0-915d-c8d56d0dd2c1/lCHnsbvgB8.lottie"
-          style={{ width: '280px', height: '280px' }}
-          autoplay
-          loop
-        />
+        <div
+          style={{
+            filter: 'drop-shadow(0 0 30px hsl(24 100% 50% / 0.5)) drop-shadow(0 0 60px hsl(24 100% 50% / 0.25))',
+          }}
+        >
+          <dotlottie-wc
+            src="https://lottie.host/dc3b3b08-d2bb-46f0-915d-c8d56d0dd2c1/lCHnsbvgB8.lottie"
+            style={{ width: '280px', height: '280px' }}
+            autoplay
+            loop
+          />
+        </div>
       </motion.div>
 
       <motion.h2
