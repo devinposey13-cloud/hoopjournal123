@@ -16,7 +16,6 @@ import { Switch } from '@/components/ui/switch';
 import { Save, Camera, Loader2, User, Copy, ExternalLink, AtSign, Check, X, Crown, CreditCard, Trash2, Sun, Moon, Monitor, Trophy, ChevronRight, Star } from 'lucide-react';
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
 import { TeamsManagement } from '@/components/settings/TeamsManagement';
-import { CoachMemoryViewer } from '@/components/settings/CoachMemoryViewer';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
@@ -544,11 +543,6 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
                   )}
                 </button>
               ))}
-            </div>
-            
-            {/* Coach AI Memory Section */}
-            <div className="pt-4 border-t border-border/50">
-              <CoachMemoryViewer />
             </div>
           </div>
 
