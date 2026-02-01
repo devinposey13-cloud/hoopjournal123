@@ -29,6 +29,7 @@ import { PostGameXpReveal } from '@/components/xp/PostGameXpReveal';
 import { LevelUpCelebration } from '@/components/xp/LevelUpCelebration';
 import { TierCelebration } from '@/components/xp/TierCelebration';
 import { QuarterlyProgress } from '@/components/xp/QuarterlyProgress';
+import { XpProgressBar } from '@/components/xp/XpProgressBar';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { PendingApproval } from '@/components/PendingApproval';
@@ -543,6 +544,20 @@ export default function Index() {
                       </AnimatedItem>
                     </AnimatedContainer>
                   </AnimatedSection>
+
+                  {/* XP Progress */}
+                  {xpProgress && (
+                    <AnimatedSection className="journal-section" delay={0.4}>
+                      <h2 className="journal-heading">Season XP Progress</h2>
+                      <div className="journal-card p-4 rounded-xl">
+                        <XpProgressBar 
+                          currentXp={xpProgress.current_xp} 
+                          level={xpProgress.current_level}
+                          animate={true}
+                        />
+                      </div>
+                    </AnimatedSection>
+                  )}
 
                   {/* Recent Games */}
                   <AnimatedSection className="journal-section" delay={0.5}>
