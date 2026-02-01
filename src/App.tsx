@@ -13,6 +13,7 @@ import PublicProfile from "./pages/PublicProfile";
 import ResetPassword from "./pages/ResetPassword";
 import Pricing from "./pages/Pricing";
 import Rewards from "./pages/Rewards";
+import RingOfHonor from "./pages/RingOfHonor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/rewards" element={<Rewards />} />
+              <Route path="/ring-of-honor" element={<RingOfHonor />} />
               <Route path="/game/:id" element={<GameDetail />} />
               <Route path="/game/scheduled/:scheduledId" element={<GameDetail />} />
               <Route path="/reset-password" element={<ResetPassword />} />
