@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { PlayerProfile } from '@/types/basketball';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Save, Camera, Loader2, User, Copy, ExternalLink, AtSign, Check, X, Crown, CreditCard, Trash2, Sun, Moon, Monitor } from 'lucide-react';
+import { Save, Camera, Loader2, User, Copy, ExternalLink, AtSign, Check, X, Crown, CreditCard, Trash2, Sun, Moon, Monitor, Trophy, ChevronRight, Star } from 'lucide-react';
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
 import { TeamsManagement } from '@/components/settings/TeamsManagement';
 import { toast } from 'sonner';
@@ -24,6 +24,10 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/useSubscription';
 import { AvatarGenerator } from '@/components/AvatarGenerator';
+import { useXpProgress } from '@/hooks/useXpProgress';
+import { useRingOfHonorEligibility } from '@/hooks/useRingOfHonorEligibility';
+import { RingOfHonorOptInModal } from '@/components/xp/RingOfHonorOptInModal';
+import { getQuarterString } from '@/utils/quarterUtils';
 
 interface SettingsPanelProps {
   profile: PlayerProfile;
@@ -55,6 +59,9 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
   
   const { isSubscribed, planType, subscriptionEnd, isLoading: subLoading, openCustomerPortal } = useSubscription();
   const { theme, setTheme } = useTheme();
+  const { progress: xpProgress } = useXpProgress();
+  const ringOfHonorEligibility = useRingOfHonorEligibility(xpProgress?.current_level || 1);
+  const [showRingOfHonorModal, setShowRingOfHonorModal] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
@@ -659,6 +666,64 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
             </div>
           </div>
 
+          {/* Ring of Honor Section */}
+          <Separator className="my-6" />
+          
+          <div className="stat-card bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-amber-500/10 border border-amber-500/20 p-4 rounded-lg space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center">
+                  <Trophy className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Ring of Honor</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {ringOfHonorEligibility.isAlreadyMember 
+                      ? "You're a legend! 🏆"
+                      : ringOfHonorEligibility.isEligible 
+                        ? "You've reached Level 50! Join the legends."
+                        : `Reach Level 50 to unlock (Currently Level ${xpProgress?.current_level || 1})`
+                    }
+                  </p>
+                </div>
+              </div>
+              {ringOfHonorEligibility.isAlreadyMember && (
+                <Badge className="bg-amber-500/20 text-amber-600 border-amber-500/30">
+                  <Star className="w-3 h-3 mr-1 fill-current" />
+                  Member
+                </Badge>
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              {ringOfHonorEligibility.isAlreadyMember ? (
+                <Link to="/ring-of-honor" className="w-full">
+                  <Button variant="outline" className="w-full border-amber-500/30 hover:bg-amber-500/10">
+                    <Trophy className="w-4 h-4 mr-2" />
+                    View Ring of Honor
+                    <ChevronRight className="w-4 h-4 ml-auto" />
+                  </Button>
+                </Link>
+              ) : ringOfHonorEligibility.isEligible ? (
+                <Button
+                  className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white"
+                  onClick={() => setShowRingOfHonorModal(true)}
+                >
+                  <Crown className="w-4 h-4 mr-2" />
+                  Join the Legends
+                </Button>
+              ) : (
+                <Link to="/ring-of-honor" className="w-full">
+                  <Button variant="outline" className="w-full border-amber-500/30 hover:bg-amber-500/10">
+                    <Trophy className="w-4 h-4 mr-2" />
+                    Preview Ring of Honor
+                    <ChevronRight className="w-4 h-4 ml-auto" />
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </div>
+
           {/* Feedback Section */}
           <Separator className="my-6" />
           
@@ -678,6 +743,23 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
           )}
         </div>
       </div>
+
+      {/* Ring of Honor Opt-In Modal */}
+      {xpProgress && (
+        <RingOfHonorOptInModal
+          open={showRingOfHonorModal}
+          onOpenChange={setShowRingOfHonorModal}
+          playerData={{
+            displayName: formData.displayName || formData.name,
+            position: formData.position,
+            teamName: formData.team,
+            avatarUrl: formData.avatar,
+            finalXp: xpProgress.current_xp,
+            gamesPlayed: xpProgress.games_logged,
+          }}
+          onSuccess={() => ringOfHonorEligibility.checkEligibility()}
+        />
+      )}
     </div>
   );
 }
