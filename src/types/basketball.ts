@@ -89,6 +89,8 @@ export interface PlayerProfile {
   onboardingCompletedAt?: string;
   // Notification preferences
   receiveGameSummaries?: boolean;
+  // Coach AI settings
+  coachPersona?: string;
 }
 
 export interface SeasonStats {

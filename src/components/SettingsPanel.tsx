@@ -505,6 +505,47 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
             </p>
           </div>
 
+          {/* Coach AI Persona */}
+          <Separator className="my-6" />
+          
+          <div className="stat-card bg-secondary/30 p-4 rounded-lg space-y-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              🏀 Coach AI Persona
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Choose how Coach AI communicates with you. This affects chat, recaps, and all coaching feedback.
+            </p>
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { id: 'calm_mentor', label: 'Calm Mentor', emoji: '🧘', desc: 'Patient guidance with gentle encouragement' },
+                { id: 'tough_coach', label: 'Tough Coach', emoji: '💪', desc: 'Direct, no-nonsense feedback that pushes you' },
+                { id: 'analyst', label: 'Analyst', emoji: '📊', desc: 'Data-driven insights focused on numbers' },
+                { id: 'motivator', label: 'Motivator', emoji: '🔥', desc: 'High-energy hype and constant encouragement' },
+                { id: 'parent_friendly', label: 'Parent-Friendly', emoji: '❤️', desc: 'Warm, supportive tone perfect for younger players' },
+              ].map((persona) => (
+                <button
+                  key={persona.id}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, coachPersona: persona.id })}
+                  className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${
+                    (formData.coachPersona || 'calm_mentor') === persona.id
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <span className="text-xl">{persona.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{persona.label}</p>
+                    <p className="text-xs text-muted-foreground truncate">{persona.desc}</p>
+                  </div>
+                  {(formData.coachPersona || 'calm_mentor') === persona.id && (
+                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Instagram URL */}
           <div className="space-y-2">
             <Label htmlFor="instagramUrl">

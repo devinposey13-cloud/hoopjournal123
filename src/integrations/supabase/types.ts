@@ -166,6 +166,45 @@ export type Database = {
           },
         ]
       }
+      coach_memory: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          last_updated_at: string | null
+          memory_key: string
+          memory_type: string
+          memory_value: string
+          occurrence_count: number | null
+          user_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_updated_at?: string | null
+          memory_key: string
+          memory_type: string
+          memory_value: string
+          occurrence_count?: number | null
+          user_id: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_updated_at?: string | null
+          memory_key?: string
+          memory_type?: string
+          memory_value?: string
+          occurrence_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       content_reports: {
         Row: {
           admin_notes: string | null
@@ -658,6 +697,7 @@ export type Database = {
         Row: {
           avatar_skipped_at: string | null
           avatar_url: string | null
+          coach_persona: string | null
           court_role: string | null
           created_at: string
           display_name: string | null
@@ -685,6 +725,7 @@ export type Database = {
         Insert: {
           avatar_skipped_at?: string | null
           avatar_url?: string | null
+          coach_persona?: string | null
           court_role?: string | null
           created_at?: string
           display_name?: string | null
@@ -712,6 +753,7 @@ export type Database = {
         Update: {
           avatar_skipped_at?: string | null
           avatar_url?: string | null
+          coach_persona?: string | null
           court_role?: string | null
           created_at?: string
           display_name?: string | null
