@@ -80,7 +80,14 @@ export function useCoachVoice(): UseCoachVoiceReturn {
     // Stop any currently playing audio
     stopVoice();
 
+    // CRITICAL: Create Audio element IMMEDIATELY within user gesture context
+    // This must happen BEFORE any async operations for mobile compatibility
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audioRef.current = audio;
+
     setIsLoadingAudio(true);
+    setPlayingIndex(index);
 
     try {
       // Get the current session token for authentication
@@ -118,8 +125,8 @@ export function useCoachVoice(): UseCoachVoiceReturn {
       const audioUrl = URL.createObjectURL(audioBlob);
       objectUrlRef.current = audioUrl;
 
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
+      // Set source on the pre-created audio element (mobile compatible)
+      audio.src = audioUrl;
 
       audio.onended = () => {
         setPlayingIndex(null);
@@ -134,7 +141,6 @@ export function useCoachVoice(): UseCoachVoiceReturn {
         toast.error('Failed to play audio');
       };
 
-      setPlayingIndex(index);
       await audio.play();
     } catch (error) {
       console.error('Voice playback error:', error);
