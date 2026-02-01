@@ -6,8 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Brian voice - confident, energetic male voice perfect for coaching
-const DEFAULT_VOICE_ID = 'nPczCjzI2devNBz1zQrb';
+// Voice IDs for Coach AI
+const MALE_VOICE_ID = 'nPczCjzI2devNBz1zQrb'; // Brian - confident, energetic male voice
+const FEMALE_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // Sarah - warm, encouraging female voice
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -55,7 +56,7 @@ serve(async (req) => {
       throw new Error('ELEVENLABS_API_KEY is not configured');
     }
 
-    const { text, voiceId } = await req.json();
+    const { text, voiceId, voiceGender } = await req.json();
 
     if (!text || typeof text !== 'string') {
       return new Response(
@@ -66,7 +67,12 @@ serve(async (req) => {
 
     // Truncate text if too long (ElevenLabs has a 5000 char limit)
     const truncatedText = text.slice(0, 5000);
-    const selectedVoiceId = voiceId || DEFAULT_VOICE_ID;
+    
+    // Determine voice: explicit voiceId > voiceGender preference > default male
+    let selectedVoiceId = voiceId;
+    if (!selectedVoiceId) {
+      selectedVoiceId = voiceGender === 'female' ? FEMALE_VOICE_ID : MALE_VOICE_ID;
+    }
 
     console.log(`User ${userId} - Generating TTS for ${truncatedText.length} characters with voice ${selectedVoiceId}`);
 

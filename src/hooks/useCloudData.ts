@@ -241,6 +241,7 @@ export function useCloudData() {
           receiveGameSummaries: settingsData.receive_game_summaries ?? false,
           // Coach AI settings
           coachPersona: settingsData.coach_persona || undefined,
+          coachVoiceGender: settingsData.coach_voice_gender || 'male',
           // Ring of Honor opt-in
           ringOfHonorOptIn: settingsData.ring_of_honor_opt_in ?? false,
         });
@@ -852,6 +853,7 @@ export function useCloudData() {
             receive_game_summaries: updates.receiveGameSummaries ?? profile.receiveGameSummaries ?? false,
             // Coach AI settings
             coach_persona: updates.coachPersona ?? profile.coachPersona ?? null,
+            coach_voice_gender: updates.coachVoiceGender ?? profile.coachVoiceGender ?? 'male',
             // Ring of Honor opt-in
             ring_of_honor_opt_in: updates.ringOfHonorOptIn ?? profile.ringOfHonorOptIn ?? false,
           },

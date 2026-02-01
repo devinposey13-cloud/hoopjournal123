@@ -91,6 +91,7 @@ export interface PlayerProfile {
   receiveGameSummaries?: boolean;
   // Coach AI settings
   coachPersona?: string;
+  coachVoiceGender?: 'male' | 'female';
   // Ring of Honor opt-in
   ringOfHonorOptIn?: boolean;
 }
