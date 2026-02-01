@@ -49,7 +49,7 @@ export function TransitionScreen({ playerName, onComplete }: TransitionScreenPro
       >
         <dotlottie-wc
           src="https://lottie.host/dc3b3b08-d2bb-46f0-915d-c8d56d0dd2c1/lCHnsbvgB8.lottie"
-          style={{ width: '200px', height: '200px' }}
+          style={{ width: '280px', height: '280px' }}
           autoplay
           loop
         />
