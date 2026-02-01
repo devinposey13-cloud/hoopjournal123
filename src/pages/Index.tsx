@@ -140,12 +140,13 @@ export default function Index() {
   // Apply retroactive XP for games logged before XP system
   useRetroactiveXp();
 
-  // Trigger Ring of Honor modal when user reaches Level 50
+  // Trigger Ring of Honor modal when user reaches Level 50 AND has opted in
   useEffect(() => {
     if (
       !ringOfHonorEligibility.loading &&
       ringOfHonorEligibility.isEligible &&
       !ringOfHonorEligibility.isAlreadyMember &&
+      profile?.ringOfHonorOptIn &&  // Only show if user has opted in
       !hasShownRingOfHonorModal &&
       !showLevelUpCelebration // Wait for level up celebration to finish
     ) {
@@ -160,6 +161,7 @@ export default function Index() {
     ringOfHonorEligibility.loading,
     ringOfHonorEligibility.isEligible,
     ringOfHonorEligibility.isAlreadyMember,
+    profile?.ringOfHonorOptIn,
     hasShownRingOfHonorModal,
     showLevelUpCelebration,
   ]);

@@ -741,6 +741,25 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
                 </Badge>
               )}
             </div>
+
+            {/* Opt-in Toggle */}
+            <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-amber-500/10">
+              <div className="flex-1">
+                <Label htmlFor="ring-opt-in" className="text-sm font-medium cursor-pointer">
+                  Opt-in to Ring of Honor
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Allow your avatar and stats to be displayed publicly when you reach Level 50
+                </p>
+              </div>
+              <Switch
+                id="ring-opt-in"
+                checked={formData.ringOfHonorOptIn ?? false}
+                onCheckedChange={(checked) => 
+                  setFormData({ ...formData, ringOfHonorOptIn: checked })
+                }
+              />
+            </div>
             
             <div className="flex gap-2">
               {ringOfHonorEligibility.isAlreadyMember ? (
@@ -751,7 +770,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
                     <ChevronRight className="w-4 h-4 ml-auto" />
                   </Button>
                 </Link>
-              ) : ringOfHonorEligibility.isEligible ? (
+              ) : ringOfHonorEligibility.isEligible && formData.ringOfHonorOptIn ? (
                 <Button
                   className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white"
                   onClick={() => setShowRingOfHonorModal(true)}
@@ -769,6 +788,12 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
                 </Link>
               )}
             </div>
+            
+            {ringOfHonorEligibility.isEligible && !formData.ringOfHonorOptIn && !ringOfHonorEligibility.isAlreadyMember && (
+              <p className="text-xs text-amber-600 text-center">
+                Enable opt-in above to join the Ring of Honor
+              </p>
+            )}
           </div>
 
           {/* Feedback Section */}

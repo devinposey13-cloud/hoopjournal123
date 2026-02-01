@@ -91,6 +91,8 @@ export interface PlayerProfile {
   receiveGameSummaries?: boolean;
   // Coach AI settings
   coachPersona?: string;
+  // Ring of Honor opt-in
+  ringOfHonorOptIn?: boolean;
 }
 
 export interface SeasonStats {
