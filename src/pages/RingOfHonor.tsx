@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
-import { Crown, Trophy, Star, Sparkles, ChevronLeft, Calendar, Gamepad2, Zap } from 'lucide-react';
+import { Crown, Trophy, Star, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
@@ -162,7 +162,6 @@ export default function RingOfHonor() {
           </motion.div>
         )}
 
-        {/* Empty State */}
         {entries.length === 0 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -186,7 +185,7 @@ export default function RingOfHonor() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
           >
             {filteredEntries.map((entry, index) => (
               <HonorCard key={entry.id} entry={entry} index={index} />
@@ -205,19 +204,12 @@ export default function RingOfHonor() {
             <div className="inline-flex items-center gap-6 px-8 py-4 rounded-2xl bg-card/50 backdrop-blur-sm border border-yellow-500/20">
               <div className="text-center">
                 <p className="text-3xl font-bold text-yellow-400">{entries.length}</p>
-                <p className="text-xs text-muted-foreground">Total Inductees</p>
+                <p className="text-xs text-muted-foreground">Total Legends</p>
               </div>
               <div className="w-px h-10 bg-border" />
               <div className="text-center">
                 <p className="text-3xl font-bold text-amber-400">{quarters.length}</p>
                 <p className="text-xs text-muted-foreground">Seasons</p>
-              </div>
-              <div className="w-px h-10 bg-border" />
-              <div className="text-center">
-                <p className="text-3xl font-bold text-orange-400">
-                  {Math.round(entries.reduce((sum, e) => sum + e.games_played, 0) / entries.length) || 0}
-                </p>
-                <p className="text-xs text-muted-foreground">Avg Games</p>
               </div>
             </div>
           </motion.div>
@@ -235,30 +227,18 @@ interface HonorCardProps {
 function HonorCard({ entry, index }: HonorCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: index * 0.05 }}
       className="group relative"
     >
       {/* Glow effect */}
-      <div className="absolute -inset-1 bg-gradient-to-r from-yellow-500/20 via-amber-500/20 to-orange-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="absolute -inset-1 bg-gradient-to-r from-yellow-500/30 via-amber-500/30 to-orange-500/30 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       
-      <div className="relative bg-card rounded-2xl border border-yellow-500/20 overflow-hidden hover:border-yellow-500/40 transition-all duration-300">
-        {/* Header with gradient */}
-        <div className="h-20 bg-gradient-to-br from-yellow-500/30 via-amber-500/20 to-orange-500/30 relative">
-          <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-5" />
-          <div className="absolute top-3 right-3">
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-background/80 backdrop-blur-sm text-xs font-medium">
-              <Star className="w-3 h-3 text-yellow-400" />
-              <span>Level 50</span>
-            </div>
-          </div>
-          <Sparkles className="absolute bottom-2 left-3 w-5 h-5 text-yellow-400/60" />
-        </div>
-
+      <div className="relative bg-card rounded-2xl border border-yellow-500/20 overflow-hidden hover:border-yellow-500/40 transition-all duration-300 p-3">
         {/* Avatar */}
-        <div className="relative -mt-10 px-4">
-          <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 p-[3px] shadow-lg shadow-yellow-500/20">
+        <div className="relative aspect-square">
+          <div className="w-full h-full rounded-xl bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 p-[3px] shadow-lg shadow-yellow-500/20">
             <div className="w-full h-full rounded-[10px] bg-background overflow-hidden flex items-center justify-center">
               {entry.avatar_url ? (
                 <img
@@ -267,56 +247,23 @@ function HonorCard({ entry, index }: HonorCardProps) {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-2xl font-bold text-yellow-400">
+                <span className="text-3xl font-bold text-yellow-400">
                   {entry.display_name.charAt(0).toUpperCase()}
                 </span>
               )}
             </div>
           </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-4 pt-3">
-          <h3 className="text-xl font-bold mb-1 truncate">{entry.display_name}</h3>
           
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-            {entry.position && <span>{entry.position}</span>}
-            {entry.position && entry.team_name && <span>•</span>}
-            {entry.team_name && <span className="truncate">{entry.team_name}</span>}
-            {!entry.position && !entry.team_name && <span>Hoop Journal Legend</span>}
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="text-center p-2 rounded-lg bg-muted/50">
-              <Zap className="w-4 h-4 mx-auto mb-1 text-yellow-400" />
-              <p className="text-lg font-bold">{entry.final_xp.toLocaleString()}</p>
-              <p className="text-[10px] text-muted-foreground">XP</p>
-            </div>
-            <div className="text-center p-2 rounded-lg bg-muted/50">
-              <Gamepad2 className="w-4 h-4 mx-auto mb-1 text-amber-400" />
-              <p className="text-lg font-bold">{entry.games_played}</p>
-              <p className="text-[10px] text-muted-foreground">Games</p>
-            </div>
-            <div className="text-center p-2 rounded-lg bg-muted/50">
-              <Calendar className="w-4 h-4 mx-auto mb-1 text-orange-400" />
-              <p className="text-lg font-bold">{entry.quarter.split('-')[1]}</p>
-              <p className="text-[10px] text-muted-foreground">{entry.quarter.split('-')[0]}</p>
-            </div>
-          </div>
-
-          <div className="text-xs text-muted-foreground text-center">
-            Inducted {format(new Date(entry.inducted_at), 'MMM d, yyyy')}
+          {/* Crown badge */}
+          <div className="absolute -top-1 -right-1 bg-gradient-to-br from-yellow-400 to-amber-500 p-1.5 rounded-full shadow-lg">
+            <Crown className="w-3 h-3 text-white" />
           </div>
         </div>
 
-        {/* Crown badge */}
-        <div className="absolute top-14 right-4">
-          <motion.div
-            animate={{ rotate: [0, 5, -5, 0] }}
-            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-          >
-            <Crown className="w-6 h-6 text-yellow-400 drop-shadow-lg" />
-          </motion.div>
+        {/* Name */}
+        <div className="mt-2 text-center">
+          <h3 className="text-sm font-bold truncate">{entry.display_name}</h3>
+          <p className="text-[10px] text-muted-foreground">{entry.quarter.split('-')[1]} {entry.quarter.split('-')[0]}</p>
         </div>
       </div>
     </motion.div>

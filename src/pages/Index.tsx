@@ -32,6 +32,7 @@ import { QuarterlyProgress } from '@/components/xp/QuarterlyProgress';
 import { XpProgressBar } from '@/components/xp/XpProgressBar';
 import { DiamondLevelBadge } from '@/components/xp/DiamondLevelBadge';
 import { RingOfHonorOptInModal } from '@/components/xp/RingOfHonorOptInModal';
+import { RingOfHonorEligibilityBanner } from '@/components/xp/RingOfHonorEligibilityBanner';
 import { getXpProgressInLevel } from '@/utils/xpCalculations';
 import { useRingOfHonorEligibility } from '@/hooks/useRingOfHonorEligibility';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
@@ -612,6 +613,16 @@ export default function Index() {
                     </AnimatedSection>
                   )}
 
+                  {/* Ring of Honor Eligibility Banner */}
+                  {!ringOfHonorEligibility.loading && (
+                    <RingOfHonorEligibilityBanner
+                      isEligible={ringOfHonorEligibility.isEligible}
+                      isAlreadyMember={ringOfHonorEligibility.isAlreadyMember}
+                      hasOptedIn={profile?.ringOfHonorOptIn ?? false}
+                      onJoinClick={() => setShowRingOfHonorModal(true)}
+                    />
+                  )}
+
                   {/* Recent Games */}
                   <AnimatedSection className="journal-section" delay={0.5}>
                     <div className="flex items-center justify-between mb-4">
@@ -1135,11 +1146,7 @@ export default function Index() {
         }}
         playerData={{
           displayName: profile.displayName || profile.name || 'Player',
-          position: profile.position,
-          teamName: profile.team,
           avatarUrl: profile.avatar,
-          finalXp: xpProgress?.current_xp ?? 0,
-          gamesPlayed: xpProgress?.games_logged ?? 0,
         }}
       />
     </div>

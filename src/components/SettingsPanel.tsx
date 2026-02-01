@@ -817,11 +817,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onUploadAvatar, onStar
           onOpenChange={setShowRingOfHonorModal}
           playerData={{
             displayName: formData.displayName || formData.name,
-            position: formData.position,
-            teamName: formData.team,
             avatarUrl: formData.avatar,
-            finalXp: xpProgress.current_xp,
-            gamesPlayed: xpProgress.games_logged,
           }}
           onSuccess={() => ringOfHonorEligibility.checkEligibility()}
         />
