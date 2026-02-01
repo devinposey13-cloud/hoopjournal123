@@ -1,20 +1,23 @@
 import { forwardRef } from 'react';
 import { format, isPast, isToday } from 'date-fns';
 import { Link } from 'react-router-dom';
-import { ScheduledGame, GameStats } from '@/types/basketball';
+import { ScheduledGame, GameStats, PlayerTeam } from '@/types/basketball';
 import { cn } from '@/lib/utils';
 import { Trash2, MapPin, Clock, Home, Plane, ChevronRight, Trophy, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ScheduleCardProps {
   game: ScheduledGame;
   linkedGame?: GameStats;
   onDelete?: (id: string) => void;
+  teams?: PlayerTeam[];
+  onUpdateTeam?: (gameId: string, teamId: string | null) => Promise<void>;
 }
 
 export const ScheduleCard = forwardRef<HTMLDivElement, ScheduleCardProps>(
-  function ScheduleCard({ game, linkedGame, onDelete }, ref) {
+  function ScheduleCard({ game, linkedGame, onDelete, teams = [], onUpdateTeam }, ref) {
     const gameDate = new Date(game.date);
     const isPastGame = isPast(gameDate) && !isToday(gameDate);
     const isTodayGame = isToday(gameDate);
@@ -94,12 +97,36 @@ export const ScheduleCard = forwardRef<HTMLDivElement, ScheduleCardProps>(
         <h3 className="font-semibold text-lg mb-2">vs {game.opponent}</h3>
 
         <div className="flex flex-wrap items-center gap-2 mb-2">
-          {game.teamName && (
+          {teams.length > 0 && onUpdateTeam ? (
+            <Select
+              value={game.teamId || 'unassigned'}
+              onValueChange={(value) => {
+                const newTeamId = value === 'unassigned' ? null : value;
+                onUpdateTeam(game.id, newTeamId);
+              }}
+            >
+              <SelectTrigger 
+                className="h-7 text-xs w-auto min-w-[120px] bg-background/50"
+                onClick={(e) => e.preventDefault()}
+              >
+                <Users className="w-3 h-3 mr-1" />
+                <SelectValue placeholder="Assign team" />
+              </SelectTrigger>
+              <SelectContent onClick={(e) => e.stopPropagation()}>
+                {teams.map((team) => (
+                  <SelectItem key={team.id} value={team.id}>
+                    {team.name} {team.is_primary && '★'}
+                  </SelectItem>
+                ))}
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : game.teamName ? (
             <Badge variant="outline" className="text-xs flex items-center gap-1">
               <Users className="w-3 h-3" />
               {game.teamName}
             </Badge>
-          )}
+          ) : null}
           {game.tournament && (
             <Badge variant="secondary" className="text-xs flex items-center gap-1">
               <Trophy className="w-3 h-3" />
