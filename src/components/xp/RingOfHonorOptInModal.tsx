@@ -21,11 +21,7 @@ interface RingOfHonorOptInModalProps {
   onOpenChange: (open: boolean) => void;
   playerData: {
     displayName: string;
-    position?: string;
-    teamName?: string;
     avatarUrl?: string;
-    finalXp: number;
-    gamesPlayed: number;
   };
   onSuccess?: () => void;
 }
@@ -48,11 +44,7 @@ export function RingOfHonorOptInModal({
       const { error } = await supabase.from('ring_of_honor').insert({
         user_id: user.id,
         display_name: playerData.displayName,
-        position: playerData.position || null,
-        team_name: playerData.teamName || null,
         avatar_url: playerData.avatarUrl || null,
-        final_xp: playerData.finalXp,
-        games_played: playerData.gamesPlayed,
         quarter: getQuarterString(),
         achieved_at: new Date().toISOString(),
         inducted_at: new Date().toISOString(),
@@ -164,8 +156,8 @@ export function RingOfHonorOptInModal({
               <h4 className="font-semibold text-foreground">Join the Ring of Honor</h4>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Immortalize your achievement by joining the Ring of Honor. Your name, avatar, 
-              and stats will be displayed on the public leaderboard for all to see.
+              Immortalize your achievement by joining the Ring of Honor. Your name and avatar 
+              will be displayed on the public leaderboard for all to see.
             </p>
 
             <div className="flex items-start space-x-3">
@@ -178,7 +170,7 @@ export function RingOfHonorOptInModal({
                 htmlFor="accept-terms"
                 className="text-sm text-muted-foreground cursor-pointer"
               >
-                I agree to display my name and stats publicly on the Ring of Honor
+                I agree to display my name and avatar publicly on the Ring of Honor
               </Label>
             </div>
           </div>
