@@ -57,9 +57,6 @@ export function PlayerHeader({ profile, seasonStats, games, xpProgress, tierAchi
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                 {profile.name}
               </h1>
-              {xpProgress && (
-                <LevelBadge level={xpProgress.current_level} size="sm" />
-              )}
             </div>
             <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
               <span className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground font-medium">
