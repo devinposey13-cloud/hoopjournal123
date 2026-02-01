@@ -30,6 +30,7 @@ import { LevelUpCelebration } from '@/components/xp/LevelUpCelebration';
 import { TierCelebration } from '@/components/xp/TierCelebration';
 import { QuarterlyProgress } from '@/components/xp/QuarterlyProgress';
 import { XpProgressBar } from '@/components/xp/XpProgressBar';
+import { DiamondLevelBadge } from '@/components/xp/DiamondLevelBadge';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { PendingApproval } from '@/components/PendingApproval';
@@ -556,11 +557,17 @@ export default function Index() {
                         tabIndex={0}
                         onKeyDown={(e) => e.key === 'Enter' && setActiveTab('milestones')}
                       >
-                        <XpProgressBar 
-                          currentXp={xpProgress.current_xp} 
-                          level={xpProgress.current_level}
-                          animate={true}
-                        />
+                        <div className="flex items-center gap-4">
+                          <DiamondLevelBadge level={xpProgress.current_level} size="md" />
+                          <div className="flex-1">
+                            <XpProgressBar 
+                              currentXp={xpProgress.current_xp} 
+                              level={xpProgress.current_level}
+                              showLabel={true}
+                              animate={true}
+                            />
+                          </div>
+                        </div>
                         <p className="text-xs text-muted-foreground mt-2 text-center">Tap to view rewards</p>
                       </div>
                     </AnimatedSection>
