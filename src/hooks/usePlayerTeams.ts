@@ -113,7 +113,27 @@ export function usePlayerTeams() {
 
     try {
       const teamToDelete = teams.find(t => t.id === id);
+      const remainingTeams = teams.filter(t => t.id !== id);
       
+      // Determine what to set for games/scheduled_games that had this team
+      // If there's exactly one remaining team, assign it; otherwise set to null
+      const newTeamId = remainingTeams.length === 1 ? remainingTeams[0].id : null;
+
+      // Update all games that had this team
+      await supabase
+        .from('games')
+        .update({ team_id: newTeamId })
+        .eq('team_id', id)
+        .eq('user_id', user.id);
+
+      // Update all scheduled_games that had this team
+      await supabase
+        .from('scheduled_games')
+        .update({ team_id: newTeamId })
+        .eq('team_id', id)
+        .eq('user_id', user.id);
+
+      // Delete the team
       const { error } = await supabase
         .from('player_teams')
         .delete()
@@ -123,14 +143,11 @@ export function usePlayerTeams() {
       if (error) throw error;
 
       // If we deleted the primary team, set another as primary
-      if (teamToDelete?.is_primary && teams.length > 1) {
-        const nextTeam = teams.find(t => t.id !== id);
-        if (nextTeam) {
-          await supabase
-            .from('player_teams')
-            .update({ is_primary: true })
-            .eq('id', nextTeam.id);
-        }
+      if (teamToDelete?.is_primary && remainingTeams.length > 0) {
+        await supabase
+          .from('player_teams')
+          .update({ is_primary: true })
+          .eq('id', remainingTeams[0].id);
       }
       
       await fetchTeams();
