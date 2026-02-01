@@ -176,12 +176,20 @@ export function AdminPanel() {
     }
   }
 
-  // Filter users by search
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.team.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (user.display_name?.toLowerCase() || '').includes(searchQuery.toLowerCase())
-  );
+  // Create email lookup from approval requests
+  const userEmailMap = new Map<string, string | null>();
+  approvalRequests.forEach(req => {
+    userEmailMap.set(req.user_id, req.email);
+  });
+
+  // Filter users by search (including email)
+  const filteredUsers = users.filter(user => {
+    const email = userEmailMap.get(user.user_id) || '';
+    return user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.team.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.display_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      email.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   // Update user profile
   async function handleUpdateUser() {
@@ -953,11 +961,12 @@ export function AdminPanel() {
             </div>
           </div>
 
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-hidden overflow-x-auto">
             <table className="w-full">
               <thead className="bg-muted/50">
                 <tr>
                   <th className="text-left p-3 font-medium">Name</th>
+                  <th className="text-left p-3 font-medium">Email</th>
                   <th className="text-left p-3 font-medium">Team</th>
                   <th className="text-left p-3 font-medium">Grade</th>
                   <th className="text-left p-3 font-medium">Public</th>
@@ -974,6 +983,11 @@ export function AdminPanel() {
                         {user.display_name && (
                           <div className="text-xs text-muted-foreground">@{user.display_name}</div>
                         )}
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <div className="text-sm text-muted-foreground max-w-[200px] truncate" title={userEmailMap.get(user.user_id) || ''}>
+                        {userEmailMap.get(user.user_id) || '—'}
                       </div>
                     </td>
                     <td className="p-3 text-muted-foreground">{user.team}</td>
