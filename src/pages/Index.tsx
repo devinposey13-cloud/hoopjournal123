@@ -812,6 +812,10 @@ export default function Index() {
                       game={game}
                       linkedGame={findLinkedGame(game)}
                       onDelete={deleteScheduledGame}
+                      teams={teams}
+                      onUpdateTeam={async (gameId, teamId) => {
+                        await updateScheduledGame(gameId, { teamId: teamId || undefined });
+                      }}
                     />
                   ))}
                 </div>
@@ -831,6 +835,10 @@ export default function Index() {
                       game={game}
                       linkedGame={findLinkedGame(game)}
                       onDelete={deleteScheduledGame}
+                      teams={teams}
+                      onUpdateTeam={async (gameId, teamId) => {
+                        await updateScheduledGame(gameId, { teamId: teamId || undefined });
+                      }}
                     />
                   ))}
                 </div>
