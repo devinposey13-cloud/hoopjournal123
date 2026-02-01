@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Bot, User, Loader2, Sparkles, Video, X, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
+import { Send, Bot, User, Loader2, Sparkles, Video, X, Volume2, VolumeX, Mic, MicOff, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GameStats, SeasonStats, PlayerProfile } from '@/types/basketball';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -13,6 +14,7 @@ import { useCoachVoice } from '@/hooks/useCoachVoice';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { AudioWaveform } from './AudioWaveform';
 import { InlineLoading } from '@/components/ui/loading-spinner';
+import { CoachMemoryViewer } from '@/components/settings/CoachMemoryViewer';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -401,18 +403,31 @@ export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
 
   return (
     <div className="stat-card flex flex-col h-[600px]">
-      {/* Header */}
-      <div className="flex items-center gap-3 pb-4 border-b border-border">
-        <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
-          <Bot className="w-5 h-5 text-primary-foreground" />
+      <Tabs defaultValue="chat" className="flex flex-col h-full">
+        {/* Header with Tabs */}
+        <div className="flex items-center justify-between pb-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
+              <Bot className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h3 className="font-semibold">Coach AI</h3>
+              <p className="text-xs text-muted-foreground">
+                Your personal basketball coach
+              </p>
+            </div>
+          </div>
+          <TabsList className="grid grid-cols-2 w-[160px]">
+            <TabsTrigger value="chat" className="text-xs">Chat</TabsTrigger>
+            <TabsTrigger value="memory" className="text-xs">
+              <Brain className="w-3 h-3 mr-1" />
+              Memory
+            </TabsTrigger>
+          </TabsList>
         </div>
-        <div>
-          <h3 className="font-semibold">Coach AI</h3>
-          <p className="text-xs text-muted-foreground">
-            Your personal basketball coach • Supports video analysis
-          </p>
-        </div>
-      </div>
+
+        {/* Chat Tab */}
+        <TabsContent value="chat" className="flex-1 flex flex-col mt-0 overflow-hidden">
 
       {/* Messages */}
       <ScrollArea className="flex-1 py-4" ref={scrollRef}>
@@ -649,6 +664,13 @@ export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
           </Button>
         </div>
       </form>
+        </TabsContent>
+
+        {/* Memory Tab */}
+        <TabsContent value="memory" className="flex-1 mt-0 overflow-auto py-4">
+          <CoachMemoryViewer />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
