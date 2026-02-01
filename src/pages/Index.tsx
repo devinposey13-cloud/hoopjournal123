@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AnimatePresence } from 'framer-motion';
 import { Navigation, Tab } from '@/components/Navigation';
@@ -31,7 +31,9 @@ import { TierCelebration } from '@/components/xp/TierCelebration';
 import { QuarterlyProgress } from '@/components/xp/QuarterlyProgress';
 import { XpProgressBar } from '@/components/xp/XpProgressBar';
 import { DiamondLevelBadge } from '@/components/xp/DiamondLevelBadge';
+import { RingOfHonorOptInModal } from '@/components/xp/RingOfHonorOptInModal';
 import { getXpProgressInLevel } from '@/utils/xpCalculations';
+import { useRingOfHonorEligibility } from '@/hooks/useRingOfHonorEligibility';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { PendingApproval } from '@/components/PendingApproval';
@@ -82,6 +84,8 @@ export default function Index() {
   const [dashboardTeamFilter, setDashboardTeamFilter] = useState<string>('all');
   const [gamesTabTeamFilter, setGamesTabTeamFilter] = useState<string>('all');
   const [justCompletedOnboarding, setJustCompletedOnboarding] = useState(false);
+  const [showRingOfHonorModal, setShowRingOfHonorModal] = useState(false);
+  const [hasShownRingOfHonorModal, setHasShownRingOfHonorModal] = useState(false);
   const { user, loading: authLoading, signOut } = useAuth();
   const { teams } = usePlayerTeams();
   const { isAdmin } = useAdmin();
@@ -129,8 +133,36 @@ export default function Index() {
     achievedTiers,
   } = useGameWithMilestones();
 
+  // Check Ring of Honor eligibility
+  const currentLevel = xpProgress?.current_level ?? 1;
+  const ringOfHonorEligibility = useRingOfHonorEligibility(currentLevel);
+
   // Apply retroactive XP for games logged before XP system
   useRetroactiveXp();
+
+  // Trigger Ring of Honor modal when user reaches Level 50
+  useEffect(() => {
+    if (
+      !ringOfHonorEligibility.loading &&
+      ringOfHonorEligibility.isEligible &&
+      !ringOfHonorEligibility.isAlreadyMember &&
+      !hasShownRingOfHonorModal &&
+      !showLevelUpCelebration // Wait for level up celebration to finish
+    ) {
+      // Small delay to let level up celebration play first
+      const timer = setTimeout(() => {
+        setShowRingOfHonorModal(true);
+        setHasShownRingOfHonorModal(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [
+    ringOfHonorEligibility.loading,
+    ringOfHonorEligibility.isEligible,
+    ringOfHonorEligibility.isAlreadyMember,
+    hasShownRingOfHonorModal,
+    showLevelUpCelebration,
+  ]);
 
   // useFirstLogin now uses database as source of truth
   const { showOnboarding, loading: introLoading, completeOnboarding } = useFirstLogin({
@@ -1089,6 +1121,25 @@ export default function Index() {
           />
         )}
       </AnimatePresence>
+
+      {/* Ring of Honor Opt-In Modal */}
+      <RingOfHonorOptInModal
+        open={showRingOfHonorModal}
+        onOpenChange={(open) => {
+          setShowRingOfHonorModal(open);
+          if (!open) {
+            ringOfHonorEligibility.checkEligibility();
+          }
+        }}
+        playerData={{
+          displayName: profile.displayName || profile.name || 'Player',
+          position: profile.position,
+          teamName: profile.team,
+          avatarUrl: profile.avatar,
+          finalXp: xpProgress?.current_xp ?? 0,
+          gamesPlayed: xpProgress?.games_logged ?? 0,
+        }}
+      />
     </div>
   );
 }
