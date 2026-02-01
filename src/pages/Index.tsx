@@ -494,13 +494,6 @@ export default function Index() {
                     />
                   </div>
 
-                  {/* Quarterly XP Progress */}
-                  {xpQuarterInfo && (
-                    <AnimatedSection className="journal-section" delay={0.05}>
-                      <QuarterlyProgress progress={xpProgress} quarterInfo={xpQuarterInfo} />
-                    </AnimatedSection>
-                  )}
-
                   {/* Season Averages */}
                   <AnimatedSection className="journal-section" delay={0.1}>
                     <div className="flex items-center justify-between flex-wrap gap-2 mb-4">

@@ -5,8 +5,10 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { MilestoneCard } from './MilestoneCard';
 import { MonthlyChallenges } from './MonthlyChallenges';
+import { QuarterlyProgress } from '@/components/xp/QuarterlyProgress';
 import { useMilestones } from '@/hooks/useMilestones';
 import { useCloudData } from '@/hooks/useCloudData';
+import { useXpProgress } from '@/hooks/useXpProgress';
 import type { MilestoneCategory, MilestoneRarity } from '@/types/milestone';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +23,7 @@ export function MilestoneCollection() {
     getSeasonProgress,
     getOccurrencesByMilestoneId,
   } = useMilestones(activeSeason?.id);
+  const { progress: xpProgress, quarterInfo: xpQuarterInfo, loading: xpLoading } = useXpProgress();
 
   const [categoryFilter, setCategoryFilter] = useState<FilterCategory>('all');
   const [showEarned, setShowEarned] = useState<'all' | 'earned' | 'locked'>('all');
@@ -94,7 +97,7 @@ export function MilestoneCollection() {
   const totalEarned = new Set(earnedMilestones.map(m => m.milestoneId)).size;
   const totalAvailable = definitions.length;
 
-  if (loading) {
+  if (loading || xpLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -104,6 +107,11 @@ export function MilestoneCollection() {
 
   return (
     <div className="space-y-6">
+      {/* XP Progress Section */}
+      {xpQuarterInfo && (
+        <QuarterlyProgress progress={xpProgress} quarterInfo={xpQuarterInfo} />
+      )}
+
       {/* Monthly Challenges Section */}
       <MonthlyChallenges />
 
