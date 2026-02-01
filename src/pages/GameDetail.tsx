@@ -37,7 +37,15 @@ import { SpotifyPlayer } from '@/components/SpotifyPlayer';
 import { SeasonAveragesCard } from '@/components/SeasonAveragesCard';
 import { EditScheduleDialog } from '@/components/EditScheduleDialog';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users, Check } from 'lucide-react';
+import { usePlayerTeams } from '@/hooks/usePlayerTeams';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -65,6 +73,7 @@ export default function GameDetail() {
     earnedMilestones,
     getOccurrenceCount,
   } = useGameWithMilestones();
+  const { teams } = usePlayerTeams();
   const [lastSavedGameId, setLastSavedGameId] = useState<string | null>(null);
   const [game, setGame] = useState<GameStats | null>(null);
   const [scheduledGame, setScheduledGame] = useState<ScheduledGame | null>(null);
@@ -693,6 +702,44 @@ export default function GameDetail() {
                 <MapPin className="w-5 h-5" />
                 <span>{scheduledGame.location}</span>
               </div>
+              {/* Team Assignment */}
+              {teams.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-muted-foreground" />
+                  <Select
+                    value={scheduledGame.teamId || 'unassigned'}
+                    onValueChange={async (value) => {
+                      const newTeamId = value === 'unassigned' ? null : value;
+                      const teamName = teams.find(t => t.id === value)?.name || undefined;
+                      const result = await updateScheduledGame(scheduledGame.id, { 
+                        teamId: newTeamId || undefined 
+                      });
+                      if (result) {
+                        setScheduledGame({
+                          ...result,
+                          teamName: teamName,
+                        });
+                        toast.success('Team updated!');
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-[180px] h-8 text-sm">
+                      <SelectValue placeholder="Select team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">
+                        <span className="text-muted-foreground">Unassigned</span>
+                      </SelectItem>
+                      {teams.map((team) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                          {team.is_primary && " (Default)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             {scheduledGame.notes && (
               <div className="mt-4 pt-4 border-t border-border">
