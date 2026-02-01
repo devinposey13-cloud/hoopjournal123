@@ -31,6 +31,7 @@ import { TierCelebration } from '@/components/xp/TierCelebration';
 import { QuarterlyProgress } from '@/components/xp/QuarterlyProgress';
 import { XpProgressBar } from '@/components/xp/XpProgressBar';
 import { DiamondLevelBadge } from '@/components/xp/DiamondLevelBadge';
+import { getXpProgressInLevel } from '@/utils/xpCalculations';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { PendingApproval } from '@/components/PendingApproval';
@@ -558,7 +559,11 @@ export default function Index() {
                         onKeyDown={(e) => e.key === 'Enter' && setActiveTab('milestones')}
                       >
                         <div className="flex items-center gap-4">
-                          <DiamondLevelBadge level={xpProgress.current_level} size="md" />
+                          <DiamondLevelBadge 
+                            level={xpProgress.current_level} 
+                            progressPercent={getXpProgressInLevel(xpProgress.current_xp).percent}
+                            size="md" 
+                          />
                           <div className="flex-1">
                             <XpProgressBar 
                               currentXp={xpProgress.current_xp} 

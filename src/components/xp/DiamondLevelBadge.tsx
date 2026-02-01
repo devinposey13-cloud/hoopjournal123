@@ -3,13 +3,15 @@ import { getLevelTierGradient, getLevelTierColor } from '@/utils/xpCalculations'
 
 interface DiamondLevelBadgeProps {
   level: number;
+  progressPercent?: number;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-export function DiamondLevelBadge({ level, size = 'md', className }: DiamondLevelBadgeProps) {
+export function DiamondLevelBadge({ level, progressPercent = 0, size = 'md', className }: DiamondLevelBadgeProps) {
   const gradient = getLevelTierGradient(level);
   const tierColor = getLevelTierColor(level);
+  const isCloseToLevelUp = progressPercent >= 75;
 
   const sizeClasses = {
     sm: 'w-8 h-8 text-xs',
@@ -19,6 +21,18 @@ export function DiamondLevelBadge({ level, size = 'md', className }: DiamondLeve
 
   return (
     <div className={cn('relative flex items-center justify-center', className)}>
+      {/* Glow effect when close to leveling up */}
+      {isCloseToLevelUp && (
+        <div
+          className={cn(
+            'absolute rotate-45 rounded-sm animate-pulse',
+            'bg-gradient-to-br blur-md opacity-60',
+            gradient,
+            size === 'sm' ? 'w-10 h-10' : size === 'md' ? 'w-12 h-12' : 'w-16 h-16'
+          )}
+        />
+      )}
+      
       {/* Diamond shape container */}
       <div
         className={cn(
@@ -26,7 +40,8 @@ export function DiamondLevelBadge({ level, size = 'md', className }: DiamondLeve
           'bg-gradient-to-br',
           gradient,
           sizeClasses[size],
-          level >= 45 && 'animate-pulse'
+          level >= 45 && 'animate-pulse',
+          isCloseToLevelUp && 'ring-2 ring-primary/50'
         )}
       >
         {/* Inner diamond with background */}
