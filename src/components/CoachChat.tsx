@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Bot, User, Loader2, Sparkles, Video, X, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,6 +27,7 @@ interface CoachChatProps {
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/coach-chat`;
+const EXTRACT_MEMORY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-coach-memory`;
 
 const suggestedPrompts = [
   "How was my last game?",
@@ -155,6 +156,38 @@ export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
   const pendingAutoPlayRef = useRef(false);
 
   const latestGame = games.length > 0 ? games[0] : null;
+
+  // Extract memories from conversation in the background
+  const extractMemories = useCallback(async (userMessage: string, assistantResponse: string) => {
+    if (!session?.access_token || !userMessage || !assistantResponse) return;
+    
+    try {
+      // Run in background - don't await or block UI
+      fetch(EXTRACT_MEMORY_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          userMessage,
+          assistantResponse,
+        }),
+      }).then(async (response) => {
+        if (response.ok) {
+          const data = await response.json();
+          if (data.memoriesExtracted > 0) {
+            console.log(`Coach AI learned ${data.memoriesExtracted} new insight(s)`);
+          }
+        }
+      }).catch((err) => {
+        console.error('Memory extraction failed:', err);
+      });
+    } catch (error) {
+      // Silently fail - this is a background enhancement
+      console.error('Memory extraction error:', error);
+    }
+  }, [session?.access_token]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -317,6 +350,11 @@ export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
       if (isVoiceMessageRef.current && assistantContent) {
         pendingAutoPlayRef.current = true;
         isVoiceMessageRef.current = false;
+      }
+      
+      // Extract memories from this conversation (runs in background)
+      if (assistantContent && userMessage.content) {
+        extractMemories(userMessage.content, assistantContent);
       }
     } catch (error) {
       console.error('Chat error:', error);
