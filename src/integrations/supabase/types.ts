@@ -962,6 +962,51 @@ export type Database = {
         }
         Relationships: []
       }
+      ring_of_honor: {
+        Row: {
+          achieved_at: string
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          final_xp: number
+          games_played: number
+          id: string
+          inducted_at: string
+          position: string | null
+          quarter: string
+          team_name: string | null
+          user_id: string
+        }
+        Insert: {
+          achieved_at?: string
+          avatar_url?: string | null
+          created_at?: string
+          display_name: string
+          final_xp?: number
+          games_played?: number
+          id?: string
+          inducted_at?: string
+          position?: string | null
+          quarter: string
+          team_name?: string | null
+          user_id: string
+        }
+        Update: {
+          achieved_at?: string
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          final_xp?: number
+          games_played?: number
+          id?: string
+          inducted_at?: string
+          position?: string | null
+          quarter?: string
+          team_name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       scheduled_games: {
         Row: {
           created_at: string
