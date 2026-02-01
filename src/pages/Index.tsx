@@ -549,12 +549,19 @@ export default function Index() {
                   {xpProgress && (
                     <AnimatedSection className="journal-section" delay={0.4}>
                       <h2 className="journal-heading">Season XP Progress</h2>
-                      <div className="journal-card p-4 rounded-xl">
+                      <div 
+                        className="journal-card p-4 rounded-xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all"
+                        onClick={() => setActiveTab('milestones')}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => e.key === 'Enter' && setActiveTab('milestones')}
+                      >
                         <XpProgressBar 
                           currentXp={xpProgress.current_xp} 
                           level={xpProgress.current_level}
                           animate={true}
                         />
+                        <p className="text-xs text-muted-foreground mt-2 text-center">Tap to view rewards</p>
                       </div>
                     </AnimatedSection>
                   )}
