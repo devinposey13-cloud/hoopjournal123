@@ -239,6 +239,10 @@ export function useCloudData() {
           onboardingCompletedAt: settingsData.onboarding_completed_at || undefined,
           // Notification preferences
           receiveGameSummaries: settingsData.receive_game_summaries ?? false,
+          // Coach AI settings
+          coachPersona: settingsData.coach_persona || undefined,
+          // Ring of Honor opt-in
+          ringOfHonorOptIn: settingsData.ring_of_honor_opt_in ?? false,
         });
       }
     } catch (error) {
@@ -846,6 +850,10 @@ export function useCloudData() {
             onboarding_completed_at: updates.onboardingCompletedAt ?? profile.onboardingCompletedAt ?? null,
             // Notification preferences
             receive_game_summaries: updates.receiveGameSummaries ?? profile.receiveGameSummaries ?? false,
+            // Coach AI settings
+            coach_persona: updates.coachPersona ?? profile.coachPersona ?? null,
+            // Ring of Honor opt-in
+            ring_of_honor_opt_in: updates.ringOfHonorOptIn ?? profile.ringOfHonorOptIn ?? false,
           },
           { onConflict: 'user_id' }
         );

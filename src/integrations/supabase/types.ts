@@ -715,6 +715,7 @@ export type Database = {
           playing_level: string | null
           position: string
           receive_game_summaries: boolean
+          ring_of_honor_opt_in: boolean
           season_goals: string[] | null
           team: string
           theme_music_url: string | null
@@ -743,6 +744,7 @@ export type Database = {
           playing_level?: string | null
           position?: string
           receive_game_summaries?: boolean
+          ring_of_honor_opt_in?: boolean
           season_goals?: string[] | null
           team?: string
           theme_music_url?: string | null
@@ -771,6 +773,7 @@ export type Database = {
           playing_level?: string | null
           position?: string
           receive_game_summaries?: boolean
+          ring_of_honor_opt_in?: boolean
           season_goals?: string[] | null
           team?: string
           theme_music_url?: string | null
