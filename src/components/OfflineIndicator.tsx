@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { WifiOff, Wifi, CheckCircle2, XCircle } from "lucide-react";
+import { WifiOff, Wifi, CheckCircle2, XCircle, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const offlineFeatures = [
@@ -13,10 +14,14 @@ const offlineFeatures = [
 
 export const OfflineIndicator = () => {
   const { isOnline, wasOffline } = useOnlineStatus();
+  const [isDismissed, setIsDismissed] = useState(false);
+
+  // Reset dismissed state when coming back online then going offline again
+  const showOfflineBanner = !isOnline && !isDismissed;
 
   return (
     <AnimatePresence>
-      {!isOnline && (
+      {showOfflineBanner && (
         <motion.div
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -30,7 +35,16 @@ export const OfflineIndicator = () => {
                 <WifiOff className="h-5 w-5" />
                 <span className="font-medium">You're offline</span>
               </div>
-              <span className="text-sm opacity-80">Some features limited</span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm opacity-80">Some features limited</span>
+                <button
+                  onClick={() => setIsDismissed(true)}
+                  className="p-1 rounded-full hover:bg-amber-600/50 dark:hover:bg-amber-700/50 transition-colors"
+                  aria-label="Dismiss offline notification"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
             
             <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2">
