@@ -26,6 +26,8 @@ interface CoachChatProps {
   games: GameStats[];
   seasonStats: SeasonStats;
   profile: PlayerProfile;
+  prefillPrompt?: string;
+  onPrefillConsumed?: () => void;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/coach-chat`;
@@ -135,7 +137,7 @@ async function getVideoThumbnail(videoFile: File): Promise<string> {
   });
 }
 
-export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
+export function CoachChat({ games, seasonStats, profile, prefillPrompt, onPrefillConsumed }: CoachChatProps) {
   const { session } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -146,6 +148,18 @@ export function CoachChat({ games, seasonStats, profile }: CoachChatProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Handle prefill prompt from "Dear Basketball" entry point
+  useEffect(() => {
+    if (prefillPrompt && !input) {
+      setInput(prefillPrompt);
+      onPrefillConsumed?.();
+      // Focus the textarea after a brief delay for smooth transition
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 300);
+    }
+  }, [prefillPrompt, onPrefillConsumed, input]);
   
   // Voice playback hook
   const { playingIndex, isLoadingAudio, playVoice, stopVoice } = useCoachVoice();

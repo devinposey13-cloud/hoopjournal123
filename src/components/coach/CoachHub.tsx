@@ -31,6 +31,8 @@ interface CoachHubProps {
   games: GameStats[];
   seasonStats: SeasonStats;
   profile: PlayerProfile;
+  prefillPrompt?: string;
+  onPrefillConsumed?: () => void;
 }
 
 type CoachSection = 'chat' | 'knowledge' | 'compare';
@@ -161,7 +163,7 @@ function generateRecentInsights(games: GameStats[]): Array<{ id: string; text: s
   return insights.slice(0, 4);
 }
 
-export function CoachHub({ games, seasonStats, profile }: CoachHubProps) {
+export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefillConsumed }: CoachHubProps) {
   const [activeSection, setActiveSection] = useState<CoachSection>('chat');
   
   const todaysFocus = useMemo(() => generateTodaysFocus(games, seasonStats), [games, seasonStats]);
@@ -266,7 +268,13 @@ export function CoachHub({ games, seasonStats, profile }: CoachHubProps) {
           <Suspense fallback={<ChatSkeleton />}>
             {activeSection === 'chat' && (
               <div className="max-w-2xl">
-                <CoachChat games={games} seasonStats={seasonStats} profile={profile} />
+                <CoachChat 
+                  games={games} 
+                  seasonStats={seasonStats} 
+                  profile={profile}
+                  prefillPrompt={prefillPrompt}
+                  onPrefillConsumed={onPrefillConsumed}
+                />
               </div>
             )}
             {activeSection === 'knowledge' && (

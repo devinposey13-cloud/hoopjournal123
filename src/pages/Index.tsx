@@ -77,6 +77,7 @@ export default function Index() {
   const [justCompletedOnboarding, setJustCompletedOnboarding] = useState(false);
   const [showRingOfHonorModal, setShowRingOfHonorModal] = useState(false);
   const [hasShownRingOfHonorModal, setHasShownRingOfHonorModal] = useState(false);
+  const [coachPrefillPrompt, setCoachPrefillPrompt] = useState<string | undefined>();
   const { user, loading: authLoading, signOut } = useAuth();
   const { teams } = usePlayerTeams();
   const { isAdmin } = useAdmin();
@@ -529,11 +530,14 @@ export default function Index() {
                         xpProgress={xpProgress}
                         className="shadow-md"
                       />
-                      {/* Dear Basketball - Subtle Journal CTA */}
+                      {/* Dear Basketball - Reflection Entry Point to Coach AI */}
                       <button
-                        onClick={() => setActiveTab('progress')}
+                        onClick={() => {
+                          setCoachPrefillPrompt("Dear Basketball — today I want to reflect on how I played, what I felt during the game, and what I want to improve next time.");
+                          setActiveTab('coach');
+                        }}
                         className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
-                        title="Open your basketball journal"
+                        title="Reflect on your game with Coach AI"
                       >
                         <span>✏️</span>
                         <span className="hidden sm:inline font-medium" style={{ fontFamily: "'Dancing Script', cursive" }}>Dear Basketball</span>
@@ -738,7 +742,13 @@ export default function Index() {
 
         {/* Coach Tab */}
         {activeTab === 'coach' && (
-          <CoachHub games={games} seasonStats={seasonStats} profile={profile} />
+          <CoachHub 
+            games={games} 
+            seasonStats={seasonStats} 
+            profile={profile} 
+            prefillPrompt={coachPrefillPrompt}
+            onPrefillConsumed={() => setCoachPrefillPrompt(undefined)}
+          />
         )}
 
         {/* Settings Tab */}
