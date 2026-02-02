@@ -445,6 +445,60 @@ export function LiveStatCapture({
     setHistory(prev => prev.slice(0, -1));
   }, [history]);
 
+  // Undo last shot for a specific shot type (2PT, 3PT, FT)
+  const undoLastShot = useCallback((shotType: '2pt' | '3pt' | 'ft') => {
+    // Find the last action matching this shot type in current half
+    const shotMadeKey = shotType === '2pt' ? 'fgMade' : shotType === '3pt' ? 'threePtMade' : 'ftMade';
+    const shotMissKey = shotType === '2pt' ? 'fgAttempted' : shotType === '3pt' ? 'threePtAttempted' : 'ftAttempted';
+    
+    // Find the last matching shot action in history (for current half)
+    const lastShotIndex = [...history].reverse().findIndex(
+      action => action.half === currentHalf && (action.type === shotMadeKey || action.type === shotMissKey)
+    );
+    
+    if (lastShotIndex === -1) {
+      toast.info(`No ${shotType.toUpperCase()} shots to undo`, { duration: 1500 });
+      return;
+    }
+    
+    const actualIndex = history.length - 1 - lastShotIndex;
+    const shotAction = history[actualIndex];
+    
+    // Undo the specific shot
+    setCurrentStats(prev => {
+      const newStats = { ...prev };
+      
+      if (shotAction.type === 'fgMade') {
+        newStats.fgMade = Math.max(0, newStats.fgMade - 1);
+        newStats.fgAttempted = Math.max(0, newStats.fgAttempted - 1);
+        newStats.points = Math.max(0, newStats.points - 2);
+      } else if (shotAction.type === 'threePtMade') {
+        newStats.threePtMade = Math.max(0, newStats.threePtMade - 1);
+        newStats.threePtAttempted = Math.max(0, newStats.threePtAttempted - 1);
+        newStats.points = Math.max(0, newStats.points - 3);
+      } else if (shotAction.type === 'ftMade') {
+        newStats.ftMade = Math.max(0, newStats.ftMade - 1);
+        newStats.ftAttempted = Math.max(0, newStats.ftAttempted - 1);
+        newStats.points = Math.max(0, newStats.points - 1);
+      } else if (shotAction.type === 'fgAttempted') {
+        newStats.fgAttempted = Math.max(0, newStats.fgAttempted - 1);
+      } else if (shotAction.type === 'threePtAttempted') {
+        newStats.threePtAttempted = Math.max(0, newStats.threePtAttempted - 1);
+      } else if (shotAction.type === 'ftAttempted') {
+        newStats.ftAttempted = Math.max(0, newStats.ftAttempted - 1);
+      }
+      
+      return newStats;
+    });
+    
+    // Remove this action from history
+    setHistory(prev => [...prev.slice(0, actualIndex), ...prev.slice(actualIndex + 1)]);
+    
+    triggerHaptic('light');
+    const wasAMake = shotAction.type === shotMadeKey;
+    toast.info(`Undid ${shotType.toUpperCase()} ${wasAMake ? 'make' : 'miss'}`, { duration: 1500, icon: '↩️' });
+  }, [history, currentHalf, setCurrentStats, triggerHaptic]);
+
   // Shake-to-undo gesture handler
   const handleShakeUndo = useCallback(() => {
     if (history.length === 0) return;
@@ -939,9 +993,20 @@ export function LiveStatCapture({
                 <Target className="w-3.5 h-3.5 text-primary" />
                 <span className="font-medium text-sm">2PT</span>
               </div>
-              <span className="text-xs text-muted-foreground">
-                {currentStats.fgMade}/{currentStats.fgAttempted} ({fgPct}%)
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {currentStats.fgMade}/{currentStats.fgAttempted} ({fgPct}%)
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  onClick={() => undoLastShot('2pt')}
+                  disabled={!history.some(a => a.half === currentHalf && (a.type === 'fgMade' || a.type === 'fgAttempted'))}
+                >
+                  <Undo2 className="w-3 h-3" />
+                </Button>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <StatButton 
@@ -966,9 +1031,20 @@ export function LiveStatCapture({
                 <Circle className="w-3.5 h-3.5 text-primary" />
                 <span className="font-medium text-sm">3PT</span>
               </div>
-              <span className="text-xs text-muted-foreground">
-                {currentStats.threePtMade}/{currentStats.threePtAttempted} ({threePct}%)
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {currentStats.threePtMade}/{currentStats.threePtAttempted} ({threePct}%)
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  onClick={() => undoLastShot('3pt')}
+                  disabled={!history.some(a => a.half === currentHalf && (a.type === 'threePtMade' || a.type === 'threePtAttempted'))}
+                >
+                  <Undo2 className="w-3 h-3" />
+                </Button>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <StatButton 
@@ -993,9 +1069,20 @@ export function LiveStatCapture({
                 <Target className="w-3.5 h-3.5 text-primary" />
                 <span className="font-medium text-sm">FT</span>
               </div>
-              <span className="text-xs text-muted-foreground">
-                {currentStats.ftMade}/{currentStats.ftAttempted} ({ftPct}%)
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {currentStats.ftMade}/{currentStats.ftAttempted} ({ftPct}%)
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  onClick={() => undoLastShot('ft')}
+                  disabled={!history.some(a => a.half === currentHalf && (a.type === 'ftMade' || a.type === 'ftAttempted'))}
+                >
+                  <Undo2 className="w-3 h-3" />
+                </Button>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <StatButton 
