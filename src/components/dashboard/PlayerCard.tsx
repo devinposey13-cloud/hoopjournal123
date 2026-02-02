@@ -73,9 +73,16 @@ export function PlayerCard({
   const last5Losses = last5.length - last5Wins;
 
   const hasStats = seasonStats && games.length > 0;
+  const isOnWinStreak = streakType === 'W' && streak >= 2;
+  const isHotStreak = streakType === 'W' && streak >= 3;
   
   return (
-    <Card className={cn('overflow-hidden border-border/50', className)}>
+    <Card className={cn(
+      'overflow-hidden border-border/50 transition-all duration-300',
+      isOnWinStreak && 'border-green-500/30 shadow-[0_0_15px_-3px_rgba(34,197,94,0.2)]',
+      isHotStreak && 'border-green-500/50 shadow-[0_0_25px_-3px_rgba(34,197,94,0.3)] ring-1 ring-green-500/20',
+      className
+    )}>
       <CardContent className="p-4">
         <div className="flex items-center gap-4">
           {/* Avatar */}
