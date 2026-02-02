@@ -28,6 +28,7 @@ import { StatFlash, getFlashConfig } from './StatFlash';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
 import { useLiveStatsAutosave } from '@/hooks/useLiveStatsAutosave';
+import { useShakeDetector } from '@/hooks/useShakeDetector';
 import { HalfStats } from '@/types/basketball';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -441,6 +442,30 @@ export function LiveStatCapture({
     
     setHistory(prev => prev.slice(0, -1));
   }, [history]);
+
+  // Shake-to-undo gesture handler
+  const handleShakeUndo = useCallback(() => {
+    if (history.length === 0) return;
+    
+    // Trigger haptic feedback for shake detection
+    triggerHaptic('medium');
+    
+    // Undo the last action
+    undoLast();
+    
+    // Show toast notification
+    toast.info('Shake detected — last action undone', {
+      duration: 1500,
+      icon: '↩️',
+    });
+  }, [history.length, triggerHaptic, undoLast]);
+
+  // Initialize shake detector
+  useShakeDetector({
+    threshold: 20, // Sensitivity - higher = less sensitive
+    timeout: 1500, // Cooldown between shakes
+    onShake: handleShakeUndo,
+  });
 
   const handlePhotoCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
