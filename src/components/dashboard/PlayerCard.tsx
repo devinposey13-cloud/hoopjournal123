@@ -126,12 +126,12 @@ export function PlayerCard({
         isHotStreak && 'border-green-500/50 shadow-[0_0_25px_-3px_rgba(34,197,94,0.3)] ring-1 ring-green-500/20',
         className
       )}>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-5">
-            {/* Avatar - Large focal point, clickable with tier-colored ring */}
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex items-center gap-3 sm:gap-5">
+            {/* Avatar - Smaller on mobile, large on desktop */}
             <button
               onClick={() => setAvatarOpen(true)}
-              className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full transition-transform duration-200 hover:scale-105 active:scale-95"
+              className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full transition-transform duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
               aria-label="View full profile photo"
             >
               <div className="relative">
@@ -145,14 +145,14 @@ export function PlayerCard({
                   />
                 )}
                 <Avatar className={cn(
-                  "h-24 w-24 md:h-28 md:w-28 ring-4 flex-shrink-0 cursor-pointer transition-shadow duration-300 relative",
+                  "h-16 w-16 sm:h-24 sm:w-24 md:h-28 md:w-28 ring-2 sm:ring-4 cursor-pointer transition-shadow duration-300 relative",
                   tierStyle ? `${tierStyle.ring} ${tierStyle.glow}` : 'ring-primary/20 shadow-lg'
                 )}>
                   {profile.avatar ? (
                     <AvatarImage src={profile.avatar} alt={profile.name} className="object-cover" />
                   ) : (
-                    <AvatarFallback className="bg-primary/10 text-primary text-3xl md:text-4xl font-bold">
-                      {profile.number || <User className="w-10 h-10" />}
+                    <AvatarFallback className="bg-primary/10 text-primary text-xl sm:text-3xl md:text-4xl font-bold">
+                      {profile.number || <User className="w-6 h-6 sm:w-10 sm:h-10" />}
                     </AvatarFallback>
                   )}
                 </Avatar>
@@ -161,21 +161,21 @@ export function PlayerCard({
 
             {/* Player Info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-lg font-bold text-foreground truncate">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h2 className="text-base sm:text-lg font-bold text-foreground truncate max-w-[140px] sm:max-w-none">
                   {profile.name}
                 </h2>
-                <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-sm font-semibold">
+                <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs sm:text-sm font-semibold">
                   #{profile.number}
                 </span>
                 {hasRecord && (
-                  <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-sm font-medium">
+                  <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-xs sm:text-sm font-medium">
                     {seasonRecord.wins}-{seasonRecord.losses}
                   </span>
                 )}
               </div>
               
-              <div className="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1 sm:gap-2 mt-0.5 text-xs sm:text-sm text-muted-foreground">
                 {profile.position && (
                   <span className="font-medium">{profile.position}</span>
                 )}
@@ -188,12 +188,12 @@ export function PlayerCard({
                 {(profile.position || profile.grade) && displayTeam && (
                   <span className="text-border">•</span>
                 )}
-                <span className="truncate">{displayTeam}</span>
+                <span className="truncate max-w-[100px] sm:max-w-none">{displayTeam}</span>
               </div>
 
               {/* Tier Badges */}
               {tierAchievements.length > 0 && (
-                <TierBadges achievedTiers={tierAchievements} size="sm" className="mt-2" />
+                <TierBadges achievedTiers={tierAchievements} size="sm" className="mt-1.5 sm:mt-2" />
               )}
             </div>
           </div>
