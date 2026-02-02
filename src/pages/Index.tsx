@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AnimatePresence } from 'framer-motion';
-import { Tab } from '@/components/Navigation';
+import { Navigation, Tab } from '@/components/Navigation';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { PlayerHeader } from '@/components/PlayerHeader';
 import { StatCard } from '@/components/StatCard';
@@ -411,20 +411,34 @@ export default function Index() {
 
   if (dataLoading) {
     return (
-      <div className="min-h-screen bg-background pb-20">
+      <div className={`min-h-screen bg-background ${isMobile ? 'pb-20' : ''}`}>
+        {!isMobile && (
+          <Navigation 
+            activeTab={activeTab} 
+            onTabChange={setActiveTab}
+            seasons={seasons}
+            activeSeason={activeSeason}
+            onSeasonChange={switchSeason}
+            onCreateSeason={async (name) => { await createSeason(name); }}
+            onDeleteSeason={deleteSeason}
+            isAdmin={isAdmin}
+          />
+        )}
         <main className="container mx-auto px-4 py-6">
           {renderLoadingSkeleton()}
         </main>
-        <BottomNavigation 
-          activeTab={activeTab} 
-          onTabChange={setActiveTab}
-          seasons={seasons}
-          activeSeason={activeSeason}
-          onSeasonChange={switchSeason}
-          onCreateSeason={async (name) => { await createSeason(name); }}
-          onDeleteSeason={deleteSeason}
-          isAdmin={isAdmin}
-        />
+        {isMobile && (
+          <BottomNavigation 
+            activeTab={activeTab} 
+            onTabChange={setActiveTab}
+            seasons={seasons}
+            activeSeason={activeSeason}
+            onSeasonChange={switchSeason}
+            onCreateSeason={async (name) => { await createSeason(name); }}
+            onDeleteSeason={deleteSeason}
+            isAdmin={isAdmin}
+          />
+        )}
       </div>
     );
   }
@@ -442,17 +456,34 @@ export default function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <BottomNavigation 
-        activeTab={activeTab} 
-        onTabChange={setActiveTab}
-        seasons={seasons}
-        activeSeason={activeSeason}
-        onSeasonChange={switchSeason}
-        onCreateSeason={async (name) => { await createSeason(name); }}
-        onDeleteSeason={deleteSeason}
-        isAdmin={isAdmin}
-      />
+    <div className={`min-h-screen bg-background ${isMobile ? 'pb-20' : ''}`}>
+      {/* Desktop: Top Navigation */}
+      {!isMobile && (
+        <Navigation 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab}
+          seasons={seasons}
+          activeSeason={activeSeason}
+          onSeasonChange={switchSeason}
+          onCreateSeason={async (name) => { await createSeason(name); }}
+          onDeleteSeason={deleteSeason}
+          isAdmin={isAdmin}
+        />
+      )}
+
+      {/* Mobile: Bottom Navigation */}
+      {isMobile && (
+        <BottomNavigation 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab}
+          seasons={seasons}
+          activeSeason={activeSeason}
+          onSeasonChange={switchSeason}
+          onCreateSeason={async (name) => { await createSeason(name); }}
+          onDeleteSeason={deleteSeason}
+          isAdmin={isAdmin}
+        />
+      )}
 
       <main className="container mx-auto px-4 py-6">
         {/* Dashboard Tab */}
