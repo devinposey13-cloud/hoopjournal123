@@ -1,15 +1,16 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Play, MessageCircle } from 'lucide-react';
+import { Play, MessageCircle, LayoutDashboard } from 'lucide-react';
 import '@lottiefiles/dotlottie-wc';
 
 interface CompletionCardProps {
   playerName: string;
   onStartGame: () => void;
   onPregameTalk?: () => void;
+  onExploreDashboard?: () => void;
 }
 
-export function CompletionCard({ playerName, onStartGame, onPregameTalk }: CompletionCardProps) {
+export function CompletionCard({ playerName, onStartGame, onPregameTalk, onExploreDashboard }: CompletionCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, x: 50 }}
@@ -81,6 +82,17 @@ export function CompletionCard({ playerName, onStartGame, onPregameTalk }: Compl
           >
             <MessageCircle className="w-4 h-4" />
             Pregame Talk
+          </Button>
+        )}
+
+        {onExploreDashboard && (
+          <Button
+            onClick={onExploreDashboard}
+            variant="ghost"
+            className="w-full h-10 text-sm text-muted-foreground hover:text-foreground gap-2"
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            Explore the Dashboard
           </Button>
         )}
       </motion.div>
