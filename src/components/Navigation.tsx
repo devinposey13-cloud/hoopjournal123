@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Gamepad2, Settings, Shield, CalendarRange } from 'lucide-react';
+import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Gamepad2, Settings, Shield, CalendarRange, UserCircle } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 import { SeasonSelector } from './SeasonSelector';
 import { Season } from '@/types/basketball';
@@ -14,7 +14,7 @@ import {
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 
-export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin';
+export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile';
 
 interface NavigationProps {
   activeTab: Tab;
@@ -37,13 +37,14 @@ const primaryTabs = [
 
 // Secondary tabs shown in the "More" dropdown
 const moreTabs = [
+  { id: 'profile' as Tab, label: 'Profile', icon: UserCircle, route: '/profile' },
   { id: 'minigames' as Tab, label: 'Play', icon: Gamepad2 },
   { id: 'settings' as Tab, label: 'Settings', icon: Settings },
 ];
 
 // Helper to check if a tab is in the "More" menu
 const isMoreTab = (tab: Tab): boolean => {
-  return ['minigames', 'settings', 'admin'].includes(tab);
+  return ['profile', 'minigames', 'settings', 'admin'].includes(tab);
 };
 
 // Map display tabs to actual tabs
@@ -87,8 +88,12 @@ export function Navigation({
     }
   };
 
-  const handleMoreItemClick = (tabId: Tab) => {
-    onTabChange(tabId);
+  const handleMoreItemClick = (item: typeof moreTabs[0]) => {
+    if ('route' in item && item.route) {
+      navigate(item.route);
+    } else {
+      onTabChange(item.id);
+    }
     setMoreMenuOpen(false);
   };
 
@@ -160,7 +165,7 @@ export function Navigation({
                   return (
                     <DropdownMenuItem
                       key={tab.id}
-                      onClick={() => handleMoreItemClick(tab.id)}
+                      onClick={() => handleMoreItemClick(tab)}
                       className={cn(
                         'flex items-center gap-3 px-3 py-2.5 cursor-pointer',
                         isActive && 'bg-primary/10 text-primary'

@@ -1,5 +1,6 @@
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { CalendarDays, Video, Trophy, Gamepad2, Settings, Shield } from 'lucide-react';
+import { Gamepad2, Settings, Shield, UserCircle } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -9,7 +10,7 @@ import {
 import { SeasonSelector } from './SeasonSelector';
 import { Season } from '@/types/basketball';
 
-export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin';
+export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile';
 
 interface MoreMenuProps {
   open: boolean;
@@ -24,8 +25,9 @@ interface MoreMenuProps {
   onDeleteSeason?: (seasonId: string) => Promise<boolean>;
 }
 
-// Clips and Milestones moved to Progress hub
+// Menu items - Profile added
 const menuItems = [
+  { id: 'profile' as Tab, label: 'Profile', icon: UserCircle, route: '/profile' },
   { id: 'minigames' as Tab, label: 'Play', icon: Gamepad2 },
   { id: 'settings' as Tab, label: 'Settings', icon: Settings },
 ];
@@ -42,9 +44,20 @@ export function MoreMenu({
   onCreateSeason,
   onDeleteSeason,
 }: MoreMenuProps) {
+  const navigate = useNavigate();
+  
   const allItems = isAdmin
     ? [...menuItems, { id: 'admin' as Tab, label: 'Admin', icon: Shield }]
     : menuItems;
+
+  const handleItemClick = (item: typeof menuItems[0]) => {
+    if ('route' in item && item.route) {
+      navigate(item.route);
+      onOpenChange(false);
+    } else {
+      onSelect(item.id);
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -59,7 +72,7 @@ export function MoreMenu({
             return (
               <button
                 key={item.id}
-                onClick={() => onSelect(item.id)}
+                onClick={() => handleItemClick(item)}
                 className={cn(
                   'flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-colors',
                   isActive
