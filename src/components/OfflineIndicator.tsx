@@ -78,7 +78,7 @@ export const OfflineIndicator = () => {
           exit={{ scale: 0, opacity: 0 }}
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
           onClick={() => setIsDismissed(false)}
-          className="fixed top-4 right-4 z-[100] flex items-center gap-2 bg-amber-500 dark:bg-amber-600 text-amber-950 px-3 py-2 rounded-full shadow-lg hover:scale-105 transition-transform"
+          className="fixed top-4 right-4 z-[100] flex items-center gap-2 bg-amber-500 dark:bg-amber-600 text-amber-950 px-3 py-2 rounded-full shadow-lg hover:scale-110 transition-transform animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]"
           aria-label="You're offline - tap to expand"
         >
           <WifiOff className="h-4 w-4" />
