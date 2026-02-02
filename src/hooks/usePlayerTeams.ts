@@ -20,17 +20,20 @@ export function usePlayerTeams() {
   const [loading, setLoading] = useState(true);
 
   const fetchTeams = async () => {
+    // If no user or profile is still loading, don't fetch yet but keep loading state appropriately
     if (!user) {
       setTeams([]);
       setLoading(false);
       return;
     }
 
-    // Wait for profile to load before fetching teams
+    // Wait for profile context to be ready before fetching
     if (profileLoading) {
+      // Don't set loading to false yet - we're still waiting
       return;
     }
 
+    setLoading(true);
     try {
       let query = supabase
         .from('player_teams')
