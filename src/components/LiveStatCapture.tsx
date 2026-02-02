@@ -682,7 +682,7 @@ export function LiveStatCapture({
 
   // Handle win/loss selection - require final score first
   const handleWinLossClick = (isWinSelection: boolean) => {
-    if (navigator.vibrate) navigator.vibrate(50);
+    triggerHaptic('success'); // Double-pulse haptic for satisfying feedback
     setPendingWinSelection(isWinSelection);
     if (!finalScore) {
       // Pre-fill with player's total points as "us"
