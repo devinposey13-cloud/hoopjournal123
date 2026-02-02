@@ -354,6 +354,27 @@ export function LiveStatCapture({
         newStats[action.type] += action.value;
       }
       
+      // Check for foul trouble (4+ fouls) - combine with other half stats
+      if (action.type === 'fouls') {
+        const otherHalfFouls = currentHalf === 1 ? secondHalfStats.fouls : firstHalfStats.fouls;
+        const newTotalFouls = newStats.fouls + otherHalfFouls;
+        
+        if (newTotalFouls >= 4) {
+          // Triple haptic pattern for foul trouble warning
+          triggerHaptic('error');
+          setTimeout(() => triggerHaptic('error'), 150);
+          
+          const foulMessage = newTotalFouls === 5 
+            ? '⚠️ FOULED OUT! 5 fouls' 
+            : `⚠️ Foul trouble! ${newTotalFouls} fouls`;
+          
+          toast.warning(foulMessage, {
+            duration: 3000,
+            icon: '🏀',
+          });
+        }
+      }
+      
       return newStats;
     });
     
@@ -375,7 +396,7 @@ export function LiveStatCapture({
     
     // Clear the last action indicator after a moment
     setTimeout(() => setLastAction(null), 1500);
-  }, [currentHalf, setCurrentStats, playSound, soundEffectsEnabled]);
+  }, [currentHalf, setCurrentStats, playSound, soundEffectsEnabled, triggerHaptic, firstHalfStats.fouls, secondHalfStats.fouls]);
 
   const undoLast = useCallback(() => {
     if (history.length === 0) return;
