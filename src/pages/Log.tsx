@@ -1,22 +1,33 @@
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { LogSection, LogSubTab } from '@/components/LogSection';
 import { useCloudData } from '@/hooks/useCloudData';
 import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdmin } from '@/hooks/useAdmin';
 import { DashboardSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Navigation, Tab } from '@/components/Navigation';
+import { BottomNavigation } from '@/components/BottomNavigation';
+import { cn } from '@/lib/utils';
 
 const validSubTabs: LogSubTab[] = ['history', 'schedule', 'add'];
 
 export default function Log() {
   const { subTab } = useParams<{ subTab?: string }>();
+  const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { isAdmin } = useAdmin();
   const isMobile = useIsMobile();
   
   const {
     games,
     schedule,
     profile,
+    seasons,
+    activeSeason,
+    switchSeason,
+    createSeason,
+    deleteSeason,
     addGame,
     deleteGame,
     updateGameTeam,
@@ -28,6 +39,30 @@ export default function Log() {
   } = useCloudData();
   
   const { teams } = usePlayerTeams();
+
+  // Handle tab change from navigation
+  const handleTabChange = (tab: Tab) => {
+    if (tab === 'games') {
+      navigate('/log/history');
+    } else if (tab === 'stats') {
+      navigate('/');
+    } else if (tab === 'dashboard') {
+      navigate('/');
+    } else {
+      // For other tabs, navigate to dashboard and let it handle the tab
+      navigate('/');
+    }
+  };
+
+  // Handle season change - wrap switchSeason
+  const handleSeasonChange = (seasonId: string) => {
+    switchSeason(seasonId);
+  };
+
+  // Handle create season - wrap to match expected signature (Promise<void>)
+  const handleCreateSeason = async (name: string): Promise<void> => {
+    await createSeason(name);
+  };
 
   // Redirect to login if not authenticated
   if (!authLoading && !user) {
@@ -50,8 +85,23 @@ export default function Log() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 pb-24 md:pb-6">
+    <div className={cn("min-h-screen bg-background", isMobile ? "pb-20" : "")}>
+      {/* Desktop Navigation */}
+      {!isMobile && (
+        <Navigation
+          activeTab="games"
+          onTabChange={handleTabChange}
+          seasons={seasons}
+          activeSeason={activeSeason}
+          onSeasonChange={handleSeasonChange}
+          onCreateSeason={handleCreateSeason}
+          onDeleteSeason={deleteSeason}
+          isAdmin={isAdmin}
+        />
+      )}
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-6">
         <LogSection
           games={games}
           schedule={schedule}
@@ -68,6 +118,20 @@ export default function Log() {
           initialSubTab={initialSubTab}
         />
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <BottomNavigation
+          activeTab="games"
+          onTabChange={handleTabChange}
+          seasons={seasons}
+          activeSeason={activeSeason}
+          onSeasonChange={handleSeasonChange}
+          onCreateSeason={handleCreateSeason}
+          onDeleteSeason={deleteSeason}
+          isAdmin={isAdmin}
+        />
+      )}
     </div>
   );
 }
