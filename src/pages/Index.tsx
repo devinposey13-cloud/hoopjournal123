@@ -78,6 +78,7 @@ export default function Index() {
   const [showRingOfHonorModal, setShowRingOfHonorModal] = useState(false);
   const [hasShownRingOfHonorModal, setHasShownRingOfHonorModal] = useState(false);
   const [coachPrefillPrompt, setCoachPrefillPrompt] = useState<string | undefined>();
+  const [autoOpenAddGame, setAutoOpenAddGame] = useState(false);
   const { user, loading: authLoading, signOut } = useAuth();
   const { teams } = usePlayerTeams();
   const { isAdmin } = useAdmin();
@@ -195,8 +196,9 @@ export default function Index() {
     
     // Handle completion action - route user appropriately
     if (action === 'start_game') {
-      // Navigate to Log tab to add first game
-      setActiveTab('log');
+      // Navigate to Games/Log tab and open Add Game dialog
+      setActiveTab('games');
+      setAutoOpenAddGame(true);
     } else if (action === 'pregame_talk') {
       // Navigate to Coach tab with pregame context
       setCoachPrefillPrompt("Hey Coach, I have a game coming up. Can you help me get mentally ready?");
@@ -705,6 +707,8 @@ export default function Index() {
             updateScheduledGame={updateScheduledGame}
             deleteScheduledGame={deleteScheduledGame}
             bulkImportScheduledGames={bulkImportScheduledGames}
+            autoOpenAddGame={autoOpenAddGame}
+            onAutoOpenAddGameConsumed={() => setAutoOpenAddGame(false)}
           />
         )}
 

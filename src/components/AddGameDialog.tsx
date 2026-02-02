@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,10 +14,20 @@ import { GameStatsForm } from './GameStatsForm';
 interface AddGameDialogProps {
   onAddGame: (game: Omit<GameStats, 'id'>) => Promise<any> | any;
   isMobile?: boolean;
+  autoOpen?: boolean;
+  onAutoOpenConsumed?: () => void;
 }
 
-export function AddGameDialog({ onAddGame, isMobile }: AddGameDialogProps) {
+export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsumed }: AddGameDialogProps) {
   const [open, setOpen] = useState(false);
+
+  // Handle auto-open from external trigger (e.g., onboarding completion)
+  useEffect(() => {
+    if (autoOpen && !open) {
+      setOpen(true);
+      onAutoOpenConsumed?.();
+    }
+  }, [autoOpen, open, onAutoOpenConsumed]);
 
   const handleSubmit = async (gameData: Omit<GameStats, 'id'>) => {
     await onAddGame(gameData);
