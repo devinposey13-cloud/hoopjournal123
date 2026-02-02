@@ -22,8 +22,8 @@ export const EFFICIENCY_BONUSES = {
 
 // Performance tier thresholds and XP ranges
 export const PERFORMANCE_TIERS: Record<PerformanceTier, { min: number; max: number; xpMin: number; xpMax: number }> = {
-  struggling: { min: 0, max: 15, xpMin: 50, xpMax: 100 },
-  developing: { min: 16, max: 30, xpMin: 100, xpMax: 200 },
+  starter: { min: 0, max: 15, xpMin: 50, xpMax: 100 },
+  rising: { min: 16, max: 30, xpMin: 100, xpMax: 200 },
   solid: { min: 31, max: 50, xpMin: 200, xpMax: 350 },
   great: { min: 51, max: 75, xpMin: 350, xpMax: 500 },
   elite: { min: 76, max: 100, xpMin: 500, xpMax: 700 },
@@ -127,8 +127,8 @@ export function getPerformanceTier(score: number): PerformanceTier {
   if (score >= PERFORMANCE_TIERS.elite.min) return 'elite';
   if (score >= PERFORMANCE_TIERS.great.min) return 'great';
   if (score >= PERFORMANCE_TIERS.solid.min) return 'solid';
-  if (score >= PERFORMANCE_TIERS.developing.min) return 'developing';
-  return 'struggling';
+  if (score >= PERFORMANCE_TIERS.rising.min) return 'rising';
+  return 'starter';
 }
 
 /**
@@ -165,8 +165,8 @@ export function getTierColorClass(tier: PerformanceTier): string {
     case 'elite': return 'text-purple-400';
     case 'great': return 'text-blue-400';
     case 'solid': return 'text-green-400';
-    case 'developing': return 'text-orange-400';
-    case 'struggling': return 'text-muted-foreground';
+    case 'rising': return 'text-orange-400';
+    case 'starter': return 'text-muted-foreground';
   }
 }
 
@@ -179,8 +179,8 @@ export function getTierGradient(tier: PerformanceTier): string {
     case 'elite': return 'from-purple-500 to-pink-500';
     case 'great': return 'from-blue-500 to-cyan-500';
     case 'solid': return 'from-green-500 to-emerald-500';
-    case 'developing': return 'from-orange-500 to-amber-500';
-    case 'struggling': return 'from-gray-500 to-slate-500';
+    case 'rising': return 'from-orange-500 to-amber-500';
+    case 'starter': return 'from-gray-500 to-slate-500';
   }
 }
 
