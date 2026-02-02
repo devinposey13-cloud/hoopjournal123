@@ -655,42 +655,47 @@ export function AdminPanel() {
       </div>
 
       <Tabs defaultValue="approvals" className="space-y-4">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="approvals" className="gap-2">
-            <UserCheck className="w-4 h-4" />
-            Approvals
+        <TabsList className="w-full h-auto flex-wrap gap-1 p-1 md:flex-nowrap md:h-10">
+          <TabsTrigger value="approvals" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0">
+            <UserCheck className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Approvals</span>
+            <span className="sm:hidden">Approve</span>
             {pendingApprovals > 0 && (
-              <Badge variant="destructive" className="ml-1">{pendingApprovals}</Badge>
+              <Badge variant="destructive" className="ml-0.5 h-4 w-4 p-0 text-[10px] flex items-center justify-center md:h-5 md:w-auto md:px-1.5">{pendingApprovals}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="users" className="gap-2">
-            <Users className="w-4 h-4" />
-            Users
+          <TabsTrigger value="users" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0">
+            <Users className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span>Users</span>
           </TabsTrigger>
-          <TabsTrigger value="reports" className="gap-2">
-            <Flag className="w-4 h-4" />
-            Content Reports
+          <TabsTrigger value="reports" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0">
+            <Flag className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Reports</span>
+            <span className="sm:hidden">Flag</span>
             {pendingReports > 0 && (
-              <Badge variant="destructive" className="ml-1">{pendingReports}</Badge>
+              <Badge variant="destructive" className="ml-0.5 h-4 w-4 p-0 text-[10px] flex items-center justify-center md:h-5 md:w-auto md:px-1.5">{pendingReports}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="password-requests" className="gap-2">
-            <Phone className="w-4 h-4" />
-            Password Requests
+          <TabsTrigger value="password-requests" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0">
+            <Phone className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Password</span>
+            <span className="sm:hidden">Pass</span>
             {pendingPasswordRequests > 0 && (
-              <Badge variant="destructive" className="ml-1">{pendingPasswordRequests}</Badge>
+              <Badge variant="destructive" className="ml-0.5 h-4 w-4 p-0 text-[10px] flex items-center justify-center md:h-5 md:w-auto md:px-1.5">{pendingPasswordRequests}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="feedback" className="gap-2">
-            <MessageSquare className="w-4 h-4" />
-            Feedback
+          <TabsTrigger value="feedback" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0">
+            <MessageSquare className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Feedback</span>
+            <span className="sm:hidden">Feed</span>
             {unreadFeedback > 0 && (
-              <Badge variant="destructive" className="ml-1">{unreadFeedback}</Badge>
+              <Badge variant="destructive" className="ml-0.5 h-4 w-4 p-0 text-[10px] flex items-center justify-center md:h-5 md:w-auto md:px-1.5">{unreadFeedback}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="metrics" className="gap-2">
-            <BarChart3 className="w-4 h-4" />
-            Metrics
+          <TabsTrigger value="metrics" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0">
+            <BarChart3 className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Metrics</span>
+            <span className="sm:hidden">Stats</span>
           </TabsTrigger>
         </TabsList>
 
