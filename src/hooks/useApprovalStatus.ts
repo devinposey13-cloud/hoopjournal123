@@ -16,12 +16,13 @@ export function useApprovalStatus() {
     }
 
     try {
-      // First check player_settings for is_approved flag
+      // Check player_settings for is_approved flag
+      // With multi-profile support, users can have multiple rows - check if ANY profile is approved
       const { data: settingsData, error: settingsError } = await supabase
         .from('player_settings')
         .select('is_approved, username')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .order('created_at', { ascending: true });
 
       if (settingsError) {
         console.error('Error checking approval status:', settingsError);
@@ -31,15 +32,18 @@ export function useApprovalStatus() {
       }
 
       // If no settings data exists yet (trigger may not have completed), user needs approval
-      if (!settingsData) {
+      if (!settingsData || settingsData.length === 0) {
         console.log('No player_settings found - user needs approval');
         setIsApproved(false);
         setLoading(false);
         return;
       }
 
-      // If already approved, we're done
-      if (settingsData.is_approved) {
+      // Get the first profile (original) for approval check and username
+      const primaryProfile = settingsData[0];
+
+      // If any profile is approved, user is approved (use the first/original profile's status)
+      if (primaryProfile.is_approved) {
         setIsApproved(true);
         setLoading(false);
         return;
@@ -74,7 +78,7 @@ export function useApprovalStatus() {
         // For OAuth users: Check if admin notification was already sent for this session
         // The trigger creates records but can't call edge functions
         // Send notification if we haven't already in this session
-        if (settingsData && !notificationSentRef.current.has(user.id)) {
+        if (primaryProfile && !notificationSentRef.current.has(user.id)) {
           // Check approval request status to see if it's still pending (newly created)
           const { data: approvalData } = await supabase
             .from('account_approval_requests')
@@ -94,7 +98,7 @@ export function useApprovalStatus() {
               try {
                 await supabase.functions.invoke('notify-admin-signup', {
                   body: {
-                    username: settingsData.username || 'Unknown',
+                    username: primaryProfile.username || 'Unknown',
                     email: user.email || null,
                   },
                 });
