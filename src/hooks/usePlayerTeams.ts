@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveProfile } from './useActiveProfile';
 import { toast } from 'sonner';
 
 export interface PlayerTeam {
@@ -9,10 +10,12 @@ export interface PlayerTeam {
   name: string;
   is_primary: boolean;
   created_at: string;
+  profile_id: string | null;
 }
 
 export function usePlayerTeams() {
   const { user } = useAuth();
+  const { activeProfileId } = useActiveProfile();
   const [teams, setTeams] = useState<PlayerTeam[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,10 +27,17 @@ export function usePlayerTeams() {
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('player_teams')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user.id);
+
+      // Scope to active profile if available, also include legacy data (null profile_id)
+      if (activeProfileId) {
+        query = query.or(`profile_id.eq.${activeProfileId},profile_id.is.null`);
+      }
+
+      const { data, error } = await query
         .order('is_primary', { ascending: false })
         .order('created_at', { ascending: true });
 
@@ -42,24 +52,30 @@ export function usePlayerTeams() {
 
   useEffect(() => {
     fetchTeams();
-  }, [user]);
+  }, [user, activeProfileId]);
 
   const addTeam = async (name: string, isPrimary: boolean = false) => {
     if (!user) return null;
 
     try {
-      // If setting as primary, unset other primary teams first
+      // If setting as primary, unset other primary teams first (scoped to profile)
       if (isPrimary) {
-        await supabase
+        let updateQuery = supabase
           .from('player_teams')
           .update({ is_primary: false })
           .eq('user_id', user.id);
+        
+        if (activeProfileId) {
+          updateQuery = updateQuery.eq('profile_id', activeProfileId);
+        }
+        await updateQuery;
       }
 
       const { data, error } = await supabase
         .from('player_teams')
         .insert({
           user_id: user.id,
+          profile_id: activeProfileId,
           name: name.trim(),
           is_primary: isPrimary || teams.length === 0, // First team is always primary
         })
@@ -82,12 +98,17 @@ export function usePlayerTeams() {
     if (!user) return false;
 
     try {
-      // If setting as primary, unset other primary teams first
+      // If setting as primary, unset other primary teams first (scoped to profile)
       if (updates.is_primary) {
-        await supabase
+        let updateQuery = supabase
           .from('player_teams')
           .update({ is_primary: false })
           .eq('user_id', user.id);
+        
+        if (activeProfileId) {
+          updateQuery = updateQuery.eq('profile_id', activeProfileId);
+        }
+        await updateQuery;
       }
 
       const { error } = await supabase
