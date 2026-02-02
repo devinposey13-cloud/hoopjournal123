@@ -35,17 +35,16 @@ export function GoalsCard({ value, onNext }: GoalsCardProps) {
       className="flex flex-col items-center text-center px-6"
     >
       <h2 
-        className="text-3xl md:text-4xl mb-4 text-foreground"
-        style={{ fontFamily: "'Dancing Script', cursive" }}
+        className="text-2xl md:text-3xl mb-2 text-foreground font-semibold"
       >
-        What are you chasing this season?
+        What do you want your Coach to help you with most?
       </h2>
       
-      <p className="text-muted-foreground mb-6 text-sm">
-        Select all that apply
+      <p className="text-muted-foreground mb-5 text-sm">
+        Your Coach will prioritize feedback around this.
       </p>
 
-      <div className="grid grid-cols-2 gap-3 w-full max-w-sm mb-6">
+      <div className="grid grid-cols-2 gap-3 w-full max-w-sm mb-4">
         {goals.map((goal, index) => (
           <motion.button
             key={goal.id}
@@ -64,6 +63,10 @@ export function GoalsCard({ value, onNext }: GoalsCardProps) {
           </motion.button>
         ))}
       </div>
+
+      <p className="text-xs text-muted-foreground mb-4 opacity-75">
+        You can change this anytime.
+      </p>
 
       <Button
         onClick={() => onNext(selected)}

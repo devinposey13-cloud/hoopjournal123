@@ -30,7 +30,7 @@ import { useRingOfHonorEligibility } from '@/hooks/useRingOfHonorEligibility';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { PendingApproval } from '@/components/PendingApproval';
-import { OnboardingFlow, OnboardingData } from '@/components/OnboardingFlow';
+import { OnboardingFlow, OnboardingData, OnboardingCompletionAction } from '@/components/OnboardingFlow';
 import { EmptyDashboardWelcome } from '@/components/EmptyDashboardWelcome';
 import { TodayCard } from '@/components/dashboard/TodayCard';
 import { DashboardQuickStats } from '@/components/dashboard/DashboardQuickStats';
@@ -179,7 +179,7 @@ export default function Index() {
   }
 
   // Show onboarding flow after intro
-  const handleOnboardingComplete = async (data: OnboardingData) => {
+  const handleOnboardingComplete = async (data: OnboardingData, action?: OnboardingCompletionAction) => {
     // Save onboarding data to profile
     await updateProfile({
       name: data.name,
@@ -192,6 +192,16 @@ export default function Index() {
     // Mark that user just completed onboarding for Coach AI intro
     setJustCompletedOnboarding(true);
     completeOnboarding();
+    
+    // Handle completion action - route user appropriately
+    if (action === 'start_game') {
+      // Navigate to Log tab to add first game
+      setActiveTab('log');
+    } else if (action === 'pregame_talk') {
+      // Navigate to Coach tab with pregame context
+      setCoachPrefillPrompt("Hey Coach, I have a game coming up. Can you help me get mentally ready?");
+      setActiveTab('coach');
+    }
   };
 
   if (showOnboarding) {
