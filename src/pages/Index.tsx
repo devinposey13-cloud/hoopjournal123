@@ -36,6 +36,7 @@ import { TodayCard } from '@/components/dashboard/TodayCard';
 import { DashboardQuickStats } from '@/components/dashboard/DashboardQuickStats';
 import { DailyInsight } from '@/components/dashboard/DailyInsight';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
+import { PlayerCard } from '@/components/dashboard/PlayerCard';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -517,6 +518,14 @@ export default function Index() {
                 <div className="px-6 md:px-10 py-8 space-y-6">
                   <JournalHeader playerName={profile.name} className="mb-2 animate-fade-in" />
                   
+                  {/* Player Card */}
+                  <AnimatedSection delay={0.02}>
+                    <PlayerCard
+                      profile={profile}
+                      teamName={teams.find(t => t.is_primary)?.name}
+                      tierAchievements={achievedTiers.map(t => ({ tier: t.tier }))}
+                    />
+                  </AnimatedSection>
                   {/* Team Filter */}
                   {teams.length > 0 && (
                     <div className="flex items-center justify-end">
