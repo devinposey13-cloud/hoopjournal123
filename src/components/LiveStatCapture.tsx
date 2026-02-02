@@ -144,6 +144,8 @@ export function LiveStatCapture({
   const [finalScoreInput, setFinalScoreInput] = useState({ us: '', them: '' });
   const [pendingWinSelection, setPendingWinSelection] = useState<boolean | null>(null);
   const [showFinalScoreDialog, setShowFinalScoreDialog] = useState(false);
+  const [editingStat, setEditingStat] = useState<{ key: keyof LiveStats; label: string } | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { playSound } = useSoundEffects();
   const { triggerHaptic } = useHapticFeedback();
@@ -467,6 +469,42 @@ export function LiveStatCapture({
     onShake: handleShakeUndo,
   });
 
+  // Handle direct stat editing via long-press
+  const handleStartEditStat = useCallback((key: keyof LiveStats, label: string) => {
+    triggerHaptic('medium');
+    setEditingStat({ key, label });
+    setEditingValue(String(currentStats[key]));
+  }, [currentStats, triggerHaptic]);
+
+  const handleSaveEditStat = useCallback(() => {
+    if (!editingStat) return;
+    
+    const newValue = parseInt(editingValue) || 0;
+    const oldValue = currentStats[editingStat.key];
+    
+    // For compound stats, we need special handling
+    if (editingStat.key === 'points') {
+      // Points are derived from shots, so we adjust the difference
+      const diff = newValue - oldValue;
+      setCurrentStats(prev => ({ ...prev, points: Math.max(0, prev.points + diff) }));
+    } else if (editingStat.key === 'rebounds') {
+      // Adjust total rebounds
+      const diff = newValue - oldValue;
+      setCurrentStats(prev => ({ 
+        ...prev, 
+        rebounds: Math.max(0, newValue),
+        // Proportionally adjust defensive rebounds
+        defensiveRebounds: Math.max(0, prev.defensiveRebounds + diff)
+      }));
+    } else {
+      setCurrentStats(prev => ({ ...prev, [editingStat.key]: Math.max(0, newValue) }));
+    }
+    
+    toast.success(`${editingStat.label} updated to ${newValue}`, { duration: 1500 });
+    setEditingStat(null);
+    setEditingValue('');
+  }, [editingStat, editingValue, currentStats, setCurrentStats]);
+
   const handlePhotoCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -757,58 +795,75 @@ export function LiveStatCapture({
           </Button>
         </div>
 
-        {/* Current Half Stats Display - Prominent */}
+        {/* Current Half Stats Display - Prominent & Editable */}
         <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-lg p-3 border border-primary/20">
           <div className="text-center mb-2">
             <span className="text-xs font-semibold text-primary uppercase tracking-wider">
               {currentHalf === 1 ? '1st Half' : '2nd Half'} Stats
             </span>
+            <p className="text-[9px] text-muted-foreground mt-0.5">Hold to edit</p>
           </div>
           <div className="grid grid-cols-5 gap-2 text-center">
-            <div>
-              <p className="text-xl font-bold text-foreground">{currentStats.points}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">PTS</p>
-            </div>
-            <div>
-              <p className="text-xl font-bold text-foreground">{currentStats.rebounds}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">REB</p>
-            </div>
-            <div>
-              <p className="text-xl font-bold text-foreground">{currentStats.assists}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">AST</p>
-            </div>
-            <div>
-              <p className="text-xl font-bold text-foreground">{currentStats.steals}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">STL</p>
-            </div>
-            <div>
-              <p className="text-xl font-bold text-foreground">{currentStats.blocks}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">BLK</p>
-            </div>
+            <EditableStatCell 
+              value={currentStats.points} 
+              label="PTS" 
+              statKey="points"
+              onLongPress={handleStartEditStat}
+            />
+            <EditableStatCell 
+              value={currentStats.rebounds} 
+              label="REB" 
+              statKey="rebounds"
+              onLongPress={handleStartEditStat}
+            />
+            <EditableStatCell 
+              value={currentStats.assists} 
+              label="AST" 
+              statKey="assists"
+              onLongPress={handleStartEditStat}
+            />
+            <EditableStatCell 
+              value={currentStats.steals} 
+              label="STL" 
+              statKey="steals"
+              onLongPress={handleStartEditStat}
+            />
+            <EditableStatCell 
+              value={currentStats.blocks} 
+              label="BLK" 
+              statKey="blocks"
+              onLongPress={handleStartEditStat}
+            />
           </div>
           <div className="grid grid-cols-4 gap-2 text-center mt-2 pt-2 border-t border-primary/10">
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">
-                {currentStats.fgMade}/{currentStats.fgAttempted}
-              </p>
-              <p className="text-[9px] text-muted-foreground/70 uppercase">2PT</p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">
-                {currentStats.threePtMade}/{currentStats.threePtAttempted}
-              </p>
-              <p className="text-[9px] text-muted-foreground/70 uppercase">3PT</p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">
-                {currentStats.ftMade}/{currentStats.ftAttempted}
-              </p>
-              <p className="text-[9px] text-muted-foreground/70 uppercase">FT</p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground">{currentStats.turnovers}</p>
-              <p className="text-[9px] text-muted-foreground/70 uppercase">TO</p>
-            </div>
+            <EditableStatCell 
+              value={`${currentStats.fgMade}/${currentStats.fgAttempted}`} 
+              label="2PT" 
+              statKey="fgMade"
+              onLongPress={handleStartEditStat}
+              small
+            />
+            <EditableStatCell 
+              value={`${currentStats.threePtMade}/${currentStats.threePtAttempted}`} 
+              label="3PT" 
+              statKey="threePtMade"
+              onLongPress={handleStartEditStat}
+              small
+            />
+            <EditableStatCell 
+              value={`${currentStats.ftMade}/${currentStats.ftAttempted}`} 
+              label="FT" 
+              statKey="ftMade"
+              onLongPress={handleStartEditStat}
+              small
+            />
+            <EditableStatCell 
+              value={currentStats.turnovers} 
+              label="TO" 
+              statKey="turnovers"
+              onLongPress={handleStartEditStat}
+              small
+            />
           </div>
         </div>
 
@@ -1237,6 +1292,128 @@ export function LiveStatCapture({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Stat Dialog */}
+      <AlertDialog open={!!editingStat} onOpenChange={(open) => !open && setEditingStat(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Edit {editingStat?.label}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter the correct value for this stat.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Input
+              type="number"
+              min="0"
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              className="text-center text-2xl font-bold h-14"
+              autoFocus
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setEditingStat(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleSaveEditStat}
+              className="gradient-primary"
+            >
+              Save
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+// Editable stat cell with long-press to edit
+interface EditableStatCellProps {
+  value: number | string;
+  label: string;
+  statKey: keyof LiveStats;
+  onLongPress: (key: keyof LiveStats, label: string) => void;
+  small?: boolean;
+}
+
+function EditableStatCell({ value, label, statKey, onLongPress, small }: EditableStatCellProps) {
+  const pressTimer = useRef<NodeJS.Timeout | null>(null);
+  const [isPressing, setIsPressing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const pressDuration = 600; // ms
+
+  const handlePressStart = useCallback(() => {
+    setIsPressing(true);
+    setProgress(0);
+    
+    const startTime = Date.now();
+    const updateProgress = () => {
+      const elapsed = Date.now() - startTime;
+      const newProgress = Math.min((elapsed / pressDuration) * 100, 100);
+      setProgress(newProgress);
+      
+      if (newProgress < 100) {
+        pressTimer.current = setTimeout(updateProgress, 16);
+      } else {
+        onLongPress(statKey, label);
+        setIsPressing(false);
+        setProgress(0);
+      }
+    };
+    
+    pressTimer.current = setTimeout(updateProgress, 16);
+  }, [onLongPress, statKey, label, pressDuration]);
+
+  const handlePressEnd = useCallback(() => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+    setIsPressing(false);
+    setProgress(0);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (pressTimer.current) {
+        clearTimeout(pressTimer.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div
+      className={cn(
+        "relative cursor-pointer select-none touch-manipulation rounded-md transition-all",
+        isPressing && "bg-primary/20 scale-95"
+      )}
+      onMouseDown={handlePressStart}
+      onMouseUp={handlePressEnd}
+      onMouseLeave={handlePressEnd}
+      onTouchStart={handlePressStart}
+      onTouchEnd={handlePressEnd}
+    >
+      {/* Progress indicator */}
+      {isPressing && (
+        <div 
+          className="absolute bottom-0 left-0 h-0.5 bg-primary rounded-full transition-none"
+          style={{ width: `${progress}%` }}
+        />
+      )}
+      <p className={cn(
+        "font-bold text-foreground",
+        small ? "text-sm" : "text-xl"
+      )}>
+        {value}
+      </p>
+      <p className={cn(
+        "uppercase",
+        small ? "text-[9px] text-muted-foreground/70" : "text-[10px] text-muted-foreground"
+      )}>
+        {label}
+      </p>
     </div>
   );
 }
