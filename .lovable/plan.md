@@ -1,180 +1,128 @@
 
-# Navigation UI Refactor
+
+# Responsive Navigation: Desktop Top + Mobile Bottom
 
 ## Overview
 
-Refactor the main navigation to a clean, mobile-first 5-tab bottom navigation bar. This change is UI-only and preserves all existing pages, routes, and business logic.
+Add responsive behavior so the **top navigation bar** displays on desktop screens (768px+) and the **bottom navigation bar** displays on mobile screens (<768px). Both components already exist - we just need to conditionally render them.
 
 ---
 
-## New Navigation Structure
+## Current State
 
+| Component | Status | Currently Used |
+|-----------|--------|----------------|
+| `Navigation.tsx` | Exists (top bar) | Not rendered |
+| `BottomNavigation.tsx` | Exists (bottom bar) | Rendered always |
+| `useIsMobile()` hook | Exists | Available but unused for nav |
+
+---
+
+## Changes Required
+
+### File: `src/pages/Index.tsx`
+
+**What changes:**
+1. Import the `Navigation` component (top bar)
+2. Use the existing `useIsMobile()` hook (already imported)
+3. Conditionally render:
+   - Desktop (768px+): Show `Navigation` at top
+   - Mobile (<768px): Show `BottomNavigation` at bottom
+4. Adjust padding based on which nav is shown:
+   - Desktop: `pt-0` (top nav is sticky, not fixed)
+   - Mobile: `pb-20` (bottom nav is fixed)
+
+**Visual Result:**
+
+Desktop (768px and above):
+```text
++---------------------------------------------------------------+
+| [Logo]  [Dashboard][Games][Stats][Schedule]...   [Season ▼]   |
++---------------------------------------------------------------+
+|                        (Page Content)                          |
+|                                                                |
++---------------------------------------------------------------+
+```
+
+Mobile (below 768px):
 ```text
 +---------------------------------------------------------------+
 |                        (Page Content)                          |
+|                                                                |
 +---------------------------------------------------------------+
-|                                                               |
 |   [Dashboard]   [Log]   [Progress]   [Coach]   [More]         |
-|       Home     Book+     TrendUp    MessageCir  MoreHoriz     |
-|                                                               |
 +---------------------------------------------------------------+
 ```
 
-### Tab Mapping
-
-| New Tab | Icon | Routes To |
-|---------|------|-----------|
-| **Dashboard** | `LayoutDashboard` | Current dashboard view (home stats, recent games) |
-| **Log** | `ClipboardPlus` | Current games tab (log/view games) |
-| **Progress** | `TrendingUp` | Current stats tab (statistics page) |
-| **Coach** | `MessageCircle` | Current coach tab (Coach AI) |
-| **More** | `MoreHorizontal` | Sheet/menu with: Schedule, Clips, Milestones, Play, Settings, Admin |
-
 ---
 
-## What Gets Created
+## Technical Implementation
 
-### 1. New Bottom Navigation Component
-**File:** `src/components/BottomNavigation.tsx`
+### Key Code Changes in Index.tsx
 
-A fixed bottom navigation bar that:
-- Stays pinned to the bottom of the screen
-- Shows 5 icons with labels below
-- Highlights the active tab with primary color
-- Works seamlessly on mobile and desktop
-- Includes safe area padding for iOS devices
+```typescript
+// Already imported:
+import { useIsMobile } from '@/hooks/use-mobile';
 
-### 2. "More" Menu Sheet
-**File:** `src/components/MoreMenu.tsx`
+// Add import:
+import { Navigation } from '@/components/Navigation';
 
-A slide-up sheet (using existing Sheet component) containing:
-- Schedule (calendar icon)
-- Clips (video icon)
-- Milestones (trophy icon)
-- Play (gamepad icon)
-- Settings (cog icon)
-- Admin (shield icon) - only if user is admin
-- Season selector at the bottom
+// In component (isMobile is already defined):
+const isMobile = useIsMobile();
 
----
+// In return JSX:
+return (
+  <div className={cn(
+    "min-h-screen bg-background",
+    isMobile ? "pb-20" : ""
+  )}>
+    {/* Desktop: Top Navigation */}
+    {!isMobile && (
+      <Navigation 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab}
+        seasons={seasons}
+        activeSeason={activeSeason}
+        onSeasonChange={switchSeason}
+        onCreateSeason={async (name) => { await createSeason(name); }}
+        onDeleteSeason={deleteSeason}
+        isAdmin={isAdmin}
+      />
+    )}
 
-## What Changes
+    {/* Mobile: Bottom Navigation */}
+    {isMobile && (
+      <BottomNavigation ... />
+    )}
 
-### Navigation.tsx
-- **Kept as-is** for potential desktop use or future reference
-- Could be hidden on mobile, shown on desktop (optional)
-
-### Index.tsx
-- Import new `BottomNavigation` component
-- Replace top Navigation with BottomNavigation (or show both with responsive visibility)
-- Move Season Selector into the More menu
-- Adjust bottom padding on main content area to account for fixed bottom nav (`pb-20` instead of `pb-14`)
-
----
-
-## Visual Design
-
-### Bottom Nav Bar
-```text
-Height: 64px (h-16)
-Background: bg-background/95 backdrop-blur-lg
-Border: border-t border-border
-Position: fixed bottom-0 left-0 right-0
-Safe area: pb-safe (iOS notch support)
+    <main>...</main>
+  </div>
+);
 ```
-
-### Tab Buttons
-```text
-Active: text-primary, icon filled/bold
-Inactive: text-muted-foreground
-Label: text-xs font-medium
-Icon: w-5 h-5
-Spacing: flex-1 (equal distribution)
-```
-
-### More Menu
-```text
-Sheet from bottom
-Max height: 70vh
-Grid layout: 2 columns for menu items
-Each item: icon + label, clickable
-```
-
----
-
-## Files to Create
-
-1. **`src/components/BottomNavigation.tsx`**
-   - Fixed bottom nav with 5 tabs
-   - Handles active state highlighting
-   - Opens MoreMenu sheet when "More" is tapped
-
-2. **`src/components/MoreMenu.tsx`**
-   - Sheet component with secondary navigation items
-   - Season selector embedded
-   - Closes on item selection
 
 ---
 
 ## Files to Modify
 
-1. **`src/components/Navigation.tsx`**
-   - Update Tab type to include new mapping OR keep for desktop
-   - Add "log" and "progress" as valid tab values
-
-2. **`src/pages/Index.tsx`**
-   - Replace/augment Navigation with BottomNavigation
-   - Adjust content padding for bottom nav
-   - Handle tab switching from MoreMenu items
+**`src/pages/Index.tsx`**
+- Add import for `Navigation` component
+- Add conditional rendering based on `isMobile`
+- Update container padding to be responsive
+- Apply same pattern in loading state render
 
 ---
 
-## Tab Type Updates
+## Tab Mapping Note
 
-```typescript
-// Current
-type Tab = 'dashboard' | 'games' | 'stats' | 'schedule' | 'clips' | 
-           'milestones' | 'minigames' | 'coach' | 'settings' | 'admin';
-
-// After (aliases added for clarity)
-type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 
-           'schedule' | 'clips' | 'milestones' | 'minigames' | 
-           'coach' | 'settings' | 'admin';
-
-// Mapping:
-// - 'log' maps to games tab content
-// - 'progress' maps to stats tab content
-```
+The desktop `Navigation` uses actual tab IDs (`games`, `stats`) while the mobile `BottomNavigation` displays friendly names (`Log`, `Progress`) that map to the same tabs. This ensures consistent behavior regardless of which navigation is visible.
 
 ---
 
-## Mobile-First Behavior
+## What Stays Unchanged
 
-- Bottom nav is always visible (except during fullscreen modals like Live Stats)
-- No horizontal scrolling - exactly 5 equal-width tabs
-- Touch-friendly 64px tap targets
-- Smooth transitions between tabs
+- `Navigation.tsx` - No modifications needed
+- `BottomNavigation.tsx` - No modifications needed  
+- `MoreMenu.tsx` - No modifications needed
+- All page content and business logic
+- All existing routes and features
 
----
-
-## What Stays Untouched
-
-- All existing page components (GameCard, StatisticsPage, CoachChat, etc.)
-- All existing hooks and data logic
-- All existing routes in App.tsx
-- All existing features and functionality
-- Database interactions
-- Auth flow
-
----
-
-## Implementation Order
-
-1. Create `BottomNavigation.tsx` with 5 static tabs
-2. Create `MoreMenu.tsx` sheet with secondary items
-3. Update `Navigation.tsx` Tab type to include new values
-4. Update `Index.tsx` to render bottom nav and handle new tab IDs
-5. Adjust page padding for fixed bottom nav
-6. Test on mobile viewport
-
-This is a purely visual navigation refactor with no business logic changes.
