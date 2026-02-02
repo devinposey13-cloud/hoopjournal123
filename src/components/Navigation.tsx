@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, CalendarDays, Video, Trophy, Gamepad2, Settings, Shield } from 'lucide-react';
+import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Video, Trophy, Gamepad2, Settings, Shield } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 import { SeasonSelector } from './SeasonSelector';
 import { Season } from '@/types/basketball';
@@ -26,8 +27,8 @@ interface NavigationProps {
 
 // Primary tabs shown in the main nav bar (matching mobile structure)
 const primaryTabs = [
-  { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'log' as Tab, label: 'Log', icon: ClipboardPlus, actualTab: 'games' as Tab },
+  { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard, route: '/' },
+  { id: 'log' as Tab, label: 'Log', icon: ClipboardPlus, route: '/log/history', actualTab: 'games' as Tab },
   { id: 'progress' as Tab, label: 'Progress', icon: TrendingUp, actualTab: 'stats' as Tab },
   { id: 'coach' as Tab, label: 'Coach', icon: MessageCircle },
 ];
@@ -70,11 +71,19 @@ export function Navigation({
   isAdmin = false,
 }: NavigationProps) {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const displayActiveTab = getDisplayTab(activeTab);
+  // Check if we're on a /log route
+  const isLogRoute = location.pathname.startsWith('/log');
+  const displayActiveTab = isLogRoute ? 'log' : getDisplayTab(activeTab);
 
-  const handleTabClick = (tabId: Tab) => {
-    onTabChange(getActualTab(tabId));
+  const handleTabClick = (tab: typeof primaryTabs[0]) => {
+    if (tab.route) {
+      navigate(tab.route);
+    } else {
+      onTabChange(getActualTab(tab.id));
+    }
   };
 
   const handleMoreItemClick = (tabId: Tab) => {
@@ -108,7 +117,7 @@ export function Navigation({
               return (
                 <button
                   key={tab.id}
-                  onClick={() => handleTabClick(tab.id)}
+                  onClick={() => handleTabClick(tab)}
                   className={cn(
                     'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
                     isActive
