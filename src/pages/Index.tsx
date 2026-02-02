@@ -515,16 +515,27 @@ export default function Index() {
             ) : (
               /* Full journal page wrapper - new command center layout */
               <div className="journal-page rounded-2xl overflow-hidden">
-                <div className="px-6 md:px-10 py-8 space-y-6">
-                  <JournalHeader playerName={profile.name} className="mb-2 animate-fade-in" />
-                  
-                  {/* Player Card */}
+                <div className="px-6 md:px-10 py-6 space-y-6">
+                  {/* Primary Header - Player Card */}
                   <AnimatedSection delay={0.02}>
-                    <PlayerCard
-                      profile={profile}
-                      teamName={teams.find(t => t.is_primary)?.name}
-                      tierAchievements={achievedTiers.map(t => ({ tier: t.tier }))}
-                    />
+                    <div className="relative">
+                      <PlayerCard
+                        profile={profile}
+                        teamName={teams.find(t => t.is_primary)?.name}
+                        tierAchievements={achievedTiers.map(t => ({ tier: t.tier }))}
+                        className="shadow-md"
+                      />
+                      {/* Dear Basketball - Subtle Journal CTA */}
+                      <button
+                        onClick={() => setActiveTab('progress')}
+                        className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
+                        title="Open your basketball journal"
+                      >
+                        <span>✏️</span>
+                        <span className="hidden sm:inline font-medium" style={{ fontFamily: "'Dancing Script', cursive" }}>Dear Basketball</span>
+                        <span className="sm:hidden font-medium">Journal</span>
+                      </button>
+                    </div>
                   </AnimatedSection>
                   {/* Team Filter */}
                   {teams.length > 0 && (
