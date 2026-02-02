@@ -704,9 +704,27 @@ export function LiveStatCapture({
           <p className="text-base font-bold">{totalStats.turnovers}</p>
           <p className="text-[9px] text-muted-foreground uppercase">TO</p>
         </div>
-        <div className="text-center py-1">
-          <p className="text-base font-bold">{totalStats.fouls}</p>
-          <p className="text-[9px] text-muted-foreground uppercase">PF</p>
+        <div className={cn(
+          "text-center py-1 rounded-md transition-all duration-300",
+          totalStats.fouls >= 4 && "bg-red-500/20 ring-1 ring-red-500/50",
+          totalStats.fouls >= 5 && "bg-red-500/30 ring-2 ring-red-500 animate-pulse"
+        )}>
+          <p className={cn(
+            "text-base font-bold transition-colors",
+            totalStats.fouls >= 4 && "text-red-400",
+            totalStats.fouls >= 5 && "text-red-300"
+          )}>
+            {totalStats.fouls}
+            {totalStats.fouls >= 4 && (
+              <span className="ml-0.5 text-[10px]">⚠️</span>
+            )}
+          </p>
+          <p className={cn(
+            "text-[9px] uppercase transition-colors",
+            totalStats.fouls >= 4 ? "text-red-400/80" : "text-muted-foreground"
+          )}>
+            {totalStats.fouls >= 5 ? "OUT" : "PF"}
+          </p>
         </div>
       </div>
 
@@ -982,12 +1000,16 @@ export function LiveStatCapture({
               onPress={() => recordStat({ type: 'turnovers', value: 1, label: 'Turnover' })}
             />
             <StatButton 
-              label="Foul" 
+              label={totalStats.fouls >= 5 ? "Fouled Out!" : totalStats.fouls >= 4 ? `Foul (${totalStats.fouls})` : "Foul"} 
               icon={UserX}
               count={currentStats.fouls}
               variant="danger"
-              emphasis="secondary"
+              emphasis={totalStats.fouls >= 4 ? "primary" : "secondary"}
               onPress={() => recordStat({ type: 'fouls', value: 1, label: 'Personal Foul' })}
+              className={cn(
+                totalStats.fouls >= 4 && "ring-2 ring-red-500/50 shadow-red-500/20 shadow-lg",
+                totalStats.fouls >= 5 && "ring-red-500 animate-pulse"
+              )}
             />
           </div>
         </div>
@@ -1179,9 +1201,10 @@ interface StatButtonProps {
   emphasis?: 'primary' | 'secondary';
   onPress: () => void;
   fullWidth?: boolean;
+  className?: string;
 }
 
-function StatButton({ label, icon: Icon, count, variant, emphasis = 'primary', onPress, fullWidth }: StatButtonProps) {
+function StatButton({ label, icon: Icon, count, variant, emphasis = 'primary', onPress, fullWidth, className }: StatButtonProps) {
   // Primary emphasis = brighter, stronger; Secondary = muted
   const isPrimary = emphasis === 'primary';
   
@@ -1209,7 +1232,8 @@ function StatButton({ label, icon: Icon, count, variant, emphasis = 'primary', o
         'touch-manipulation select-none',
         'min-h-[44px]', // Maintain accessible tap target
         variantClasses[variant],
-        fullWidth && 'col-span-2'
+        fullWidth && 'col-span-2',
+        className
       )}
     >
       {Icon && <Icon className="w-4 h-4" />}
