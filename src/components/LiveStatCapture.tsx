@@ -836,27 +836,18 @@ export function LiveStatCapture({
             />
           </div>
           <div className="grid grid-cols-4 gap-2 text-center mt-2 pt-2 border-t border-primary/10">
-            <EditableStatCell 
-              value={`${currentStats.fgMade}/${currentStats.fgAttempted}`} 
-              label="2PT" 
-              statKey="fgMade"
-              onLongPress={handleStartEditStat}
-              small
-            />
-            <EditableStatCell 
-              value={`${currentStats.threePtMade}/${currentStats.threePtAttempted}`} 
-              label="3PT" 
-              statKey="threePtMade"
-              onLongPress={handleStartEditStat}
-              small
-            />
-            <EditableStatCell 
-              value={`${currentStats.ftMade}/${currentStats.ftAttempted}`} 
-              label="FT" 
-              statKey="ftMade"
-              onLongPress={handleStartEditStat}
-              small
-            />
+            <div className="p-1.5 rounded-md bg-muted/30">
+              <p className="text-sm font-bold">{currentStats.fgMade}/{currentStats.fgAttempted}</p>
+              <p className="text-[9px] text-muted-foreground uppercase">2PT</p>
+            </div>
+            <div className="p-1.5 rounded-md bg-muted/30">
+              <p className="text-sm font-bold">{currentStats.threePtMade}/{currentStats.threePtAttempted}</p>
+              <p className="text-[9px] text-muted-foreground uppercase">3PT</p>
+            </div>
+            <div className="p-1.5 rounded-md bg-muted/30">
+              <p className="text-sm font-bold">{currentStats.ftMade}/{currentStats.ftAttempted}</p>
+              <p className="text-[9px] text-muted-foreground uppercase">FT</p>
+            </div>
             <EditableStatCell 
               value={currentStats.turnovers} 
               label="TO" 
