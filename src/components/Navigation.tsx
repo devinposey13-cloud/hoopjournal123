@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'clips' | 'milestones' | 'minigames' | 'coach' | 'settings' | 'admin';
+export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin';
 
 interface NavigationProps {
   activeTab: Tab;
@@ -33,17 +33,15 @@ const primaryTabs = [
   { id: 'coach' as Tab, label: 'Coach', icon: MessageCircle },
 ];
 
-// Secondary tabs shown in the "More" dropdown (Schedule removed - now part of Log)
+// Secondary tabs shown in the "More" dropdown (Clips/Milestones moved to Progress hub)
 const moreTabs = [
-  { id: 'clips' as Tab, label: 'Clips', icon: Video },
-  { id: 'milestones' as Tab, label: 'Milestones', icon: Trophy },
   { id: 'minigames' as Tab, label: 'Play', icon: Gamepad2 },
   { id: 'settings' as Tab, label: 'Settings', icon: Settings },
 ];
 
-// Helper to check if a tab is in the "More" menu (Schedule removed - now part of Log)
+// Helper to check if a tab is in the "More" menu (Clips/Milestones moved to Progress hub)
 const isMoreTab = (tab: Tab): boolean => {
-  return ['clips', 'milestones', 'minigames', 'settings', 'admin'].includes(tab);
+  return ['minigames', 'settings', 'admin'].includes(tab);
 };
 
 // Map display tabs to actual tabs
