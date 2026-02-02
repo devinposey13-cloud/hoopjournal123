@@ -14,6 +14,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Pricing from "./pages/Pricing";
 import Rewards from "./pages/Rewards";
 import RingOfHonor from "./pages/RingOfHonor";
+import Log from "./pages/Log";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,8 @@ const App = () => (
             <FloatingHomeButton />
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/log" element={<Log />} />
+              <Route path="/log/:subTab" element={<Log />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/rewards" element={<Rewards />} />
               <Route path="/ring-of-honor" element={<RingOfHonor />} />
