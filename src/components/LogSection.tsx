@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { GameCard } from '@/components/GameCard';
-import { ScheduleCard } from '@/components/ScheduleCard';
-import { ScheduleCalendar } from '@/components/ScheduleCalendar';
 import { AddGameDialog } from '@/components/AddGameDialog';
 import { AddScheduleDialog } from '@/components/AddScheduleDialog';
 import { ImportScheduleDialog } from '@/components/ImportScheduleDialog';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
-import { GameStats, ScheduledGame, Season, PlayerTeam } from '@/types/basketball';
+import { ScheduleCalendar } from '@/components/ScheduleCalendar';
+import { ScheduleCard } from '@/components/ScheduleCard';
+import { GameStats, ScheduledGame, PlayerTeam } from '@/types/basketball';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
-import { Radio, Trophy, Users, X } from 'lucide-react';
+import { Radio, Plus, Calendar, MapPin, Clock, ChevronRight, Trophy, Users, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export type LogSubTab = 'history' | 'schedule' | 'add';
 
@@ -82,6 +84,7 @@ export function LogSection({
       }
     }
   }, [location.pathname]);
+
   const [gamesTabTeamFilter, setGamesTabTeamFilter] = useState<string>('all');
   const [teamFilter, setTeamFilter] = useState<string>('all');
   const [tournamentFilter, setTournamentFilter] = useState<string>('all');
@@ -136,6 +139,16 @@ export function LogSection({
       );
     });
   };
+
+  // Get next upcoming game (sorted by date)
+  const nextGame = upcomingGames.length > 0 
+    ? [...upcomingGames].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
+    : null;
+
+  // Get recent games (last 5)
+  const recentGames = [...games]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
 
   // Quick Live Stats handlers
   const handleQuickLiveStatsClick = () => {
@@ -227,30 +240,177 @@ export function LogSection({
         onStartCapture={handleStartQuickCapture}
       />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Game Log</h1>
-          <p className="text-muted-foreground">
-            Track your games and schedule
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            onClick={handleQuickLiveStatsClick}
-            className="gradient-primary gap-2"
+      {/* ===================== CONTEXT ZONE (TOP) ===================== */}
+      <section className="space-y-3">
+        {nextGame ? (
+          <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-primary uppercase tracking-wider mb-1">
+                    {isToday(new Date(nextGame.date)) ? '🏀 Today' : 'Next Game'}
+                  </p>
+                  <h2 className="text-xl font-bold truncate">
+                    vs {nextGame.opponent}
+                  </h2>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {format(new Date(nextGame.date), 'EEE, MMM d')}
+                    </span>
+                    {nextGame.time && (
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" />
+                        {nextGame.time}
+                      </span>
+                    )}
+                    {nextGame.location && (
+                      <span className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span className="truncate max-w-[150px]">{nextGame.location}</span>
+                      </span>
+                    )}
+                  </div>
+                  {nextGame.isHome !== undefined && (
+                    <span className={cn(
+                      "inline-block mt-2 px-2 py-0.5 text-xs font-medium rounded-full",
+                      nextGame.isHome 
+                        ? "bg-green-500/10 text-green-600 dark:text-green-400" 
+                        : "bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                    )}>
+                      {nextGame.isHome ? 'Home' : 'Away'}
+                    </span>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleTabChange('schedule')}
+                  className="shrink-0"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-dashed border-2 border-muted-foreground/20">
+            <CardContent className="p-6 text-center">
+              <p className="text-muted-foreground mb-3">No upcoming games scheduled</p>
+              <AddScheduleDialog 
+                onAddGame={addScheduledGame} 
+                onBulkAddGames={bulkImportScheduledGames} 
+                isMobile={isMobile} 
+              />
+            </CardContent>
+          </Card>
+        )}
+      </section>
+
+      {/* ===================== PRIMARY ACTION ZONE ===================== */}
+      <section className="space-y-3">
+        {/* Primary Action - Start/Resume Live Game */}
+        <Button
+          onClick={handleQuickLiveStatsClick}
+          size="lg"
+          className="w-full h-14 text-lg font-semibold gradient-primary gap-3 shadow-lg hover:shadow-xl transition-shadow"
+        >
+          <Radio className="w-5 h-5" />
+          {todayGames.length > 0 ? 'Start Live Game' : 'Start Live Game'}
+        </Button>
+
+        {/* Secondary Actions */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="w-full">
+            <AddGameDialog onAddGame={addGame} isMobile={false} />
+          </div>
+          <Button 
+            variant="outline" 
+            className="w-full gap-2"
+            onClick={() => handleTabChange('schedule')}
           >
-            <Radio className="w-4 h-4" />
-            <span className="hidden sm:inline">Live Stats</span>
+            <Calendar className="w-4 h-4" />
+            Schedule
           </Button>
         </div>
-      </div>
+      </section>
 
-      {/* Sub-tabs */}
-      <Tabs value={activeSubTab} onValueChange={handleTabChange} className="w-full">
+      {/* ===================== HISTORY ZONE ===================== */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Recent Games</h2>
+          {games.length > 5 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => handleTabChange('history')}
+              className="text-muted-foreground hover:text-foreground gap-1"
+            >
+              View All
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+
+        {recentGames.length === 0 ? (
+          <Card className="border-dashed border-2 border-muted-foreground/20">
+            <CardContent className="p-8 text-center space-y-3">
+              <p className="text-muted-foreground">No games recorded yet</p>
+              <p className="text-sm text-muted-foreground">
+                Start tracking your season by logging your first game!
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {recentGames.map((game) => (
+              <Card 
+                key={game.id} 
+                className="overflow-hidden hover:bg-accent/50 transition-colors cursor-pointer"
+                onClick={() => navigate(`/game/${game.id}`)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "w-2 h-2 rounded-full shrink-0",
+                          game.isWin ? "bg-green-500" : "bg-red-500"
+                        )} />
+                        <span className="font-medium truncate">vs {game.opponent}</span>
+                        <span className={cn(
+                          "text-xs font-semibold px-1.5 py-0.5 rounded",
+                          game.isWin 
+                            ? "bg-green-500/10 text-green-600 dark:text-green-400" 
+                            : "bg-red-500/10 text-red-600 dark:text-red-400"
+                        )}>
+                          {game.isWin ? 'W' : 'L'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {format(new Date(game.date), 'MMM d, yyyy')}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-lg font-bold">{game.points} pts</p>
+                      <p className="text-xs text-muted-foreground">
+                        {game.rebounds} reb • {game.assists} ast
+                      </p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ===================== DETAILED TABS (COLLAPSED BY DEFAULT) ===================== */}
+      <Tabs value={activeSubTab} onValueChange={handleTabChange} className="w-full pt-4 border-t border-border">
         <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="history">History</TabsTrigger>
-          <TabsTrigger value="schedule">Schedule</TabsTrigger>
+          <TabsTrigger value="history">All Games</TabsTrigger>
+          <TabsTrigger value="schedule">Full Schedule</TabsTrigger>
           <TabsTrigger value="add">Add Game</TabsTrigger>
         </TabsList>
 
