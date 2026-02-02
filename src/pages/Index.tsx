@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AnimatePresence } from 'framer-motion';
 import { Navigation, Tab } from '@/components/Navigation';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { PlayerHeader } from '@/components/PlayerHeader';
-import { StatCard } from '@/components/StatCard';
 import { GameCard } from '@/components/GameCard';
-
-import { StatsChart } from '@/components/StatsChart';
 import { AddGameDialog } from '@/components/AddGameDialog';
 import { AddScheduleDialog } from '@/components/AddScheduleDialog';
 import { CoachHub } from '@/components/coach/CoachHub';
@@ -17,7 +15,6 @@ import { JournalHeader } from '@/components/JournalHeader';
 import { AdminPanel } from '@/components/AdminPanel';
 import { GamesHub } from '@/components/games/GamesHub';
 import { ProgressHub } from '@/components/ProgressHub';
-
 import { LogSection } from '@/components/LogSection';
 import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
 import { PostGameXpReveal } from '@/components/xp/PostGameXpReveal';
@@ -35,6 +32,10 @@ import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { PendingApproval } from '@/components/PendingApproval';
 import { OnboardingFlow, OnboardingData } from '@/components/OnboardingFlow';
 import { EmptyDashboardWelcome } from '@/components/EmptyDashboardWelcome';
+import { TodayCard } from '@/components/dashboard/TodayCard';
+import { DashboardQuickStats } from '@/components/dashboard/DashboardQuickStats';
+import { DailyInsight } from '@/components/dashboard/DailyInsight';
+import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -44,7 +45,7 @@ import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import { useRetroactiveXp } from '@/hooks/useRetroactiveXp';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { LogOut, Trophy, X, Radio, Users } from 'lucide-react';
+import { LogOut, Trophy, X, Radio, Users, TrendingUp, MessageSquare, Gamepad2 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton, GamesHubTabSkeleton, CoachTabSkeleton, StatsTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -56,17 +57,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Target,
-  Repeat,
-  Zap,
-  Shield,
-  HandMetal,
-  Percent,
-} from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Index() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const isMobile = useIsMobile();
   const [showQuickLiveStatsDialog, setShowQuickLiveStatsDialog] = useState(false);
@@ -518,17 +512,16 @@ export default function Index() {
                 </div>
               </div>
             ) : (
-              /* Full journal page wrapper - existing content */
+              /* Full journal page wrapper - new command center layout */
               <div className="journal-page rounded-2xl overflow-hidden">
-                <div className="px-6 md:px-10 py-8 space-y-8">
+                <div className="px-6 md:px-10 py-8 space-y-6">
                   <JournalHeader playerName={profile.name} className="mb-2 animate-fade-in" />
                   
-                  <div className="flex items-center justify-end flex-wrap gap-4">
-                    
-                    {/* Team Filter for Dashboard */}
-                    {teams.length > 0 && (
+                  {/* Team Filter */}
+                  {teams.length > 0 && (
+                    <div className="flex items-center justify-end">
                       <Select value={dashboardTeamFilter} onValueChange={setDashboardTeamFilter}>
-                        <SelectTrigger className="w-[180px] bg-background/80">
+                        <SelectTrigger className="w-[160px] bg-background/80">
                           <Users className="w-4 h-4 mr-2 text-muted-foreground" />
                           <SelectValue placeholder="All Teams" />
                         </SelectTrigger>
@@ -542,74 +535,45 @@ export default function Index() {
                           <SelectItem value="unassigned">Unassigned</SelectItem>
                         </SelectContent>
                       </Select>
-                    )}
-                  </div>
-
-                  {/* Player Header - styled for journal */}
-                  <div className="journal-section">
-                    <PlayerHeader 
-                      profile={profile} 
-                      seasonStats={dashboardStats} 
-                      games={dashboardFilteredGames} 
-                      xpProgress={xpProgress}
-                      tierAchievements={achievedTiers}
-                    />
-                  </div>
-
-                  {/* Season Averages */}
-                  <AnimatedSection className="journal-section" delay={0.1}>
-                    <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
-                      <h2 className="journal-heading mb-0">
-                        {dashboardTeamFilter === 'all' ? 'Season Averages' : 'Team Averages'}
-                      </h2>
-                      {dashboardTeamFilter !== 'all' && (
-                        <span className="text-sm text-muted-foreground">
-                          {dashboardFilteredGames.length} game{dashboardFilteredGames.length !== 1 ? 's' : ''}
-                        </span>
-                      )}
                     </div>
-                    <AnimatedContainer className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                      <AnimatedItem>
-                        <StatCard label="Points" value={dashboardStats.avgPoints} icon={Target} className="journal-card" />
-                      </AnimatedItem>
-                      <AnimatedItem>
-                        <StatCard label="Rebounds" value={dashboardStats.avgRebounds} icon={Repeat} className="journal-card" />
-                      </AnimatedItem>
-                      <AnimatedItem>
-                        <StatCard label="Assists" value={dashboardStats.avgAssists} icon={Zap} className="journal-card" />
-                      </AnimatedItem>
-                      <AnimatedItem>
-                        <StatCard label="Steals" value={dashboardStats.avgSteals} icon={Shield} className="journal-card" />
-                      </AnimatedItem>
-                      <AnimatedItem>
-                        <StatCard label="Blocks" value={dashboardStats.avgBlocks} icon={HandMetal} className="journal-card" />
-                      </AnimatedItem>
-                      <AnimatedItem>
-                        <StatCard label="FG%" value={dashboardStats.fgPercentage} suffix="%" icon={Percent} className="journal-card" />
-                      </AnimatedItem>
-                    </AnimatedContainer>
+                  )}
+
+                  {/* TODAY CARD - Hero priority */}
+                  <AnimatedSection delay={0.05}>
+                    <TodayCard
+                      schedule={schedule}
+                      games={dashboardFilteredGames}
+                      currentStreak={dashboardStats.wins}
+                      xpLevel={xpProgress?.current_level}
+                      onLogGame={() => setActiveTab('games')}
+                      onOpenCoach={() => setActiveTab('coach')}
+                      onStartLiveCapture={todayGames.length > 0 ? handleQuickLiveStatsClick : undefined}
+                    />
                   </AnimatedSection>
 
-                  {/* Performance Charts */}
-                  <AnimatedSection className="journal-section" delay={0.3}>
-                    <h2 className="journal-heading">Performance Trends</h2>
-                    <AnimatedContainer className="grid md:grid-cols-3 gap-4">
-                      <AnimatedItem className="journal-card p-4 rounded-xl">
-                        <StatsChart games={dashboardFilteredGames} stat="points" />
-                      </AnimatedItem>
-                      <AnimatedItem className="journal-card p-4 rounded-xl">
-                        <StatsChart games={dashboardFilteredGames} stat="rebounds" />
-                      </AnimatedItem>
-                      <AnimatedItem className="journal-card p-4 rounded-xl">
-                        <StatsChart games={dashboardFilteredGames} stat="assists" />
-                      </AnimatedItem>
-                    </AnimatedContainer>
+                  {/* QUICK STATS ROW */}
+                  {dashboardFilteredGames.length > 0 && (
+                    <AnimatedSection delay={0.1}>
+                      <DashboardQuickStats
+                        games={dashboardFilteredGames}
+                        seasonStats={dashboardStats}
+                        xpProgress={xpProgress}
+                      />
+                    </AnimatedSection>
+                  )}
+
+                  {/* DAILY INSIGHT / AI SUMMARY */}
+                  <AnimatedSection delay={0.15}>
+                    <DailyInsight
+                      games={dashboardFilteredGames}
+                      seasonStats={dashboardStats}
+                      playerName={profile.name || 'Player'}
+                    />
                   </AnimatedSection>
 
-                  {/* XP Progress */}
+                  {/* XP Progress - Compact */}
                   {xpProgress && (
-                    <AnimatedSection className="journal-section" delay={0.4}>
-                      <h2 className="journal-heading">Season XP Progress</h2>
+                    <AnimatedSection delay={0.2}>
                       <div 
                         className="journal-card p-4 rounded-xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all"
                         onClick={() => setActiveTab('stats')}
@@ -647,31 +611,47 @@ export default function Index() {
                     />
                   )}
 
-                  {/* Recent Games */}
-                  <AnimatedSection className="journal-section" delay={0.5}>
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="journal-heading mb-0">Recent Games</h2>
-                      <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+                  {/* RECENT ACTIVITY */}
+                  <AnimatedSection delay={0.25}>
+                    <RecentActivity
+                      games={dashboardFilteredGames}
+                      clips={clips}
+                      onViewGame={(gameId) => navigate(`/game/${gameId}`)}
+                      onViewAllGames={() => setActiveTab('games')}
+                    />
+                  </AnimatedSection>
+
+                  {/* QUICK LINKS */}
+                  <AnimatedSection delay={0.3}>
+                    <div className="flex items-center justify-center gap-4 pt-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveTab('stats')}
+                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <TrendingUp className="w-4 h-4" />
+                        <span className="hidden sm:inline">Progress</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveTab('coach')}
+                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        <span className="hidden sm:inline">Coach</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveTab('minigames')}
+                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <Gamepad2 className="w-4 h-4" />
+                        <span className="hidden sm:inline">Training</span>
+                      </Button>
                     </div>
-                    {dashboardFilteredGames.length === 0 ? (
-                      <p className="text-muted-foreground text-center py-8">
-                        No games found for this team.
-                      </p>
-                    ) : (
-                      <AnimatedContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {dashboardFilteredGames.slice(0, 6).map((game) => (
-                          <AnimatedItem key={game.id}>
-                            <GameCard 
-                              game={game} 
-                              profile={profile} 
-                              onDelete={deleteGame}
-                              teams={teams}
-                              onTeamChange={updateGameTeam}
-                            />
-                          </AnimatedItem>
-                        ))}
-                      </AnimatedContainer>
-                    )}
                   </AnimatedSection>
                 </div>
               </div>
