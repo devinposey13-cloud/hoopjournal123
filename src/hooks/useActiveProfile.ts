@@ -53,7 +53,7 @@ export function useActiveProfileProvider() {
     try {
       const { data, error } = await supabase
         .from('player_settings')
-        .select('id, name, avatar_url, team, position, is_active_profile, onboarding_completed_at')
+        .select('id, name, display_name, number, avatar_url, team, position, is_active_profile, onboarding_completed_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
@@ -62,6 +62,8 @@ export function useActiveProfileProvider() {
       const mappedProfiles: ProfileSummary[] = (data || []).map(p => ({
         id: p.id,
         name: p.name,
+        display_name: p.display_name || undefined,
+        number: p.number,
         avatar_url: p.avatar_url || undefined,
         team: p.team,
         position: p.position,
@@ -154,7 +156,7 @@ export function useActiveProfileProvider() {
           is_approved: true, // Auto-approve additional profiles
           onboarding_completed_at: null, // Needs onboarding
         })
-        .select('id, name, avatar_url, team, position, is_active_profile, onboarding_completed_at')
+        .select('id, name, display_name, number, avatar_url, team, position, is_active_profile, onboarding_completed_at')
         .single();
 
       if (error) throw error;
@@ -162,6 +164,8 @@ export function useActiveProfileProvider() {
       const newProfile: ProfileSummary = {
         id: data.id,
         name: data.name,
+        display_name: data.display_name || undefined,
+        number: data.number,
         avatar_url: data.avatar_url || undefined,
         team: data.team,
         position: data.position,
