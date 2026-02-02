@@ -43,6 +43,9 @@ interface LogSectionProps {
   bulkImportScheduledGames: (games: any[]) => Promise<any>;
   // Initial sub-tab (optional)
   initialSubTab?: LogSubTab;
+  // Auto-open Add Game dialog (for onboarding)
+  autoOpenAddGame?: boolean;
+  onAutoOpenAddGameConsumed?: () => void;
 }
 
 export function LogSection({
@@ -59,6 +62,8 @@ export function LogSection({
   deleteScheduledGame,
   bulkImportScheduledGames,
   initialSubTab = 'history',
+  autoOpenAddGame,
+  onAutoOpenAddGameConsumed,
 }: LogSectionProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -322,7 +327,12 @@ export function LogSection({
         {/* Secondary Actions */}
         <div className="grid grid-cols-2 gap-3">
           <div className="w-full">
-            <AddGameDialog onAddGame={addGame} isMobile={false} />
+            <AddGameDialog 
+              onAddGame={addGame} 
+              isMobile={false} 
+              autoOpen={autoOpenAddGame}
+              onAutoOpenConsumed={onAutoOpenAddGameConsumed}
+            />
           </div>
           <Button 
             variant="outline" 
