@@ -15,15 +15,21 @@ import {
   AlertDialogTrigger 
 } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Pencil, Trash2, Check, X, Users } from 'lucide-react';
+import { Pencil, Trash2, Check, X, Users, UserPlus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { AddProfileDialog } from '@/components/profile/AddProfileDialog';
 
-export function ProfileManagement() {
+interface ProfileManagementProps {
+  onProfileCreated?: (profileId: string) => void;
+}
+
+export function ProfileManagement({ onProfileCreated }: ProfileManagementProps) {
   const { profiles, activeProfile, switchProfile, deleteProfile, refetchProfiles } = useActiveProfile();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showAddProfileDialog, setShowAddProfileDialog] = useState(false);
 
   const handleStartEdit = (profileId: string, currentName: string) => {
     setEditingId(profileId);
@@ -77,19 +83,34 @@ export function ProfileManagement() {
     }
   };
 
-  if (profiles.length <= 1) {
-    return null; // Don't show management UI for single profile users
-  }
+  const handleProfileCreated = (profileId: string) => {
+    setShowAddProfileDialog(false);
+    onProfileCreated?.(profileId);
+  };
 
   return (
-    <div className="stat-card bg-secondary/30 p-4 rounded-lg space-y-4">
-      <h3 className="text-sm font-semibold flex items-center gap-2">
-        <Users className="w-4 h-4" />
-        Manage Player Profiles
-      </h3>
-      <p className="text-xs text-muted-foreground">
-        Rename or delete player profiles. The active profile cannot be deleted.
-      </p>
+    <>
+      <div className="stat-card bg-secondary/30 p-4 rounded-lg space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Player Profiles
+          </h3>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAddProfileDialog(true)}
+            className="h-8 text-xs"
+          >
+            <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+            Add Player
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {profiles.length === 1 
+            ? "Add additional player profiles for siblings or other athletes."
+            : "Switch between profiles, rename, or delete player profiles."}
+        </p>
 
       <div className="space-y-3">
         {profiles.map((profile) => {
@@ -205,5 +226,13 @@ export function ProfileManagement() {
         })}
       </div>
     </div>
+
+    {/* Add Profile Dialog */}
+    <AddProfileDialog
+      open={showAddProfileDialog}
+      onOpenChange={setShowAddProfileDialog}
+      onProfileCreated={handleProfileCreated}
+    />
+  </>
   );
 }
