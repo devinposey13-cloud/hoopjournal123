@@ -84,14 +84,14 @@ export function PlayerCard({
       className
     )}>
       <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          {/* Avatar */}
-          <Avatar className="h-16 w-16 ring-2 ring-primary/20 flex-shrink-0">
+        <div className="flex items-center gap-5">
+          {/* Avatar - Large focal point */}
+          <Avatar className="h-24 w-24 md:h-28 md:w-28 ring-4 ring-primary/20 flex-shrink-0 shadow-lg">
             {profile.avatar ? (
               <AvatarImage src={profile.avatar} alt={profile.name} className="object-cover" />
             ) : (
-              <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
-                {profile.number || <User className="w-6 h-6" />}
+              <AvatarFallback className="bg-primary/10 text-primary text-3xl md:text-4xl font-bold">
+                {profile.number || <User className="w-10 h-10" />}
               </AvatarFallback>
             )}
           </Avatar>
