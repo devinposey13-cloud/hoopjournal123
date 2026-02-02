@@ -70,6 +70,22 @@ export const OfflineIndicator = () => {
         </motion.div>
       )}
 
+      {/* Compact corner indicator when banner is dismissed */}
+      {!isOnline && isDismissed && (
+        <motion.button
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ type: "spring", damping: 20, stiffness: 300 }}
+          onClick={() => setIsDismissed(false)}
+          className="fixed top-4 right-4 z-[100] flex items-center gap-2 bg-amber-500 dark:bg-amber-600 text-amber-950 px-3 py-2 rounded-full shadow-lg hover:scale-105 transition-transform"
+          aria-label="You're offline - tap to expand"
+        >
+          <WifiOff className="h-4 w-4" />
+          <span className="text-sm font-medium">Offline</span>
+        </motion.button>
+      )}
+
       {isOnline && wasOffline && (
         <motion.div
           initial={{ y: -50, opacity: 0 }}
