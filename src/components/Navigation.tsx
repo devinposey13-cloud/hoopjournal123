@@ -6,6 +6,7 @@ import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 import { SeasonSelector } from './SeasonSelector';
 import { Season } from '@/types/basketball';
 import { useAuth } from '@/hooks/useAuth';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +27,7 @@ interface NavigationProps {
   onCreateSeason: (name: string) => Promise<void>;
   onDeleteSeason?: (seasonId: string) => Promise<boolean>;
   isAdmin?: boolean;
+  adminNotificationCount?: number;
 }
 
 // Primary tabs shown in the main nav bar - only core features
@@ -71,6 +73,7 @@ export function Navigation({
   onCreateSeason,
   onDeleteSeason,
   isAdmin = false,
+  adminNotificationCount = 0,
 }: NavigationProps) {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -170,6 +173,7 @@ export function Navigation({
                 </DropdownMenuLabel>
                 {moreTabsList.map((tab) => {
                   const isActive = activeTab === tab.id;
+                  const showBadge = tab.id === 'admin' && adminNotificationCount > 0;
                   return (
                     <DropdownMenuItem
                       key={tab.id}
@@ -180,7 +184,12 @@ export function Navigation({
                       )}
                     >
                       <tab.icon className="w-4 h-4" />
-                      <span>{tab.label}</span>
+                      <span className="flex-1">{tab.label}</span>
+                      {showBadge && (
+                        <Badge variant="destructive" className="h-5 min-w-5 flex items-center justify-center px-1 text-xs">
+                          {adminNotificationCount > 99 ? '99+' : adminNotificationCount}
+                        </Badge>
+                      )}
                     </DropdownMenuItem>
                   );
                 })}

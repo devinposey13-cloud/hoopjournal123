@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Gamepad2, LogOut, Settings, Shield, UserCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
   SheetContent,
@@ -20,6 +21,7 @@ interface MoreMenuProps {
   onSelect: (tab: Tab) => void;
   activeTab: Tab;
   isAdmin?: boolean;
+  adminNotificationCount?: number;
   seasons: Season[];
   activeSeason: Season | null;
   onSeasonChange: (seasonId: string) => void;
@@ -40,6 +42,7 @@ export function MoreMenu({
   onSelect,
   activeTab,
   isAdmin = false,
+  adminNotificationCount = 0,
   seasons,
   activeSeason,
   onSeasonChange,
@@ -77,18 +80,29 @@ export function MoreMenu({
         <div className="grid grid-cols-3 gap-3 pb-6">
           {allItems.map((item) => {
             const isActive = activeTab === item.id;
+            const showBadge = item.id === 'admin' && adminNotificationCount > 0;
             return (
               <button
                 key={item.id}
                 onClick={() => handleItemClick(item)}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-colors',
+                  'flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-colors relative',
                   isActive
                     ? 'bg-primary/10 text-primary'
                     : 'bg-secondary/50 text-foreground hover:bg-secondary'
                 )}
               >
-                <item.icon className="w-6 h-6" />
+                <div className="relative">
+                  <item.icon className="w-6 h-6" />
+                  {showBadge && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-2 -right-3 h-5 min-w-5 flex items-center justify-center px-1 text-xs"
+                    >
+                      {adminNotificationCount > 99 ? '99+' : adminNotificationCount}
+                    </Badge>
+                  )}
+                </div>
                 <span className="text-sm font-medium">{item.label}</span>
               </button>
             );

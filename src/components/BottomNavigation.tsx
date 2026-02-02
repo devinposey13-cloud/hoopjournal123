@@ -16,6 +16,7 @@ interface BottomNavigationProps {
   onCreateSeason: (name: string) => Promise<void>;
   onDeleteSeason?: (seasonId: string) => Promise<boolean>;
   isAdmin?: boolean;
+  adminNotificationCount?: number;
 }
 
 const primaryTabs = [
@@ -39,6 +40,7 @@ export function BottomNavigation({
   onCreateSeason,
   onDeleteSeason,
   isAdmin = false,
+  adminNotificationCount = 0,
 }: BottomNavigationProps) {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -98,13 +100,18 @@ export function BottomNavigation({
           <button
             onClick={() => setMoreMenuOpen(true)}
             className={cn(
-              'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors',
+              'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors relative',
               isMoreTab(activeTab)
                 ? 'text-primary'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            <MoreHorizontal className={cn('w-5 h-5', isMoreTab(activeTab) && 'stroke-[2.5px]')} />
+            <div className="relative">
+              <MoreHorizontal className={cn('w-5 h-5', isMoreTab(activeTab) && 'stroke-[2.5px]')} />
+              {isAdmin && adminNotificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full" />
+              )}
+            </div>
             <span className="text-xs font-medium">More</span>
           </button>
         </div>
@@ -116,6 +123,7 @@ export function BottomNavigation({
         onSelect={handleMoreMenuSelect}
         activeTab={activeTab}
         isAdmin={isAdmin}
+        adminNotificationCount={adminNotificationCount}
         seasons={seasons}
         activeSeason={activeSeason}
         onSeasonChange={onSeasonChange}

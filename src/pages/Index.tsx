@@ -40,6 +40,7 @@ import { PlayerCard } from '@/components/dashboard/PlayerCard';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import { useApprovalStatus } from '@/hooks/useApprovalStatus';
 import { useFirstLogin } from '@/hooks/useFirstLogin';
 import { usePlayerTeams } from '@/hooks/usePlayerTeams';
@@ -82,6 +83,7 @@ export default function Index() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { teams } = usePlayerTeams();
   const { isAdmin } = useAdmin();
+  const { totalPending: adminNotificationCount } = useAdminNotifications();
   const { isApproved, loading: approvalLoading, refetch: refetchApproval } = useApprovalStatus();
   const {
     games,
@@ -422,6 +424,7 @@ export default function Index() {
             onCreateSeason={async (name) => { await createSeason(name); }}
             onDeleteSeason={deleteSeason}
             isAdmin={isAdmin}
+            adminNotificationCount={adminNotificationCount}
           />
         )}
         <main className="container mx-auto px-4 py-6">
@@ -437,6 +440,7 @@ export default function Index() {
             onCreateSeason={async (name) => { await createSeason(name); }}
             onDeleteSeason={deleteSeason}
             isAdmin={isAdmin}
+            adminNotificationCount={adminNotificationCount}
           />
         )}
       </div>
@@ -468,6 +472,7 @@ export default function Index() {
           onCreateSeason={async (name) => { await createSeason(name); }}
           onDeleteSeason={deleteSeason}
           isAdmin={isAdmin}
+          adminNotificationCount={adminNotificationCount}
         />
       )}
 
@@ -482,6 +487,7 @@ export default function Index() {
           onCreateSeason={async (name) => { await createSeason(name); }}
           onDeleteSeason={deleteSeason}
           isAdmin={isAdmin}
+          adminNotificationCount={adminNotificationCount}
         />
       )}
 
