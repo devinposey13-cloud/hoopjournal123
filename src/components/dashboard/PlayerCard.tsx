@@ -46,9 +46,21 @@ export function PlayerCard({ profile, teamName, tierAchievements = [], className
               </span>
             </div>
             
-            <p className="text-sm text-muted-foreground mt-0.5 truncate">
-              {displayTeam}
-            </p>
+            <div className="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground">
+              {profile.position && (
+                <span className="font-medium">{profile.position}</span>
+              )}
+              {profile.position && profile.grade && (
+                <span className="text-border">•</span>
+              )}
+              {profile.grade && (
+                <span>{profile.grade}</span>
+              )}
+              {(profile.position || profile.grade) && displayTeam && (
+                <span className="text-border">•</span>
+              )}
+              <span className="truncate">{displayTeam}</span>
+            </div>
 
             {/* Tier Badges */}
             {tierAchievements.length > 0 && (
