@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Video, Trophy, Gamepad2, Settings, Shield } from 'lucide-react';
+import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Gamepad2, Settings, Shield, CalendarRange } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 import { SeasonSelector } from './SeasonSelector';
 import { Season } from '@/types/basketball';
@@ -9,7 +9,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 
 export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin';
@@ -25,7 +27,7 @@ interface NavigationProps {
   isAdmin?: boolean;
 }
 
-// Primary tabs shown in the main nav bar (matching mobile structure)
+// Primary tabs shown in the main nav bar - only core features
 const primaryTabs = [
   { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard, route: '/' },
   { id: 'log' as Tab, label: 'Log', icon: ClipboardPlus, route: '/log/history', actualTab: 'games' as Tab },
@@ -33,13 +35,13 @@ const primaryTabs = [
   { id: 'coach' as Tab, label: 'Coach', icon: MessageCircle },
 ];
 
-// Secondary tabs shown in the "More" dropdown (Clips/Milestones moved to Progress hub)
+// Secondary tabs shown in the "More" dropdown
 const moreTabs = [
   { id: 'minigames' as Tab, label: 'Play', icon: Gamepad2 },
   { id: 'settings' as Tab, label: 'Settings', icon: Settings },
 ];
 
-// Helper to check if a tab is in the "More" menu (Clips/Milestones moved to Progress hub)
+// Helper to check if a tab is in the "More" menu
 const isMoreTab = (tab: Tab): boolean => {
   return ['minigames', 'settings', 'admin'].includes(tab);
 };
@@ -147,8 +149,12 @@ export function Navigation({
               </DropdownMenuTrigger>
               <DropdownMenuContent 
                 align="end" 
-                className="w-48 bg-popover border border-border shadow-lg z-50"
+                className="w-64 bg-popover border border-border shadow-lg z-50"
               >
+                {/* Menu Items */}
+                <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-3 py-1.5">
+                  Features
+                </DropdownMenuLabel>
                 {moreTabsList.map((tab) => {
                   const isActive = activeTab === tab.id;
                   return (
@@ -156,7 +162,7 @@ export function Navigation({
                       key={tab.id}
                       onClick={() => handleMoreItemClick(tab.id)}
                       className={cn(
-                        'flex items-center gap-3 px-3 py-2 cursor-pointer',
+                        'flex items-center gap-3 px-3 py-2.5 cursor-pointer',
                         isActive && 'bg-primary/10 text-primary'
                       )}
                     >
@@ -165,18 +171,30 @@ export function Navigation({
                     </DropdownMenuItem>
                   );
                 })}
+
+                {/* Season Selector Section */}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-3 py-1.5">
+                  Season
+                </DropdownMenuLabel>
+                <div className="px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <CalendarRange className="w-4 h-4 text-muted-foreground" />
+                    <SeasonSelector
+                      seasons={seasons}
+                      activeSeason={activeSeason}
+                      onSeasonChange={onSeasonChange}
+                      onCreateSeason={onCreateSeason}
+                      onDeleteSeason={onDeleteSeason}
+                    />
+                  </div>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
 
-          {/* Season Selector */}
-          <SeasonSelector
-            seasons={seasons}
-            activeSeason={activeSeason}
-            onSeasonChange={onSeasonChange}
-            onCreateSeason={onCreateSeason}
-            onDeleteSeason={onDeleteSeason}
-          />
+          {/* Empty div for layout balance (season selector moved to More menu) */}
+          <div className="w-10" />
         </div>
       </div>
     </nav>
