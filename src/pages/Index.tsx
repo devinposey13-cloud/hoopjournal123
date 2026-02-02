@@ -23,6 +23,7 @@ import { JournalHeader } from '@/components/JournalHeader';
 import { AdminPanel } from '@/components/AdminPanel';
 import { GamesHub } from '@/components/games/GamesHub';
 import { MilestoneCollection } from '@/components/milestones/MilestoneCollection';
+import { StatisticsPage } from '@/components/StatisticsPage';
 import { PersistentMusicBar } from '@/components/PersistentMusicBar';
 import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
 import { PostGameXpReveal } from '@/components/xp/PostGameXpReveal';
@@ -51,7 +52,7 @@ import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-
 import { Button } from '@/components/ui/button';
 import { LogOut, Trophy, X, Radio, Users } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton, MilestonesTabSkeleton, GamesHubTabSkeleton, CoachTabSkeleton, ClipsTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
+import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton, MilestonesTabSkeleton, GamesHubTabSkeleton, CoachTabSkeleton, ClipsTabSkeleton, StatsTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AnimatedContainer, AnimatedItem, AnimatedSection } from '@/components/ui/animated-container';
 import {
@@ -390,6 +391,8 @@ export default function Index() {
     switch (activeTab) {
       case 'games':
         return <GamesTabSkeleton />;
+      case 'stats':
+        return <StatsTabSkeleton />;
       case 'schedule':
         return <ScheduleTabSkeleton />;
       case 'milestones':
@@ -772,6 +775,15 @@ export default function Index() {
             </div>
           );
         })()}
+
+        {/* Stats Tab */}
+        {activeTab === 'stats' && (
+          <StatisticsPage 
+            games={games} 
+            seasonStats={seasonStats} 
+            teams={teams}
+          />
+        )}
 
         {/* Schedule Tab */}
         {activeTab === 'schedule' && (

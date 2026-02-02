@@ -531,6 +531,63 @@ export function ClipsTabSkeleton() {
   );
 }
 
+export function StatsTabSkeleton() {
+  return (
+    <motion.div 
+      className="space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      {/* Header */}
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
+        <div className="space-y-1">
+          <Skeleton className="h-7 w-28" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <Skeleton className="h-9 w-[160px] rounded-md" />
+      </motion.div>
+
+      {/* Sub-Tabs */}
+      <motion.div variants={itemVariants}>
+        <Skeleton className="h-10 w-full max-w-lg rounded-lg" />
+      </motion.div>
+
+      {/* Stat Cards Grid */}
+      <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {[...Array(6)].map((_, i) => (
+          <StatCardSkeleton key={i} />
+        ))}
+      </motion.div>
+
+      {/* Chart Card */}
+      <motion.div variants={itemVariants}>
+        <ChartCardSkeleton />
+      </motion.div>
+
+      {/* Comparison Cards */}
+      <motion.div variants={itemVariants} className="grid md:grid-cols-2 gap-4">
+        <div className="stat-card p-4 rounded-xl space-y-3">
+          <Skeleton className="h-5 w-24" />
+          <div className="grid grid-cols-3 gap-4">
+            <Skeleton className="h-16 rounded-lg" />
+            <Skeleton className="h-16 rounded-lg" />
+            <Skeleton className="h-16 rounded-lg" />
+          </div>
+        </div>
+        <div className="stat-card p-4 rounded-xl space-y-3">
+          <Skeleton className="h-5 w-24" />
+          <div className="grid grid-cols-3 gap-4">
+            <Skeleton className="h-16 rounded-lg" />
+            <Skeleton className="h-16 rounded-lg" />
+            <Skeleton className="h-16 rounded-lg" />
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // Export individual skeletons for reuse
 export { 
   StatCardSkeleton, 
