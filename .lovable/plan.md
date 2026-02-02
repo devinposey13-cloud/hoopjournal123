@@ -1,134 +1,109 @@
 
-# Statistics Page/Tab Preview
 
-A dedicated **Statistics** page would give players deeper insights into their performance with advanced analytics, career records, and detailed breakdowns that go beyond the current dashboard view.
+# Animated Number Counters for Statistics Page
+
+## Overview
+
+Add smooth animated number counters that count up from 0 when stat cards first appear on the Statistics page. This creates a more engaging and polished experience as players view their performance data.
 
 ---
 
-## Page Layout Overview
+## What You'll See
+
+When you navigate to the Stats tab, instead of numbers appearing instantly:
+- Values will smoothly count up from 0 to their final value
+- The animation starts when cards scroll into view
+- Numbers use a spring-based animation for a natural, bouncy feel
+- Decimal values (like 12.5 PPG) animate smoothly with proper formatting
+
+---
+
+## Implementation Approach
+
+### 1. Create Reusable AnimatedCounter Component
+
+A new utility component that handles all the animation logic:
 
 ```text
-+---------------------------------------------------------------+
-| Navigation Bar (with new "Stats" tab icon: BarChart3)         |
-+---------------------------------------------------------------+
-|                                                               |
-|  STATISTICS                                   [Team Filter ▼] |
-|  Dive deep into your performance                              |
-|                                                               |
-+---------------------------------------------------------------+
-|                                                               |
-|  [Season Overview] [Career Highs] [Splits] [Efficiency]       |
-|                                                               |
-+---------------------------------------------------------------+
-|                                                               |
-|  (Content based on selected sub-tab)                          |
-|                                                               |
-+---------------------------------------------------------------+
++--------------------------------------------------+
+|  AnimatedCounter                                  |
+|  - Takes target value and formatting options     |
+|  - Uses useMotionValue + useSpring from Framer   |
+|  - Triggers when element scrolls into view       |
+|  - Supports decimals, percentages, and integers  |
++--------------------------------------------------+
 ```
 
----
+### 2. Apply to All Statistics Sub-Tabs
 
-## Sub-Tabs and Features
+**Season Overview:**
+- PPG, RPG, APG, SPG, BPG, TO/G cards
+- Shooting percentage values (FG%, 3P%, FT%)
 
-### 1. Season Overview (Default View)
-- **Stat Cards Row**: PPG, RPG, APG, SPG, BPG, TO/G (with trend arrows vs last 5 games)
-- **Shooting Breakdown**: Visual comparison of FG%, 3P%, FT% with progress bars and shot chart aesthetics
-- **Performance Over Time**: Line charts showing scoring, rebounds, assists trends across all games
-- **Win/Loss Impact**: Compare your stats in wins vs losses (e.g., "You avg 12.5 PPG in wins vs 8.2 PPG in losses")
+**Career Highs:**
+- Career high values (32 points, 15 rebounds, etc.)
+- Win/Loss counts and Win Rate percentage
 
-### 2. Career Highs
-- **Record Cards**: Display career highs for each stat category:
-  - Most Points (vs opponent, date)
-  - Most Rebounds (vs opponent, date)
-  - Most Assists (vs opponent, date)
-  - Most Steals, Blocks, etc.
-- **Perfect Games**: Games with 0 turnovers, 100% FT, etc.
-- **Milestone Timeline**: Visual timeline of when career highs were set
+**Splits:**
+- All split stat values (PPG, RPG, APG per split)
+- Shooting percentages in win/loss cards
 
-### 3. Splits (Game Breakdowns)
-- **Home vs Away**: Stats comparison when playing at home vs away
-- **By Opponent**: See how you perform against different teams
-- **By Month**: Performance trends across the season months
-- **Win Streak Analysis**: Stats during winning/losing streaks
-
-### 4. Efficiency & Advanced Stats
-- **True Shooting %**: (Points / (2 * (FGA + 0.44 * FTA))) * 100
-- **Assist-to-Turnover Ratio**: APG / TO/G
-- **Rebound Rate**: Rebounds per game relative to attempts
-- **Points Responsibility**: Points + (Assists * 2) per game
-- **Efficiency Rating**: Custom formula combining key stats
-- **Radar Chart**: Visual spider web showing balanced vs specialized player profile
+**Advanced Stats:**
+- True Shooting %, Efficiency Rating, etc.
+- Radar chart summary values
 
 ---
 
-## Visual Components
+## Technical Details
 
-### Radar Chart (Player Profile)
-A 6-axis spider chart showing:
-- Scoring (normalized PPG)
-- Rebounding (normalized RPG)
-- Playmaking (normalized APG)
-- Defense (steals + blocks)
-- Efficiency (shooting %)
-- Consistency (low variance)
+### New File: `src/components/ui/animated-counter.tsx`
 
-### Progress Bars for Shooting
 ```text
-FG%   [████████████░░░░░░░░] 62.4%
-3P%   [██████░░░░░░░░░░░░░░] 35.1%
-FT%   [██████████████░░░░░░] 78.9%
+Props:
+- value: number (target value to animate to)
+- decimals?: number (decimal places, default 0)
+- suffix?: string (e.g., "%" for percentages)
+- duration?: number (animation duration)
+- delay?: number (staggered animation delay)
+- className?: string (styling)
+
+Uses:
+- useMotionValue(0) - starting value
+- useSpring() - smooth spring animation
+- useInView() - trigger on scroll into view
+- useEffect() - update display text
 ```
 
-### Career Highs Cards
-Large, celebratory cards with icons, opponent info, and date badges showing personal bests.
+### Files to Modify
 
-### Trend Indicators
-Each stat shows a colored arrow (green up/red down) comparing current average to last 5 games.
-
----
-
-## Technical Approach
-
-### New Files to Create:
-1. `src/components/StatisticsPage.tsx` - Main container with sub-tabs
-2. `src/components/stats/SeasonOverview.tsx` - Season averages and trends
-3. `src/components/stats/CareerHighs.tsx` - Personal records display
-4. `src/components/stats/StatsSplits.tsx` - Breakdowns by various categories
-5. `src/components/stats/AdvancedStats.tsx` - Efficiency metrics and radar chart
-
-### Navigation Update:
-Add "Stats" tab to `Navigation.tsx` with `BarChart3` icon between "Games" and "Schedule"
-
-### Data Calculations:
-- Reuse existing `seasonStats` from `useGameWithMilestones`
-- Add new utility functions in `src/utils/statsCalculations.ts` for:
-  - Career high detection across all games
-  - Home/away splits calculation
-  - Advanced metrics (TS%, A/TO ratio, etc.)
-
-### Charts:
-- Extend recharts usage with `RadarChart`, `PolarGrid`, `PolarAngleAxis` for radar visualization
-- Use `AreaChart` for trend visualization
-- Continue `BarChart` pattern for comparisons
+1. **Create**: `src/components/ui/animated-counter.tsx`
+2. **Update**: `src/components/stats/SeasonOverview.tsx`
+3. **Update**: `src/components/stats/CareerHighs.tsx`
+4. **Update**: `src/components/stats/StatsSplits.tsx`
+5. **Update**: `src/components/stats/AdvancedStats.tsx`
 
 ---
 
-## User Experience
+## Animation Behavior
 
-- **Responsive Design**: Stat cards stack on mobile, grid on desktop
-- **Team Filtering**: Filter all statistics by team (if player has multiple teams)
-- **Animated Entrance**: Stats animate in with staggered spring animations (matching existing patterns)
-- **Empty States**: Friendly messaging when not enough games for certain stats (e.g., "Log more games to see home/away splits")
-- **Skeleton Loading**: Consistent loading states matching the app's style
+| Stat Type | Example | Animation |
+|-----------|---------|-----------|
+| Averages | 12.5 PPG | 0.0 -> 12.5 (1 decimal) |
+| Percentages | 62.4% | 0.0 -> 62.4 with "%" suffix |
+| Integers | 32 points | 0 -> 32 (whole number) |
+| Ratios | 2.1 A/TO | 0.0 -> 2.1 (1 decimal) |
+
+**Timing:**
+- Each card staggers slightly (0.05s delay per card index)
+- Spring animation: damping 60, stiffness 100
+- Only animates once (when first visible)
 
 ---
 
-## Benefits for Players
+## User Experience Benefits
 
-1. **Self-Analysis**: Understand strengths and areas for improvement
-2. **Motivation**: Career highs provide goals to chase
-3. **Pattern Recognition**: See how context (home/away, opponent) affects performance
-4. **Progress Tracking**: Visualize improvement over time
-5. **Shareable Insights**: Data for coaches/parents to review
+1. **Visual Engagement**: Numbers counting up draws attention to achievements
+2. **Progressive Reveal**: Data feels more dynamic and alive
+3. **Performance Emphasis**: High numbers are more impactful when animated
+4. **Consistent Polish**: Matches the app's existing spring-based animation patterns
 
-This would be a significant but high-value addition that makes Hoop Journal a more complete basketball analytics tool for young players.
