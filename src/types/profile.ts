@@ -34,6 +34,8 @@ export interface PlayerProfileRecord {
 export interface ProfileSummary {
   id: string;
   name: string;
+  display_name?: string;
+  number: number;
   avatar_url?: string;
   team: string;
   position: string;

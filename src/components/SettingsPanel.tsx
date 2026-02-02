@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Save, Loader2, Crown, CreditCard, Sun, Moon, Monitor, Trophy, ChevronRight, Star, User, Check } from 'lucide-react';
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
+import { ProfileManagement } from '@/components/settings/ProfileManagement';
 import { toast } from 'sonner';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
 import { Separator } from '@/components/ui/separator';
@@ -81,6 +82,9 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
               </div>
             </div>
           </Link>
+
+          {/* Profile Management (only shows for multi-profile users) */}
+          <ProfileManagement />
 
           {/* Theme Music URL */}
           <div className="space-y-2">
