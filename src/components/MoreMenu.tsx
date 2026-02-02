@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Gamepad2, Settings, Shield, UserCircle } from 'lucide-react';
+import { Gamepad2, LogOut, Settings, Shield, UserCircle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
@@ -45,10 +47,16 @@ export function MoreMenu({
   onDeleteSeason,
 }: MoreMenuProps) {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   
   const allItems = isAdmin
     ? [...menuItems, { id: 'admin' as Tab, label: 'Admin', icon: Shield }]
     : menuItems;
+
+  const handleSignOut = async () => {
+    await signOut();
+    onOpenChange(false);
+  };
 
   const handleItemClick = (item: typeof menuItems[0]) => {
     if ('route' in item && item.route) {
@@ -99,6 +107,17 @@ export function MoreMenu({
               onDeleteSeason={onDeleteSeason}
             />
           </div>
+        </div>
+        {/* Sign Out Button */}
+        <div className="border-t border-border pt-4">
+          <Button
+            variant="ghost"
+            onClick={handleSignOut}
+            className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>Sign Out</span>
+          </Button>
         </div>
       </SheetContent>
     </Sheet>
