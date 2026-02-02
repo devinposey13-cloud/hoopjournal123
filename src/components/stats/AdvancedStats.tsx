@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Activity, Zap, Target, TrendingUp, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer } from '@/components/ui/chart';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 import type { GameStats } from '@/types/basketball';
 import { calculateAdvancedStats, calculateRadarData, type AdvancedStats as AdvancedStatsType } from '@/utils/statsCalculations';
@@ -19,13 +20,17 @@ function StatDisplay({
   value, 
   description, 
   icon: Icon,
-  index 
+  index,
+  suffix = '',
+  decimals = 1,
 }: { 
   label: string; 
-  value: string | number; 
+  value: number; 
   description: string;
   icon: React.ComponentType<{ className?: string }>;
   index: number;
+  suffix?: string;
+  decimals?: number;
 }) {
   return (
     <motion.div
@@ -40,7 +45,9 @@ function StatDisplay({
               <Icon className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-2xl font-bold">{value}</p>
+              <p className="text-2xl font-bold">
+                <AnimatedCounter value={value} decimals={decimals} suffix={suffix} delay={index * 0.05} />
+              </p>
               <p className="font-medium text-sm">{label}</p>
               <p className="text-xs text-muted-foreground mt-1">{description}</p>
             </div>
@@ -72,7 +79,8 @@ export function AdvancedStats({ games }: AdvancedStatsProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatDisplay
           label="True Shooting %"
-          value={`${advancedStats.trueShootingPercentage}%`}
+          value={advancedStats.trueShootingPercentage}
+          suffix="%"
           description="Accounts for 2PT, 3PT, and FT efficiency"
           icon={Target}
           index={0}
@@ -155,10 +163,12 @@ export function AdvancedStats({ games }: AdvancedStatsProps) {
               </ResponsiveContainer>
             </ChartContainer>
             <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
-              {radarData.map((item) => (
+              {radarData.map((item, index) => (
                 <div key={item.subject} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                   <span className="text-muted-foreground">{item.subject}</span>
-                  <span className="font-medium">{Math.round(item.value)}</span>
+                  <span className="font-medium">
+                    <AnimatedCounter value={Math.round(item.value)} delay={0.3 + index * 0.05} />
+                  </span>
                 </div>
               ))}
             </div>
