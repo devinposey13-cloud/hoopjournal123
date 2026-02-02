@@ -1,279 +1,134 @@
 
-# Post-Game Performance Scoring & XP/Level System
+# Statistics Page/Tab Preview
 
-## Overview
-This plan implements a comprehensive 2K-inspired progression system where players earn XP after each logged game based on their performance. XP accumulates toward 50 levels per calendar quarter (Q1-Q4), with fresh resets at the start of each quarter to keep competition engaging.
-
----
-
-## What You'll Experience
-
-### After Logging a Game
-- Animated performance score breakdown showing how each stat contributed
-- XP earned displayed with a satisfying fill animation
-- Level-up celebration with 2K-style visual effects when reaching a new level
-- Clear progress bar showing XP remaining until next level
-
-### On Your Dashboard  
-- Current level badge prominently displayed (Level 1-50)
-- XP progress bar showing progress to next level
-- Quarterly countdown showing days left in current season
-- Peak level from previous quarters shown as career achievements
-
-### In the Games Hub
-- New "Season Progress" tab showing quarterly leaderboard
-- Level-based rewards and unlockables at milestone levels
-- Career history of peak levels achieved
-
-### At Quarter Transitions
-- Celebratory summary of your quarterly achievements
-- Peak level preserved in career history
-- Fresh start at Level 1 with XP reset to 0
+A dedicated **Statistics** page would give players deeper insights into their performance with advanced analytics, career records, and detailed breakdowns that go beyond the current dashboard view.
 
 ---
 
-## Performance Scoring Formula
+## Page Layout Overview
 
-### Base Score Calculation
-Each stat contributes weighted points to a raw Performance Score:
-
-| Stat | Weight | Notes |
-|------|--------|-------|
-| Points | 1.0 | Base scoring value |
-| Assists | 1.5 | Playmaking premium |
-| Rebounds | 1.2 | Board work valued |
-| Steals | 2.0 | High impact defensive |
-| Blocks | 2.0 | Rim protection valued |
-| Turnovers | -1.5 | Negative impact |
-| Fouls | -0.5 | Minor penalty |
-
-### Efficiency Multipliers
-- **FG% Bonus**: +10% score if shooting 50%+ on 5+ attempts
-- **FT% Bonus**: +5% score if 80%+ on 3+ attempts  
-- **Zero Turnovers**: +15% bonus
-- **Win Bonus**: +20% for wins
-
-### Performance Tiers & XP Conversion
-
-| Performance Tier | Raw Score Range | XP Awarded |
-|-----------------|-----------------|------------|
-| Struggling | 0-15 | 50-100 XP |
-| Developing | 16-30 | 100-200 XP |
-| Solid | 31-50 | 200-350 XP |
-| Great | 51-75 | 350-500 XP |
-| Elite | 76-100 | 500-700 XP |
-| Legendary | 101+ | 700-1000 XP |
-
----
-
-## Leveling Curve
-
-### XP Requirements Per Level (Non-Linear)
 ```text
-Level 1 → 2:     100 XP    (Easy onboarding)
-Level 5 → 6:     250 XP    
-Level 10 → 11:   500 XP    (Steady climb begins)
-Level 20 → 21:   800 XP    
-Level 30 → 31:   1,200 XP  (Grind zone)
-Level 40 → 41:   1,800 XP  (Elite territory)
-Level 49 → 50:   2,500 XP  (Final push)
-
-Total XP for Level 50: ~45,000 XP
-Estimated games needed: 90-120 games (playing well)
-```
-
-### Configurable Formula
-```text
-XP_required(level) = BASE_XP * (1 + (level * GROWTH_RATE))^CURVE_FACTOR
-
-Where:
-- BASE_XP = 100
-- GROWTH_RATE = 0.08
-- CURVE_FACTOR = 1.5
++---------------------------------------------------------------+
+| Navigation Bar (with new "Stats" tab icon: BarChart3)         |
++---------------------------------------------------------------+
+|                                                               |
+|  STATISTICS                                   [Team Filter ▼] |
+|  Dive deep into your performance                              |
+|                                                               |
++---------------------------------------------------------------+
+|                                                               |
+|  [Season Overview] [Career Highs] [Splits] [Efficiency]       |
+|                                                               |
++---------------------------------------------------------------+
+|                                                               |
+|  (Content based on selected sub-tab)                          |
+|                                                               |
++---------------------------------------------------------------+
 ```
 
 ---
 
-## Quarterly Reset System
+## Sub-Tabs and Features
 
-### Quarter Definitions
-- Q1: January 1 - March 31
-- Q2: April 1 - June 30  
-- Q3: July 1 - September 30
-- Q4: October 1 - December 31
+### 1. Season Overview (Default View)
+- **Stat Cards Row**: PPG, RPG, APG, SPG, BPG, TO/G (with trend arrows vs last 5 games)
+- **Shooting Breakdown**: Visual comparison of FG%, 3P%, FT% with progress bars and shot chart aesthetics
+- **Performance Over Time**: Line charts showing scoring, rebounds, assists trends across all games
+- **Win/Loss Impact**: Compare your stats in wins vs losses (e.g., "You avg 12.5 PPG in wins vs 8.2 PPG in losses")
 
-### On Reset
-- Current XP → 0
-- Current Level → 1
-- Preserved: Peak level achieved, all game stats, milestones earned
+### 2. Career Highs
+- **Record Cards**: Display career highs for each stat category:
+  - Most Points (vs opponent, date)
+  - Most Rebounds (vs opponent, date)
+  - Most Assists (vs opponent, date)
+  - Most Steals, Blocks, etc.
+- **Perfect Games**: Games with 0 turnovers, 100% FT, etc.
+- **Milestone Timeline**: Visual timeline of when career highs were set
 
-### Historical Tracking
-- Career peak level across all quarters
-- Best quarter performance
-- Season-over-season progression
+### 3. Splits (Game Breakdowns)
+- **Home vs Away**: Stats comparison when playing at home vs away
+- **By Opponent**: See how you perform against different teams
+- **By Month**: Performance trends across the season months
+- **Win Streak Analysis**: Stats during winning/losing streaks
 
----
-
-## Level Rewards & Unlockables
-
-| Level | Reward |
-|-------|--------|
-| 5 | "Rising Star" profile badge |
-| 10 | Bronze level frame for avatar |
-| 15 | "Consistent" title |
-| 20 | Exclusive level flair color |
-| 25 | Silver level frame + "Grinder" title |
-| 30 | "All-Star" profile badge |
-| 35 | Gold level frame |
-| 40 | "Elite" title + animated badge |
-| 45 | Diamond level frame |
-| 50 | "Legend" title + special animated effects + quarterly hall of fame entry |
+### 4. Efficiency & Advanced Stats
+- **True Shooting %**: (Points / (2 * (FGA + 0.44 * FTA))) * 100
+- **Assist-to-Turnover Ratio**: APG / TO/G
+- **Rebound Rate**: Rebounds per game relative to attempts
+- **Points Responsibility**: Points + (Assists * 2) per game
+- **Efficiency Rating**: Custom formula combining key stats
+- **Radar Chart**: Visual spider web showing balanced vs specialized player profile
 
 ---
 
-## Technical Details
+## Visual Components
 
-### Database Changes
+### Radar Chart (Player Profile)
+A 6-axis spider chart showing:
+- Scoring (normalized PPG)
+- Rebounding (normalized RPG)
+- Playmaking (normalized APG)
+- Defense (steals + blocks)
+- Efficiency (shooting %)
+- Consistency (low variance)
 
-**New Table: `player_xp_progress`**
+### Progress Bars for Shooting
 ```text
-+--------------------+-----------+--------------------------------+
-| Column             | Type      | Description                    |
-+--------------------+-----------+--------------------------------+
-| id                 | uuid      | Primary key                    |
-| user_id            | uuid      | Player reference               |
-| quarter            | text      | e.g., "2026-Q1"                |
-| current_xp         | integer   | XP in current quarter          |
-| current_level      | integer   | Level 1-50                     |
-| peak_level         | integer   | Highest level this quarter     |
-| games_logged       | integer   | Games played this quarter      |
-| created_at         | timestamp | Quarter start                  |
-| updated_at         | timestamp | Last update                    |
-+--------------------+-----------+--------------------------------+
+FG%   [████████████░░░░░░░░] 62.4%
+3P%   [██████░░░░░░░░░░░░░░] 35.1%
+FT%   [██████████████░░░░░░] 78.9%
 ```
 
-**New Table: `player_xp_history`**
-```text
-+--------------------+-----------+--------------------------------+
-| Column             | Type      | Description                    |
-+--------------------+-----------+--------------------------------+
-| id                 | uuid      | Primary key                    |
-| user_id            | uuid      | Player reference               |
-| quarter            | text      | e.g., "2025-Q4"                |
-| final_level        | integer   | Level reached at quarter end   |
-| total_xp_earned    | integer   | Cumulative XP that quarter     |
-| games_played       | integer   | Games logged                   |
-| avg_performance    | numeric   | Average performance score      |
-| archived_at        | timestamp | When quarter ended             |
-+--------------------+-----------+--------------------------------+
-```
+### Career Highs Cards
+Large, celebratory cards with icons, opponent info, and date badges showing personal bests.
 
-**New Table: `level_rewards`**
-```text
-+--------------------+-----------+--------------------------------+
-| Column             | Type      | Description                    |
-+--------------------+-----------+--------------------------------+
-| id                 | uuid      | Primary key                    |
-| level_required     | integer   | Level to unlock (5, 10, etc.)  |
-| reward_type        | text      | 'badge', 'title', 'frame'      |
-| reward_name        | text      | e.g., "Rising Star"            |
-| reward_icon        | text      | Emoji or icon identifier       |
-| description        | text      | What the reward represents     |
-+--------------------+-----------+--------------------------------+
-```
-
-**New Table: `player_level_rewards`**
-```text
-+--------------------+-----------+--------------------------------+
-| Column             | Type      | Description                    |
-+--------------------+-----------+--------------------------------+
-| id                 | uuid      | Primary key                    |
-| user_id            | uuid      | Player reference               |
-| reward_id          | uuid      | Reference to level_rewards     |
-| unlocked_at        | timestamp | When earned                    |
-| unlocked_quarter   | text      | Which quarter unlocked         |
-+--------------------+-----------+--------------------------------+
-```
-
-### Files to Create
-
-**Hooks:**
-- `src/hooks/useXpProgress.ts` - Core XP/level state management
-- `src/hooks/usePerformanceScore.ts` - Score calculation logic
-
-**Components:**
-- `src/components/xp/XpProgressBar.tsx` - Animated level progress display
-- `src/components/xp/LevelBadge.tsx` - Level indicator with styling
-- `src/components/xp/PostGameXpReveal.tsx` - 2K-style XP animation after game
-- `src/components/xp/PerformanceBreakdown.tsx` - Stat contribution display
-- `src/components/xp/QuarterlyProgress.tsx` - Dashboard widget
-- `src/components/xp/LevelUpCelebration.tsx` - Full-screen level-up animation
-- `src/components/xp/LevelRewardCard.tsx` - Unlockable reward display
-- `src/components/xp/SeasonLeaderboard.tsx` - Quarterly rankings
-
-**Utilities:**
-- `src/utils/performanceScoring.ts` - Score calculation formulas
-- `src/utils/xpCalculations.ts` - XP/level math utilities
-- `src/utils/quarterUtils.ts` - Quarter detection and management
-
-**Types:**
-- `src/types/xp.ts` - XP system type definitions
-
-### Files to Modify
-
-- `src/hooks/useGameWithMilestones.ts` - Trigger XP calculation after game save
-- `src/pages/GameDetail.tsx` - Add XP reveal component to post-game flow
-- `src/pages/Index.tsx` - Add quarterly progress widget to dashboard
-- `src/components/games/GamesHub.tsx` - Add Season Progress tab
-- `src/components/PlayerHeader.tsx` - Display level badge
-
-### Scheduled Function
-
-**Quarterly Reset Cron Job:**
-A pg_cron job that runs at midnight on Jan 1, Apr 1, Jul 1, Oct 1 to:
-1. Archive current quarter data to `player_xp_history`
-2. Reset `player_xp_progress` for all users
-3. Preserve peak level achievements
+### Trend Indicators
+Each stat shows a colored arrow (green up/red down) comparing current average to last 5 games.
 
 ---
 
-## Post-Game Flow Integration
+## Technical Approach
 
-```text
-1. User saves game stats
-   ↓
-2. Milestones checked (existing flow)
-   ↓
-3. Performance score calculated
-   ↓
-4. XP awarded based on tier
-   ↓
-5. Level checked for level-up
-   ↓
-6. If level-up: Check for new reward unlocks
-   ↓
-7. Show XP reveal animation
-   ↓
-8. If level-up: Show level-up celebration
-   ↓
-9. If new reward: Show reward unlock
-   ↓
-10. Navigate to game detail page
-```
+### New Files to Create:
+1. `src/components/StatisticsPage.tsx` - Main container with sub-tabs
+2. `src/components/stats/SeasonOverview.tsx` - Season averages and trends
+3. `src/components/stats/CareerHighs.tsx` - Personal records display
+4. `src/components/stats/StatsSplits.tsx` - Breakdowns by various categories
+5. `src/components/stats/AdvancedStats.tsx` - Efficiency metrics and radar chart
+
+### Navigation Update:
+Add "Stats" tab to `Navigation.tsx` with `BarChart3` icon between "Games" and "Schedule"
+
+### Data Calculations:
+- Reuse existing `seasonStats` from `useGameWithMilestones`
+- Add new utility functions in `src/utils/statsCalculations.ts` for:
+  - Career high detection across all games
+  - Home/away splits calculation
+  - Advanced metrics (TS%, A/TO ratio, etc.)
+
+### Charts:
+- Extend recharts usage with `RadarChart`, `PolarGrid`, `PolarAngleAxis` for radar visualization
+- Use `AreaChart` for trend visualization
+- Continue `BarChart` pattern for comparisons
 
 ---
 
-## Implementation Steps
+## User Experience
 
-1. Create database tables and RLS policies
-2. Seed level rewards data
-3. Implement utility functions for scoring/XP math
-4. Create XP progress hook
-5. Build UI components (progress bar, level badge, etc.)
-6. Create post-game XP reveal animation
-7. Integrate XP calculation into game save flow
-8. Add level-up celebration animation
-9. Build quarterly progress dashboard widget
-10. Create season leaderboard
-11. Set up quarterly reset cron job
-12. Add level rewards unlock system
+- **Responsive Design**: Stat cards stack on mobile, grid on desktop
+- **Team Filtering**: Filter all statistics by team (if player has multiple teams)
+- **Animated Entrance**: Stats animate in with staggered spring animations (matching existing patterns)
+- **Empty States**: Friendly messaging when not enough games for certain stats (e.g., "Log more games to see home/away splits")
+- **Skeleton Loading**: Consistent loading states matching the app's style
+
+---
+
+## Benefits for Players
+
+1. **Self-Analysis**: Understand strengths and areas for improvement
+2. **Motivation**: Career highs provide goals to chase
+3. **Pattern Recognition**: See how context (home/away, opponent) affects performance
+4. **Progress Tracking**: Visualize improvement over time
+5. **Shareable Insights**: Data for coaches/parents to review
+
+This would be a significant but high-value addition that makes Hoop Journal a more complete basketball analytics tool for young players.
