@@ -5,7 +5,7 @@ import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizont
 import { MoreMenu } from './MoreMenu';
 import { Season } from '@/types/basketball';
 
-export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin';
+export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile';
 
 interface BottomNavigationProps {
   activeTab: Tab;

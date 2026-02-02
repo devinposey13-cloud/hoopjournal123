@@ -16,6 +16,7 @@ import Rewards from "./pages/Rewards";
 import RingOfHonor from "./pages/RingOfHonor";
 import Log from "./pages/Log";
 import Progress from "./pages/Progress";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/log/:subTab" element={<Log />} />
               <Route path="/progress" element={<Progress />} />
               <Route path="/progress/:subTab" element={<Progress />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/rewards" element={<Rewards />} />
               <Route path="/ring-of-honor" element={<RingOfHonor />} />
