@@ -31,10 +31,11 @@ export function PlayerIdentityCard({ roleValue, levelValue, onNext }: PlayerIden
 
   return (
     <motion.div
+      style={{ scrollBehavior: 'smooth' }}
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -50 }}
-      className="flex flex-col items-center text-center px-6 max-h-[80vh] overflow-y-auto"
+      className="flex flex-col items-center text-center px-6 py-2 max-h-[75vh] overflow-y-auto scroll-smooth overscroll-contain"
     >
       {/* Question 1: Player Type */}
       <div className="w-full max-w-sm mb-6">
