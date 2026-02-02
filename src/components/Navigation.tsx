@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Gamepad2, Settings, Shield, CalendarRange, UserCircle, LogOut } from 'lucide-react';
+import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Gamepad2, Settings, Shield, CalendarRange, UserCircle, LogOut, Users, UserPlus } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 import { SeasonSelector } from './SeasonSelector';
+import { ProfileSelector } from './profile/ProfileSelector';
+import { AddProfileDialog } from './profile/AddProfileDialog';
 import { Season } from '@/types/basketball';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveProfile } from '@/hooks/useActiveProfile';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -28,6 +31,7 @@ interface NavigationProps {
   onDeleteSeason?: (seasonId: string) => Promise<boolean>;
   isAdmin?: boolean;
   adminNotificationCount?: number;
+  onProfileCreated?: (profileId: string) => void;
 }
 
 // Primary tabs shown in the main nav bar - only core features
@@ -74,15 +78,28 @@ export function Navigation({
   onDeleteSeason,
   isAdmin = false,
   adminNotificationCount = 0,
+  onProfileCreated,
 }: NavigationProps) {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [showAddProfileDialog, setShowAddProfileDialog] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
+  const { hasMultipleProfiles } = useActiveProfile();
 
   const handleSignOut = async () => {
     await signOut();
     setMoreMenuOpen(false);
+  };
+
+  const handleAddProfile = () => {
+    setShowAddProfileDialog(true);
+    setMoreMenuOpen(false);
+  };
+
+  const handleProfileCreated = (profileId: string) => {
+    setShowAddProfileDialog(false);
+    onProfileCreated?.(profileId);
   };
 
   // Check if we're on a /log or /progress route
@@ -167,6 +184,19 @@ export function Navigation({
                 align="end" 
                 className="w-64 bg-popover border border-border shadow-lg z-50"
               >
+                {/* Profile Selector - Only show if multiple profiles exist */}
+                {hasMultipleProfiles && (
+                  <>
+                    <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-3 py-1.5">
+                      Active Player
+                    </DropdownMenuLabel>
+                    <div className="px-3 py-2">
+                      <ProfileSelector onAddProfile={handleAddProfile} compact />
+                    </div>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+
                 {/* Menu Items */}
                 <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-3 py-1.5">
                   Features
@@ -193,6 +223,15 @@ export function Navigation({
                     </DropdownMenuItem>
                   );
                 })}
+
+                {/* Add Player */}
+                <DropdownMenuItem
+                  onClick={handleAddProfile}
+                  className="flex items-center gap-3 px-3 py-2.5 cursor-pointer text-primary"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span className="flex-1">Add Player</span>
+                </DropdownMenuItem>
 
                 {/* Season Selector Section */}
                 <DropdownMenuSeparator />
@@ -229,6 +268,13 @@ export function Navigation({
           <div className="w-10" />
         </div>
       </div>
+
+      {/* Add Profile Dialog */}
+      <AddProfileDialog
+        open={showAddProfileDialog}
+        onOpenChange={setShowAddProfileDialog}
+        onProfileCreated={handleProfileCreated}
+      />
     </nav>
   );
 }
