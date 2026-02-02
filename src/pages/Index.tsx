@@ -524,6 +524,9 @@ export default function Index() {
                         teamName={teams.find(t => t.is_primary)?.name}
                         tierAchievements={achievedTiers.map(t => ({ tier: t.tier }))}
                         seasonRecord={{ wins: dashboardStats.wins, losses: dashboardStats.losses }}
+                        games={dashboardFilteredGames}
+                        seasonStats={dashboardStats}
+                        xpProgress={xpProgress}
                         className="shadow-md"
                       />
                       {/* Dear Basketball - Subtle Journal CTA */}
@@ -572,16 +575,6 @@ export default function Index() {
                     />
                   </AnimatedSection>
 
-                  {/* QUICK STATS ROW */}
-                  {dashboardFilteredGames.length > 0 && (
-                    <AnimatedSection delay={0.1}>
-                      <DashboardQuickStats
-                        games={dashboardFilteredGames}
-                        seasonStats={dashboardStats}
-                        xpProgress={xpProgress}
-                      />
-                    </AnimatedSection>
-                  )}
 
                   {/* DAILY INSIGHT / AI SUMMARY */}
                   <AnimatedSection delay={0.15}>
