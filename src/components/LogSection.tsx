@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { GameCard } from '@/components/GameCard';
@@ -57,7 +58,30 @@ export function LogSection({
   bulkImportScheduledGames,
   initialSubTab = 'history',
 }: LogSectionProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeSubTab, setActiveSubTab] = useState<LogSubTab>(initialSubTab);
+  
+  // Sync URL with tab changes when on /log routes
+  const handleTabChange = (value: string) => {
+    const newTab = value as LogSubTab;
+    setActiveSubTab(newTab);
+    
+    // Only update URL if we're on a /log route
+    if (location.pathname.startsWith('/log')) {
+      navigate(`/log/${newTab}`, { replace: true });
+    }
+  };
+  
+  // Sync tab state when URL changes
+  useEffect(() => {
+    if (location.pathname.startsWith('/log')) {
+      const pathTab = location.pathname.split('/')[2] as LogSubTab;
+      if (pathTab && ['history', 'schedule', 'add'].includes(pathTab)) {
+        setActiveSubTab(pathTab);
+      }
+    }
+  }, [location.pathname]);
   const [gamesTabTeamFilter, setGamesTabTeamFilter] = useState<string>('all');
   const [teamFilter, setTeamFilter] = useState<string>('all');
   const [tournamentFilter, setTournamentFilter] = useState<string>('all');
@@ -223,7 +247,7 @@ export function LogSection({
       </div>
 
       {/* Sub-tabs */}
-      <Tabs value={activeSubTab} onValueChange={(v) => setActiveSubTab(v as LogSubTab)} className="w-full">
+      <Tabs value={activeSubTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="schedule">Schedule</TabsTrigger>
