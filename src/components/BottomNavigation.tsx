@@ -58,10 +58,11 @@ export function BottomNavigation({
   const displayActiveTab = isLogRoute ? 'log' : isProgressRoute ? 'progress' : getDisplayActiveTab(activeTab);
 
   const handleTabClick = (tab: typeof primaryTabs[0]) => {
+    // Always update the active tab state first
+    onTabChange(tab.id);
+    // Then navigate if there's a route
     if (tab.route) {
       navigate(tab.route);
-    } else {
-      onTabChange(tab.id);
     }
   };
 

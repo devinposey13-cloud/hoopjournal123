@@ -88,10 +88,11 @@ export function Navigation({
   const displayActiveTab = isLogRoute ? 'log' : isProgressRoute ? 'progress' : getDisplayTab(activeTab);
 
   const handleTabClick = (tab: typeof primaryTabs[0]) => {
+    // Always update the active tab state first
+    onTabChange(getActualTab(tab.id));
+    // Then navigate if there's a route
     if (tab.route) {
       navigate(tab.route);
-    } else {
-      onTabChange(getActualTab(tab.id));
     }
   };
 
