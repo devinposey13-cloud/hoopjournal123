@@ -4,6 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { TierBadges } from '@/components/xp/TierBadges';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { User, Target, Star, Percent, Flame, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,15 +29,29 @@ interface QuickStatProps {
   value: string | number;
   icon: React.ElementType;
   accent?: boolean;
+  tooltip?: string;
 }
 
-function QuickStat({ label, value, icon: Icon, accent }: QuickStatProps) {
-  return (
-    <div className="flex flex-col items-center min-w-[48px]">
+function QuickStat({ label, value, icon: Icon, accent, tooltip }: QuickStatProps) {
+  const content = (
+    <div className="flex flex-col items-center min-w-[48px] cursor-default">
       <Icon className={cn("w-3.5 h-3.5 mb-0.5", accent ? "text-primary" : "text-muted-foreground")} />
       <p className={cn("text-sm font-bold tabular-nums", accent && "text-primary")}>{value}</p>
       <p className="text-[10px] text-muted-foreground leading-tight">{label}</p>
     </div>
+  );
+
+  if (!tooltip) return content;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {content}
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-xs">
+        {tooltip}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -174,48 +189,56 @@ export function PlayerCard({
 
           {/* Quick Stats Row */}
           {hasStats && (
-            <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-border/50 overflow-x-auto scrollbar-hide">
-              {lastGame && (
+            <TooltipProvider delayDuration={300}>
+              <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-border/50 overflow-x-auto scrollbar-hide">
+                {lastGame && (
+                  <QuickStat
+                    label="Last Game"
+                    value={lastGame.points}
+                    icon={Target}
+                    tooltip={`Points scored in your most recent game vs ${lastGame.opponent}`}
+                  />
+                )}
                 <QuickStat
-                  label="Last Game"
-                  value={lastGame.points}
-                  icon={Target}
-                />
-              )}
-              <QuickStat
-                label="PPG"
-                value={seasonStats.avgPoints.toFixed(1)}
-                icon={Star}
-              />
-              <QuickStat
-                label="FG%"
-                value={`${seasonStats.fgPercentage.toFixed(0)}%`}
-                icon={Percent}
-              />
-              {streak > 0 && (
-                <QuickStat
-                  label="Streak"
-                  value={`${streak}${streakType}`}
-                  icon={Flame}
-                  accent={streakType === 'W' && streak >= 3}
-                />
-              )}
-              {last5.length > 0 && (
-                <QuickStat
-                  label="Last 5"
-                  value={`${last5Wins}-${last5Losses}`}
-                  icon={TrendingUp}
-                />
-              )}
-              {xpProgress && (
-                <QuickStat
-                  label="Level"
-                  value={xpProgress.current_level}
+                  label="PPG"
+                  value={seasonStats.avgPoints.toFixed(1)}
                   icon={Star}
-                  accent
+                  tooltip="Points per game average this season"
                 />
-              )}
-            </div>
+                <QuickStat
+                  label="FG%"
+                  value={`${seasonStats.fgPercentage.toFixed(0)}%`}
+                  icon={Percent}
+                  tooltip="Field goal percentage this season"
+                />
+                {streak > 0 && (
+                  <QuickStat
+                    label="Streak"
+                    value={`${streak}${streakType}`}
+                    icon={Flame}
+                    accent={streakType === 'W' && streak >= 3}
+                    tooltip={streakType === 'W' ? `${streak} game winning streak` : `${streak} game losing streak`}
+                  />
+                )}
+                {last5.length > 0 && (
+                  <QuickStat
+                    label="Last 5"
+                    value={`${last5Wins}-${last5Losses}`}
+                    icon={TrendingUp}
+                    tooltip={`Record in last 5 games: ${last5Wins} wins, ${last5Losses} losses`}
+                  />
+                )}
+                {xpProgress && (
+                  <QuickStat
+                    label="Level"
+                    value={xpProgress.current_level}
+                    icon={Star}
+                    accent
+                    tooltip={`Current XP level (${xpProgress.current_xp.toLocaleString()} XP)`}
+                  />
+                )}
+              </div>
+            </TooltipProvider>
           )}
         </CardContent>
       </Card>
