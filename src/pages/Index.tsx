@@ -201,6 +201,9 @@ export default function Index() {
       // Navigate to Coach tab with pregame context
       setCoachPrefillPrompt("Hey Coach, I have a game coming up. Can you help me get mentally ready?");
       setActiveTab('coach');
+    } else if (action === 'explore_dashboard') {
+      // Stay on dashboard (default)
+      setActiveTab('dashboard');
     }
   };
 

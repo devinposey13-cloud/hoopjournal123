@@ -14,7 +14,7 @@ export interface OnboardingData {
   parentEmail: string | null;
 }
 
-export type OnboardingCompletionAction = 'start_game' | 'pregame_talk';
+export type OnboardingCompletionAction = 'start_game' | 'pregame_talk' | 'explore_dashboard';
 
 interface OnboardingFlowProps {
   onComplete: (data: OnboardingData, action?: OnboardingCompletionAction) => void;
@@ -83,6 +83,10 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   const handlePregameTalk = () => {
     onComplete(data, 'pregame_talk');
+  };
+
+  const handleExploreDashboard = () => {
+    onComplete(data, 'explore_dashboard');
   };
 
   const variants = {
@@ -177,6 +181,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 playerName={data.name}
                 onStartGame={handleStartGame}
                 onPregameTalk={handlePregameTalk}
+                onExploreDashboard={handleExploreDashboard}
               />
             )}
           </motion.div>
