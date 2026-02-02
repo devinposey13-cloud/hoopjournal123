@@ -858,12 +858,10 @@ export function LiveStatCapture({
             <p className="text-[9px] text-muted-foreground mt-0.5">Hold to edit</p>
           </div>
           <div className="grid grid-cols-5 gap-2 text-center">
-            <EditableStatCell 
-              value={currentStats.points} 
-              label="PTS" 
-              statKey="points"
-              onLongPress={handleStartEditStat}
-            />
+            <div className="p-1.5 rounded-md bg-muted/30">
+              <p className="text-xl font-bold">{currentStats.points}</p>
+              <p className="text-[9px] text-muted-foreground uppercase">PTS</p>
+            </div>
             <EditableStatCell 
               value={currentStats.rebounds} 
               label="REB" 
