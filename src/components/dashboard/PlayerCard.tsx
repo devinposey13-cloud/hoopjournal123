@@ -134,18 +134,29 @@ export function PlayerCard({
               className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full transition-transform duration-200 hover:scale-105 active:scale-95"
               aria-label="View full profile photo"
             >
-              <Avatar className={cn(
-                "h-24 w-24 md:h-28 md:w-28 ring-4 flex-shrink-0 cursor-pointer transition-shadow duration-300",
-                tierStyle ? `${tierStyle.ring} ${tierStyle.glow}` : 'ring-primary/20 shadow-lg'
-              )}>
-                {profile.avatar ? (
-                  <AvatarImage src={profile.avatar} alt={profile.name} className="object-cover" />
-                ) : (
-                  <AvatarFallback className="bg-primary/10 text-primary text-3xl md:text-4xl font-bold">
-                    {profile.number || <User className="w-10 h-10" />}
-                  </AvatarFallback>
+              <div className="relative">
+                {/* Pulsing glow effect for tier */}
+                {tierStyle && (
+                  <div 
+                    className={cn(
+                      "absolute inset-0 rounded-full animate-ring-pulse blur-md",
+                      tierStyle.ring.replace('ring-', 'bg-')
+                    )} 
+                  />
                 )}
-              </Avatar>
+                <Avatar className={cn(
+                  "h-24 w-24 md:h-28 md:w-28 ring-4 flex-shrink-0 cursor-pointer transition-shadow duration-300 relative",
+                  tierStyle ? `${tierStyle.ring} ${tierStyle.glow}` : 'ring-primary/20 shadow-lg'
+                )}>
+                  {profile.avatar ? (
+                    <AvatarImage src={profile.avatar} alt={profile.name} className="object-cover" />
+                  ) : (
+                    <AvatarFallback className="bg-primary/10 text-primary text-3xl md:text-4xl font-bold">
+                      {profile.number || <User className="w-10 h-10" />}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+              </div>
             </button>
 
             {/* Player Info */}

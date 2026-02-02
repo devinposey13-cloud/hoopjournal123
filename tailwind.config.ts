@@ -137,6 +137,16 @@ export default {
             transform: "scaleY(1.05) translateY(-1px)",
           },
         },
+        "ring-pulse": {
+          "0%, 100%": { 
+            opacity: "0.4",
+            transform: "scale(1)",
+          },
+          "50%": { 
+            opacity: "0.8",
+            transform: "scale(1.05)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -150,6 +160,7 @@ export default {
         "spotlight-on": "spotlight-on 1s ease-out forwards",
         "shimmer": "shimmer 2s linear infinite",
         "fire-flicker": "fire-flicker 0.5s ease-in-out infinite",
+        "ring-pulse": "ring-pulse 2.5s ease-in-out infinite",
       },
     },
   },
