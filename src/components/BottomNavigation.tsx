@@ -5,7 +5,7 @@ import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizont
 import { MoreMenu } from './MoreMenu';
 import { Season } from '@/types/basketball';
 
-export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'clips' | 'milestones' | 'minigames' | 'coach' | 'settings' | 'admin';
+export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin';
 
 interface BottomNavigationProps {
   activeTab: Tab;
@@ -25,9 +25,9 @@ const primaryTabs = [
   { id: 'coach' as Tab, label: 'Coach', icon: MessageCircle },
 ];
 
-// Helper to check if a tab is in the "More" menu (Schedule removed - now part of Log)
+// Helper to check if a tab is in the "More" menu (Clips/Milestones moved to Progress hub)
 const isMoreTab = (tab: Tab): boolean => {
-  return ['clips', 'milestones', 'minigames', 'settings', 'admin'].includes(tab);
+  return ['minigames', 'settings', 'admin'].includes(tab);
 };
 
 export function BottomNavigation({

@@ -6,25 +6,19 @@ import { BottomNavigation } from '@/components/BottomNavigation';
 import { PlayerHeader } from '@/components/PlayerHeader';
 import { StatCard } from '@/components/StatCard';
 import { GameCard } from '@/components/GameCard';
-import { ClipCard } from '@/components/ClipCard';
+
 import { StatsChart } from '@/components/StatsChart';
 import { AddGameDialog } from '@/components/AddGameDialog';
-import { AddClipDialog } from '@/components/AddClipDialog';
 import { AddScheduleDialog } from '@/components/AddScheduleDialog';
-import { ScheduleCard } from '@/components/ScheduleCard';
-import { ScheduleCalendar } from '@/components/ScheduleCalendar';
-import { ImportScheduleDialog } from '@/components/ImportScheduleDialog';
 import { CoachChat } from '@/components/CoachChat';
 import { BasketballKnowledge } from '@/components/BasketballKnowledge';
 import { PlayerComparison } from '@/components/PlayerComparison';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { AuthForm } from '@/components/AuthForm';
-import { ExploreClips } from '@/components/ExploreClips';
 import { JournalHeader } from '@/components/JournalHeader';
 import { AdminPanel } from '@/components/AdminPanel';
 import { GamesHub } from '@/components/games/GamesHub';
-import { MilestoneCollection } from '@/components/milestones/MilestoneCollection';
-import { StatisticsPage } from '@/components/StatisticsPage';
+import { ProgressHub } from '@/components/ProgressHub';
 import { PersistentMusicBar } from '@/components/PersistentMusicBar';
 import { LogSection } from '@/components/LogSection';
 import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
@@ -54,7 +48,7 @@ import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-
 import { Button } from '@/components/ui/button';
 import { LogOut, Trophy, X, Radio, Users } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton, MilestonesTabSkeleton, GamesHubTabSkeleton, CoachTabSkeleton, ClipsTabSkeleton, StatsTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
+import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton, GamesHubTabSkeleton, CoachTabSkeleton, StatsTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AnimatedContainer, AnimatedItem, AnimatedSection } from '@/components/ui/animated-container';
 import {
@@ -397,14 +391,10 @@ export default function Index() {
         return <StatsTabSkeleton />;
       case 'schedule':
         return <ScheduleTabSkeleton />;
-      case 'milestones':
-        return <MilestonesTabSkeleton />;
       case 'minigames':
         return <GamesHubTabSkeleton />;
       case 'coach':
         return <CoachTabSkeleton />;
-      case 'clips':
-        return <ClipsTabSkeleton />;
       default:
         return <DashboardSkeleton />;
     }
@@ -624,10 +614,10 @@ export default function Index() {
                       <h2 className="journal-heading">Season XP Progress</h2>
                       <div 
                         className="journal-card p-4 rounded-xl cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all"
-                        onClick={() => setActiveTab('milestones')}
+                        onClick={() => setActiveTab('stats')}
                         role="button"
                         tabIndex={0}
-                        onKeyDown={(e) => e.key === 'Enter' && setActiveTab('milestones')}
+                        onKeyDown={(e) => e.key === 'Enter' && setActiveTab('stats')}
                       >
                         <div className="flex items-center gap-4">
                           <DiamondLevelBadge 
@@ -709,12 +699,16 @@ export default function Index() {
           />
         )}
 
-        {/* Stats Tab */}
+        {/* Stats/Progress Tab - Now uses ProgressHub */}
         {activeTab === 'stats' && (
-          <StatisticsPage 
-            games={games} 
-            seasonStats={seasonStats} 
+          <ProgressHub
+            games={games}
+            clips={clips}
+            seasonStats={seasonStats}
             teams={teams}
+            isMobile={isMobile}
+            addClip={addClip}
+            deleteClip={deleteClip}
           />
         )}
 
@@ -735,62 +729,6 @@ export default function Index() {
             bulkImportScheduledGames={bulkImportScheduledGames}
             initialSubTab="schedule"
           />
-        )}
-
-        {/* Clips Tab */}
-        {activeTab === 'clips' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold">Video Clips</h1>
-                <p className="text-muted-foreground">
-                  {clips.length} clips uploaded
-                </p>
-              </div>
-              <AddClipDialog onAddClip={addClip} isMobile={isMobile} />
-            </div>
-
-            <Tabs defaultValue="my-clips" className="w-full">
-              <TabsList className="grid w-full max-w-md grid-cols-2">
-                <TabsTrigger value="my-clips">My Clips</TabsTrigger>
-                <TabsTrigger value="explore">Explore</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="my-clips" className="mt-6">
-                {clips.length === 0 ? (
-                  <div className="stat-card text-center py-16">
-                    <p className="text-muted-foreground text-lg">No clips uploaded yet.</p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Upload your best plays and highlights!
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {clips.map((clip) => (
-                      <ClipCard key={clip.id} clip={clip} onDelete={deleteClip} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="explore" className="mt-6">
-                <ExploreClips />
-              </TabsContent>
-            </Tabs>
-          </div>
-        )}
-
-        {/* Milestones Tab - Real Game Achievements */}
-        {activeTab === 'milestones' && (
-          <div className="space-y-6 animate-fade-in">
-            <div>
-              <h1 className="text-2xl font-bold">Milestones</h1>
-              <p className="text-muted-foreground">
-                Achievements earned from your real basketball games
-              </p>
-            </div>
-            <MilestoneCollection />
-          </div>
         )}
 
         {/* Mini Games Tab */}
