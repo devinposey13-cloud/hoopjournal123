@@ -333,10 +333,10 @@ export async function exportGameBoxScorePdf(
     }
   }
 
-  // Team name and score
+  // Team name and player points scored
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${profile.team} ${game.points}`, 14, 40);
+  doc.text(`${profile.team}  •  PTS: ${game.points}`, 14, 40);
 
   // Calculate TOTAL field goals (2PT + 3PT combined) for display
   const totalFgMade = game.fgMade + game.threePtMade;
