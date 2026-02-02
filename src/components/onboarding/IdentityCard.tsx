@@ -26,25 +26,35 @@ export function IdentityCard({ value, onNext }: IdentityCardProps) {
       className="flex flex-col items-center text-center px-6"
     >
       <h2 
-        className="text-3xl md:text-4xl mb-4 text-foreground"
+        className="text-3xl md:text-4xl mb-3 text-foreground"
         style={{ fontFamily: "'Dancing Script', cursive" }}
       >
-        Who's the hooper?
+        Let's personalize your Coach
       </h2>
       
-      <p className="text-muted-foreground mb-8 text-sm">
-        This is how Coach AI will talk to you.
+      <p className="text-muted-foreground mb-6 text-sm max-w-xs">
+        Answer a few quick questions so your Coach can give smarter feedback.
+        <br />
+        <span className="text-xs opacity-75">Takes under 60 seconds.</span>
       </p>
 
-      <form onSubmit={handleSubmit} className="w-full max-w-xs space-y-6">
-        <Input
-          type="text"
-          placeholder="Your name or nickname"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="text-center text-lg h-14 bg-card border-2 focus:border-primary"
-          autoFocus
-        />
+      <form onSubmit={handleSubmit} className="w-full max-w-xs space-y-4">
+        <div className="text-left">
+          <label className="text-sm font-medium text-foreground mb-2 block">
+            What should your Coach call you?
+          </label>
+          <Input
+            type="text"
+            placeholder="e.g. Alex"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="text-center text-lg h-14 bg-card border-2 focus:border-primary"
+            autoFocus
+          />
+          <p className="text-xs text-muted-foreground mt-2">
+            This helps your Coach speak to you like a real person — not a generic assistant.
+          </p>
+        </div>
         
         <Button
           type="submit"

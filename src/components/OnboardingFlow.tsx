@@ -2,11 +2,9 @@ import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { ProgressDots } from './onboarding/ProgressDots';
 import { IdentityCard } from './onboarding/IdentityCard';
-import { RoleCard } from './onboarding/RoleCard';
-import { LevelCard } from './onboarding/LevelCard';
+import { PlayerIdentityCard } from './onboarding/PlayerIdentityCard';
 import { GoalsCard } from './onboarding/GoalsCard';
-import { FamilyCard } from './onboarding/FamilyCard';
-import { TransitionScreen } from './onboarding/TransitionScreen';
+import { CompletionCard } from './onboarding/CompletionCard';
 
 export interface OnboardingData {
   name: string;
@@ -16,18 +14,19 @@ export interface OnboardingData {
   parentEmail: string | null;
 }
 
+export type OnboardingCompletionAction = 'start_game' | 'pregame_talk';
+
 interface OnboardingFlowProps {
-  onComplete: (data: OnboardingData) => void;
+  onComplete: (data: OnboardingData, action?: OnboardingCompletionAction) => void;
 }
 
-const TOTAL_STEPS = 5;
-const SWIPE_THRESHOLD = 50; // Minimum distance to trigger swipe
-const SWIPE_VELOCITY_THRESHOLD = 500; // Velocity threshold for quick swipes
+const TOTAL_STEPS = 4;
+const SWIPE_THRESHOLD = 50;
+const SWIPE_VELOCITY_THRESHOLD = 500;
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [showTransition, setShowTransition] = useState(false);
-  const [direction, setDirection] = useState(0); // -1 for back, 1 for forward
+  const [direction, setDirection] = useState(0);
   const [isEntering, setIsEntering] = useState(true);
   const [data, setData] = useState<OnboardingData>({
     name: '',
@@ -37,7 +36,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     parentEmail: null,
   });
 
-  // Initial fade-in animation
   useEffect(() => {
     const timer = setTimeout(() => setIsEntering(false), 600);
     return () => clearTimeout(timer);
@@ -50,25 +48,15 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     }
   }, [currentStep]);
 
-  const goForward = useCallback((stepData?: Partial<OnboardingData>) => {
-    if (stepData) {
-      setData(prev => ({ ...prev, ...stepData }));
-    }
-    setDirection(1);
-  }, []);
-
   const handleDragEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const { offset, velocity } = info;
     
-    // Swipe right to go back (positive x offset)
     if (
       (offset.x > SWIPE_THRESHOLD || velocity.x > SWIPE_VELOCITY_THRESHOLD) &&
       currentStep > 0
     ) {
       goBack();
     }
-    // Note: Swipe left to go forward is not implemented because
-    // each card has specific completion requirements (name input, selections, etc.)
   }, [currentStep, goBack]);
 
   const handleNameSubmit = (name: string) => {
@@ -77,39 +65,26 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     setCurrentStep(1);
   };
 
-  const handleRoleSelect = (role: string) => {
-    setData(prev => ({ ...prev, courtRole: role }));
+  const handlePlayerIdentitySubmit = (role: string, level: string) => {
+    setData(prev => ({ ...prev, courtRole: role, playingLevel: level }));
     setDirection(1);
     setCurrentStep(2);
-  };
-
-  const handleLevelSelect = (level: string) => {
-    setData(prev => ({ ...prev, playingLevel: level }));
-    setDirection(1);
-    setCurrentStep(3);
   };
 
   const handleGoalsSubmit = (goals: string[]) => {
     setData(prev => ({ ...prev, seasonGoals: goals }));
     setDirection(1);
-    setCurrentStep(4);
+    setCurrentStep(3);
   };
 
-  const handleFamilySubmit = (email: string | null) => {
-    const finalData = { ...data, parentEmail: email };
-    setData(finalData);
-    setShowTransition(true);
+  const handleStartGame = () => {
+    onComplete(data, 'start_game');
   };
 
-  const handleTransitionComplete = () => {
-    onComplete(data);
+  const handlePregameTalk = () => {
+    onComplete(data, 'pregame_talk');
   };
 
-  if (showTransition) {
-    return <TransitionScreen playerName={data.name} onComplete={handleTransitionComplete} />;
-  }
-
-  // Animation variants for swipe transitions
   const variants = {
     enter: (direction: number) => ({
       x: direction > 0 ? 300 : -300,
@@ -132,7 +107,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden"
     >
-      {/* Header with progress - fade in with delay */}
+      {/* Header with progress */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -185,35 +160,31 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               />
             )}
             {currentStep === 1 && (
-              <RoleCard 
-                value={data.courtRole} 
-                onNext={handleRoleSelect} 
+              <PlayerIdentityCard 
+                roleValue={data.courtRole}
+                levelValue={data.playingLevel}
+                onNext={handlePlayerIdentitySubmit} 
               />
             )}
             {currentStep === 2 && (
-              <LevelCard 
-                value={data.playingLevel} 
-                onNext={handleLevelSelect} 
-              />
-            )}
-            {currentStep === 3 && (
               <GoalsCard 
                 value={data.seasonGoals} 
                 onNext={handleGoalsSubmit} 
               />
             )}
-            {currentStep === 4 && (
-              <FamilyCard 
-                value={data.parentEmail || ''} 
-                onNext={handleFamilySubmit} 
+            {currentStep === 3 && (
+              <CompletionCard 
+                playerName={data.name}
+                onStartGame={handleStartGame}
+                onPregameTalk={handlePregameTalk}
               />
             )}
           </motion.div>
         </AnimatePresence>
       </motion.div>
 
-      {/* Back button for steps > 0 */}
-      {currentStep > 0 && (
+      {/* Back button for steps > 0 and < final step */}
+      {currentStep > 0 && currentStep < TOTAL_STEPS - 1 && (
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 0.6, x: 0 }}
