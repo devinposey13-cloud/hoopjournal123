@@ -154,8 +154,8 @@ export function TodayCard({
             size="lg"
           >
             <Calendar className="w-4 h-4" />
-            <span className="hidden sm:inline">Log Game</span>
-            <span className="sm:hidden">Log</span>
+            <span className="hidden sm:inline">Add Game</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         )}
         <Button 
