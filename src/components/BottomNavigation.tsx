@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal } from 'lucide-react';
 import { MoreMenu } from './MoreMenu';
@@ -18,8 +19,8 @@ interface BottomNavigationProps {
 }
 
 const primaryTabs = [
-  { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'log' as Tab, label: 'Log', icon: ClipboardPlus },
+  { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard, route: '/' },
+  { id: 'log' as Tab, label: 'Log', icon: ClipboardPlus, route: '/log/history' },
   { id: 'progress' as Tab, label: 'Progress', icon: TrendingUp },
   { id: 'coach' as Tab, label: 'Coach', icon: MessageCircle },
 ];
@@ -40,6 +41,11 @@ export function BottomNavigation({
   isAdmin = false,
 }: BottomNavigationProps) {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check if we're on a /log route
+  const isLogRoute = location.pathname.startsWith('/log');
 
   // Map 'log' -> 'games' and 'progress' -> 'stats' for display purposes
   const getDisplayActiveTab = (tab: Tab): Tab => {
@@ -48,15 +54,15 @@ export function BottomNavigation({
     return tab;
   };
 
-  const displayActiveTab = getDisplayActiveTab(activeTab);
+  const displayActiveTab = isLogRoute ? 'log' : getDisplayActiveTab(activeTab);
 
-  const handleTabClick = (tabId: Tab) => {
-    if (tabId === 'log') {
-      onTabChange('games');
-    } else if (tabId === 'progress') {
+  const handleTabClick = (tab: typeof primaryTabs[0]) => {
+    if (tab.route) {
+      navigate(tab.route);
+    } else if (tab.id === 'progress') {
       onTabChange('stats');
     } else {
-      onTabChange(tabId);
+      onTabChange(tab.id);
     }
   };
 
@@ -74,7 +80,7 @@ export function BottomNavigation({
             return (
               <button
                 key={tab.id}
-                onClick={() => handleTabClick(tab.id)}
+                onClick={() => handleTabClick(tab)}
                 className={cn(
                   'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors',
                   isActive
