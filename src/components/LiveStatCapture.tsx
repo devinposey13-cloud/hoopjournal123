@@ -610,7 +610,37 @@ export function LiveStatCapture({
   };
 
   const handleSaveClick = () => {
+    // Pre-fill with existing scores or player's points
+    if (!finalScore) {
+      setFinalScoreInput({ us: totalStats.points.toString(), them: '' });
+    } else {
+      setFinalScoreInput({ us: finalScore.us.toString(), them: finalScore.them.toString() });
+    }
     setShowGameOverDialog(true);
+  };
+
+  // Handle game over confirmation with final score
+  const handleGameOverConfirm = () => {
+    const us = parseInt(finalScoreInput.us) || 0;
+    const them = parseInt(finalScoreInput.them) || 0;
+    const determinedWin = us > them;
+    
+    setFinalScore({ us, them });
+    setIsWin(determinedWin);
+    
+    // Save with the determined values
+    const savePayload: LiveStatsSaveData = {
+      total: totalStats,
+      firstHalf: firstHalfStats,
+      secondHalf: secondHalfStats,
+      gamePhotoUrl: gamePhoto || undefined,
+      isWin: determinedWin,
+      halftimeScore: halftimeScore ?? undefined,
+      finalScore: { us, them },
+    };
+    setShowGameOverDialog(false);
+    clearSavedData();
+    onSave(totalStats, savePayload, true);
   };
 
   const handleSave = (isGameOver: boolean) => {
@@ -1217,17 +1247,65 @@ export function LiveStatCapture({
           <AlertDialogHeader>
             <AlertDialogTitle>Is the game over?</AlertDialogTitle>
             <AlertDialogDescription>
-              If the game is over, we'll save your final stats and take you to the game recap. 
-              If not, your stats will be saved so you can resume later.
+              If the game is over, enter the final score below.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {isWin === null && (
-            <div className="bg-orange-500/20 border border-orange-500/30 rounded-lg p-3 text-center">
-              <p className="text-sm text-orange-400 font-medium">
-                Please select Win or Loss above before marking the game as over
-              </p>
+          
+          {/* Final Score Input - Always show in game over dialog */}
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="gameover-us" className="text-center block text-sm font-medium">Your Team</Label>
+                <Input
+                  id="gameover-us"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="999"
+                  placeholder="0"
+                  value={finalScoreInput.us}
+                  onChange={(e) => setFinalScoreInput(prev => ({ ...prev, us: e.target.value }))}
+                  className="text-center text-2xl font-bold h-14"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gameover-them" className="text-center block text-sm font-medium">Opponent</Label>
+                <Input
+                  id="gameover-them"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="999"
+                  placeholder="0"
+                  value={finalScoreInput.them}
+                  onChange={(e) => setFinalScoreInput(prev => ({ ...prev, them: e.target.value }))}
+                  className="text-center text-2xl font-bold h-14"
+                />
+              </div>
             </div>
-          )}
+            <p className="text-xs text-muted-foreground text-center">
+              Your total points: {totalStats.points}
+            </p>
+            
+            {/* Win/Loss indicator based on score */}
+            {finalScoreInput.us && finalScoreInput.them && (
+              <div className={cn(
+                "rounded-lg p-2 text-center text-sm font-medium",
+                parseInt(finalScoreInput.us) > parseInt(finalScoreInput.them) 
+                  ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                  : parseInt(finalScoreInput.us) < parseInt(finalScoreInput.them)
+                  ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                  : "bg-muted text-muted-foreground border border-border"
+              )}>
+                {parseInt(finalScoreInput.us) > parseInt(finalScoreInput.them) 
+                  ? "🏆 Win!" 
+                  : parseInt(finalScoreInput.us) < parseInt(finalScoreInput.them)
+                  ? "📉 Loss"
+                  : "🤝 Tie"}
+              </div>
+            )}
+          </div>
+
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel onClick={() => setShowGameOverDialog(false)}>
               Cancel
@@ -1240,8 +1318,8 @@ export function LiveStatCapture({
               No, Save & Continue Later
             </Button>
             <AlertDialogAction 
-              onClick={() => handleSave(true)}
-              disabled={isSaving || isWin === null}
+              onClick={() => handleGameOverConfirm()}
+              disabled={isSaving || !finalScoreInput.us || !finalScoreInput.them}
               className="gradient-primary"
             >
               Yes, Game Over
