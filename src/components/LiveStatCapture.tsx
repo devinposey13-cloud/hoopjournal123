@@ -757,6 +757,61 @@ export function LiveStatCapture({
           </Button>
         </div>
 
+        {/* Current Half Stats Display - Prominent */}
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-lg p-3 border border-primary/20">
+          <div className="text-center mb-2">
+            <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+              {currentHalf === 1 ? '1st Half' : '2nd Half'} Stats
+            </span>
+          </div>
+          <div className="grid grid-cols-5 gap-2 text-center">
+            <div>
+              <p className="text-xl font-bold text-foreground">{currentStats.points}</p>
+              <p className="text-[10px] text-muted-foreground uppercase">PTS</p>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-foreground">{currentStats.rebounds}</p>
+              <p className="text-[10px] text-muted-foreground uppercase">REB</p>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-foreground">{currentStats.assists}</p>
+              <p className="text-[10px] text-muted-foreground uppercase">AST</p>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-foreground">{currentStats.steals}</p>
+              <p className="text-[10px] text-muted-foreground uppercase">STL</p>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-foreground">{currentStats.blocks}</p>
+              <p className="text-[10px] text-muted-foreground uppercase">BLK</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-2 text-center mt-2 pt-2 border-t border-primary/10">
+            <div>
+              <p className="text-sm font-semibold text-muted-foreground">
+                {currentStats.fgMade}/{currentStats.fgAttempted}
+              </p>
+              <p className="text-[9px] text-muted-foreground/70 uppercase">2PT</p>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-muted-foreground">
+                {currentStats.threePtMade}/{currentStats.threePtAttempted}
+              </p>
+              <p className="text-[9px] text-muted-foreground/70 uppercase">3PT</p>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-muted-foreground">
+                {currentStats.ftMade}/{currentStats.ftAttempted}
+              </p>
+              <p className="text-[9px] text-muted-foreground/70 uppercase">FT</p>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-muted-foreground">{currentStats.turnovers}</p>
+              <p className="text-[9px] text-muted-foreground/70 uppercase">TO</p>
+            </div>
+          </div>
+        </div>
+
         {/* Halftime Score Display - Compact */}
         {halftimeScore && (
           <div className="bg-muted/30 rounded-md px-2 py-1 text-center text-xs flex items-center justify-center gap-1">
@@ -774,25 +829,16 @@ export function LiveStatCapture({
         )}
 
         {/* Sound Effects Toggle - Inline */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="sound-effects" className="text-[10px] text-muted-foreground">
-              SFX
-            </Label>
-            <Switch
-              id="sound-effects"
-              checked={soundEffectsEnabled}
-              onCheckedChange={setSoundEffectsEnabled}
-              className="scale-75"
-            />
-          </div>
-          {/* Current Half Stats - Compact inline */}
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-            <span className="font-medium">{currentHalf === 1 ? '1H' : '2H'}:</span>
-            <span>{currentStats.points}pts</span>
-            <span>{currentStats.rebounds}reb</span>
-            <span>{currentStats.assists}ast</span>
-          </div>
+        <div className="flex items-center justify-center gap-3">
+          <Label htmlFor="sound-effects" className="text-[10px] text-muted-foreground">
+            Sound Effects
+          </Label>
+          <Switch
+            id="sound-effects"
+            checked={soundEffectsEnabled}
+            onCheckedChange={setSoundEffectsEnabled}
+            className="scale-75"
+          />
         </div>
 
         {/* Game Result Selection - Compact */}
@@ -956,17 +1002,19 @@ export function LiveStatCapture({
             </div>
           </div>
           
-          {/* Assist emphasized - most common playmaking action */}
-          <div className="bg-card rounded-lg p-2 border border-border">
-            <StatButton 
-              label="Assist" 
-              icon={Zap}
-              count={currentStats.assists}
-              variant="primary"
-              emphasis="primary"
-              fullWidth
-              onPress={() => recordStat({ type: 'assists', value: 1, label: 'Assist' })}
-            />
+          {/* Assist emphasized - centered primary action */}
+          <div className="flex justify-center">
+            <div className="w-full max-w-xs">
+              <StatButton 
+                label="Assist" 
+                icon={Zap}
+                count={currentStats.assists}
+                variant="primary"
+                emphasis="primary"
+                fullWidth
+                onPress={() => recordStat({ type: 'assists', value: 1, label: 'Assist' })}
+              />
+            </div>
           </div>
 
           {/* Steal/Block grouped - less common */}
