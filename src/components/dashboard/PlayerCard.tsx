@@ -13,12 +13,13 @@ interface PlayerCardProps {
   profile: PlayerProfile;
   teamName?: string;
   tierAchievements?: TierAchievement[];
+  seasonRecord?: { wins: number; losses: number };
   className?: string;
 }
 
-export function PlayerCard({ profile, teamName, tierAchievements = [], className }: PlayerCardProps) {
-  // Get the highest tier for display priority
+export function PlayerCard({ profile, teamName, tierAchievements = [], seasonRecord, className }: PlayerCardProps) {
   const displayTeam = teamName || profile.team;
+  const hasRecord = seasonRecord && (seasonRecord.wins > 0 || seasonRecord.losses > 0);
   
   return (
     <Card className={cn('overflow-hidden border-border/50', className)}>
@@ -44,6 +45,11 @@ export function PlayerCard({ profile, teamName, tierAchievements = [], className
               <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-sm font-semibold">
                 #{profile.number}
               </span>
+              {hasRecord && (
+                <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-sm font-medium">
+                  {seasonRecord.wins}-{seasonRecord.losses}
+                </span>
+              )}
             </div>
             
             <div className="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground">
