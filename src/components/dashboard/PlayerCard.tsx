@@ -39,6 +39,27 @@ function QuickStat({ label, value, icon: Icon, accent }: QuickStatProps) {
   );
 }
 
+// Tier colors mapping
+const TIER_COLORS: Record<string, { ring: string; glow: string }> = {
+  'Legendary': { ring: 'ring-amber-400', glow: 'shadow-[0_0_20px_-3px_rgba(251,191,36,0.5)]' },
+  'Elite': { ring: 'ring-purple-500', glow: 'shadow-[0_0_15px_-3px_rgba(168,85,247,0.4)]' },
+  'Great': { ring: 'ring-blue-500', glow: 'shadow-[0_0_12px_-3px_rgba(59,130,246,0.4)]' },
+  'Solid': { ring: 'ring-emerald-500', glow: 'shadow-[0_0_10px_-3px_rgba(16,185,129,0.3)]' },
+  'Rising': { ring: 'ring-sky-400', glow: '' },
+  'Starter': { ring: 'ring-slate-400', glow: '' },
+};
+
+const TIER_ORDER = ['Legendary', 'Elite', 'Great', 'Solid', 'Rising', 'Starter'];
+
+function getHighestTier(achievements: TierAchievement[]): string | null {
+  if (achievements.length === 0) return null;
+  const tiers = achievements.map(a => a.tier);
+  for (const tier of TIER_ORDER) {
+    if (tiers.includes(tier)) return tier;
+  }
+  return null;
+}
+
 export function PlayerCard({ 
   profile, 
   teamName, 
@@ -52,6 +73,8 @@ export function PlayerCard({
   const [avatarOpen, setAvatarOpen] = useState(false);
   const displayTeam = teamName || profile.team;
   const hasRecord = seasonRecord && (seasonRecord.wins > 0 || seasonRecord.losses > 0);
+  const highestTier = getHighestTier(tierAchievements);
+  const tierStyle = highestTier ? TIER_COLORS[highestTier] : null;
   
   // Calculate stats
   const lastGame = games[0];
@@ -89,13 +112,16 @@ export function PlayerCard({
       )}>
         <CardContent className="p-4">
           <div className="flex items-center gap-5">
-            {/* Avatar - Large focal point, clickable */}
+            {/* Avatar - Large focal point, clickable with tier-colored ring */}
             <button
               onClick={() => setAvatarOpen(true)}
               className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full transition-transform duration-200 hover:scale-105 active:scale-95"
               aria-label="View full profile photo"
             >
-              <Avatar className="h-24 w-24 md:h-28 md:w-28 ring-4 ring-primary/20 flex-shrink-0 shadow-lg cursor-pointer">
+              <Avatar className={cn(
+                "h-24 w-24 md:h-28 md:w-28 ring-4 flex-shrink-0 cursor-pointer transition-shadow duration-300",
+                tierStyle ? `${tierStyle.ring} ${tierStyle.glow}` : 'ring-primary/20 shadow-lg'
+              )}>
                 {profile.avatar ? (
                   <AvatarImage src={profile.avatar} alt={profile.name} className="object-cover" />
                 ) : (
@@ -199,9 +225,15 @@ export function PlayerCard({
           <DialogTitle className="sr-only">{profile.name}'s Profile Photo</DialogTitle>
           <div className="relative flex items-center justify-center animate-scale-in">
             <div className="relative">
-              {/* Glow effect behind avatar */}
-              <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl scale-110" />
-              <Avatar className="h-72 w-72 md:h-80 md:w-80 ring-4 ring-primary/30 shadow-2xl relative z-10">
+              {/* Glow effect behind avatar - tier colored */}
+              <div className={cn(
+                "absolute inset-0 rounded-full blur-2xl scale-110",
+                tierStyle ? tierStyle.ring.replace('ring-', 'bg-').replace('-500', '-500/30').replace('-400', '-400/30') : 'bg-primary/20'
+              )} />
+              <Avatar className={cn(
+                "h-72 w-72 md:h-80 md:w-80 ring-4 shadow-2xl relative z-10",
+                tierStyle ? tierStyle.ring : 'ring-primary/30'
+              )}>
                 {profile.avatar ? (
                   <AvatarImage src={profile.avatar} alt={profile.name} className="object-cover" />
                 ) : (
