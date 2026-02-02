@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveProfile } from '@/hooks/useActiveProfile';
 
 interface CoachMemory {
   id: string;
@@ -10,6 +11,7 @@ interface CoachMemory {
   confidence: number;
   occurrence_count: number;
   last_updated_at: string;
+  profile_id: string | null;
 }
 
 interface UpsertMemoryParams {
@@ -21,16 +23,24 @@ interface UpsertMemoryParams {
 
 export function useCoachMemory() {
   const { user } = useAuth();
+  const { activeProfileId } = useActiveProfile();
 
-  // Fetch all memories for the current user
+  // Fetch all memories for the current user and active profile
   const fetchMemories = useCallback(async (): Promise<CoachMemory[]> => {
     if (!user?.id) return [];
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('coach_memory')
       .select('*')
       .eq('user_id', user.id)
       .order('last_updated_at', { ascending: false });
+
+    // Scope to active profile if available, also include legacy data (null profile_id)
+    if (activeProfileId) {
+      query = query.or(`profile_id.eq.${activeProfileId},profile_id.is.null`);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching coach memories:', error);
@@ -38,7 +48,7 @@ export function useCoachMemory() {
     }
 
     return data || [];
-  }, [user?.id]);
+  }, [user?.id, activeProfileId]);
 
   // Upsert a memory (create or update if exists)
   const upsertMemory = useCallback(async ({
@@ -50,14 +60,22 @@ export function useCoachMemory() {
     if (!user?.id) return false;
 
     try {
-      // Check if memory exists
-      const { data: existing } = await supabase
+      // Check if memory exists for this profile
+      let existingQuery = supabase
         .from('coach_memory')
         .select('id, occurrence_count, confidence')
         .eq('user_id', user.id)
         .eq('memory_type', memoryType)
-        .eq('memory_key', memoryKey)
-        .maybeSingle();
+        .eq('memory_key', memoryKey);
+
+      // Scope to active profile
+      if (activeProfileId) {
+        existingQuery = existingQuery.eq('profile_id', activeProfileId);
+      } else {
+        existingQuery = existingQuery.is('profile_id', null);
+      }
+
+      const { data: existing } = await existingQuery.maybeSingle();
 
       if (existing) {
         // Update existing memory - increase confidence and occurrence count
@@ -74,11 +92,12 @@ export function useCoachMemory() {
 
         if (error) throw error;
       } else {
-        // Create new memory
+        // Create new memory with profile_id
         const { error } = await supabase
           .from('coach_memory')
           .insert({
             user_id: user.id,
+            profile_id: activeProfileId,
             memory_type: memoryType,
             memory_key: memoryKey,
             memory_value: memoryValue,
@@ -94,7 +113,7 @@ export function useCoachMemory() {
       console.error('Error upserting coach memory:', error);
       return false;
     }
-  }, [user?.id]);
+  }, [user?.id, activeProfileId]);
 
   // Store a performance pattern (e.g., "struggles with free throws under pressure")
   const storePattern = useCallback(async (patternKey: string, patternValue: string) => {
@@ -152,14 +171,21 @@ export function useCoachMemory() {
     return true;
   }, [user?.id]);
 
-  // Clear all memories for the user
+  // Clear all memories for the current profile
   const clearAllMemories = useCallback(async (): Promise<boolean> => {
     if (!user?.id) return false;
 
-    const { error } = await supabase
+    let query = supabase
       .from('coach_memory')
       .delete()
       .eq('user_id', user.id);
+
+    // Only clear memories for the active profile
+    if (activeProfileId) {
+      query = query.eq('profile_id', activeProfileId);
+    }
+
+    const { error } = await query;
 
     if (error) {
       console.error('Error clearing coach memories:', error);
@@ -167,7 +193,7 @@ export function useCoachMemory() {
     }
 
     return true;
-  }, [user?.id]);
+  }, [user?.id, activeProfileId]);
 
   return {
     fetchMemories,
