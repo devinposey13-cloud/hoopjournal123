@@ -17,7 +17,7 @@ import { JournalHeader } from '@/components/JournalHeader';
 import { AdminPanel } from '@/components/AdminPanel';
 import { GamesHub } from '@/components/games/GamesHub';
 import { ProgressHub } from '@/components/ProgressHub';
-import { PersistentMusicBar } from '@/components/PersistentMusicBar';
+
 import { LogSection } from '@/components/LogSection';
 import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
 import { PostGameXpReveal } from '@/components/xp/PostGameXpReveal';
@@ -803,9 +803,6 @@ export default function Index() {
         onStartCapture={handleStartQuickCapture}
       />
 
-      {/* Persistent music bar - OUTSIDE tab switching */}
-      <PersistentMusicBar url={profile.themeMusicUrl} />
-      
       {/* Milestone Reveal Modal */}
       <AnimatePresence>
         {showReveal && pendingMilestones.length > 0 && (
