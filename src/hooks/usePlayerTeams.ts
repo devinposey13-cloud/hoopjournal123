@@ -15,7 +15,7 @@ export interface PlayerTeam {
 
 export function usePlayerTeams() {
   const { user } = useAuth();
-  const { activeProfileId } = useActiveProfile();
+  const { activeProfileId, loading: profileLoading } = useActiveProfile();
   const [teams, setTeams] = useState<PlayerTeam[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,6 +23,11 @@ export function usePlayerTeams() {
     if (!user) {
       setTeams([]);
       setLoading(false);
+      return;
+    }
+
+    // Wait for profile to load before fetching teams
+    if (profileLoading) {
       return;
     }
 
@@ -52,7 +57,7 @@ export function usePlayerTeams() {
 
   useEffect(() => {
     fetchTeams();
-  }, [user, activeProfileId]);
+  }, [user, activeProfileId, profileLoading]);
 
   const addTeam = async (name: string, isPrimary: boolean = false) => {
     if (!user) return null;
