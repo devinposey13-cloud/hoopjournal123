@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useActiveProfile } from './useActiveProfile';
 import { GameStats, VideoClip, PlayerProfile, SeasonStats, ScheduledGame, Season } from '@/types/basketball';
 import { toast } from 'sonner';
 
@@ -18,6 +19,7 @@ const defaultProfile: PlayerProfile = {
 
 export function useCloudData() {
   const { user } = useAuth();
+  const { activeProfileId, refetchProfiles } = useActiveProfile();
   const [games, setGames] = useState<GameStats[]>([]);
   const [clips, setClips] = useState<VideoClip[]>([]);
   const [schedule, setSchedule] = useState<ScheduledGame[]>([]);
@@ -26,14 +28,20 @@ export function useCloudData() {
   const [activeSeason, setActiveSeason] = useState<Season | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch seasons
+  // Fetch seasons (now profile-scoped)
   const fetchSeasons = useCallback(async () => {
-    if (!user) return [];
+    if (!user || !activeProfileId) return [];
     
-    const { data, error } = await supabase
+    // Seasons are now scoped to profile
+    let query = supabase
       .from('seasons')
       .select('*')
       .order('created_at', { ascending: false });
+    
+    // Filter by profile_id if set (for new data), or user_id for backward compat
+    query = query.or(`profile_id.eq.${activeProfileId},and(profile_id.is.null,user_id.eq.${user.id})`);
+    
+    const { data, error } = await query;
     
     if (error) {
       console.error('Error fetching seasons:', error);
@@ -56,11 +64,11 @@ export function useCloudData() {
     setActiveSeason(active);
     
     return mappedSeasons;
-  }, [user]);
+  }, [user, activeProfileId]);
 
   // Fetch all data when user is authenticated
   const fetchData = useCallback(async (seasonId?: string) => {
-    if (!user) {
+    if (!user || !activeProfileId) {
       setGames([]);
       setClips([]);
       setSchedule([]);
@@ -73,38 +81,42 @@ export function useCloudData() {
 
     setLoading(true);
     try {
-      // Fetch seasons first
+      // Fetch seasons first (now profile-scoped)
       const fetchedSeasons = await fetchSeasons();
       const currentSeasonId = seasonId || fetchedSeasons.find(s => s.isActive)?.id || fetchedSeasons[0]?.id;
 
-      // Check if user has exactly one team - if so, auto-assign any unassigned games/schedule
+      // Check if profile has exactly one team - if so, auto-assign any unassigned games/schedule
+      // Teams are now profile-scoped
       const { data: teamsData } = await supabase
         .from('player_teams')
         .select('id, name')
-        .eq('user_id', user.id);
+        .or(`profile_id.eq.${activeProfileId},and(profile_id.is.null,user_id.eq.${user.id})`);
       
       const singleTeam = teamsData && teamsData.length === 1 ? teamsData[0] : null;
       
-      // Auto-assign unassigned games to the single team (if applicable)
+      // Auto-assign unassigned games to the single team (if applicable) for this profile
       if (singleTeam) {
         await supabase
           .from('games')
           .update({ team_id: singleTeam.id })
           .is('team_id', null)
-          .eq('user_id', user.id);
+          .or(`profile_id.eq.${activeProfileId},and(profile_id.is.null,user_id.eq.${user.id})`);
         
         await supabase
           .from('scheduled_games')
           .update({ team_id: singleTeam.id })
           .is('team_id', null)
-          .eq('user_id', user.id);
+          .or(`profile_id.eq.${activeProfileId},and(profile_id.is.null,user_id.eq.${user.id})`);
       }
 
-      // Fetch games (filtered by season if one is active)
+      // Fetch games (filtered by profile and season)
       let gamesQuery = supabase
         .from('games')
         .select('*, player_teams(name)')
         .order('date', { ascending: false });
+      
+      // Profile-scoped: include profile_id match OR legacy data (null profile_id with matching user_id)
+      gamesQuery = gamesQuery.or(`profile_id.eq.${activeProfileId},and(profile_id.is.null,user_id.eq.${user.id})`);
       
       if (currentSeasonId) {
         gamesQuery = gamesQuery.eq('season_id', currentSeasonId);
@@ -137,11 +149,14 @@ export function useCloudData() {
         teamName: (g.player_teams as any)?.name || undefined,
       })) || []);
 
-      // Fetch scheduled games (filtered by season) with team info
+      // Fetch scheduled games (filtered by profile and season) with team info
       let scheduleQuery = supabase
         .from('scheduled_games')
         .select('*, player_teams(name)')
         .order('date', { ascending: true });
+      
+      // Profile-scoped
+      scheduleQuery = scheduleQuery.or(`profile_id.eq.${activeProfileId},and(profile_id.is.null,user_id.eq.${user.id})`);
       
       if (currentSeasonId) {
         scheduleQuery = scheduleQuery.eq('season_id', currentSeasonId);
@@ -164,13 +179,14 @@ export function useCloudData() {
         teamName: (s.player_teams as any)?.name || undefined,
       })) || []);
 
-      // Fetch video clips (filtered by user_id and season)
-      // IMPORTANT: Filter by user_id to only get the current user's clips
+      // Fetch video clips (filtered by profile and season)
       let clipsQuery = supabase
         .from('video_clips')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+      
+      // Profile-scoped
+      clipsQuery = clipsQuery.or(`profile_id.eq.${activeProfileId},and(profile_id.is.null,user_id.eq.${user.id})`);
       
       if (currentSeasonId) {
         clipsQuery = clipsQuery.eq('season_id', currentSeasonId);
@@ -207,11 +223,11 @@ export function useCloudData() {
       
       setClips(clipsWithUrls);
 
-      // Fetch player settings for the current user
+      // Fetch player settings for the active profile
       const { data: settingsData, error: settingsError } = await (supabase as any)
         .from('player_settings')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('id', activeProfileId)
         .maybeSingle();
 
       if (settingsError) throw settingsError;
@@ -252,27 +268,31 @@ export function useCloudData() {
     } finally {
       setLoading(false);
     }
-  }, [user, fetchSeasons]);
+  }, [user, activeProfileId, fetchSeasons]);
 
+  // Refetch when active profile changes
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (activeProfileId) {
+      fetchData();
+    }
+  }, [fetchData, activeProfileId]);
 
-  // Create season
+  // Create season (now profile-scoped)
   const createSeason = async (name: string) => {
-    if (!user) return null;
+    if (!user || !activeProfileId) return null;
 
     try {
-      // Set all other seasons to inactive
+      // Set all other seasons for this profile to inactive
       await supabase
         .from('seasons')
         .update({ is_active: false })
-        .eq('user_id', user.id);
+        .or(`profile_id.eq.${activeProfileId},and(profile_id.is.null,user_id.eq.${user.id})`);
 
       const { data, error } = await supabase
         .from('seasons')
         .insert({
           user_id: user.id,
+          profile_id: activeProfileId,
           name,
           is_active: true,
         })
@@ -414,14 +434,14 @@ export function useCloudData() {
     }
   };
 
-  // Helper to get default team (single team auto-assignment)
+  // Helper to get default team (single team auto-assignment) - profile-scoped
   const getDefaultTeamId = async (): Promise<string | null> => {
-    if (!user) return null;
+    if (!user || !activeProfileId) return null;
     
     const { data: teams } = await supabase
       .from('player_teams')
       .select('id')
-      .eq('user_id', user.id);
+      .or(`profile_id.eq.${activeProfileId},and(profile_id.is.null,user_id.eq.${user.id})`);
     
     // If exactly one team exists, auto-assign it
     if (teams && teams.length === 1) {
@@ -430,9 +450,9 @@ export function useCloudData() {
     return null;
   };
 
-  // Add game (now with season_id and team_id)
+  // Add game (now with profile_id, season_id and team_id)
   const addGame = async (game: Omit<GameStats, 'id'>) => {
-    if (!user) return null;
+    if (!user || !activeProfileId) return null;
 
     try {
       // Auto-assign team if only one exists and none specified
@@ -445,6 +465,7 @@ export function useCloudData() {
         .from('games')
         .insert({
           user_id: user.id,
+          profile_id: activeProfileId,
           season_id: activeSeason?.id || null,
           team_id: teamId,
           date: game.date,
@@ -555,9 +576,9 @@ export function useCloudData() {
     }
   };
 
-  // Add scheduled game (now with season_id and team_id)
+  // Add scheduled game (now with profile_id, season_id and team_id)
   const addScheduledGame = async (game: Omit<ScheduledGame, 'id'>) => {
-    if (!user) return null;
+    if (!user || !activeProfileId) return null;
 
     try {
       // Auto-assign team if only one exists and none specified
@@ -570,6 +591,7 @@ export function useCloudData() {
         .from('scheduled_games')
         .insert({
           user_id: user.id,
+          profile_id: activeProfileId,
           season_id: activeSeason?.id || null,
           team_id: teamId,
           date: game.date,
@@ -611,9 +633,9 @@ export function useCloudData() {
     }
   };
 
-  // Bulk import scheduled games (for RSS import)
+  // Bulk import scheduled games (for RSS import) - profile-scoped
   const bulkImportScheduledGames = async (games: Omit<ScheduledGame, 'id'>[]) => {
-    if (!user || games.length === 0) return [];
+    if (!user || !activeProfileId || games.length === 0) return [];
 
     try {
       // Auto-assign team if only one exists
@@ -621,6 +643,7 @@ export function useCloudData() {
 
       const inserts = games.map((game) => ({
         user_id: user.id,
+        profile_id: activeProfileId,
         season_id: activeSeason?.id || null,
         team_id: game.teamId || defaultTeamId,
         date: game.date,
@@ -733,9 +756,9 @@ export function useCloudData() {
     }
   };
 
-  // Add clip (now with season_id and is_public)
+  // Add clip (now with profile_id, season_id and is_public)
   const addClip = async (file: File, title: string, description?: string, isPublic?: boolean) => {
-    if (!user) return null;
+    if (!user || !activeProfileId) return null;
 
     try {
       // Upload file to storage
@@ -753,6 +776,7 @@ export function useCloudData() {
         .from('video_clips')
         .insert({
           user_id: user.id,
+          profile_id: activeProfileId,
           season_id: activeSeason?.id || null,
           title,
           description,
@@ -820,49 +844,52 @@ export function useCloudData() {
     }
   };
 
-  // Update profile
+  // Update profile - now updates the active profile by ID
   const updateProfile = async (updates: Partial<PlayerProfile>) => {
-    if (!user) return;
+    if (!user || !activeProfileId) return;
 
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('player_settings')
-        .upsert(
-          {
-            user_id: user.id,
-            name: updates.name ?? profile.name,
-            team: updates.team ?? profile.team,
-            position: updates.position ?? profile.position,
-            number: updates.number ?? profile.number,
-            height: updates.height ?? profile.height,
-            grade: updates.grade ?? profile.grade,
-            avatar_url: updates.avatar ?? profile.avatar ?? null,
-            username: updates.username ?? profile.username ?? null,
-            display_name: updates.displayName ?? profile.displayName ?? null,
-            is_profile_public: updates.isProfilePublic ?? profile.isProfilePublic ?? false,
-            theme_music_url: updates.themeMusicUrl ?? profile.themeMusicUrl ?? null,
-            instagram_url: updates.instagramUrl ?? profile.instagramUrl ?? null,
-            avatar_skipped_at: updates.avatarSkippedAt ?? profile.avatarSkippedAt ?? null,
-            // Onboarding fields
-            court_role: updates.courtRole ?? profile.courtRole ?? null,
-            playing_level: updates.playingLevel ?? profile.playingLevel ?? null,
-            season_goals: updates.seasonGoals ?? profile.seasonGoals ?? null,
-            parent_email: updates.parentEmail ?? profile.parentEmail ?? null,
-            onboarding_completed_at: updates.onboardingCompletedAt ?? profile.onboardingCompletedAt ?? null,
-            // Notification preferences
-            receive_game_summaries: updates.receiveGameSummaries ?? profile.receiveGameSummaries ?? false,
-            // Coach AI settings
-            coach_persona: updates.coachPersona ?? profile.coachPersona ?? null,
-            coach_voice_gender: updates.coachVoiceGender ?? profile.coachVoiceGender ?? 'male',
-            // Ring of Honor opt-in
-            ring_of_honor_opt_in: updates.ringOfHonorOptIn ?? profile.ringOfHonorOptIn ?? false,
-          },
-          { onConflict: 'user_id' }
-        );
+        .update({
+          name: updates.name ?? profile.name,
+          team: updates.team ?? profile.team,
+          position: updates.position ?? profile.position,
+          number: updates.number ?? profile.number,
+          height: updates.height ?? profile.height,
+          grade: updates.grade ?? profile.grade,
+          avatar_url: updates.avatar ?? profile.avatar ?? null,
+          username: updates.username ?? profile.username ?? null,
+          display_name: updates.displayName ?? profile.displayName ?? null,
+          is_profile_public: updates.isProfilePublic ?? profile.isProfilePublic ?? false,
+          theme_music_url: updates.themeMusicUrl ?? profile.themeMusicUrl ?? null,
+          instagram_url: updates.instagramUrl ?? profile.instagramUrl ?? null,
+          avatar_skipped_at: updates.avatarSkippedAt ?? profile.avatarSkippedAt ?? null,
+          // Onboarding fields
+          court_role: updates.courtRole ?? profile.courtRole ?? null,
+          playing_level: updates.playingLevel ?? profile.playingLevel ?? null,
+          season_goals: updates.seasonGoals ?? profile.seasonGoals ?? null,
+          parent_email: updates.parentEmail ?? profile.parentEmail ?? null,
+          onboarding_completed_at: updates.onboardingCompletedAt ?? profile.onboardingCompletedAt ?? null,
+          // Notification preferences
+          receive_game_summaries: updates.receiveGameSummaries ?? profile.receiveGameSummaries ?? false,
+          // Coach AI settings
+          coach_persona: updates.coachPersona ?? profile.coachPersona ?? null,
+          coach_voice_gender: updates.coachVoiceGender ?? profile.coachVoiceGender ?? 'male',
+          // Ring of Honor opt-in
+          ring_of_honor_opt_in: updates.ringOfHonorOptIn ?? profile.ringOfHonorOptIn ?? false,
+        })
+        .eq('id', activeProfileId);
 
       if (error) throw error;
 
       setProfile(prev => ({ ...prev, ...updates }));
+      
+      // Refresh profile list if name/avatar changed
+      if (updates.name || updates.avatar) {
+        refetchProfiles();
+      }
+      
       toast.success('Profile updated!');
     } catch (error) {
       console.error('Error updating profile:', error);

@@ -133,6 +133,7 @@ export type Database = {
           current_value: number
           id: string
           is_completed: boolean
+          profile_id: string | null
           updated_at: string
           user_id: string
         }
@@ -143,6 +144,7 @@ export type Database = {
           current_value?: number
           id?: string
           is_completed?: boolean
+          profile_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -153,6 +155,7 @@ export type Database = {
           current_value?: number
           id?: string
           is_completed?: boolean
+          profile_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -162,6 +165,20 @@ export type Database = {
             columns: ["challenge_id"]
             isOneToOne: false
             referencedRelation: "monthly_challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_progress_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_progress_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -177,6 +194,7 @@ export type Database = {
           memory_type: string
           memory_value: string
           occurrence_count: number | null
+          profile_id: string | null
           user_id: string
         }
         Insert: {
@@ -189,6 +207,7 @@ export type Database = {
           memory_type: string
           memory_value: string
           occurrence_count?: number | null
+          profile_id?: string | null
           user_id: string
         }
         Update: {
@@ -201,9 +220,25 @@ export type Database = {
           memory_type?: string
           memory_value?: string
           occurrence_count?: number | null
+          profile_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "coach_memory_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_memory_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       content_reports: {
         Row: {
@@ -295,6 +330,7 @@ export type Database = {
           minutes_played: number
           opponent: string
           points: number
+          profile_id: string | null
           rebounds: number
           season_id: string | null
           steals: number
@@ -325,6 +361,7 @@ export type Database = {
           minutes_played?: number
           opponent: string
           points?: number
+          profile_id?: string | null
           rebounds?: number
           season_id?: string | null
           steals?: number
@@ -355,6 +392,7 @@ export type Database = {
           minutes_played?: number
           opponent?: string
           points?: number
+          profile_id?: string | null
           rebounds?: number
           season_id?: string | null
           steals?: number
@@ -366,6 +404,20 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "games_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "games_season_id_fkey"
             columns: ["season_id"]
@@ -574,6 +626,7 @@ export type Database = {
           badge_name: string
           earned_at: string
           id: string
+          profile_id: string | null
           season_id: string | null
           tier: string
           user_id: string
@@ -583,6 +636,7 @@ export type Database = {
           badge_name: string
           earned_at?: string
           id?: string
+          profile_id?: string | null
           season_id?: string | null
           tier: string
           user_id: string
@@ -592,11 +646,26 @@ export type Database = {
           badge_name?: string
           earned_at?: string
           id?: string
+          profile_id?: string | null
           season_id?: string | null
           tier?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "player_badges_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_badges_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "player_badges_season_id_fkey"
             columns: ["season_id"]
@@ -645,6 +714,7 @@ export type Database = {
           id: string
           is_viewed: boolean
           milestone_id: string
+          profile_id: string | null
           season_id: string | null
           stats_snapshot: Json
           user_id: string
@@ -655,6 +725,7 @@ export type Database = {
           id?: string
           is_viewed?: boolean
           milestone_id: string
+          profile_id?: string | null
           season_id?: string | null
           stats_snapshot?: Json
           user_id: string
@@ -665,6 +736,7 @@ export type Database = {
           id?: string
           is_viewed?: boolean
           milestone_id?: string
+          profile_id?: string | null
           season_id?: string | null
           stats_snapshot?: Json
           user_id?: string
@@ -682,6 +754,20 @@ export type Database = {
             columns: ["milestone_id"]
             isOneToOne: false
             referencedRelation: "milestone_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_milestones_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_milestones_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -706,6 +792,7 @@ export type Database = {
           height: string
           id: string
           instagram_url: string | null
+          is_active_profile: boolean
           is_approved: boolean
           is_profile_public: boolean
           name: string
@@ -736,6 +823,7 @@ export type Database = {
           height?: string
           id?: string
           instagram_url?: string | null
+          is_active_profile?: boolean
           is_approved?: boolean
           is_profile_public?: boolean
           name?: string
@@ -766,6 +854,7 @@ export type Database = {
           height?: string
           id?: string
           instagram_url?: string | null
+          is_active_profile?: boolean
           is_approved?: boolean
           is_profile_public?: boolean
           name?: string
@@ -792,6 +881,7 @@ export type Database = {
           id: string
           is_primary: boolean
           name: string
+          profile_id: string | null
           user_id: string
         }
         Insert: {
@@ -799,6 +889,7 @@ export type Database = {
           id?: string
           is_primary?: boolean
           name: string
+          profile_id?: string | null
           user_id: string
         }
         Update: {
@@ -806,9 +897,25 @@ export type Database = {
           id?: string
           is_primary?: boolean
           name?: string
+          profile_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "player_teams_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_teams_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       player_tier_achievements: {
         Row: {
@@ -816,6 +923,7 @@ export type Database = {
           game_id: string | null
           id: string
           performance_score: number
+          profile_id: string | null
           tier: string
           user_id: string
         }
@@ -824,6 +932,7 @@ export type Database = {
           game_id?: string | null
           id?: string
           performance_score: number
+          profile_id?: string | null
           tier: string
           user_id: string
         }
@@ -832,6 +941,7 @@ export type Database = {
           game_id?: string | null
           id?: string
           performance_score?: number
+          profile_id?: string | null
           tier?: string
           user_id?: string
         }
@@ -843,6 +953,20 @@ export type Database = {
             referencedRelation: "games"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "player_tier_achievements_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_tier_achievements_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       player_xp_history: {
@@ -852,6 +976,7 @@ export type Database = {
           final_level: number
           games_played: number
           id: string
+          profile_id: string | null
           quarter: string
           total_xp_earned: number
           user_id: string
@@ -862,6 +987,7 @@ export type Database = {
           final_level: number
           games_played: number
           id?: string
+          profile_id?: string | null
           quarter: string
           total_xp_earned: number
           user_id: string
@@ -872,11 +998,27 @@ export type Database = {
           final_level?: number
           games_played?: number
           id?: string
+          profile_id?: string | null
           quarter?: string
           total_xp_earned?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "player_xp_history_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_xp_history_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       player_xp_progress: {
         Row: {
@@ -886,6 +1028,7 @@ export type Database = {
           games_logged: number
           id: string
           peak_level: number
+          profile_id: string | null
           quarter: string
           total_performance_score: number
           updated_at: string
@@ -898,6 +1041,7 @@ export type Database = {
           games_logged?: number
           id?: string
           peak_level?: number
+          profile_id?: string | null
           quarter: string
           total_performance_score?: number
           updated_at?: string
@@ -910,12 +1054,28 @@ export type Database = {
           games_logged?: number
           id?: string
           peak_level?: number
+          profile_id?: string | null
           quarter?: string
           total_performance_score?: number
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "player_xp_progress_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_xp_progress_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       postgame_insights: {
         Row: {
@@ -929,6 +1089,7 @@ export type Database = {
           id: string
           key_takeaways: string[] | null
           mental_notes: string | null
+          profile_id: string | null
           season_id: string | null
           updated_at: string
           user_id: string
@@ -944,6 +1105,7 @@ export type Database = {
           id?: string
           key_takeaways?: string[] | null
           mental_notes?: string | null
+          profile_id?: string | null
           season_id?: string | null
           updated_at?: string
           user_id: string
@@ -959,6 +1121,7 @@ export type Database = {
           id?: string
           key_takeaways?: string[] | null
           mental_notes?: string | null
+          profile_id?: string | null
           season_id?: string | null
           updated_at?: string
           user_id?: string
@@ -969,6 +1132,20 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "postgame_insights_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "postgame_insights_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1064,6 +1241,7 @@ export type Database = {
           location: string
           notes: string | null
           opponent: string
+          profile_id: string | null
           season_id: string | null
           team_id: string | null
           time: string
@@ -1078,6 +1256,7 @@ export type Database = {
           location: string
           notes?: string | null
           opponent: string
+          profile_id?: string | null
           season_id?: string | null
           team_id?: string | null
           time: string
@@ -1092,6 +1271,7 @@ export type Database = {
           location?: string
           notes?: string | null
           opponent?: string
+          profile_id?: string | null
           season_id?: string | null
           team_id?: string | null
           time?: string
@@ -1099,6 +1279,20 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "scheduled_games_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_games_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "scheduled_games_season_id_fkey"
             columns: ["season_id"]
@@ -1122,6 +1316,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          profile_id: string | null
           start_date: string | null
           user_id: string
         }
@@ -1131,6 +1326,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          profile_id?: string | null
           start_date?: string | null
           user_id: string
         }
@@ -1140,10 +1336,26 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          profile_id?: string | null
           start_date?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "seasons_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seasons_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stats_predictions: {
         Row: {
@@ -1158,6 +1370,7 @@ export type Database = {
           predicted_assists: number
           predicted_points: number
           predicted_rebounds: number
+          profile_id: string | null
           resolved_at: string | null
           scheduled_game_id: string
           user_id: string
@@ -1174,6 +1387,7 @@ export type Database = {
           predicted_assists?: number
           predicted_points?: number
           predicted_rebounds?: number
+          profile_id?: string | null
           resolved_at?: string | null
           scheduled_game_id: string
           user_id: string
@@ -1190,11 +1404,26 @@ export type Database = {
           predicted_assists?: number
           predicted_points?: number
           predicted_rebounds?: number
+          profile_id?: string | null
           resolved_at?: string | null
           scheduled_game_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "stats_predictions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stats_predictions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stats_predictions_scheduled_game_id_fkey"
             columns: ["scheduled_game_id"]
@@ -1350,6 +1579,7 @@ export type Database = {
           game_id: string | null
           id: string
           is_public: boolean
+          profile_id: string | null
           season_id: string | null
           thumbnail_path: string | null
           title: string
@@ -1363,6 +1593,7 @@ export type Database = {
           game_id?: string | null
           id?: string
           is_public?: boolean
+          profile_id?: string | null
           season_id?: string | null
           thumbnail_path?: string | null
           title: string
@@ -1376,6 +1607,7 @@ export type Database = {
           game_id?: string | null
           id?: string
           is_public?: boolean
+          profile_id?: string | null
           season_id?: string | null
           thumbnail_path?: string | null
           title?: string
@@ -1387,6 +1619,20 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_clips_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_clips_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
             referencedColumns: ["id"]
           },
           {

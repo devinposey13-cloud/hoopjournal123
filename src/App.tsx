@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ProfileProvider } from "@/components/profile/ProfileProvider";
 import { FloatingHomeButton } from "@/components/FloatingHomeButton";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import Index from "./pages/Index";
@@ -25,31 +26,33 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <AuthProvider>
-        <TooltipProvider>
-          <OfflineIndicator />
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <FloatingHomeButton />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/log" element={<Log />} />
-              <Route path="/log/:subTab" element={<Log />} />
-              <Route path="/progress" element={<Progress />} />
-              <Route path="/progress/:subTab" element={<Progress />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/rewards" element={<Rewards />} />
-              <Route path="/ring-of-honor" element={<RingOfHonor />} />
-              <Route path="/game/:id" element={<GameDetail />} />
-              <Route path="/game/scheduled/:scheduledId" element={<GameDetail />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/:username" element={<PublicProfile />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <ProfileProvider>
+          <TooltipProvider>
+            <OfflineIndicator />
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <FloatingHomeButton />
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/log" element={<Log />} />
+                <Route path="/log/:subTab" element={<Log />} />
+                <Route path="/progress" element={<Progress />} />
+                <Route path="/progress/:subTab" element={<Progress />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/rewards" element={<Rewards />} />
+                <Route path="/ring-of-honor" element={<RingOfHonor />} />
+                <Route path="/game/:id" element={<GameDetail />} />
+                <Route path="/game/scheduled/:scheduledId" element={<GameDetail />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/:username" element={<PublicProfile />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </ProfileProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>

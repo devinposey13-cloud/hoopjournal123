@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Gamepad2, LogOut, Settings, Shield, UserCircle } from 'lucide-react';
+import { Gamepad2, LogOut, Settings, Shield, UserCircle, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveProfile } from '@/hooks/useActiveProfile';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -11,6 +13,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { SeasonSelector } from './SeasonSelector';
+import { ProfileSelector } from './profile/ProfileSelector';
+import { AddProfileDialog } from './profile/AddProfileDialog';
 import { Season } from '@/types/basketball';
 
 export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile';
@@ -27,6 +31,7 @@ interface MoreMenuProps {
   onSeasonChange: (seasonId: string) => void;
   onCreateSeason: (name: string) => Promise<void>;
   onDeleteSeason?: (seasonId: string) => Promise<boolean>;
+  onProfileCreated?: (profileId: string) => void;
 }
 
 // Menu items - Profile added
@@ -48,9 +53,12 @@ export function MoreMenu({
   onSeasonChange,
   onCreateSeason,
   onDeleteSeason,
+  onProfileCreated,
 }: MoreMenuProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { hasMultipleProfiles } = useActiveProfile();
+  const [showAddProfileDialog, setShowAddProfileDialog] = useState(false);
   
   const allItems = isAdmin
     ? [...menuItems, { id: 'admin' as Tab, label: 'Admin', icon: Shield }]
@@ -70,70 +78,110 @@ export function MoreMenu({
     }
   };
 
+  const handleAddProfile = () => {
+    setShowAddProfileDialog(true);
+  };
+
+  const handleProfileCreated = (profileId: string) => {
+    setShowAddProfileDialog(false);
+    onOpenChange(false);
+    onProfileCreated?.(profileId);
+  };
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
-        <SheetHeader className="pb-4">
-          <SheetTitle className="text-center">More</SheetTitle>
-        </SheetHeader>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
+          <SheetHeader className="pb-4">
+            <SheetTitle className="text-center">More</SheetTitle>
+          </SheetHeader>
 
-        <div className="grid grid-cols-3 gap-3 pb-6">
-          {allItems.map((item) => {
-            const isActive = activeTab === item.id;
-            const showBadge = item.id === 'admin' && adminNotificationCount > 0;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleItemClick(item)}
-                className={cn(
-                  'flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-colors relative',
-                  isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'bg-secondary/50 text-foreground hover:bg-secondary'
-                )}
-              >
-                <div className="relative">
-                  <item.icon className="w-6 h-6" />
-                  {showBadge && (
-                    <Badge 
-                      variant="destructive" 
-                      className="absolute -top-2 -right-3 h-5 min-w-5 flex items-center justify-center px-1 text-xs"
-                    >
-                      {adminNotificationCount > 99 ? '99+' : adminNotificationCount}
-                    </Badge>
+          {/* Profile Selector - Only show if multiple profiles exist */}
+          {hasMultipleProfiles && (
+            <div className="border-b border-border pb-4 mb-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                  <Users className="h-4 w-4" />
+                  Active Player
+                </span>
+                <ProfileSelector onAddProfile={handleAddProfile} compact />
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-3 gap-3 pb-6">
+            {allItems.map((item) => {
+              const isActive = activeTab === item.id;
+              const showBadge = item.id === 'admin' && adminNotificationCount > 0;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleItemClick(item)}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-colors relative',
+                    isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'bg-secondary/50 text-foreground hover:bg-secondary'
                   )}
-                </div>
-                <span className="text-sm font-medium">{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Season Selector */}
-        <div className="border-t border-border pt-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Current Season</span>
-            <SeasonSelector
-              seasons={seasons}
-              activeSeason={activeSeason}
-              onSeasonChange={onSeasonChange}
-              onCreateSeason={onCreateSeason}
-              onDeleteSeason={onDeleteSeason}
-            />
+                >
+                  <div className="relative">
+                    <item.icon className="w-6 h-6" />
+                    {showBadge && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-2 -right-3 h-5 min-w-5 flex items-center justify-center px-1 text-xs"
+                      >
+                        {adminNotificationCount > 99 ? '99+' : adminNotificationCount}
+                      </Badge>
+                    )}
+                  </div>
+                  <span className="text-sm font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+            {/* Add Player button - always visible */}
+            <button
+              onClick={handleAddProfile}
+              className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-colors bg-primary/5 text-primary hover:bg-primary/10 border-2 border-dashed border-primary/30"
+            >
+              <Users className="w-6 h-6" />
+              <span className="text-sm font-medium">Add Player</span>
+            </button>
           </div>
-        </div>
-        {/* Sign Out Button */}
-        <div className="border-t border-border pt-4">
-          <Button
-            variant="ghost"
-            onClick={handleSignOut}
-            className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Sign Out</span>
-          </Button>
-        </div>
-      </SheetContent>
-    </Sheet>
+
+          {/* Season Selector */}
+          <div className="border-t border-border pt-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Current Season</span>
+              <SeasonSelector
+                seasons={seasons}
+                activeSeason={activeSeason}
+                onSeasonChange={onSeasonChange}
+                onCreateSeason={onCreateSeason}
+                onDeleteSeason={onDeleteSeason}
+              />
+            </div>
+          </div>
+          {/* Sign Out Button */}
+          <div className="border-t border-border pt-4">
+            <Button
+              variant="ghost"
+              onClick={handleSignOut}
+              className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="w-5 h-5" />
+              <span>Sign Out</span>
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Add Profile Dialog */}
+      <AddProfileDialog
+        open={showAddProfileDialog}
+        onOpenChange={setShowAddProfileDialog}
+        onProfileCreated={handleProfileCreated}
+      />
+    </>
   );
 }
