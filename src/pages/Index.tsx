@@ -26,6 +26,7 @@ import { GamesHub } from '@/components/games/GamesHub';
 import { MilestoneCollection } from '@/components/milestones/MilestoneCollection';
 import { StatisticsPage } from '@/components/StatisticsPage';
 import { PersistentMusicBar } from '@/components/PersistentMusicBar';
+import { LogSection } from '@/components/LogSection';
 import { MilestoneReveal } from '@/components/milestones/MilestoneReveal';
 import { PostGameXpReveal } from '@/components/xp/PostGameXpReveal';
 import { LevelUpCelebration } from '@/components/xp/LevelUpCelebration';
@@ -690,123 +691,23 @@ export default function Index() {
           </div>
         )}
 
-        {/* Games Tab */}
-        {activeTab === 'games' && (() => {
-          // Filter games for Games tab by team
-          const gamesTabFilteredGames = gamesTabTeamFilter === 'all' 
-            ? games 
-            : games.filter(g => 
-                gamesTabTeamFilter === 'unassigned' 
-                  ? !g.teamId 
-                  : g.teamId === gamesTabTeamFilter
-              );
-
-          return (
-            <div className="space-y-6 animate-fade-in">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl font-bold">Game Log</h1>
-                  <p className="text-muted-foreground">
-                    {gamesTabFilteredGames.length} games recorded
-                    {gamesTabTeamFilter !== 'all' && ` • ${teams.find(t => t.id === gamesTabTeamFilter)?.name || 'Unassigned'}`}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Team Filter */}
-                  {teams.length > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Select value={gamesTabTeamFilter} onValueChange={setGamesTabTeamFilter}>
-                        <SelectTrigger className="w-[160px]">
-                          <Users className="w-4 h-4 mr-2 text-muted-foreground" />
-                          <SelectValue placeholder="All Teams" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Teams</SelectItem>
-                          {teams.map((team) => (
-                            <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                          ))}
-                          <SelectItem value="unassigned">Unassigned</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {gamesTabTeamFilter !== 'all' && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setGamesTabTeamFilter('all')}
-                          className="h-9 w-9"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                  <Button
-                    onClick={handleQuickLiveStatsClick}
-                    variant="outline"
-                    className="gap-2"
-                  >
-                    <Radio className="w-4 h-4" />
-                    <span className="hidden sm:inline">Live Stats</span>
-                  </Button>
-                  <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
-                </div>
-              </div>
-
-              {gamesTabFilteredGames.length === 0 ? (
-                <div className="stat-card text-center py-12 space-y-6">
-                  <div className="space-y-2">
-                    <p className="text-muted-foreground text-lg">
-                      {gamesTabTeamFilter !== 'all' 
-                        ? `No games recorded for ${teams.find(t => t.id === gamesTabTeamFilter)?.name || 'Unassigned'}.`
-                        : 'No games recorded yet.'
-                      }
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {gamesTabTeamFilter !== 'all'
-                        ? 'Try selecting a different team or log a new game.'
-                        : 'Start tracking your season by adding your first game!'
-                      }
-                    </p>
-                  </div>
-                  
-                  {gamesTabTeamFilter === 'all' && (
-                    <>
-                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                        <Button
-                          onClick={handleQuickLiveStatsClick}
-                          className="gradient-primary gap-2 w-full sm:w-auto"
-                          size="lg"
-                        >
-                          <Radio className="w-5 h-5" />
-                          Start Live Stats
-                        </Button>
-                        <span className="text-muted-foreground text-sm">or</span>
-                        <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
-                      </div>
-                      
-                      <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                        Use <strong>Live Stats</strong> to track your game in real-time, or <strong>Log Game</strong> to add stats after the game.
-                      </p>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {gamesTabFilteredGames.map((game) => (
-                    <GameCard 
-                      key={game.id} 
-                      game={game} 
-                      profile={profile} 
-                      onDelete={deleteGame}
-                      teams={teams}
-                      onTeamChange={updateGameTeam}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })()}
+        {/* Games/Log Tab - Uses LogSection with sub-tabs */}
+        {activeTab === 'games' && (
+          <LogSection
+            games={games}
+            schedule={schedule}
+            teams={teams}
+            profile={profile}
+            isMobile={isMobile}
+            addGame={addGame}
+            deleteGame={deleteGame}
+            updateGameTeam={updateGameTeam}
+            addScheduledGame={addScheduledGame}
+            updateScheduledGame={updateScheduledGame}
+            deleteScheduledGame={deleteScheduledGame}
+            bulkImportScheduledGames={bulkImportScheduledGames}
+          />
+        )}
 
         {/* Stats Tab */}
         {activeTab === 'stats' && (
@@ -817,157 +718,23 @@ export default function Index() {
           />
         )}
 
-        {/* Schedule Tab */}
+        {/* Schedule Tab - Now handled by LogSection, redirect to games */}
         {activeTab === 'schedule' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-bold">Season Schedule</h1>
-                <p className="text-muted-foreground">
-                  {upcomingGames.length} upcoming games
-                  {teamFilter !== 'all' && ` • ${teams.find(t => t.id === teamFilter)?.name || 'Unassigned'}`}
-                  {tournamentFilter !== 'all' && ` • ${tournamentFilter}`}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {/* Team Filter */}
-                {teams.length > 1 && (
-                  <div className="flex items-center gap-1">
-                    <Select value={teamFilter} onValueChange={setTeamFilter}>
-                      <SelectTrigger className="w-[160px]">
-                        <Users className="w-4 h-4 mr-2 text-muted-foreground" />
-                        <SelectValue placeholder="All Teams" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Teams</SelectItem>
-                        {teams.map((team) => (
-                          <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                        ))}
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {teamFilter !== 'all' && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setTeamFilter('all')}
-                        className="h-9 w-9"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-                {/* Tag Filter */}
-                {tournaments.length > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Select value={tournamentFilter} onValueChange={setTournamentFilter}>
-                      <SelectTrigger className="w-[160px]">
-                        <Trophy className="w-4 h-4 mr-2 text-muted-foreground" />
-                        <SelectValue placeholder="All Tags" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Tags</SelectItem>
-                        {tournaments.map((t) => (
-                          <SelectItem key={t} value={t}>{t}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {tournamentFilter !== 'all' && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setTournamentFilter('all')}
-                        className="h-9 w-9"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-                <Button
-                  onClick={handleQuickLiveStatsClick}
-                  className="gradient-primary"
-                  size={isMobile ? "icon" : "default"}
-                  title="Live Stats"
-                >
-                  <Radio className="w-4 h-4" />
-                  {!isMobile && <span className="ml-2">Live Stats</span>}
-                  {isMobile && <span className="sr-only">Live Stats</span>}
-                </Button>
-                <ImportScheduleDialog onImport={bulkImportScheduledGames} isMobile={isMobile} />
-                <AddScheduleDialog onAddGame={addScheduledGame} onBulkAddGames={bulkImportScheduledGames} isMobile={isMobile} />
-              </div>
-            </div>
-
-
-            {/* Calendar View */}
-            <section>
-              <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                Calendar View
-              </h2>
-              <ScheduleCalendar 
-                games={filteredSchedule} 
-                playedGames={games} 
-                onAddGame={addScheduledGame}
-                onUpdateGame={updateScheduledGame}
-                onBulkAddGames={bulkImportScheduledGames}
-              />
-            </section>
-
-            {/* Upcoming Games */}
-            <section>
-              <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                Upcoming Games
-              </h2>
-              {upcomingGames.length === 0 ? (
-                <div className="stat-card text-center py-12">
-                  <p className="text-muted-foreground">No upcoming games scheduled.</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Add games to your schedule!
-                  </p>
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {upcomingGames.map((game) => (
-                    <ScheduleCard
-                      key={game.id}
-                      game={game}
-                      linkedGame={findLinkedGame(game)}
-                      onDelete={deleteScheduledGame}
-                      teams={teams}
-                      onUpdateTeam={async (gameId, teamId) => {
-                        await updateScheduledGame(gameId, { teamId: teamId || undefined });
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-
-            {/* Past Games */}
-            {pastScheduledGames.length > 0 && (
-              <section>
-                <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                  Past Scheduled Games
-                </h2>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {pastScheduledGames.map((game) => (
-                    <ScheduleCard
-                      key={game.id}
-                      game={game}
-                      linkedGame={findLinkedGame(game)}
-                      onDelete={deleteScheduledGame}
-                      teams={teams}
-                      onUpdateTeam={async (gameId, teamId) => {
-                        await updateScheduledGame(gameId, { teamId: teamId || undefined });
-                      }}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-          </div>
+          <LogSection
+            games={games}
+            schedule={schedule}
+            teams={teams}
+            profile={profile}
+            isMobile={isMobile}
+            addGame={addGame}
+            deleteGame={deleteGame}
+            updateGameTeam={updateGameTeam}
+            addScheduledGame={addScheduledGame}
+            updateScheduledGame={updateScheduledGame}
+            deleteScheduledGame={deleteScheduledGame}
+            bulkImportScheduledGames={bulkImportScheduledGames}
+            initialSubTab="schedule"
+          />
         )}
 
         {/* Clips Tab */}
