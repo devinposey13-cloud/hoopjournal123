@@ -19,7 +19,7 @@ const defaultProfile: PlayerProfile = {
 
 export function useCloudData() {
   const { user } = useAuth();
-  const { activeProfileId, refetchProfiles } = useActiveProfile();
+  const { activeProfileId, loading: profileLoading, refetchProfiles } = useActiveProfile();
   const [games, setGames] = useState<GameStats[]>([]);
   const [clips, setClips] = useState<VideoClip[]>([]);
   const [schedule, setSchedule] = useState<ScheduledGame[]>([]);
@@ -270,12 +270,21 @@ export function useCloudData() {
     }
   }, [user, activeProfileId, fetchSeasons]);
 
-  // Refetch when active profile changes
+  // Refetch when active profile changes or when profile loading completes
   useEffect(() => {
-    if (activeProfileId) {
-      fetchData();
+    // Wait for profile context to be ready
+    if (profileLoading) {
+      return;
     }
-  }, [fetchData, activeProfileId]);
+    
+    // If no active profile (user might not have completed onboarding), set loading to false
+    if (!activeProfileId) {
+      setLoading(false);
+      return;
+    }
+    
+    fetchData();
+  }, [fetchData, activeProfileId, profileLoading]);
 
   // Create season (now profile-scoped)
   const createSeason = async (name: string) => {
