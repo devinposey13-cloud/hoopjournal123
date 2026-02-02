@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { TierBadges } from '@/components/xp/TierBadges';
 import { User, Target, Star, Percent, Flame, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TierAchievement {
   tier: string;
@@ -223,31 +224,72 @@ export function PlayerCard({
       <Dialog open={avatarOpen} onOpenChange={setAvatarOpen}>
         <DialogContent className="max-w-md p-0 bg-transparent border-none shadow-none overflow-hidden">
           <DialogTitle className="sr-only">{profile.name}'s Profile Photo</DialogTitle>
-          <div className="relative flex items-center justify-center animate-scale-in">
-            <div className="relative">
-              {/* Glow effect behind avatar - tier colored */}
-              <div className={cn(
-                "absolute inset-0 rounded-full blur-2xl scale-110",
-                tierStyle ? tierStyle.ring.replace('ring-', 'bg-').replace('-500', '-500/30').replace('-400', '-400/30') : 'bg-primary/20'
-              )} />
-              <Avatar className={cn(
-                "h-72 w-72 md:h-80 md:w-80 ring-4 shadow-2xl relative z-10",
-                tierStyle ? tierStyle.ring : 'ring-primary/30'
-              )}>
-                {profile.avatar ? (
-                  <AvatarImage src={profile.avatar} alt={profile.name} className="object-cover" />
-                ) : (
-                  <AvatarFallback className="bg-primary/10 text-primary text-7xl font-bold">
-                    {profile.number || <User className="w-20 h-20" />}
-                  </AvatarFallback>
-                )}
-              </Avatar>
-            </div>
-          </div>
-          <div className="text-center mt-4 animate-fade-in">
-            <p className="text-xl font-bold text-white drop-shadow-lg">{profile.name}</p>
-            <p className="text-sm text-white/80 drop-shadow">#{profile.number} • {displayTeam}</p>
-          </div>
+          <AnimatePresence mode="wait">
+            {avatarOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={{ 
+                  opacity: 1, 
+                  scale: 1, 
+                  y: 0,
+                  transition: {
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 25,
+                    mass: 0.8
+                  }
+                }}
+                exit={{ 
+                  opacity: 0, 
+                  scale: 0.9, 
+                  y: -10,
+                  transition: { duration: 0.2, ease: "easeOut" }
+                }}
+              >
+                <div className="relative flex items-center justify-center">
+                  <div className="relative">
+                    {/* Glow effect behind avatar - tier colored */}
+                    <motion.div 
+                      className={cn(
+                        "absolute inset-0 rounded-full blur-2xl scale-110",
+                        tierStyle ? tierStyle.ring.replace('ring-', 'bg-').replace('-500', '-500/30').replace('-400', '-400/30') : 'bg-primary/20'
+                      )}
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ 
+                        opacity: 1, 
+                        scale: 1.1,
+                        transition: { delay: 0.1, duration: 0.4 }
+                      }}
+                    />
+                    <Avatar className={cn(
+                      "h-72 w-72 md:h-80 md:w-80 ring-4 shadow-2xl relative z-10",
+                      tierStyle ? tierStyle.ring : 'ring-primary/30'
+                    )}>
+                      {profile.avatar ? (
+                        <AvatarImage src={profile.avatar} alt={profile.name} className="object-cover" />
+                      ) : (
+                        <AvatarFallback className="bg-primary/10 text-primary text-7xl font-bold">
+                          {profile.number || <User className="w-20 h-20" />}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                  </div>
+                </div>
+                <motion.div 
+                  className="text-center mt-4"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ 
+                    opacity: 1, 
+                    y: 0,
+                    transition: { delay: 0.15, duration: 0.3 }
+                  }}
+                >
+                  <p className="text-xl font-bold text-white drop-shadow-lg">{profile.name}</p>
+                  <p className="text-sm text-white/80 drop-shadow">#{profile.number} • {displayTeam}</p>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </DialogContent>
       </Dialog>
     </>
