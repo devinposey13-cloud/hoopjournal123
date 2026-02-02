@@ -24,8 +24,8 @@ interface MoreMenuProps {
   onDeleteSeason?: (seasonId: string) => Promise<boolean>;
 }
 
+// Schedule removed - now part of Log section
 const menuItems = [
-  { id: 'schedule' as Tab, label: 'Schedule', icon: CalendarDays },
   { id: 'clips' as Tab, label: 'Clips', icon: Video },
   { id: 'milestones' as Tab, label: 'Milestones', icon: Trophy },
   { id: 'minigames' as Tab, label: 'Play', icon: Gamepad2 },

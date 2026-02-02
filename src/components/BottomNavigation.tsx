@@ -24,9 +24,9 @@ const primaryTabs = [
   { id: 'coach' as Tab, label: 'Coach', icon: MessageCircle },
 ];
 
-// Helper to check if a tab is in the "More" menu
+// Helper to check if a tab is in the "More" menu (Schedule removed - now part of Log)
 const isMoreTab = (tab: Tab): boolean => {
-  return ['schedule', 'clips', 'milestones', 'minigames', 'settings', 'admin'].includes(tab);
+  return ['clips', 'milestones', 'minigames', 'settings', 'admin'].includes(tab);
 };
 
 export function BottomNavigation({

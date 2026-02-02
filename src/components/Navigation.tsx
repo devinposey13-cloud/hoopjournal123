@@ -32,18 +32,17 @@ const primaryTabs = [
   { id: 'coach' as Tab, label: 'Coach', icon: MessageCircle },
 ];
 
-// Secondary tabs shown in the "More" dropdown
+// Secondary tabs shown in the "More" dropdown (Schedule removed - now part of Log)
 const moreTabs = [
-  { id: 'schedule' as Tab, label: 'Schedule', icon: CalendarDays },
   { id: 'clips' as Tab, label: 'Clips', icon: Video },
   { id: 'milestones' as Tab, label: 'Milestones', icon: Trophy },
   { id: 'minigames' as Tab, label: 'Play', icon: Gamepad2 },
   { id: 'settings' as Tab, label: 'Settings', icon: Settings },
 ];
 
-// Helper to check if a tab is in the "More" menu
+// Helper to check if a tab is in the "More" menu (Schedule removed - now part of Log)
 const isMoreTab = (tab: Tab): boolean => {
-  return ['schedule', 'clips', 'milestones', 'minigames', 'settings', 'admin'].includes(tab);
+  return ['clips', 'milestones', 'minigames', 'settings', 'admin'].includes(tab);
 };
 
 // Map display tabs to actual tabs
