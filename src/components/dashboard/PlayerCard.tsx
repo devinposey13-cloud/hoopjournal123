@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { PlayerProfile, GameStats, SeasonStats } from '@/types/basketball';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { TierBadges } from '@/components/xp/TierBadges';
 import { User, Target, Star, Percent, Flame, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -47,6 +49,7 @@ export function PlayerCard({
   xpProgress,
   className 
 }: PlayerCardProps) {
+  const [avatarOpen, setAvatarOpen] = useState(false);
   const displayTeam = teamName || profile.team;
   const hasRecord = seasonRecord && (seasonRecord.wins > 0 || seasonRecord.losses > 0);
   
@@ -77,110 +80,144 @@ export function PlayerCard({
   const isHotStreak = streakType === 'W' && streak >= 3;
   
   return (
-    <Card className={cn(
-      'overflow-hidden border-border/50 transition-all duration-300',
-      isOnWinStreak && 'border-green-500/30 shadow-[0_0_15px_-3px_rgba(34,197,94,0.2)]',
-      isHotStreak && 'border-green-500/50 shadow-[0_0_25px_-3px_rgba(34,197,94,0.3)] ring-1 ring-green-500/20',
-      className
-    )}>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-5">
-          {/* Avatar - Large focal point */}
-          <Avatar className="h-24 w-24 md:h-28 md:w-28 ring-4 ring-primary/20 flex-shrink-0 shadow-lg">
-            {profile.avatar ? (
-              <AvatarImage src={profile.avatar} alt={profile.name} className="object-cover" />
-            ) : (
-              <AvatarFallback className="bg-primary/10 text-primary text-3xl md:text-4xl font-bold">
-                {profile.number || <User className="w-10 h-10" />}
-              </AvatarFallback>
-            )}
-          </Avatar>
+    <>
+      <Card className={cn(
+        'overflow-hidden border-border/50 transition-all duration-300',
+        isOnWinStreak && 'border-green-500/30 shadow-[0_0_15px_-3px_rgba(34,197,94,0.2)]',
+        isHotStreak && 'border-green-500/50 shadow-[0_0_25px_-3px_rgba(34,197,94,0.3)] ring-1 ring-green-500/20',
+        className
+      )}>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-5">
+            {/* Avatar - Large focal point, clickable */}
+            <button
+              onClick={() => setAvatarOpen(true)}
+              className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full transition-transform duration-200 hover:scale-105 active:scale-95"
+              aria-label="View full profile photo"
+            >
+              <Avatar className="h-24 w-24 md:h-28 md:w-28 ring-4 ring-primary/20 flex-shrink-0 shadow-lg cursor-pointer">
+                {profile.avatar ? (
+                  <AvatarImage src={profile.avatar} alt={profile.name} className="object-cover" />
+                ) : (
+                  <AvatarFallback className="bg-primary/10 text-primary text-3xl md:text-4xl font-bold">
+                    {profile.number || <User className="w-10 h-10" />}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+            </button>
 
-          {/* Player Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg font-bold text-foreground truncate">
-                {profile.name}
-              </h2>
-              <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-sm font-semibold">
-                #{profile.number}
-              </span>
-              {hasRecord && (
-                <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-sm font-medium">
-                  {seasonRecord.wins}-{seasonRecord.losses}
+            {/* Player Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg font-bold text-foreground truncate">
+                  {profile.name}
+                </h2>
+                <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-sm font-semibold">
+                  #{profile.number}
                 </span>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground">
-              {profile.position && (
-                <span className="font-medium">{profile.position}</span>
-              )}
-              {profile.position && profile.grade && (
-                <span className="text-border">•</span>
-              )}
-              {profile.grade && (
-                <span>{profile.grade}</span>
-              )}
-              {(profile.position || profile.grade) && displayTeam && (
-                <span className="text-border">•</span>
-              )}
-              <span className="truncate">{displayTeam}</span>
-            </div>
+                {hasRecord && (
+                  <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-sm font-medium">
+                    {seasonRecord.wins}-{seasonRecord.losses}
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground">
+                {profile.position && (
+                  <span className="font-medium">{profile.position}</span>
+                )}
+                {profile.position && profile.grade && (
+                  <span className="text-border">•</span>
+                )}
+                {profile.grade && (
+                  <span>{profile.grade}</span>
+                )}
+                {(profile.position || profile.grade) && displayTeam && (
+                  <span className="text-border">•</span>
+                )}
+                <span className="truncate">{displayTeam}</span>
+              </div>
 
-            {/* Tier Badges */}
-            {tierAchievements.length > 0 && (
-              <TierBadges achievedTiers={tierAchievements} size="sm" className="mt-2" />
-            )}
+              {/* Tier Badges */}
+              {tierAchievements.length > 0 && (
+                <TierBadges achievedTiers={tierAchievements} size="sm" className="mt-2" />
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Quick Stats Row */}
-        {hasStats && (
-          <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-border/50 overflow-x-auto scrollbar-hide">
-            {lastGame && (
+          {/* Quick Stats Row */}
+          {hasStats && (
+            <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-border/50 overflow-x-auto scrollbar-hide">
+              {lastGame && (
+                <QuickStat
+                  label="Last Game"
+                  value={lastGame.points}
+                  icon={Target}
+                />
+              )}
               <QuickStat
-                label="Last Game"
-                value={lastGame.points}
-                icon={Target}
-              />
-            )}
-            <QuickStat
-              label="PPG"
-              value={seasonStats.avgPoints.toFixed(1)}
-              icon={Star}
-            />
-            <QuickStat
-              label="FG%"
-              value={`${seasonStats.fgPercentage.toFixed(0)}%`}
-              icon={Percent}
-            />
-            {streak > 0 && (
-              <QuickStat
-                label="Streak"
-                value={`${streak}${streakType}`}
-                icon={Flame}
-                accent={streakType === 'W' && streak >= 3}
-              />
-            )}
-            {last5.length > 0 && (
-              <QuickStat
-                label="Last 5"
-                value={`${last5Wins}-${last5Losses}`}
-                icon={TrendingUp}
-              />
-            )}
-            {xpProgress && (
-              <QuickStat
-                label="Level"
-                value={xpProgress.current_level}
+                label="PPG"
+                value={seasonStats.avgPoints.toFixed(1)}
                 icon={Star}
-                accent
               />
-            )}
+              <QuickStat
+                label="FG%"
+                value={`${seasonStats.fgPercentage.toFixed(0)}%`}
+                icon={Percent}
+              />
+              {streak > 0 && (
+                <QuickStat
+                  label="Streak"
+                  value={`${streak}${streakType}`}
+                  icon={Flame}
+                  accent={streakType === 'W' && streak >= 3}
+                />
+              )}
+              {last5.length > 0 && (
+                <QuickStat
+                  label="Last 5"
+                  value={`${last5Wins}-${last5Losses}`}
+                  icon={TrendingUp}
+                />
+              )}
+              {xpProgress && (
+                <QuickStat
+                  label="Level"
+                  value={xpProgress.current_level}
+                  icon={Star}
+                  accent
+                />
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Avatar Fullscreen Modal */}
+      <Dialog open={avatarOpen} onOpenChange={setAvatarOpen}>
+        <DialogContent className="max-w-md p-0 bg-transparent border-none shadow-none overflow-hidden">
+          <DialogTitle className="sr-only">{profile.name}'s Profile Photo</DialogTitle>
+          <div className="relative flex items-center justify-center animate-scale-in">
+            <div className="relative">
+              {/* Glow effect behind avatar */}
+              <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl scale-110" />
+              <Avatar className="h-72 w-72 md:h-80 md:w-80 ring-4 ring-primary/30 shadow-2xl relative z-10">
+                {profile.avatar ? (
+                  <AvatarImage src={profile.avatar} alt={profile.name} className="object-cover" />
+                ) : (
+                  <AvatarFallback className="bg-primary/10 text-primary text-7xl font-bold">
+                    {profile.number || <User className="w-20 h-20" />}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+            </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <div className="text-center mt-4 animate-fade-in">
+            <p className="text-xl font-bold text-white drop-shadow-lg">{profile.name}</p>
+            <p className="text-sm text-white/80 drop-shadow">#{profile.number} • {displayTeam}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
