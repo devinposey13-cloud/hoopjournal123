@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 import type { GameStats } from '@/types/basketball';
 import { calculateOpponentSplits, calculateMonthSplits, calculateWinLossSplits, type StatSplit } from '@/utils/statsCalculations';
 
@@ -29,22 +30,30 @@ function SplitCard({ split, index }: { split: StatSplit; index: number }) {
           </div>
           <div className="grid grid-cols-3 gap-2 text-sm mb-3">
             <div className="text-center">
-              <p className="font-bold text-lg">{split.avgPoints}</p>
+              <p className="font-bold text-lg">
+                <AnimatedCounter value={split.avgPoints} decimals={1} delay={index * 0.05} />
+              </p>
               <p className="text-xs text-muted-foreground">PPG</p>
             </div>
             <div className="text-center">
-              <p className="font-bold text-lg">{split.avgRebounds}</p>
+              <p className="font-bold text-lg">
+                <AnimatedCounter value={split.avgRebounds} decimals={1} delay={index * 0.05 + 0.02} />
+              </p>
               <p className="text-xs text-muted-foreground">RPG</p>
             </div>
             <div className="text-center">
-              <p className="font-bold text-lg">{split.avgAssists}</p>
+              <p className="font-bold text-lg">
+                <AnimatedCounter value={split.avgAssists} decimals={1} delay={index * 0.05 + 0.04} />
+              </p>
               <p className="text-xs text-muted-foreground">APG</p>
             </div>
           </div>
           <div className="space-y-1">
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">Win Rate</span>
-              <span className="font-medium">{split.winPercentage}%</span>
+              <span className="font-medium">
+                <AnimatedCounter value={split.winPercentage} decimals={1} suffix="%" delay={index * 0.05 + 0.06} />
+              </span>
             </div>
             <Progress value={split.winPercentage} className="h-1.5" />
           </div>
@@ -108,29 +117,41 @@ export function StatsSplits({ games }: StatsSplitsProps) {
                     <CardContent>
                       <div className="grid grid-cols-3 gap-4 text-center mb-4">
                         <div>
-                          <p className="text-2xl font-bold">{winLossSplits.wins.avgPoints}</p>
+                          <p className="text-2xl font-bold">
+                            <AnimatedCounter value={winLossSplits.wins.avgPoints} decimals={1} delay={0} />
+                          </p>
                           <p className="text-xs text-muted-foreground">PPG</p>
                         </div>
                         <div>
-                          <p className="text-2xl font-bold">{winLossSplits.wins.avgRebounds}</p>
+                          <p className="text-2xl font-bold">
+                            <AnimatedCounter value={winLossSplits.wins.avgRebounds} decimals={1} delay={0.02} />
+                          </p>
                           <p className="text-xs text-muted-foreground">RPG</p>
                         </div>
                         <div>
-                          <p className="text-2xl font-bold">{winLossSplits.wins.avgAssists}</p>
+                          <p className="text-2xl font-bold">
+                            <AnimatedCounter value={winLossSplits.wins.avgAssists} decimals={1} delay={0.04} />
+                          </p>
                           <p className="text-xs text-muted-foreground">APG</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-4 text-center text-sm">
                         <div>
-                          <p className="font-medium">{winLossSplits.wins.fgPercentage}%</p>
+                          <p className="font-medium">
+                            <AnimatedCounter value={winLossSplits.wins.fgPercentage} decimals={1} suffix="%" delay={0.06} />
+                          </p>
                           <p className="text-xs text-muted-foreground">FG%</p>
                         </div>
                         <div>
-                          <p className="font-medium">{winLossSplits.wins.threePtPercentage}%</p>
+                          <p className="font-medium">
+                            <AnimatedCounter value={winLossSplits.wins.threePtPercentage} decimals={1} suffix="%" delay={0.08} />
+                          </p>
                           <p className="text-xs text-muted-foreground">3P%</p>
                         </div>
                         <div>
-                          <p className="font-medium">{winLossSplits.wins.ftPercentage}%</p>
+                          <p className="font-medium">
+                            <AnimatedCounter value={winLossSplits.wins.ftPercentage} decimals={1} suffix="%" delay={0.1} />
+                          </p>
                           <p className="text-xs text-muted-foreground">FT%</p>
                         </div>
                       </div>
@@ -158,29 +179,41 @@ export function StatsSplits({ games }: StatsSplitsProps) {
                     <CardContent>
                       <div className="grid grid-cols-3 gap-4 text-center mb-4">
                         <div>
-                          <p className="text-2xl font-bold">{winLossSplits.losses.avgPoints}</p>
+                          <p className="text-2xl font-bold">
+                            <AnimatedCounter value={winLossSplits.losses.avgPoints} decimals={1} delay={0.1} />
+                          </p>
                           <p className="text-xs text-muted-foreground">PPG</p>
                         </div>
                         <div>
-                          <p className="text-2xl font-bold">{winLossSplits.losses.avgRebounds}</p>
+                          <p className="text-2xl font-bold">
+                            <AnimatedCounter value={winLossSplits.losses.avgRebounds} decimals={1} delay={0.12} />
+                          </p>
                           <p className="text-xs text-muted-foreground">RPG</p>
                         </div>
                         <div>
-                          <p className="text-2xl font-bold">{winLossSplits.losses.avgAssists}</p>
+                          <p className="text-2xl font-bold">
+                            <AnimatedCounter value={winLossSplits.losses.avgAssists} decimals={1} delay={0.14} />
+                          </p>
                           <p className="text-xs text-muted-foreground">APG</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-4 text-center text-sm">
                         <div>
-                          <p className="font-medium">{winLossSplits.losses.fgPercentage}%</p>
+                          <p className="font-medium">
+                            <AnimatedCounter value={winLossSplits.losses.fgPercentage} decimals={1} suffix="%" delay={0.16} />
+                          </p>
                           <p className="text-xs text-muted-foreground">FG%</p>
                         </div>
                         <div>
-                          <p className="font-medium">{winLossSplits.losses.threePtPercentage}%</p>
+                          <p className="font-medium">
+                            <AnimatedCounter value={winLossSplits.losses.threePtPercentage} decimals={1} suffix="%" delay={0.18} />
+                          </p>
                           <p className="text-xs text-muted-foreground">3P%</p>
                         </div>
                         <div>
-                          <p className="font-medium">{winLossSplits.losses.ftPercentage}%</p>
+                          <p className="font-medium">
+                            <AnimatedCounter value={winLossSplits.losses.ftPercentage} decimals={1} suffix="%" delay={0.2} />
+                          </p>
                           <p className="text-xs text-muted-foreground">FT%</p>
                         </div>
                       </div>

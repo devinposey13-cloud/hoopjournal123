@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 import type { GameStats, SeasonStats } from '@/types/basketball';
 import { calculateTrend, calculateWinLossSplits, getPerformanceTimeline } from '@/utils/statsCalculations';
 
@@ -38,9 +39,9 @@ export function SeasonOverview({ games, seasonStats }: SeasonOverviewProps) {
         {statConfig.map(({ key, label, icon: Icon, color }, index) => {
           const trend = calculateTrend(games, key);
           const avgKey = `avg${key.charAt(0).toUpperCase() + key.slice(1)}` as keyof SeasonStats;
-          const value = key === 'turnovers' 
-            ? (games.reduce((acc, g) => acc + g.turnovers, 0) / Math.max(games.length, 1)).toFixed(1)
-            : (seasonStats[avgKey] as number)?.toFixed(1) || '0.0';
+          const numValue = key === 'turnovers' 
+            ? (games.reduce((acc, g) => acc + g.turnovers, 0) / Math.max(games.length, 1))
+            : (seasonStats[avgKey] as number) || 0;
 
           return (
             <motion.div
@@ -70,7 +71,9 @@ export function SeasonOverview({ games, seasonStats }: SeasonOverviewProps) {
                       </div>
                     )}
                   </div>
-                  <p className="text-2xl font-bold">{value}</p>
+                  <p className="text-2xl font-bold">
+                    <AnimatedCounter value={numValue} decimals={1} delay={index * 0.05} />
+                  </p>
                   <p className="text-xs text-muted-foreground">{label}</p>
                 </CardContent>
               </Card>
@@ -94,21 +97,27 @@ export function SeasonOverview({ games, seasonStats }: SeasonOverviewProps) {
               <div>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-muted-foreground">Field Goal %</span>
-                  <span className="font-medium">{seasonStats.fgPercentage}%</span>
+                  <span className="font-medium">
+                    <AnimatedCounter value={seasonStats.fgPercentage} decimals={1} suffix="%" delay={0.3} />
+                  </span>
                 </div>
                 <Progress value={seasonStats.fgPercentage} className="h-2" />
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-muted-foreground">3-Point %</span>
-                  <span className="font-medium">{seasonStats.threePtPercentage}%</span>
+                  <span className="font-medium">
+                    <AnimatedCounter value={seasonStats.threePtPercentage} decimals={1} suffix="%" delay={0.35} />
+                  </span>
                 </div>
                 <Progress value={seasonStats.threePtPercentage} className="h-2 [&>div]:bg-accent" />
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-muted-foreground">Free Throw %</span>
-                  <span className="font-medium">{seasonStats.ftPercentage}%</span>
+                  <span className="font-medium">
+                    <AnimatedCounter value={seasonStats.ftPercentage} decimals={1} suffix="%" delay={0.4} />
+                  </span>
                 </div>
                 <Progress value={seasonStats.ftPercentage} className="h-2 [&>div]:bg-green-500" />
               </div>

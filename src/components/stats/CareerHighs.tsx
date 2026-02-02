@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Trophy, Target, Repeat, Zap, Shield, HandMetal, Star, CircleDot } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 import { format } from 'date-fns';
 import type { GameStats } from '@/types/basketball';
 import { calculateCareerHighs, findPerfectGames, type CareerHigh } from '@/utils/statsCalculations';
@@ -61,7 +62,9 @@ export function CareerHighs({ games }: CareerHighsProps) {
                 <CardContent>
                   <div className="flex items-end justify-between">
                     <div>
-                      <p className="text-4xl font-bold text-primary">{high.value}</p>
+                      <p className="text-4xl font-bold text-primary">
+                        <AnimatedCounter value={high.value} delay={index * 0.05} />
+                      </p>
                       <p className="text-sm text-muted-foreground mt-1">vs {high.opponent}</p>
                       <Badge variant="secondary" className="mt-2">
                         {format(new Date(high.date), 'MMM d, yyyy')}
@@ -135,21 +138,25 @@ export function CareerHighs({ games }: CareerHighsProps) {
               <div className="flex justify-center gap-6 text-sm">
                 <div>
                   <p className="font-bold text-2xl text-primary">
-                    {games.filter(g => g.isWin).length}
+                    <AnimatedCounter value={games.filter(g => g.isWin).length} delay={0.4} />
                   </p>
                   <p className="text-muted-foreground">Wins</p>
                 </div>
                 <div className="border-l border-border" />
                 <div>
                   <p className="font-bold text-2xl text-destructive">
-                    {games.filter(g => !g.isWin).length}
+                    <AnimatedCounter value={games.filter(g => !g.isWin).length} delay={0.45} />
                   </p>
                   <p className="text-muted-foreground">Losses</p>
                 </div>
                 <div className="border-l border-border" />
                 <div>
                   <p className="font-bold text-2xl">
-                    {games.length > 0 ? Math.round((games.filter(g => g.isWin).length / games.length) * 100) : 0}%
+                    <AnimatedCounter 
+                      value={games.length > 0 ? Math.round((games.filter(g => g.isWin).length / games.length) * 100) : 0} 
+                      suffix="%" 
+                      delay={0.5} 
+                    />
                   </p>
                   <p className="text-muted-foreground">Win Rate</p>
                 </div>
