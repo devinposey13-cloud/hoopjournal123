@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { TierBadges } from '@/components/xp/TierBadges';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { User, Target, Star, Percent, Flame, TrendingUp } from 'lucide-react';
+import { User, Target, Star, Percent, Flame, TrendingUp, Circle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -215,6 +215,18 @@ export function PlayerCard({
                   value={seasonStats.avgPoints.toFixed(1)}
                   icon={Star}
                   tooltip="Points per game average this season"
+                />
+                <QuickStat
+                  label="RPG"
+                  value={seasonStats.avgRebounds.toFixed(1)}
+                  icon={Circle}
+                  tooltip="Rebounds per game average this season"
+                />
+                <QuickStat
+                  label="APG"
+                  value={seasonStats.avgAssists.toFixed(1)}
+                  icon={Users}
+                  tooltip="Assists per game average this season"
                 />
                 <QuickStat
                   label="FG%"
