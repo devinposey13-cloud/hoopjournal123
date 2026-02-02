@@ -655,7 +655,9 @@ export function AdminPanel() {
       </div>
 
       <Tabs defaultValue="approvals" className="space-y-4">
-        <TabsList className="w-full h-auto flex-wrap gap-1 p-1 md:flex-nowrap md:h-10">
+        <div className="relative">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent pb-1 sm:pb-0">
+            <TabsList className="w-max min-w-full h-auto gap-1 p-1 sm:w-full sm:flex-nowrap md:h-10">
           <TabsTrigger value="approvals" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0">
             <UserCheck className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
             <span className="hidden sm:inline">Approvals</span>
@@ -692,12 +694,16 @@ export function AdminPanel() {
               <Badge variant="destructive" className="ml-0.5 h-4 w-4 p-0 text-[10px] flex items-center justify-center md:h-5 md:w-auto md:px-1.5">{unreadFeedback}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="metrics" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0">
+          <TabsTrigger value="metrics" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0 whitespace-nowrap">
             <BarChart3 className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
             <span className="hidden sm:inline">Metrics</span>
             <span className="sm:hidden">Stats</span>
           </TabsTrigger>
-        </TabsList>
+            </TabsList>
+          </div>
+          {/* Scroll indicator - fades on right edge when scrollable */}
+          <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-muted to-transparent pointer-events-none sm:hidden" aria-hidden="true" />
+        </div>
 
         {/* Approvals Tab */}
         <TabsContent value="approvals" className="space-y-4">
