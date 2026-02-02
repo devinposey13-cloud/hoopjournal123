@@ -68,13 +68,16 @@ export function TodayCard({
       
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-xl font-bold">Today</h2>
-          {isGameDay && (
-            <Badge variant="default" className="bg-primary/20 text-primary border-primary/30">
-              Game Day
-            </Badge>
-          )}
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold">Up Next</h2>
+            {isGameDay && (
+              <Badge variant="default" className="bg-primary/20 text-primary border-primary/30">
+                Game Day
+              </Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">Your next game</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {currentStreak > 0 && (
@@ -125,12 +128,9 @@ export function TodayCard({
         </div>
       ) : (
         <div className="mb-5">
-          <p className="text-muted-foreground">No upcoming games scheduled</p>
+          <p className="text-muted-foreground font-medium">No upcoming games scheduled</p>
           <p className="text-sm text-muted-foreground/70 mt-1">
-            {games.length > 0 
-              ? `${games.length} games logged this season`
-              : 'Ready to log your first game?'
-            }
+            Add your next game to keep your season up to date.
           </p>
         </div>
       )}
