@@ -1,109 +1,180 @@
 
-
-# Animated Number Counters for Statistics Page
+# Navigation UI Refactor
 
 ## Overview
 
-Add smooth animated number counters that count up from 0 when stat cards first appear on the Statistics page. This creates a more engaging and polished experience as players view their performance data.
+Refactor the main navigation to a clean, mobile-first 5-tab bottom navigation bar. This change is UI-only and preserves all existing pages, routes, and business logic.
 
 ---
 
-## What You'll See
-
-When you navigate to the Stats tab, instead of numbers appearing instantly:
-- Values will smoothly count up from 0 to their final value
-- The animation starts when cards scroll into view
-- Numbers use a spring-based animation for a natural, bouncy feel
-- Decimal values (like 12.5 PPG) animate smoothly with proper formatting
-
----
-
-## Implementation Approach
-
-### 1. Create Reusable AnimatedCounter Component
-
-A new utility component that handles all the animation logic:
+## New Navigation Structure
 
 ```text
-+--------------------------------------------------+
-|  AnimatedCounter                                  |
-|  - Takes target value and formatting options     |
-|  - Uses useMotionValue + useSpring from Framer   |
-|  - Triggers when element scrolls into view       |
-|  - Supports decimals, percentages, and integers  |
-+--------------------------------------------------+
++---------------------------------------------------------------+
+|                        (Page Content)                          |
++---------------------------------------------------------------+
+|                                                               |
+|   [Dashboard]   [Log]   [Progress]   [Coach]   [More]         |
+|       Home     Book+     TrendUp    MessageCir  MoreHoriz     |
+|                                                               |
++---------------------------------------------------------------+
 ```
 
-### 2. Apply to All Statistics Sub-Tabs
+### Tab Mapping
 
-**Season Overview:**
-- PPG, RPG, APG, SPG, BPG, TO/G cards
-- Shooting percentage values (FG%, 3P%, FT%)
-
-**Career Highs:**
-- Career high values (32 points, 15 rebounds, etc.)
-- Win/Loss counts and Win Rate percentage
-
-**Splits:**
-- All split stat values (PPG, RPG, APG per split)
-- Shooting percentages in win/loss cards
-
-**Advanced Stats:**
-- True Shooting %, Efficiency Rating, etc.
-- Radar chart summary values
+| New Tab | Icon | Routes To |
+|---------|------|-----------|
+| **Dashboard** | `LayoutDashboard` | Current dashboard view (home stats, recent games) |
+| **Log** | `ClipboardPlus` | Current games tab (log/view games) |
+| **Progress** | `TrendingUp` | Current stats tab (statistics page) |
+| **Coach** | `MessageCircle` | Current coach tab (Coach AI) |
+| **More** | `MoreHorizontal` | Sheet/menu with: Schedule, Clips, Milestones, Play, Settings, Admin |
 
 ---
 
-## Technical Details
+## What Gets Created
 
-### New File: `src/components/ui/animated-counter.tsx`
+### 1. New Bottom Navigation Component
+**File:** `src/components/BottomNavigation.tsx`
 
+A fixed bottom navigation bar that:
+- Stays pinned to the bottom of the screen
+- Shows 5 icons with labels below
+- Highlights the active tab with primary color
+- Works seamlessly on mobile and desktop
+- Includes safe area padding for iOS devices
+
+### 2. "More" Menu Sheet
+**File:** `src/components/MoreMenu.tsx`
+
+A slide-up sheet (using existing Sheet component) containing:
+- Schedule (calendar icon)
+- Clips (video icon)
+- Milestones (trophy icon)
+- Play (gamepad icon)
+- Settings (cog icon)
+- Admin (shield icon) - only if user is admin
+- Season selector at the bottom
+
+---
+
+## What Changes
+
+### Navigation.tsx
+- **Kept as-is** for potential desktop use or future reference
+- Could be hidden on mobile, shown on desktop (optional)
+
+### Index.tsx
+- Import new `BottomNavigation` component
+- Replace top Navigation with BottomNavigation (or show both with responsive visibility)
+- Move Season Selector into the More menu
+- Adjust bottom padding on main content area to account for fixed bottom nav (`pb-20` instead of `pb-14`)
+
+---
+
+## Visual Design
+
+### Bottom Nav Bar
 ```text
-Props:
-- value: number (target value to animate to)
-- decimals?: number (decimal places, default 0)
-- suffix?: string (e.g., "%" for percentages)
-- duration?: number (animation duration)
-- delay?: number (staggered animation delay)
-- className?: string (styling)
-
-Uses:
-- useMotionValue(0) - starting value
-- useSpring() - smooth spring animation
-- useInView() - trigger on scroll into view
-- useEffect() - update display text
+Height: 64px (h-16)
+Background: bg-background/95 backdrop-blur-lg
+Border: border-t border-border
+Position: fixed bottom-0 left-0 right-0
+Safe area: pb-safe (iOS notch support)
 ```
 
-### Files to Modify
+### Tab Buttons
+```text
+Active: text-primary, icon filled/bold
+Inactive: text-muted-foreground
+Label: text-xs font-medium
+Icon: w-5 h-5
+Spacing: flex-1 (equal distribution)
+```
 
-1. **Create**: `src/components/ui/animated-counter.tsx`
-2. **Update**: `src/components/stats/SeasonOverview.tsx`
-3. **Update**: `src/components/stats/CareerHighs.tsx`
-4. **Update**: `src/components/stats/StatsSplits.tsx`
-5. **Update**: `src/components/stats/AdvancedStats.tsx`
-
----
-
-## Animation Behavior
-
-| Stat Type | Example | Animation |
-|-----------|---------|-----------|
-| Averages | 12.5 PPG | 0.0 -> 12.5 (1 decimal) |
-| Percentages | 62.4% | 0.0 -> 62.4 with "%" suffix |
-| Integers | 32 points | 0 -> 32 (whole number) |
-| Ratios | 2.1 A/TO | 0.0 -> 2.1 (1 decimal) |
-
-**Timing:**
-- Each card staggers slightly (0.05s delay per card index)
-- Spring animation: damping 60, stiffness 100
-- Only animates once (when first visible)
+### More Menu
+```text
+Sheet from bottom
+Max height: 70vh
+Grid layout: 2 columns for menu items
+Each item: icon + label, clickable
+```
 
 ---
 
-## User Experience Benefits
+## Files to Create
 
-1. **Visual Engagement**: Numbers counting up draws attention to achievements
-2. **Progressive Reveal**: Data feels more dynamic and alive
-3. **Performance Emphasis**: High numbers are more impactful when animated
-4. **Consistent Polish**: Matches the app's existing spring-based animation patterns
+1. **`src/components/BottomNavigation.tsx`**
+   - Fixed bottom nav with 5 tabs
+   - Handles active state highlighting
+   - Opens MoreMenu sheet when "More" is tapped
 
+2. **`src/components/MoreMenu.tsx`**
+   - Sheet component with secondary navigation items
+   - Season selector embedded
+   - Closes on item selection
+
+---
+
+## Files to Modify
+
+1. **`src/components/Navigation.tsx`**
+   - Update Tab type to include new mapping OR keep for desktop
+   - Add "log" and "progress" as valid tab values
+
+2. **`src/pages/Index.tsx`**
+   - Replace/augment Navigation with BottomNavigation
+   - Adjust content padding for bottom nav
+   - Handle tab switching from MoreMenu items
+
+---
+
+## Tab Type Updates
+
+```typescript
+// Current
+type Tab = 'dashboard' | 'games' | 'stats' | 'schedule' | 'clips' | 
+           'milestones' | 'minigames' | 'coach' | 'settings' | 'admin';
+
+// After (aliases added for clarity)
+type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 
+           'schedule' | 'clips' | 'milestones' | 'minigames' | 
+           'coach' | 'settings' | 'admin';
+
+// Mapping:
+// - 'log' maps to games tab content
+// - 'progress' maps to stats tab content
+```
+
+---
+
+## Mobile-First Behavior
+
+- Bottom nav is always visible (except during fullscreen modals like Live Stats)
+- No horizontal scrolling - exactly 5 equal-width tabs
+- Touch-friendly 64px tap targets
+- Smooth transitions between tabs
+
+---
+
+## What Stays Untouched
+
+- All existing page components (GameCard, StatisticsPage, CoachChat, etc.)
+- All existing hooks and data logic
+- All existing routes in App.tsx
+- All existing features and functionality
+- Database interactions
+- Auth flow
+
+---
+
+## Implementation Order
+
+1. Create `BottomNavigation.tsx` with 5 static tabs
+2. Create `MoreMenu.tsx` sheet with secondary items
+3. Update `Navigation.tsx` Tab type to include new values
+4. Update `Index.tsx` to render bottom nav and handle new tab IDs
+5. Adjust page padding for fixed bottom nav
+6. Test on mobile viewport
+
+This is a purely visual navigation refactor with no business logic changes.
