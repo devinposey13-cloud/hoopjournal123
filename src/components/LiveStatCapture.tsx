@@ -980,7 +980,7 @@ export function LiveStatCapture({
             className={cn(
               "h-7 px-3 text-xs font-semibold transition-all",
               isWin === true 
-                ? "bg-green-500 hover:bg-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.6)]" 
+                ? "bg-green-500 hover:bg-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.6)] animate-bounce-select" 
                 : isWin === null
                   ? "animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_10px_rgba(34,197,94,0.3)] border-green-500/50 hover:border-green-500 hover:shadow-[0_0_15px_rgba(34,197,94,0.5)]"
                   : "border-green-500/30 hover:border-green-500/50"
@@ -996,7 +996,7 @@ export function LiveStatCapture({
             className={cn(
               "h-7 px-3 text-xs font-semibold transition-all",
               isWin === false 
-                ? "bg-red-500 hover:bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.6)]" 
+                ? "bg-red-500 hover:bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.6)] animate-bounce-select" 
                 : isWin === null
                   ? "animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_10px_rgba(239,68,68,0.3)] border-red-500/50 hover:border-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)]"
                   : "border-red-500/30 hover:border-red-500/50"

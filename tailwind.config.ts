@@ -147,6 +147,13 @@ export default {
             transform: "scale(1.05)",
           },
         },
+        "bounce-select": {
+          "0%": { transform: "scale(1)" },
+          "25%": { transform: "scale(1.15)" },
+          "50%": { transform: "scale(0.95)" },
+          "75%": { transform: "scale(1.05)" },
+          "100%": { transform: "scale(1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -161,6 +168,7 @@ export default {
         "shimmer": "shimmer 2s linear infinite",
         "fire-flicker": "fire-flicker 0.5s ease-in-out infinite",
         "ring-pulse": "ring-pulse 2.5s ease-in-out infinite",
+        "bounce-select": "bounce-select 0.3s ease-out",
       },
     },
   },
