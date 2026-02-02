@@ -95,7 +95,7 @@ export function PersistentMusicBar({ url }: PersistentMusicBarProps) {
   const iframeHeight = isSpotify ? 80 : 166;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50">
+    <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-40">
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         {/* Header bar - always visible */}
         <div className="flex items-center justify-between px-4 py-3 bg-card/95 backdrop-blur-md border-t border-border">
