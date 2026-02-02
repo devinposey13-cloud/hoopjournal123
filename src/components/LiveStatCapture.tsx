@@ -20,7 +20,8 @@ import {
   ImageIcon,
   Trash2,
   UserX,
-  Radio
+  Radio,
+  Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FireCelebration } from './FireCelebration';
@@ -977,10 +978,13 @@ export function LiveStatCapture({
             onClick={() => handleWinLossClick(true)}
             size="sm"
             className={cn(
-              "h-7 px-3 text-xs font-semibold",
-              isWin === true && "bg-green-500 hover:bg-green-600 text-white"
+              "h-7 px-3 text-xs font-semibold transition-all",
+              isWin === true 
+                ? "bg-green-500 hover:bg-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.6)] animate-pulse" 
+                : "animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_10px_rgba(34,197,94,0.3)] border-green-500/50 hover:border-green-500 hover:shadow-[0_0_15px_rgba(34,197,94,0.5)]"
             )}
           >
+            <Check className="w-3 h-3 mr-1" />
             Win
           </Button>
           <Button
@@ -988,10 +992,13 @@ export function LiveStatCapture({
             onClick={() => handleWinLossClick(false)}
             size="sm"
             className={cn(
-              "h-7 px-3 text-xs font-semibold",
-              isWin === false && "bg-red-500 hover:bg-red-600 text-white"
+              "h-7 px-3 text-xs font-semibold transition-all",
+              isWin === false 
+                ? "bg-red-500 hover:bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.6)] animate-pulse" 
+                : "animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_10px_rgba(239,68,68,0.3)] border-red-500/50 hover:border-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)]"
             )}
           >
+            <X className="w-3 h-3 mr-1" />
             Loss
           </Button>
           {/* Final Score Display - Inline */}
