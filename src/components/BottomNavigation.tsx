@@ -21,7 +21,7 @@ interface BottomNavigationProps {
 const primaryTabs = [
   { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard, route: '/' },
   { id: 'log' as Tab, label: 'Log', icon: ClipboardPlus, route: '/log/history' },
-  { id: 'progress' as Tab, label: 'Progress', icon: TrendingUp },
+  { id: 'progress' as Tab, label: 'Progress', icon: TrendingUp, route: '/progress/overview' },
   { id: 'coach' as Tab, label: 'Coach', icon: MessageCircle },
 ];
 
@@ -44,8 +44,9 @@ export function BottomNavigation({
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check if we're on a /log route
+  // Check if we're on a /log or /progress route
   const isLogRoute = location.pathname.startsWith('/log');
+  const isProgressRoute = location.pathname.startsWith('/progress');
 
   // Map 'log' -> 'games' and 'progress' -> 'stats' for display purposes
   const getDisplayActiveTab = (tab: Tab): Tab => {
@@ -54,13 +55,11 @@ export function BottomNavigation({
     return tab;
   };
 
-  const displayActiveTab = isLogRoute ? 'log' : getDisplayActiveTab(activeTab);
+  const displayActiveTab = isLogRoute ? 'log' : isProgressRoute ? 'progress' : getDisplayActiveTab(activeTab);
 
   const handleTabClick = (tab: typeof primaryTabs[0]) => {
     if (tab.route) {
       navigate(tab.route);
-    } else if (tab.id === 'progress') {
-      onTabChange('stats');
     } else {
       onTabChange(tab.id);
     }

@@ -29,7 +29,7 @@ interface NavigationProps {
 const primaryTabs = [
   { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard, route: '/' },
   { id: 'log' as Tab, label: 'Log', icon: ClipboardPlus, route: '/log/history', actualTab: 'games' as Tab },
-  { id: 'progress' as Tab, label: 'Progress', icon: TrendingUp, actualTab: 'stats' as Tab },
+  { id: 'progress' as Tab, label: 'Progress', icon: TrendingUp, route: '/progress/overview', actualTab: 'stats' as Tab },
   { id: 'coach' as Tab, label: 'Coach', icon: MessageCircle },
 ];
 
@@ -72,9 +72,10 @@ export function Navigation({
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check if we're on a /log route
+  // Check if we're on a /log or /progress route
   const isLogRoute = location.pathname.startsWith('/log');
-  const displayActiveTab = isLogRoute ? 'log' : getDisplayTab(activeTab);
+  const isProgressRoute = location.pathname.startsWith('/progress');
+  const displayActiveTab = isLogRoute ? 'log' : isProgressRoute ? 'progress' : getDisplayTab(activeTab);
 
   const handleTabClick = (tab: typeof primaryTabs[0]) => {
     if (tab.route) {

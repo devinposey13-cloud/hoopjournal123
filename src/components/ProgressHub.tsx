@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart3, TrendingUp, Video, Trophy, Activity } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -22,6 +22,8 @@ interface ProgressHubProps {
   isMobile: boolean;
   addClip: (file: File, title: string, description?: string, isPublic?: boolean) => Promise<any>;
   deleteClip: (id: string) => Promise<void>;
+  initialSubTab?: ProgressSubTab;
+  onSubTabChange?: (subTab: ProgressSubTab) => void;
 }
 
 export function ProgressHub({
@@ -32,8 +34,21 @@ export function ProgressHub({
   isMobile,
   addClip,
   deleteClip,
+  initialSubTab = 'overview',
+  onSubTabChange,
 }: ProgressHubProps) {
-  const [activeSubTab, setActiveSubTab] = useState<ProgressSubTab>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<ProgressSubTab>(initialSubTab);
+
+  // Sync with URL when initialSubTab changes
+  React.useEffect(() => {
+    setActiveSubTab(initialSubTab);
+  }, [initialSubTab]);
+
+  const handleSubTabChange = (value: string) => {
+    const newTab = value as ProgressSubTab;
+    setActiveSubTab(newTab);
+    onSubTabChange?.(newTab);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -49,7 +64,7 @@ export function ProgressHub({
       </div>
 
       {/* Sub-Tabs */}
-      <Tabs value={activeSubTab} onValueChange={(v) => setActiveSubTab(v as ProgressSubTab)}>
+      <Tabs value={activeSubTab} onValueChange={handleSubTabChange}>
         <TabsList className="grid grid-cols-5 w-full max-w-2xl">
           <TabsTrigger value="overview" className="gap-1.5">
             <BarChart3 className="h-4 w-4" />
