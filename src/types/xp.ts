@@ -58,10 +58,10 @@ export interface PerformanceResult {
 }
 
 export type PerformanceTier = 
-  | 'struggling' 
-  | 'developing' 
+  | 'starter' 
+  | 'rising' 
   | 'solid' 
-  | 'great' 
+  | 'great'
   | 'elite' 
   | 'legendary';
 

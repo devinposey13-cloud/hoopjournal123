@@ -10,8 +10,8 @@ interface TierBadgesProps {
 }
 
 const tierConfig: Record<string, { icon: React.ElementType; color: string; bgColor: string; label: string }> = {
-  'struggling': { icon: Trophy, color: 'text-slate-500', bgColor: 'bg-slate-500/20', label: 'Struggling' },
-  'developing': { icon: Trophy, color: 'text-orange-600', bgColor: 'bg-orange-500/20', label: 'Developing' },
+  'starter': { icon: Trophy, color: 'text-slate-500', bgColor: 'bg-slate-500/20', label: 'Starter' },
+  'rising': { icon: Trophy, color: 'text-orange-600', bgColor: 'bg-orange-500/20', label: 'Rising' },
   'solid': { icon: Star, color: 'text-green-500', bgColor: 'bg-green-500/20', label: 'Solid' },
   'great': { icon: Star, color: 'text-blue-500', bgColor: 'bg-blue-500/20', label: 'Great' },
   'elite': { icon: Crown, color: 'text-purple-500', bgColor: 'bg-purple-500/20', label: 'Elite' },
@@ -19,7 +19,7 @@ const tierConfig: Record<string, { icon: React.ElementType; color: string; bgCol
 };
 
 // Order tiers from highest to lowest
-const tierOrder = ['legendary', 'elite', 'great', 'solid', 'developing', 'struggling'];
+const tierOrder = ['legendary', 'elite', 'great', 'solid', 'rising', 'starter'];
 
 export function TierBadges({ achievedTiers, size = 'md', className }: TierBadgesProps) {
   // Count occurrences of each tier

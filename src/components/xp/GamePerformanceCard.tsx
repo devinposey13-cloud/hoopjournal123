@@ -26,7 +26,7 @@ function getTierProgress(score: number, currentTier: PerformanceTier): {
   currentTierMin: number;
   nextTierMin: number;
 } {
-  const tierOrder: PerformanceTier[] = ['struggling', 'developing', 'solid', 'great', 'elite', 'legendary'];
+  const tierOrder: PerformanceTier[] = ['starter', 'rising', 'solid', 'great', 'elite', 'legendary'];
   const currentIndex = tierOrder.indexOf(currentTier);
   
   if (currentTier === 'legendary') {

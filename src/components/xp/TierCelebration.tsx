@@ -13,8 +13,8 @@ interface TierCelebrationProps {
 }
 
 const TIER_ICONS: Record<PerformanceTier, React.ReactNode> = {
-  struggling: <TrendingUp className="w-12 h-12" />,
-  developing: <Zap className="w-12 h-12" />,
+  starter: <TrendingUp className="w-12 h-12" />,
+  rising: <Zap className="w-12 h-12" />,
   solid: <Award className="w-12 h-12" />,
   great: <Star className="w-12 h-12" />,
   elite: <Trophy className="w-12 h-12" />,
@@ -22,11 +22,11 @@ const TIER_ICONS: Record<PerformanceTier, React.ReactNode> = {
 };
 
 const TIER_MESSAGES: Record<PerformanceTier, { title: string; subtitle: string }> = {
-  struggling: {
-    title: 'Keep Grinding!',
-    subtitle: 'Every player starts somewhere. Your first milestone!',
+  starter: {
+    title: 'First Steps!',
+    subtitle: 'Every legend starts here. Keep building!',
   },
-  developing: {
+  rising: {
     title: 'Rising Star!',
     subtitle: 'You\'re showing real improvement. Keep it up!',
   },
@@ -58,8 +58,8 @@ export function TierCelebration({ tier, performanceScore, onComplete }: TierCele
   // Trigger confetti based on tier
   useEffect(() => {
     const tierConfettiConfig = {
-      struggling: { count: 30, spread: 50 },
-      developing: { count: 50, spread: 60 },
+      starter: { count: 30, spread: 50 },
+      rising: { count: 50, spread: 60 },
       solid: { count: 80, spread: 70 },
       great: { count: 100, spread: 80 },
       elite: { count: 150, spread: 100 },
@@ -261,9 +261,9 @@ function getTierConfettiColors(tier: PerformanceTier): string[] {
       return ['#3B82F6', '#06B6D4', '#0EA5E9', '#22D3EE'];
     case 'solid':
       return ['#22C55E', '#10B981', '#34D399', '#4ADE80'];
-    case 'developing':
+    case 'rising':
       return ['#F97316', '#FBBF24', '#FB923C', '#FCD34D'];
-    case 'struggling':
+    case 'starter':
       return ['#6B7280', '#9CA3AF', '#D1D5DB', '#E5E7EB'];
   }
 }
