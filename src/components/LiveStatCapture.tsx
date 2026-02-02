@@ -1,7 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { LongPressButton } from '@/components/ui/long-press-button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, 
   Undo2, 
@@ -17,7 +19,8 @@ import {
   Camera,
   ImageIcon,
   Trash2,
-  UserX
+  UserX,
+  Radio
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FireCelebration } from './FireCelebration';
@@ -550,16 +553,23 @@ export function LiveStatCapture({
         />
       )}
       
-      {/* Header */}
-      <div className="bg-card border-b border-border p-4 flex items-center justify-between sticky top-0 z-10">
-        <Button variant="ghost" size="icon" onClick={onCancel}>
-          <ArrowLeft className="w-5 h-5" />
+      {/* Header - Compact */}
+      <div className="bg-card border-b border-border px-3 py-2 flex items-center justify-between sticky top-0 z-10">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {}}>
+          <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="text-center">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Live Capture</p>
-          <p className="font-semibold">vs {opponent}</p>
+        <div className="text-center flex items-center gap-2">
+          {/* LIVE Indicator */}
+          <Badge variant="destructive" className="animate-pulse gap-1 px-2 py-0.5 text-[10px]">
+            <Radio className="w-3 h-3" />
+            LIVE
+          </Badge>
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">vs</p>
+            <p className="font-semibold text-sm leading-tight">{opponent}</p>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <input
             ref={fileInputRef}
             type="file"
@@ -569,21 +579,21 @@ export function LiveStatCapture({
           />
           <Button 
             variant="ghost" 
-            size="icon" 
+            size="icon"
+            className="h-8 w-8"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploadingPhoto}
-            className={cn(gamePhoto && "text-green-400")}
           >
             {isUploadingPhoto ? (
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             ) : gamePhoto ? (
-              <ImageIcon className="w-5 h-5" />
+              <ImageIcon className="w-4 h-4 text-green-400" />
             ) : (
-              <Camera className="w-5 h-5" />
+              <Camera className="w-4 h-4" />
             )}
           </Button>
-          <Button variant="ghost" size="icon" onClick={undoLast} disabled={history.length === 0}>
-            <Undo2 className="w-5 h-5" />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={undoLast} disabled={history.length === 0}>
+            <Undo2 className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -617,54 +627,53 @@ export function LiveStatCapture({
         </div>
       )}
 
-      {/* Points Display - Shows Total */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 py-6 text-center">
-        <p className="text-5xl font-bold text-primary-foreground">{totalStats.points}</p>
-        <p className="text-primary-foreground/80 uppercase tracking-wider text-sm mt-1">Total Points</p>
-        <div className="flex justify-center gap-6 mt-2 text-primary-foreground/70 text-sm">
+      {/* Points Display - Compact */}
+      <div className="bg-gradient-to-r from-primary to-primary/80 py-3 text-center">
+        <p className="text-4xl font-bold text-primary-foreground">{totalStats.points}</p>
+        <div className="flex justify-center gap-4 mt-1 text-primary-foreground/70 text-xs">
           <span>1st: {firstHalfStats.points}</span>
           <span>2nd: {secondHalfStats.points}</span>
         </div>
       </div>
 
-      {/* Quick Stats Bar - Shows Total */}
-      <div className="grid grid-cols-6 gap-1 p-2 bg-card border-b border-border">
-        <div className="text-center py-2">
-          <p className="text-lg font-bold">{totalStats.rebounds}</p>
-          <p className="text-[10px] text-muted-foreground uppercase">REB</p>
-          <p className="text-[9px] text-muted-foreground">{totalStats.offensiveRebounds}O / {totalStats.defensiveRebounds}D</p>
+      {/* Quick Stats Bar - Compact */}
+      <div className="grid grid-cols-6 gap-0.5 px-2 py-1 bg-card border-b border-border">
+        <div className="text-center py-1">
+          <p className="text-base font-bold">{totalStats.rebounds}</p>
+          <p className="text-[9px] text-muted-foreground uppercase">REB</p>
         </div>
-        <div className="text-center py-2">
-          <p className="text-lg font-bold">{totalStats.assists}</p>
-          <p className="text-[10px] text-muted-foreground uppercase">AST</p>
+        <div className="text-center py-1">
+          <p className="text-base font-bold">{totalStats.assists}</p>
+          <p className="text-[9px] text-muted-foreground uppercase">AST</p>
         </div>
-        <div className="text-center py-2">
-          <p className="text-lg font-bold">{totalStats.steals}</p>
-          <p className="text-[10px] text-muted-foreground uppercase">STL</p>
+        <div className="text-center py-1">
+          <p className="text-base font-bold">{totalStats.steals}</p>
+          <p className="text-[9px] text-muted-foreground uppercase">STL</p>
         </div>
-        <div className="text-center py-2">
-          <p className="text-lg font-bold">{totalStats.blocks}</p>
-          <p className="text-[10px] text-muted-foreground uppercase">BLK</p>
+        <div className="text-center py-1">
+          <p className="text-base font-bold">{totalStats.blocks}</p>
+          <p className="text-[9px] text-muted-foreground uppercase">BLK</p>
         </div>
-        <div className="text-center py-2">
-          <p className="text-lg font-bold">{totalStats.turnovers}</p>
-          <p className="text-[10px] text-muted-foreground uppercase">TO</p>
+        <div className="text-center py-1">
+          <p className="text-base font-bold">{totalStats.turnovers}</p>
+          <p className="text-[9px] text-muted-foreground uppercase">TO</p>
         </div>
-        <div className="text-center py-2">
-          <p className="text-lg font-bold">{totalStats.fouls}</p>
-          <p className="text-[10px] text-muted-foreground uppercase">PF</p>
+        <div className="text-center py-1">
+          <p className="text-base font-bold">{totalStats.fouls}</p>
+          <p className="text-[9px] text-muted-foreground uppercase">PF</p>
         </div>
       </div>
 
-      {/* Remote Buttons */}
-      <div className="flex-1 p-4 space-y-4 overflow-auto">
-        {/* Half Selection */}
+      {/* Remote Buttons - Compact */}
+      <div className="flex-1 px-3 py-2 space-y-2 overflow-auto">
+        {/* Half Selection - Compact */}
         <div className="flex gap-2 justify-center">
           <Button
             variant={currentHalf === 1 ? "default" : "outline"}
             onClick={() => setCurrentHalf(1)}
+            size="sm"
             className={cn(
-              "flex-1 max-w-[150px] font-semibold",
+              "flex-1 max-w-[120px] font-semibold h-8",
               currentHalf === 1 && "gradient-primary"
             )}
           >
@@ -673,8 +682,9 @@ export function LiveStatCapture({
           <Button
             variant={currentHalf === 2 ? "default" : "outline"}
             onClick={() => handleSwitchToSecondHalf()}
+            size="sm"
             className={cn(
-              "flex-1 max-w-[150px] font-semibold",
+              "flex-1 max-w-[120px] font-semibold h-8",
               currentHalf === 2 && "gradient-primary"
             )}
           >
@@ -683,17 +693,15 @@ export function LiveStatCapture({
           </Button>
         </div>
 
-        {/* Halftime Score Display */}
+        {/* Halftime Score Display - Compact */}
         {halftimeScore && (
-          <div className="bg-muted/30 rounded-lg p-2 text-center text-sm">
-            <span className="text-muted-foreground">Halftime: </span>
-            <span className="font-semibold">{halftimeScore.us}</span>
-            <span className="text-muted-foreground"> - </span>
-            <span className="font-semibold">{halftimeScore.them}</span>
+          <div className="bg-muted/30 rounded-md px-2 py-1 text-center text-xs flex items-center justify-center gap-1">
+            <span className="text-muted-foreground">HT:</span>
+            <span className="font-semibold">{halftimeScore.us}-{halftimeScore.them}</span>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="ml-2 h-6 text-xs"
+              className="h-5 text-[10px] px-1"
               onClick={() => setShowHalftimeDialog(true)}
             >
               Edit
@@ -701,208 +709,210 @@ export function LiveStatCapture({
           </div>
         )}
 
-        {/* Sound Effects Toggle */}
-        <div className="flex items-center justify-end gap-2">
-          <Label htmlFor="sound-effects" className="text-xs text-muted-foreground">
-            Sound Effects
-          </Label>
-          <Switch
-            id="sound-effects"
-            checked={soundEffectsEnabled}
-            onCheckedChange={setSoundEffectsEnabled}
-            className="scale-90"
-          />
+        {/* Sound Effects Toggle - Inline */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="sound-effects" className="text-[10px] text-muted-foreground">
+              SFX
+            </Label>
+            <Switch
+              id="sound-effects"
+              checked={soundEffectsEnabled}
+              onCheckedChange={setSoundEffectsEnabled}
+              className="scale-75"
+            />
+          </div>
+          {/* Current Half Stats - Compact inline */}
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+            <span className="font-medium">{currentHalf === 1 ? '1H' : '2H'}:</span>
+            <span>{currentStats.points}pts</span>
+            <span>{currentStats.rebounds}reb</span>
+            <span>{currentStats.assists}ast</span>
+          </div>
         </div>
 
-        {/* Game Result Selection */}
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider text-center">Game Result</p>
-          <div className="flex gap-2 justify-center">
-            <Button
-              variant={isWin === true ? "default" : "outline"}
-              onClick={() => handleWinLossClick(true)}
-              className={cn(
-                "flex-1 max-w-[120px] font-semibold",
-                isWin === true && "bg-green-500 hover:bg-green-600 text-white"
-              )}
-            >
-              ✓ Win
-            </Button>
-            <Button
-              variant={isWin === false ? "default" : "outline"}
-              onClick={() => handleWinLossClick(false)}
-              className={cn(
-                "flex-1 max-w-[120px] font-semibold",
-                isWin === false && "bg-red-500 hover:bg-red-600 text-white"
-              )}
-            >
-              ✗ Loss
-            </Button>
-          </div>
-          {/* Final Score Display */}
+        {/* Game Result Selection - Compact */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground uppercase">Result:</span>
+          <Button
+            variant={isWin === true ? "default" : "outline"}
+            onClick={() => handleWinLossClick(true)}
+            size="sm"
+            className={cn(
+              "h-7 px-3 text-xs font-semibold",
+              isWin === true && "bg-green-500 hover:bg-green-600 text-white"
+            )}
+          >
+            Win
+          </Button>
+          <Button
+            variant={isWin === false ? "default" : "outline"}
+            onClick={() => handleWinLossClick(false)}
+            size="sm"
+            className={cn(
+              "h-7 px-3 text-xs font-semibold",
+              isWin === false && "bg-red-500 hover:bg-red-600 text-white"
+            )}
+          >
+            Loss
+          </Button>
+          {/* Final Score Display - Inline */}
           {finalScore && (
-            <div className="bg-muted/30 rounded-lg p-2 text-center text-sm">
-              <span className="text-muted-foreground">Final: </span>
-              <span className="font-semibold">{finalScore.us}</span>
-              <span className="text-muted-foreground"> - </span>
-              <span className="font-semibold">{finalScore.them}</span>
+            <span className="text-xs text-muted-foreground ml-auto">
+              {finalScore.us}-{finalScore.them}
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="ml-2 h-6 text-xs"
+                className="h-5 text-[10px] px-1 ml-1"
                 onClick={() => setShowFinalScoreDialog(true)}
               >
-                Edit
+                ✏️
               </Button>
-            </div>
+            </span>
           )}
         </div>
 
-        <div className="bg-muted/50 rounded-lg p-3 text-center">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">
-            {currentHalf === 1 ? '1st' : '2nd'} Half Stats
-          </p>
-          <div className="flex justify-center gap-4 text-sm flex-wrap">
-            <span>{currentStats.points} PTS</span>
-            <span>{currentStats.rebounds} REB</span>
-            <span>{currentStats.assists} AST</span>
-            <span>{currentStats.steals} STL</span>
-            <span>{currentStats.blocks} BLK</span>
-          </div>
-          <div className="flex justify-center gap-4 text-xs text-muted-foreground mt-1">
-            <span>2PT: {currentStats.fgAttempted > 0 
-              ? Math.round((currentStats.fgMade / currentStats.fgAttempted) * 100) 
-              : 0}%</span>
-            <span>3PT: {currentStats.threePtAttempted > 0 
-              ? Math.round((currentStats.threePtMade / currentStats.threePtAttempted) * 100) 
-              : 0}%</span>
-          </div>
-        </div>
-
-        {/* Shooting Section */}
-        <div className="space-y-3">
-          <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Shooting</h3>
+        {/* Shooting Section - Compact */}
+        <div className="space-y-2">
+          <h3 className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Shooting</h3>
           
-          {/* 2PT Field Goals */}
-          <div className="bg-card rounded-xl p-3 border border-border">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Target className="w-4 h-4 text-primary" />
-                <span className="font-medium">2PT Field Goals</span>
+          {/* 2PT Field Goals - Compact */}
+          <div className="bg-card rounded-lg p-2 border border-border">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-primary" />
+                <span className="font-medium text-sm">2PT</span>
               </div>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {currentStats.fgMade}/{currentStats.fgAttempted} ({fgPct}%)
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <StatButton 
                 label="Made" 
                 variant="success"
+                emphasis="primary"
                 onPress={() => recordStat({ type: 'fgMade', value: 1, label: '2PT Made' })}
               />
               <StatButton 
                 label="Miss" 
                 variant="danger"
+                emphasis="secondary"
                 onPress={() => recordStat({ type: 'fgAttempted', value: 1, label: '2PT Miss' })}
               />
             </div>
           </div>
 
-          {/* 3PT Field Goals */}
-          <div className="bg-card rounded-xl p-3 border border-border">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Circle className="w-4 h-4 text-primary" />
-                <span className="font-medium">3PT Field Goals</span>
+          {/* 3PT Field Goals - Compact */}
+          <div className="bg-card rounded-lg p-2 border border-border">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Circle className="w-3.5 h-3.5 text-primary" />
+                <span className="font-medium text-sm">3PT</span>
               </div>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {currentStats.threePtMade}/{currentStats.threePtAttempted} ({threePct}%)
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <StatButton 
                 label="Made" 
                 variant="success"
+                emphasis="primary"
                 onPress={() => recordStat({ type: 'threePtMade', value: 1, label: '3PT Made' })}
               />
               <StatButton 
                 label="Miss" 
                 variant="danger"
+                emphasis="secondary"
                 onPress={() => recordStat({ type: 'threePtAttempted', value: 1, label: '3PT Miss' })}
               />
             </div>
           </div>
 
-          {/* Free Throws */}
-          <div className="bg-card rounded-xl p-3 border border-border">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Target className="w-4 h-4 text-primary" />
-                <span className="font-medium">Free Throws</span>
+          {/* Free Throws - Compact */}
+          <div className="bg-card rounded-lg p-2 border border-border">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-primary" />
+                <span className="font-medium text-sm">FT</span>
               </div>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {currentStats.ftMade}/{currentStats.ftAttempted} ({ftPct}%)
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <StatButton 
                 label="Made" 
                 variant="success"
+                emphasis="primary"
                 onPress={() => recordStat({ type: 'ftMade', value: 1, label: 'FT Made' })}
               />
               <StatButton 
                 label="Miss" 
                 variant="danger"
+                emphasis="secondary"
                 onPress={() => recordStat({ type: 'ftAttempted', value: 1, label: 'FT Miss' })}
               />
             </div>
           </div>
         </div>
 
-        {/* Other Stats Section */}
-        <div className="space-y-3">
-          <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Other Stats</h3>
+        {/* Other Stats Section - Compact */}
+        <div className="space-y-2">
+          <h3 className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Other Stats</h3>
           
-          {/* Rebounds Section */}
-          <div className="bg-card rounded-xl p-3 border border-border">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Repeat className="w-4 h-4 text-primary" />
-                <span className="font-medium">Rebounds</span>
+          {/* Rebounds Section - Defensive first (more common) */}
+          <div className="bg-card rounded-lg p-2 border border-border">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Repeat className="w-3.5 h-3.5 text-primary" />
+                <span className="font-medium text-sm">Rebounds</span>
               </div>
-              <span className="text-sm text-muted-foreground">
-                {currentStats.rebounds} ({currentStats.offensiveRebounds}O / {currentStats.defensiveRebounds}D)
+              <span className="text-xs text-muted-foreground">
+                {currentStats.rebounds} ({currentStats.defensiveRebounds}D / {currentStats.offensiveRebounds}O)
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
+              {/* Defensive first - more common */}
               <StatButton 
-                label="Offensive" 
-                count={currentStats.offensiveRebounds}
-                variant="success"
-                onPress={() => recordStat({ type: 'offensiveRebounds', value: 1, label: 'Off. Rebound' })}
-              />
-              <StatButton 
-                label="Defensive" 
+                label="DREB" 
                 count={currentStats.defensiveRebounds}
                 variant="primary"
+                emphasis="primary"
                 onPress={() => recordStat({ type: 'defensiveRebounds', value: 1, label: 'Def. Rebound' })}
+              />
+              <StatButton 
+                label="OREB" 
+                count={currentStats.offensiveRebounds}
+                variant="success"
+                emphasis="secondary"
+                onPress={() => recordStat({ type: 'offensiveRebounds', value: 1, label: 'Off. Rebound' })}
               />
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-3">
+          {/* Assist emphasized - most common playmaking action */}
+          <div className="bg-card rounded-lg p-2 border border-border">
             <StatButton 
               label="Assist" 
               icon={Zap}
               count={currentStats.assists}
               variant="primary"
+              emphasis="primary"
+              fullWidth
               onPress={() => recordStat({ type: 'assists', value: 1, label: 'Assist' })}
             />
+          </div>
+
+          {/* Steal/Block grouped - less common */}
+          <div className="grid grid-cols-2 gap-2">
             <StatButton 
               label="Steal" 
               icon={Shield}
               count={currentStats.steals}
               variant="primary"
+              emphasis="secondary"
               onPress={() => recordStat({ type: 'steals', value: 1, label: 'Steal' })}
             />
             <StatButton 
@@ -910,16 +920,19 @@ export function LiveStatCapture({
               icon={HandMetal}
               count={currentStats.blocks}
               variant="primary"
+              emphasis="secondary"
               onPress={() => recordStat({ type: 'blocks', value: 1, label: 'Block' })}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Negative stats */}
+          <div className="grid grid-cols-2 gap-2">
             <StatButton 
-              label="Turnover" 
+              label="TO" 
               icon={AlertCircle}
               count={currentStats.turnovers}
               variant="warning"
+              emphasis="secondary"
               onPress={() => recordStat({ type: 'turnovers', value: 1, label: 'Turnover' })}
             />
             <StatButton 
@@ -927,21 +940,27 @@ export function LiveStatCapture({
               icon={UserX}
               count={currentStats.fouls}
               variant="danger"
+              emphasis="secondary"
               onPress={() => recordStat({ type: 'fouls', value: 1, label: 'Personal Foul' })}
             />
           </div>
         </div>
       </div>
 
-      {/* Save Footer */}
-      <div className="sticky bottom-0 bg-card border-t border-border p-4 flex gap-3">
-        <Button variant="outline" onClick={onCancel} className="flex-1">
-          <X className="w-4 h-4 mr-2" />
-          Cancel
-        </Button>
-        <Button onClick={handleSaveClick} disabled={isSaving} className="flex-1 gradient-primary">
-          <Save className="w-4 h-4 mr-2" />
-          {isSaving ? 'Saving...' : 'Save Stats'}
+      {/* Save Footer - Long-press cancel protection */}
+      <div className="sticky bottom-0 bg-card border-t border-border p-3 flex gap-2">
+        <LongPressButton 
+          variant="outline" 
+          onLongPress={onCancel} 
+          pressDuration={1200}
+          className="flex-1 h-10"
+        >
+          <X className="w-4 h-4 mr-1" />
+          Hold to Cancel
+        </LongPressButton>
+        <Button onClick={handleSaveClick} disabled={isSaving} className="flex-1 h-10 gradient-primary">
+          <Save className="w-4 h-4 mr-1" />
+          {isSaving ? 'Saving...' : 'Save'}
         </Button>
       </div>
 
@@ -1111,33 +1130,46 @@ interface StatButtonProps {
   icon?: React.ElementType;
   count?: number;
   variant: 'success' | 'danger' | 'primary' | 'warning';
+  emphasis?: 'primary' | 'secondary';
   onPress: () => void;
   fullWidth?: boolean;
 }
 
-function StatButton({ label, icon: Icon, count, variant, onPress, fullWidth }: StatButtonProps) {
+function StatButton({ label, icon: Icon, count, variant, emphasis = 'primary', onPress, fullWidth }: StatButtonProps) {
+  // Primary emphasis = brighter, stronger; Secondary = muted
+  const isPrimary = emphasis === 'primary';
+  
   const variantClasses = {
-    success: 'bg-green-500/20 hover:bg-green-500/30 text-green-400 border-green-500/30 active:bg-green-500/40',
-    danger: 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/30 active:bg-red-500/40',
-    primary: 'bg-primary/20 hover:bg-primary/30 text-primary border-primary/30 active:bg-primary/40',
-    warning: 'bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border-orange-500/30 active:bg-orange-500/40',
+    success: isPrimary 
+      ? 'bg-green-500/30 hover:bg-green-500/40 text-green-300 border-green-400/50 active:bg-green-500/50 shadow-sm shadow-green-500/20'
+      : 'bg-green-500/15 hover:bg-green-500/25 text-green-400/80 border-green-500/20 active:bg-green-500/30',
+    danger: isPrimary 
+      ? 'bg-red-500/30 hover:bg-red-500/40 text-red-300 border-red-400/50 active:bg-red-500/50 shadow-sm shadow-red-500/20'
+      : 'bg-red-500/15 hover:bg-red-500/25 text-red-400/70 border-red-500/20 active:bg-red-500/30',
+    primary: isPrimary 
+      ? 'bg-primary/30 hover:bg-primary/40 text-primary border-primary/50 active:bg-primary/50 shadow-sm shadow-primary/20'
+      : 'bg-primary/15 hover:bg-primary/25 text-primary/80 border-primary/20 active:bg-primary/30',
+    warning: isPrimary 
+      ? 'bg-orange-500/30 hover:bg-orange-500/40 text-orange-300 border-orange-400/50 active:bg-orange-500/50 shadow-sm shadow-orange-500/20'
+      : 'bg-orange-500/15 hover:bg-orange-500/25 text-orange-400/70 border-orange-500/20 active:bg-orange-500/30',
   };
 
   return (
     <button
       onClick={onPress}
       className={cn(
-        'py-4 px-4 rounded-xl border font-semibold transition-all duration-100',
-        'flex items-center justify-center gap-2',
+        'py-3 px-3 rounded-lg border font-semibold transition-all duration-100',
+        'flex items-center justify-center gap-1.5',
         'touch-manipulation select-none',
+        'min-h-[44px]', // Maintain accessible tap target
         variantClasses[variant],
         fullWidth && 'col-span-2'
       )}
     >
-      {Icon && <Icon className="w-5 h-5" />}
-      <span>{label}</span>
+      {Icon && <Icon className="w-4 h-4" />}
+      <span className="text-sm">{label}</span>
       {count !== undefined && (
-        <span className="bg-background/50 px-2 py-0.5 rounded-full text-sm">{count}</span>
+        <span className="bg-background/50 px-1.5 py-0.5 rounded-full text-xs">{count}</span>
       )}
     </button>
   );
