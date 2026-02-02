@@ -523,6 +523,7 @@ export default function Index() {
                         profile={profile}
                         teamName={teams.find(t => t.is_primary)?.name}
                         tierAchievements={achievedTiers.map(t => ({ tier: t.tier }))}
+                        seasonRecord={{ wins: dashboardStats.wins, losses: dashboardStats.losses }}
                         className="shadow-md"
                       />
                       {/* Dear Basketball - Subtle Journal CTA */}
