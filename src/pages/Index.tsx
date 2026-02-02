@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AnimatePresence } from 'framer-motion';
-import { Navigation, Tab } from '@/components/Navigation';
+import { Tab } from '@/components/Navigation';
+import { BottomNavigation } from '@/components/BottomNavigation';
 import { PlayerHeader } from '@/components/PlayerHeader';
 import { StatCard } from '@/components/StatCard';
 import { GameCard } from '@/components/GameCard';
@@ -410,8 +411,11 @@ export default function Index() {
 
   if (dataLoading) {
     return (
-      <div className="min-h-screen bg-background pb-14">
-        <Navigation 
+      <div className="min-h-screen bg-background pb-20">
+        <main className="container mx-auto px-4 py-6">
+          {renderLoadingSkeleton()}
+        </main>
+        <BottomNavigation 
           activeTab={activeTab} 
           onTabChange={setActiveTab}
           seasons={seasons}
@@ -421,9 +425,6 @@ export default function Index() {
           onDeleteSeason={deleteSeason}
           isAdmin={isAdmin}
         />
-        <main className="container mx-auto px-4 py-6">
-          {renderLoadingSkeleton()}
-        </main>
       </div>
     );
   }
@@ -441,8 +442,8 @@ export default function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-14">
-      <Navigation 
+    <div className="min-h-screen bg-background pb-20">
+      <BottomNavigation 
         activeTab={activeTab} 
         onTabChange={setActiveTab}
         seasons={seasons}
