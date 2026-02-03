@@ -8,11 +8,33 @@ const DB_NAME = 'hoop-journal-auth';
 const STORE_NAME = 'auth-storage';
 const DB_VERSION = 1;
 
+// Legacy keys to clean up (from before custom storageKey was set)
+const LEGACY_KEYS = [
+  'sb-jwoupnumuotmwpwrkmob-auth-token',
+  'supabase.auth.token',
+];
+
 let db: IDBDatabase | null = null;
 let dbReady: Promise<IDBDatabase | null>;
 
+// Clean up legacy auth tokens that might be stale
+function cleanupLegacyTokens(): void {
+  try {
+    LEGACY_KEYS.forEach(key => {
+      if (localStorage.getItem(key)) {
+        localStorage.removeItem(key);
+      }
+    });
+  } catch (e) {
+    // Ignore cleanup errors
+  }
+}
+
 // Initialize IndexedDB
 function initDB(): Promise<IDBDatabase | null> {
+  // Clean up any legacy tokens first
+  cleanupLegacyTokens();
+  
   return new Promise((resolve) => {
     try {
       if (!window.indexedDB) {
