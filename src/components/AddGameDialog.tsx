@@ -8,8 +8,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GameStats } from '@/types/basketball';
 import { GameStatsForm } from './GameStatsForm';
+import { AIStatsCapture } from './AIStatsCapture';
 
 interface AddGameDialogProps {
   onAddGame: (game: Omit<GameStats, 'id'>) => Promise<any> | any;
@@ -20,6 +22,7 @@ interface AddGameDialogProps {
 
 export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsumed }: AddGameDialogProps) {
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'manual' | 'ai'>('ai');
 
   // Handle auto-open from external trigger (e.g., onboarding completion)
   useEffect(() => {
@@ -51,9 +54,23 @@ export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsume
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Log New Game</DialogTitle>
         </DialogHeader>
-        <div className="mt-4">
-          <GameStatsForm onSubmit={handleSubmit} />
-        </div>
+        
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'manual' | 'ai')} className="mt-2">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="ai" className="flex items-center gap-1.5">
+              <span className="text-base">✨</span> AI Capture
+            </TabsTrigger>
+            <TabsTrigger value="manual">Manual Entry</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="ai" className="mt-4">
+            <AIStatsCapture onSubmit={handleSubmit} />
+          </TabsContent>
+          
+          <TabsContent value="manual" className="mt-4">
+            <GameStatsForm onSubmit={handleSubmit} />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
