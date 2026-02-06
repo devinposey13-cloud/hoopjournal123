@@ -1,86 +1,157 @@
 
-# Add In-App Admin Notification Badge
+# AI-Powered Game Stats Capture
 
 ## Overview
-Add a visual notification badge to the Admin menu item that shows the count of pending account approval requests, pending content reports, pending password reset requests, and unread feedback. This provides a backup notification method so admins are aware of items needing attention without relying solely on email.
+Add an AI-powered alternative to manual game stat entry. Users will be able to describe their game performance in natural language (via voice or text), and the AI will extract and populate all the statistics automatically. This creates a much faster, more conversational way to log games.
 
-## What This Will Do
-- Show a red notification badge on the "Admin" menu item in both mobile (MoreMenu) and desktop (Navigation) views
-- The badge will display the total count of all pending admin items
-- Updates in real-time when navigating to/from admin panel
-- Only visible to admin users
+## User Experience
 
-## Technical Approach
+### How It Works
+1. User opens "Add Game" dialog
+2. They see a new tab/toggle: "Manual Entry" vs "AI Capture"
+3. In AI Capture mode, they can:
+   - **Type** a description: "I scored 18 points on 7-for-12 shooting with 5 rebounds and 3 assists. We beat Central High 62-55."
+   - **Speak** the same description using voice input (already have `useVoiceInput` hook)
+4. AI extracts stats and shows a preview with all fields populated
+5. User can review, make any corrections, and save
 
-### 1. Create a new hook: `useAdminNotifications`
-Create `src/hooks/useAdminNotifications.ts` that fetches counts of pending items:
-- Pending account approval requests
-- Pending content reports  
-- Pending password reset requests
-- Unread user feedback
+### Example Inputs
+- "Had 12 points, 8 rebounds, 2 blocks against Lincoln. We won."
+- "Shot 3-for-8 from three, 2-for-4 on twos, made both my free throws. 15 points total, 4 assists, 2 turnovers. Lost to Oak Hill 48-52."
+- "Great game! 22 points, 6 assists, 5 steals. Played about 28 minutes. Beat Riverside."
 
-The hook will:
-- Only run queries when user is an admin
-- Return a `totalPending` count for the badge
-- Include individual counts for granular display if needed
-- Use Supabase realtime subscription for live updates (optional enhancement)
+## Technical Implementation
 
-### 2. Update Navigation Components
+### 1. New Edge Function: `extract-game-stats`
+Creates a new backend function that uses Lovable AI (Gemini) to parse natural language into structured game statistics.
 
-**MoreMenu.tsx (Mobile)**
-- Add badge next to "Admin" menu item showing pending count
-- Use existing Badge component with destructive variant
-
-**Navigation.tsx (Desktop)**
-- Add badge in the dropdown menu next to "Admin" option
-- Consistent styling with mobile version
-
-**BottomNavigation.tsx (Mobile)**
-- Add badge indicator on the "More" button when admin has pending items
-- Small dot or number badge to draw attention
-
-### 3. Component Updates
-
-```text
-+-------------------+
-|  useAdminNotifications (new hook)
-|  - Fetches pending counts
-|  - Returns totalPending
-+-------------------+
-          |
-          v
-+-------------------+     +-------------------+
-|   MoreMenu.tsx    |     |  Navigation.tsx   |
-|   (mobile admin   |     |  (desktop admin   |
-|    badge)         |     |   badge)          |
-+-------------------+     +-------------------+
-          |
-          v
-+-------------------+
-| BottomNavigation  |
-| (More button dot) |
-+-------------------+
 ```
+POST /functions/v1/extract-game-stats
+Body: { description: string, date?: string }
+Response: {
+  opponent: string,
+  points: number,
+  rebounds: number,
+  assists: number,
+  steals: number,
+  blocks: number,
+  turnovers: number,
+  fouls: number,
+  minutesPlayed: number,
+  fgMade: number,
+  fgAttempted: number,
+  threePtMade: number,
+  threePtAttempted: number,
+  ftMade: number,
+  ftAttempted: number,
+  isWin: boolean | null,
+  confidence: number,
+  missingFields: string[]
+}
+```
+
+The edge function will:
+- Use Lovable AI with tool calling to extract structured data
+- Validate all extracted values are within reasonable basketball ranges
+- Calculate derived stats (e.g., total points from shooting breakdown if provided)
+- Flag missing or uncertain fields for user review
+
+### 2. New Component: `AIStatsCapture`
+A new component that handles the AI-powered input flow:
+- Text input area for typing game description
+- Voice input button (reusing existing `useVoiceInput` hook)
+- Real-time audio waveform visualization during recording
+- Loading state while AI processes
+- Preview of extracted stats in a card layout
+- Edit capability before final save
+
+### 3. Updated `AddGameDialog`
+Modify the existing dialog to include tab navigation:
+- "Manual Entry" tab (existing `GameStatsForm`)
+- "AI Capture" tab (new `AIStatsCapture`)
+
+### 4. Stats Preview Component
+Shows the AI-extracted stats in a visual format:
+- Highlighted fields that were successfully extracted
+- Warning indicators for fields that couldn't be determined
+- Inline edit capability for corrections
+- "Looks good, save game" primary action
 
 ## Files to Create/Modify
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `src/hooks/useAdminNotifications.ts` | Create | New hook to fetch pending admin item counts |
-| `src/components/MoreMenu.tsx` | Modify | Add badge to Admin menu item |
-| `src/components/Navigation.tsx` | Modify | Add badge to Admin dropdown item |
-| `src/components/BottomNavigation.tsx` | Modify | Pass notification count, show dot on More button |
-| `src/pages/Index.tsx` | Modify | Use hook and pass count to navigation components |
+### New Files
+1. **`supabase/functions/extract-game-stats/index.ts`**
+   - Edge function using Lovable AI with tool calling
+   - Structured extraction with validation
+   - Returns confidence scores
 
-## Visual Design
+2. **`src/components/AIStatsCapture.tsx`**
+   - Voice/text input interface
+   - Calls edge function
+   - Displays extracted stats preview
+   - Handles edit and confirmation flow
 
-The badge will appear as:
-- A small red circle with white text showing the count
-- Positioned to the right of the "Admin" label
-- Using the existing `Badge` component with `variant="destructive"`
-- A subtle dot indicator on the "More" button when there are pending items
+### Modified Files
+1. **`src/components/AddGameDialog.tsx`**
+   - Add tabs for Manual Entry vs AI Capture
+   - Pass through game data from either source
 
-## Notes
-- The hook will be efficient by only querying when the user is confirmed as an admin
-- Badge will show "99+" if count exceeds 99 for compact display
-- No database changes required - uses existing tables and RLS policies
+2. **`supabase/config.toml`**
+   - Register new edge function
+
+## Edge Function Details
+
+The `extract-game-stats` function will use Lovable AI's tool calling feature to ensure structured output:
+
+```typescript
+// Tool definition for structured extraction
+const extractionTool = {
+  type: "function",
+  function: {
+    name: "extract_game_stats",
+    description: "Extract basketball game statistics from a natural language description",
+    parameters: {
+      type: "object",
+      properties: {
+        opponent: { type: "string", description: "Name of opposing team" },
+        points: { type: "number", description: "Total points scored" },
+        rebounds: { type: "number" },
+        assists: { type: "number" },
+        // ... all stat fields
+        isWin: { type: "boolean", description: "Whether the player's team won" },
+      },
+      required: ["opponent"]
+    }
+  }
+};
+```
+
+## UI/UX Considerations
+
+1. **Mobile-First Design**
+   - Large tap targets for voice recording button
+   - Audio waveform feedback during recording
+   - Easy preview scroll and edit
+
+2. **Smart Defaults**
+   - If user doesn't mention a stat, default to 0
+   - If win/loss not mentioned, ask or leave as "Unknown"
+   - Use today's date by default
+
+3. **Feedback Loop**
+   - Show exactly what AI understood
+   - Highlight any stats that seem unusual
+   - Easy correction before save
+
+4. **Voice UX**
+   - Reuse existing ElevenLabs STT integration
+   - Show transcription as it's processed
+   - Allow re-record if transcription is wrong
+
+## Rationale
+
+This approach:
+- Leverages existing infrastructure (ElevenLabs STT, Lovable AI)
+- Provides faster game logging for users on-the-go
+- Maintains data quality through preview/edit step
+- Adds value without replacing manual entry option
