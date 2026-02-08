@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +9,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProfileProvider } from "@/components/profile/ProfileProvider";
 import { FloatingHomeButton } from "@/components/FloatingHomeButton";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { checkUrlForOAuthError, formatErrorWithCode } from "@/utils/oauthErrors";
+import { toast } from "sonner";
 import Index from "./pages/Index";
 import GameDetail from "./pages/GameDetail";
 import PublicProfile from "./pages/PublicProfile";
@@ -22,6 +25,22 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Check for OAuth errors in URL on app load
+function OAuthErrorHandler() {
+  useEffect(() => {
+    const oauthError = checkUrlForOAuthError();
+    if (oauthError) {
+      // Delay toast slightly to ensure Sonner is mounted
+      setTimeout(() => {
+        toast.error(formatErrorWithCode(oauthError));
+      }, 100);
+    }
+  }, []);
+  
+  return null;
+}
+
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
@@ -31,6 +50,7 @@ const App = () => (
             <OfflineIndicator />
             <Toaster />
             <Sonner />
+            <OAuthErrorHandler />
             <BrowserRouter>
               <FloatingHomeButton />
               <Routes>
