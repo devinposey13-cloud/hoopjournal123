@@ -1,157 +1,146 @@
 
-# AI-Powered Game Stats Capture
+# Enhanced OAuth Error Logging & User-Facing Messages
 
 ## Overview
-Add an AI-powered alternative to manual game stat entry. Users will be able to describe their game performance in natural language (via voice or text), and the AI will extract and populate all the statistics automatically. This creates a much faster, more conversational way to log games.
+Add comprehensive error logging and user-friendly error messages to the OAuth login flow (Google/Apple) to help diagnose issues like Asia's and improve the user experience when authentication fails.
 
-## User Experience
+## What Will Change
 
-### How It Works
-1. User opens "Add Game" dialog
-2. They see a new tab/toggle: "Manual Entry" vs "AI Capture"
-3. In AI Capture mode, they can:
-   - **Type** a description: "I scored 18 points on 7-for-12 shooting with 5 rebounds and 3 assists. We beat Central High 62-55."
-   - **Speak** the same description using voice input (already have `useVoiceInput` hook)
-4. AI extracts stats and shows a preview with all fields populated
-5. User can review, make any corrections, and save
+### For Users
+- **Clear, actionable error messages** instead of generic "sign-in failed"
+- **Specific guidance** based on error type (e.g., "Please allow popups" or "Check your internet connection")
+- **Recovery suggestions** when things go wrong
 
-### Example Inputs
-- "Had 12 points, 8 rebounds, 2 blocks against Lincoln. We won."
-- "Shot 3-for-8 from three, 2-for-4 on twos, made both my free throws. 15 points total, 4 assists, 2 turnovers. Lost to Oak Hill 48-52."
-- "Great game! 22 points, 6 assists, 5 steals. Played about 28 minutes. Beat Riverside."
+### For Debugging
+- **Detailed console logs** with timestamps and error codes
+- **OAuth event tracking** including auth state changes
+- **URL parameter error detection** from OAuth callbacks
 
-## Technical Implementation
+## Implementation Details
 
-### 1. New Edge Function: `extract-game-stats`
-Creates a new backend function that uses Lovable AI (Gemini) to parse natural language into structured game statistics.
+### 1. Create OAuth Error Utility (`src/utils/oauthErrors.ts`)
+A new utility file to:
+- Parse and categorize OAuth errors
+- Map error codes to user-friendly messages
+- Log detailed debugging information to console
 
-```
-POST /functions/v1/extract-game-stats
-Body: { description: string, date?: string }
-Response: {
-  opponent: string,
-  points: number,
-  rebounds: number,
-  assists: number,
-  steals: number,
-  blocks: number,
-  turnovers: number,
-  fouls: number,
-  minutesPlayed: number,
-  fgMade: number,
-  fgAttempted: number,
-  threePtMade: number,
-  threePtAttempted: number,
-  ftMade: number,
-  ftAttempted: number,
-  isWin: boolean | null,
-  confidence: number,
-  missingFields: string[]
-}
-```
+**Error Categories:**
+| Error Type | User Message | Debug Info |
+|------------|--------------|------------|
+| Popup blocked | "Popup was blocked. Please allow popups for this site." | Browser popup blocker detected |
+| Network error | "Connection failed. Check your internet and try again." | Network/fetch failure |
+| Cancelled by user | "Sign-in was cancelled." | User closed OAuth popup |
+| Invalid credentials | "Could not verify your account. Please try again." | OAuth provider rejection |
+| Session expired | "Your session expired. Please sign in again." | Token refresh failed |
+| Unknown error | "Sign-in failed. Please try again or use email login." | Fallback with raw error |
 
-The edge function will:
-- Use Lovable AI with tool calling to extract structured data
-- Validate all extracted values are within reasonable basketball ranges
-- Calculate derived stats (e.g., total points from shooting breakdown if provided)
-- Flag missing or uncertain fields for user review
+### 2. Update AuthForm.tsx
 
-### 2. New Component: `AIStatsCapture`
-A new component that handles the AI-powered input flow:
-- Text input area for typing game description
-- Voice input button (reusing existing `useVoiceInput` hook)
-- Real-time audio waveform visualization during recording
-- Loading state while AI processes
-- Preview of extracted stats in a card layout
-- Edit capability before final save
+**Enhanced Google/Apple Sign-In Handlers:**
+- Log OAuth initiation with timestamp
+- Catch and categorize specific error types
+- Show appropriate toast messages with recovery hints
+- Log complete error details to console for support
 
-### 3. Updated `AddGameDialog`
-Modify the existing dialog to include tab navigation:
-- "Manual Entry" tab (existing `GameStatsForm`)
-- "AI Capture" tab (new `AIStatsCapture`)
-
-### 4. Stats Preview Component
-Shows the AI-extracted stats in a visual format:
-- Highlighted fields that were successfully extracted
-- Warning indicators for fields that couldn't be determined
-- Inline edit capability for corrections
-- "Looks good, save game" primary action
-
-## Files to Create/Modify
-
-### New Files
-1. **`supabase/functions/extract-game-stats/index.ts`**
-   - Edge function using Lovable AI with tool calling
-   - Structured extraction with validation
-   - Returns confidence scores
-
-2. **`src/components/AIStatsCapture.tsx`**
-   - Voice/text input interface
-   - Calls edge function
-   - Displays extracted stats preview
-   - Handles edit and confirmation flow
-
-### Modified Files
-1. **`src/components/AddGameDialog.tsx`**
-   - Add tabs for Manual Entry vs AI Capture
-   - Pass through game data from either source
-
-2. **`supabase/config.toml`**
-   - Register new edge function
-
-## Edge Function Details
-
-The `extract-game-stats` function will use Lovable AI's tool calling feature to ensure structured output:
-
-```typescript
-// Tool definition for structured extraction
-const extractionTool = {
-  type: "function",
-  function: {
-    name: "extract_game_stats",
-    description: "Extract basketball game statistics from a natural language description",
-    parameters: {
-      type: "object",
-      properties: {
-        opponent: { type: "string", description: "Name of opposing team" },
-        points: { type: "number", description: "Total points scored" },
-        rebounds: { type: "number" },
-        assists: { type: "number" },
-        // ... all stat fields
-        isWin: { type: "boolean", description: "Whether the player's team won" },
-      },
-      required: ["opponent"]
-    }
-  }
-};
+```text
+┌─────────────────────────────────────────────────────────┐
+│  User clicks "Continue with Google"                     │
+└────────────────────┬────────────────────────────────────┘
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  Log: "OAuth initiated: google @ 2026-02-08T21:00:00"   │
+└────────────────────┬────────────────────────────────────┘
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  lovable.auth.signInWithOAuth("google", {...})          │
+└────────────────────┬────────────────────────────────────┘
+                     ▼
+          ┌──────────┴──────────┐
+          ▼                     ▼
+    ┌───────────┐         ┌───────────┐
+    │  Success  │         │   Error   │
+    └─────┬─────┘         └─────┬─────┘
+          │                     │
+          │                     ▼
+          │         ┌─────────────────────────────────────┐
+          │         │  parseOAuthError(error)             │
+          │         │  → Categorize error type            │
+          │         │  → Log detailed debug info          │
+          │         │  → Show user-friendly toast         │
+          │         └─────────────────────────────────────┘
+          ▼
+┌─────────────────────────────────────────────────────────┐
+│  Log: "OAuth success: google, uid: xxx"                 │
+└─────────────────────────────────────────────────────────┘
 ```
 
-## UI/UX Considerations
+### 3. Add URL OAuth Error Detection (App.tsx or useAuth.tsx)
 
-1. **Mobile-First Design**
-   - Large tap targets for voice recording button
-   - Audio waveform feedback during recording
-   - Easy preview scroll and edit
+Check for OAuth error parameters on app load:
+- `?error=` and `?error_description=` in URL query
+- `#error=` and `#error_description=` in URL hash
+- Show toast and log details if OAuth callback failed
 
-2. **Smart Defaults**
-   - If user doesn't mention a stat, default to 0
-   - If win/loss not mentioned, ask or leave as "Unknown"
-   - Use today's date by default
+### 4. Enhanced Auth State Logging (useAuth.tsx)
 
-3. **Feedback Loop**
-   - Show exactly what AI understood
-   - Highlight any stats that seem unusual
-   - Easy correction before save
+Add event-type logging to `onAuthStateChange`:
+- Log sign-in events with user email/provider
+- Log sign-out events
+- Log token refresh events
+- Log any error events from auth state changes
 
-4. **Voice UX**
-   - Reuse existing ElevenLabs STT integration
-   - Show transcription as it's processed
-   - Allow re-record if transcription is wrong
+## Files to Modify
 
-## Rationale
+| File | Changes |
+|------|---------|
+| `src/utils/oauthErrors.ts` | **New file** - Error parsing and user message mapping |
+| `src/components/AuthForm.tsx` | Enhanced error handling with detailed logging |
+| `src/hooks/useAuth.tsx` | Auth state change logging for debugging |
+| `src/App.tsx` | URL-based OAuth error detection on mount |
 
-This approach:
-- Leverages existing infrastructure (ElevenLabs STT, Lovable AI)
-- Provides faster game logging for users on-the-go
-- Maintains data quality through preview/edit step
-- Adds value without replacing manual entry option
+## Console Log Examples
+
+**On OAuth Initiation:**
+```
+[OAuth] Initiating sign-in with Google at 2026-02-08T21:00:00.000Z
+[OAuth] Redirect URI: https://hoopjournal.lovable.app
+```
+
+**On OAuth Error:**
+```
+[OAuth Error] Provider: google
+[OAuth Error] Type: popup_blocked
+[OAuth Error] Message: The popup was blocked by the browser
+[OAuth Error] Raw: Error: popup_blocked at...
+[OAuth Error] User agent: Mozilla/5.0...
+[OAuth Error] Timestamp: 2026-02-08T21:00:05.000Z
+```
+
+**On OAuth Success:**
+```
+[OAuth] Sign-in successful with Google
+[OAuth] User: abc123 (email: user@example.com)
+```
+
+## User-Facing Error Examples
+
+**Popup Blocked:**
+> 🚫 Popup blocked
+> Please allow popups for Hoop Journal and try again.
+
+**Network Error:**
+> 📡 Connection failed  
+> Check your internet connection and try again.
+
+**Unknown Error:**
+> ⚠️ Sign-in failed
+> Something went wrong. Try again or use email login instead.
+> 
+> *If this keeps happening, contact support with error code: OA-1707423600*
+
+## Technical Notes
+
+- Error codes will include timestamps for support correlation
+- All logging uses `console.log`/`console.error` which are captured by the session replay
+- No sensitive data (passwords, tokens) logged
+- User agent logged to identify device-specific issues (iOS Safari, etc.)
