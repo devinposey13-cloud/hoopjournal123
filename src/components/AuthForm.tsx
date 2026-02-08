@@ -11,6 +11,13 @@ import { lovable } from '@/integrations/lovable';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
+import {
+  logOAuthInit,
+  logOAuthError,
+  logOAuthSuccess,
+  parseOAuthError,
+  formatErrorWithCode,
+} from '@/utils/oauthErrors';
 
 // Normalize phone number to E.164 format (+1XXXXXXXXXX)
 const normalizePhoneNumber = (phone: string): string => {
@@ -52,26 +59,52 @@ export function AuthForm() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
+    const redirectUri = window.location.origin;
+    
+    // Log OAuth initiation for debugging
+    logOAuthInit('google', redirectUri);
+    
     try {
       const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: redirectUri,
       });
-      if (error) throw error;
-    } catch (error: any) {
-      toast.error(error.message || 'Google sign-in failed');
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Log success (note: this may not be reached if redirect happens)
+      logOAuthSuccess('google');
+    } catch (error: unknown) {
+      const parsedError = parseOAuthError(error);
+      logOAuthError('google', parsedError);
+      toast.error(formatErrorWithCode(parsedError));
       setGoogleLoading(false);
     }
   };
 
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
+    const redirectUri = window.location.origin;
+    
+    // Log OAuth initiation for debugging
+    logOAuthInit('apple', redirectUri);
+    
     try {
       const { error } = await lovable.auth.signInWithOAuth("apple", {
-        redirect_uri: window.location.origin,
+        redirect_uri: redirectUri,
       });
-      if (error) throw error;
-    } catch (error: any) {
-      toast.error(error.message || 'Apple sign-in failed');
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Log success (note: this may not be reached if redirect happens)
+      logOAuthSuccess('apple');
+    } catch (error: unknown) {
+      const parsedError = parseOAuthError(error);
+      logOAuthError('apple', parsedError);
+      toast.error(formatErrorWithCode(parsedError));
       setAppleLoading(false);
     }
   };
