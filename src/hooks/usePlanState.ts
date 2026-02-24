@@ -1,34 +1,95 @@
-import { useState, useCallback, createContext, useContext } from 'react';
-import { PlanId, PaywallReason, paywallConfigs, mockUsage, UsageData, track } from '@/lib/plans';
+import { useState, useCallback, useEffect, createContext, useContext } from 'react';
+import {
+  PlanId, PaywallReason, paywallConfigs, mockUsage, UsageData, track,
+  UserAccessInfo, getEffectivePlan, hasSpecialAccess, getAccessBadge, AccessBadge,
+} from '@/lib/plans';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface PlanState {
-  currentPlan: PlanId;
+  currentPlan: PlanId; // effective plan (computed)
+  subscriptionPlan: PlanId; // raw subscription
+  accessInfo: UserAccessInfo;
+  accessBadge: AccessBadge;
   usage: UsageData;
   paywallOpen: boolean;
   paywallReason: PaywallReason | null;
+  loading: boolean;
   setCurrentPlan: (plan: PlanId) => void;
   openPaywall: (reason: PaywallReason) => void;
   closePaywall: () => void;
 }
 
+const defaultAccessInfo: UserAccessInfo = {
+  subscriptionPlan: 'free',
+  isGrandfathered: false,
+  adminOverridePlan: null,
+  promoAccessUntil: null,
+};
+
 export function usePlanState(): PlanState {
-  const [currentPlan, setCurrentPlan] = useState<PlanId>('free');
+  const { session } = useAuth();
+  const [accessInfo, setAccessInfo] = useState<UserAccessInfo>(defaultAccessInfo);
+  const [loading, setLoading] = useState(true);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null);
 
+  // Fetch plan overrides from DB
+  useEffect(() => {
+    async function fetchPlanOverride() {
+      if (!session?.user?.id) {
+        setAccessInfo(defaultAccessInfo);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('plan_overrides')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching plan override:', error);
+        }
+
+        if (data) {
+          setAccessInfo({
+            subscriptionPlan: (data.subscription_plan as PlanId) || 'free',
+            isGrandfathered: data.is_grandfathered || false,
+            adminOverridePlan: (data.admin_override_plan as PlanId) || null,
+            promoAccessUntil: data.promo_access_until || null,
+          });
+        } else {
+          setAccessInfo(defaultAccessInfo);
+        }
+      } catch (err) {
+        console.error('Failed to load plan state:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPlanOverride();
+  }, [session?.user?.id]);
+
+  const effectivePlan = getEffectivePlan(accessInfo);
+  const accessBadge = getAccessBadge(accessInfo);
+
+  const setCurrentPlan = useCallback((plan: PlanId) => {
+    setAccessInfo(prev => ({ ...prev, subscriptionPlan: plan }));
+  }, []);
+
   const openPaywall = useCallback((reason: PaywallReason) => {
+    // Don't show paywall to users with special access
+    if (hasSpecialAccess(accessInfo)) return;
+
     const config = paywallConfigs[reason];
     track('paywall_shown', { reason, recommendedPlan: config.recommendedPlan });
-    
-    if (config.mode === 'fullscreen') {
-      // For fullscreen, we still set state so the upgrade page can read it
-      setPaywallReason(reason);
-      setPaywallOpen(true);
-    } else {
-      setPaywallReason(reason);
-      setPaywallOpen(true);
-    }
-  }, []);
+    setPaywallReason(reason);
+    setPaywallOpen(true);
+  }, [accessInfo]);
 
   const closePaywall = useCallback(() => {
     if (paywallReason) {
@@ -39,10 +100,14 @@ export function usePlanState(): PlanState {
   }, [paywallReason]);
 
   return {
-    currentPlan,
+    currentPlan: effectivePlan,
+    subscriptionPlan: accessInfo.subscriptionPlan,
+    accessInfo,
+    accessBadge,
     usage: mockUsage,
     paywallOpen,
     paywallReason,
+    loading,
     setCurrentPlan,
     openPaywall,
     closePaywall,
