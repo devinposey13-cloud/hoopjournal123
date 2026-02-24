@@ -1,68 +1,66 @@
 
+Goal: make Google OAuth reliable on mobile (especially iOS) so users stay signed in after returning from Google.
 
-# Fix: OAuth Flow on Custom Domain (hoopjournal.me)
+What I found from your current code and backend logs:
+- Your custom-domain OAuth currently uses a manual redirect to `https://hoopjournal123.lovable.app/~oauth/initiate`.
+- It also writes `oauth_state` to `sessionStorage` before redirecting.
+- Recent auth logs show no new Google token exchange events for the failing attempts, which indicates some failures happen before session finalization in-app.
+- On mobile, even when auth completes externally, the app can still land back on `/` without session hydration (or with hash tokens not being applied reliably).
 
-## Root Cause
+Implementation plan
 
-I traced through the `@lovable.dev/cloud-auth-js` library source code and found the exact problem:
+1) Replace fragile custom redirect logic with a safer custom-domain OAuth launcher
+- Keep using Lovable Cloud OAuth (not raw custom auth implementation changes in generated integration files).
+- In `AuthForm.tsx`, remove the manual `sessionStorage.setItem('oauth_state', ...)` dependency.
+- Use a deterministic redirect URI that points to a dedicated callback route (example: `/auth/callback`) instead of `/`.
+- Ensure OAuth initiation does not depend on storage APIs that can throw on iOS/Safari privacy modes.
+- Keep service-worker cache clearing as best-effort only (non-blocking), so redirect initiation isn’t interrupted.
 
-When a user clicks "Continue with Google" on **hoopjournal.me**, the OAuth SDK does this:
+2) Add a dedicated OAuth callback route for robust token handoff
+- Create a lightweight callback page/component (e.g., `src/pages/OAuthCallback.tsx`) that:
+  - Reads hash/query params on mount.
+  - If `access_token` + `refresh_token` are present, calls `supabase.auth.setSession(...)`.
+  - Handles error params gracefully with user feedback.
+  - Cleans URL hash/query and redirects to `/` once done.
+- Register route before the `/:username` dynamic route in `App.tsx` to avoid route collision.
+- This isolates OAuth token parsing from heavy app boot logic and prevents “back to login” race conditions.
 
-```
-window.location.href = "/~oauth/initiate?provider=google&redirect_uri=https://hoopjournal.me&state=..."
-```
+3) Harden initial auth bootstrap for mobile callback edge cases
+- In `useAuth.tsx`, add a first-pass bootstrap check that:
+  - Detects token-bearing callback URLs early.
+  - Waits for session establishment before declaring auth “not signed in.”
+- Preserve existing `onAuthStateChange` + `getSession` ordering, but avoid setting `loading=false` prematurely during callback processing windows.
 
-This navigates to `https://hoopjournal.me/~oauth/initiate` -- but **the `/~oauth` route only exists on `*.lovable.app` domains**, not on your custom domain. The custom domain serves your React app, which catches that unknown route and shows a "Not Found" page (or silently does nothing). That's why it "never navigates to Google."
+4) Expand service worker bypass conditions for callback stability
+- In `index.html`, extend existing OAuth bypass logic to include the dedicated callback path (`/auth/callback`) in addition to token-bearing hashes.
+- Keep current protection so token-bearing URLs are not force-reloaded before session hydration.
 
-On **mobile**, the same thing happens -- the OAuth initiation fails because `/~oauth/initiate` doesn't resolve on the custom domain. If a user previously logged in via `hoopjournal123.lovable.app` and then visits `hoopjournal.me`, the session cookie is domain-bound and doesn't carry over.
+5) Add explicit observability for this flow (temporary diagnostics)
+- Add concise logs around:
+  - OAuth button tap -> initiation URL
+  - Callback route load -> token presence
+  - `setSession` success/failure
+  - final auth state event
+- This makes it straightforward to verify whether failures are at initiation, callback parsing, or session persistence.
 
-**The auth logs confirm this:** all successful Google logins have `referer: https://hoopjournal123.lovable.app`, never `hoopjournal.me`.
+6) Validation checklist (end-to-end)
+- iPhone Safari (non-installed web app): Google sign-in should redirect out and return authenticated.
+- iPhone installed app (home-screen): after Google completes, app should come back authenticated, not stuck on login.
+- Android Chrome: same pass criteria.
+- Regression checks: email/password login and Apple login still work; no `/:username` routing regressions.
 
-## Solution
+Potential edge cases covered
+- Safari storage restrictions throwing before redirect.
+- OAuth token hash present but not hydrated before auth UI renders.
+- Dynamic route (`/:username`) accidentally catching callback path.
+- Service worker interference during callback return.
 
-When on the custom domain, bypass the relative `/~oauth/initiate` path and redirect directly to the full `hoopjournal123.lovable.app/~oauth/initiate` URL. The `redirect_uri` stays as `hoopjournal.me` so the user returns to your custom domain after authentication. The existing `detectSessionInUrl: true` setting will pick up the tokens from the URL.
+Files planned for update
+- `src/components/AuthForm.tsx`
+- `src/pages/OAuthCallback.tsx` (new)
+- `src/App.tsx`
+- `src/hooks/useAuth.tsx`
+- `index.html`
 
-```text
-CURRENT (broken):
-User on hoopjournal.me --> /~oauth/initiate (404!) --> nothing happens
-
-FIXED:
-User on hoopjournal.me --> https://hoopjournal123.lovable.app/~oauth/initiate --> Google --> back to hoopjournal.me with tokens
-```
-
-## What Changes
-
-### 1. Update `AuthForm.tsx` -- Custom Domain OAuth Redirect
-
-Add detection for custom domain and redirect to the absolute lovable.app broker URL:
-
-- Detect custom domain: hostname does NOT include `lovable.app` or `lovableproject.com`
-- When on custom domain, build the OAuth URL manually using `https://hoopjournal123.lovable.app/~oauth/initiate`
-- Pass `redirect_uri` as `window.location.origin` (the custom domain) so the user returns there
-- Generate a CSRF `state` parameter for security
-- When NOT on custom domain, use the existing `lovable.auth.signInWithOAuth()` as before
-
-Both Google and Apple buttons get this same fix.
-
-### 2. Update `index.html` -- Extend Service Worker Bypass
-
-Extend the existing `/~oauth` service worker unregister script to also handle hash-based token callbacks. When the URL contains `access_token` or `refresh_token` in the hash (which happens on the OAuth return), also bypass the service worker to prevent the Progressier PWA from caching or intercepting the token handoff.
-
-### 3. Update `App.tsx` -- Enhanced Token Detection on Return
-
-Add logic to detect when the app loads with OAuth tokens in the URL hash on the custom domain. This ensures `supabase.auth.getSession()` processes the tokens before the auth state check renders the login form.
-
-## Files to Modify
-
-| File | Change |
-|------|--------|
-| `src/components/AuthForm.tsx` | Add custom domain detection; redirect to absolute lovable.app broker URL for Google and Apple sign-in |
-| `index.html` | Extend SW bypass to also cover token-bearing callback URLs |
-
-## Important Notes
-
-- The `src/integrations/lovable/index.ts` file is auto-generated and will NOT be modified
-- The `redirect_uri` (hoopjournal.me) must be in the allowed redirect URLs list in the authentication settings. You may need to verify this in your backend settings
-- The existing service worker cache clearing before OAuth initiation is kept as-is
-- All existing email/password auth continues to work unchanged
-
+Expected outcome
+- Mobile OAuth completes consistently, and users are signed in immediately after returning from Google instead of being dropped back at the login form.
