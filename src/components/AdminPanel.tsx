@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck, ChevronDown } from 'lucide-react';
+import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck, ChevronDown, Activity, Cpu, Zap, TrendingUp, Clock } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { format } from 'date-fns';
 
@@ -116,6 +117,27 @@ export function AdminPanel() {
   const [orphansLoaded, setOrphansLoaded] = useState(false);
   const [deletingOrphan, setDeletingOrphan] = useState(false);
 
+  // Usage dashboard state
+  const [usageStats, setUsageStats] = useState<{
+    totalGames: number;
+    gamesThisWeek: number;
+    gamesThisMonth: number;
+    activeUsersToday: number;
+    activeUsersWeek: number;
+    activeUsersMonth: number;
+    coachMemoryEntries: number;
+    scheduledGames: number;
+    videoClips: number;
+    milestones: number;
+    xpProgressEntries: number;
+    usersByDay: { date: string; count: number }[];
+  }>({
+    totalGames: 0, gamesThisWeek: 0, gamesThisMonth: 0,
+    activeUsersToday: 0, activeUsersWeek: 0, activeUsersMonth: 0,
+    coachMemoryEntries: 0, scheduledGames: 0, videoClips: 0,
+    milestones: 0, xpProgressEntries: 0, usersByDay: [],
+  });
+
   // Fetch users and reports
   useEffect(() => {
     fetchData();
@@ -168,6 +190,59 @@ export function AdminPanel() {
 
       if (approvalError) throw approvalError;
       setApprovalRequests(approvalData || []);
+
+      // Fetch usage stats
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const [
+        gamesAll, gamesWeek, gamesMonth,
+        coachMem, schedGames, clips, milestones, xpProg
+      ] = await Promise.all([
+        supabase.from('games').select('id', { count: 'exact', head: true }),
+        supabase.from('games').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo),
+        supabase.from('games').select('id', { count: 'exact', head: true }).gte('created_at', monthAgo),
+        supabase.from('coach_memory').select('id', { count: 'exact', head: true }),
+        supabase.from('scheduled_games').select('id', { count: 'exact', head: true }),
+        supabase.from('video_clips').select('id', { count: 'exact', head: true }),
+        supabase.from('player_milestones').select('id', { count: 'exact', head: true }),
+        supabase.from('player_xp_progress').select('id', { count: 'exact', head: true }),
+      ]);
+
+      const { data: activeToday } = await supabase
+        .from('games').select('user_id').gte('created_at', todayStart);
+      const { data: activeWeek } = await supabase
+        .from('games').select('user_id').gte('created_at', weekAgo);
+      const { data: activeMonth } = await supabase
+        .from('games').select('user_id').gte('created_at', monthAgo);
+
+      const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      const usersByDay: { date: string; count: number }[] = [];
+      for (let d = 0; d < 14; d++) {
+        const dayDate = new Date(twoWeeksAgo.getTime() + d * 24 * 60 * 60 * 1000);
+        const dayStr = format(dayDate, 'MMM d');
+        const dayStart = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate()).toISOString();
+        const dayEnd = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate() + 1).toISOString();
+        const count = (usersData || []).filter(u => u.created_at >= dayStart && u.created_at < dayEnd).length;
+        usersByDay.push({ date: dayStr, count });
+      }
+
+      setUsageStats({
+        totalGames: gamesAll.count || 0,
+        gamesThisWeek: gamesWeek.count || 0,
+        gamesThisMonth: gamesMonth.count || 0,
+        activeUsersToday: new Set(activeToday?.map(g => g.user_id) || []).size,
+        activeUsersWeek: new Set(activeWeek?.map(g => g.user_id) || []).size,
+        activeUsersMonth: new Set(activeMonth?.map(g => g.user_id) || []).size,
+        coachMemoryEntries: coachMem.count || 0,
+        scheduledGames: schedGames.count || 0,
+        videoClips: clips.count || 0,
+        milestones: milestones.count || 0,
+        xpProgressEntries: xpProg.count || 0,
+        usersByDay,
+      });
     } catch (error) {
       console.error('Error fetching admin data:', error);
       toast.error('Failed to load admin data');
@@ -693,6 +768,11 @@ export function AdminPanel() {
             {unreadFeedback > 0 && (
               <Badge variant="destructive" className="ml-0.5 h-4 w-4 p-0 text-[10px] flex items-center justify-center md:h-5 md:w-auto md:px-1.5">{unreadFeedback}</Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="usage" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0 whitespace-nowrap">
+            <Activity className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Usage</span>
+            <span className="sm:hidden">Use</span>
           </TabsTrigger>
           <TabsTrigger value="metrics" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0 whitespace-nowrap">
             <BarChart3 className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
@@ -1502,6 +1582,197 @@ export function AdminPanel() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* Usage Dashboard Tab */}
+        <TabsContent value="usage" className="space-y-6">
+          {/* Active Users */}
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Users className="w-4 h-4" /> Active Users
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Today</CardDescription>
+                  <CardTitle className="text-3xl flex items-center gap-2">
+                    {usageStats.activeUsersToday}
+                    <span className="text-xs font-normal text-muted-foreground">/ {totalUsers}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <Progress value={totalUsers > 0 ? (usageStats.activeUsersToday / totalUsers) * 100 : 0} className="h-2" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>This Week</CardDescription>
+                  <CardTitle className="text-3xl flex items-center gap-2">
+                    {usageStats.activeUsersWeek}
+                    <span className="text-xs font-normal text-muted-foreground">/ {totalUsers}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <Progress value={totalUsers > 0 ? (usageStats.activeUsersWeek / totalUsers) * 100 : 0} className="h-2" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>This Month</CardDescription>
+                  <CardTitle className="text-3xl flex items-center gap-2">
+                    {usageStats.activeUsersMonth}
+                    <span className="text-xs font-normal text-muted-foreground">/ {totalUsers}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <Progress value={totalUsers > 0 ? (usageStats.activeUsersMonth / totalUsers) * 100 : 0} className="h-2" />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* AI Credit Consumption */}
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Cpu className="w-4 h-4" /> AI Credit Consumption (Estimated)
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription className="flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-primary" /> Coach AI Memories
+                  </CardDescription>
+                  <CardTitle className="text-2xl">{usageStats.coachMemoryEntries}</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-xs text-muted-foreground">Total memory entries stored</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription className="flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-primary" /> AI Recaps (est.)
+                  </CardDescription>
+                  <CardTitle className="text-2xl">{usageStats.totalGames}</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-xs text-muted-foreground">Based on total games logged</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription className="flex items-center gap-1.5">
+                    <TrendingUp className="w-3.5 h-3.5 text-primary" /> Games This Week
+                  </CardDescription>
+                  <CardTitle className="text-2xl">{usageStats.gamesThisWeek}</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-xs text-muted-foreground">New games in last 7 days</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription className="flex items-center gap-1.5">
+                    <TrendingUp className="w-3.5 h-3.5 text-primary" /> Games This Month
+                  </CardDescription>
+                  <CardTitle className="text-2xl">{usageStats.gamesThisMonth}</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-xs text-muted-foreground">New games in last 30 days</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* API Quota / Feature Usage */}
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Activity className="w-4 h-4" /> Feature & API Usage
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Scheduled Games</CardDescription>
+                  <CardTitle className="text-2xl">{usageStats.scheduledGames}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Video Clips</CardDescription>
+                  <CardTitle className="text-2xl">{usageStats.videoClips}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Milestones Earned</CardDescription>
+                  <CardTitle className="text-2xl">{usageStats.milestones}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>XP Entries</CardDescription>
+                  <CardTitle className="text-2xl">{usageStats.xpProgressEntries}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card className="sm:col-span-2">
+                <CardHeader className="pb-2">
+                  <CardDescription>Approval Funnel</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Signups</span>
+                      <span className="font-medium">{approvalRequests.length}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Approved</span>
+                      <span className="font-medium">{approvalRequests.filter(r => r.status === 'approved').length}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Pending</span>
+                      <span className="font-medium text-destructive">{pendingApprovals}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Approval Rate</span>
+                      <span className="font-medium">
+                        {approvalRequests.length > 0
+                          ? Math.round((approvalRequests.filter(r => r.status === 'approved').length / approvalRequests.length) * 100)
+                          : 0}%
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Signup Sparkline */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />
+                Signups — Last 14 Days
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-end gap-1 h-24">
+                {usageStats.usersByDay.map((day) => {
+                  const maxCount = Math.max(...usageStats.usersByDay.map(d => d.count), 1);
+                  const height = (day.count / maxCount) * 100;
+                  return (
+                    <div key={day.date} className="flex-1 flex flex-col items-center gap-1" title={`${day.date}: ${day.count}`}>
+                      <span className="text-[9px] text-muted-foreground">{day.count > 0 ? day.count : ''}</span>
+                      <div
+                        className="w-full rounded-t bg-primary/80 min-h-[2px] transition-all"
+                        style={{ height: `${Math.max(height, 2)}%` }}
+                      />
+                      <span className="text-[8px] text-muted-foreground truncate w-full text-center">{day.date.split(' ')[1]}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Metrics Tab */}
