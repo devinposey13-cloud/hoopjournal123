@@ -1,66 +1,76 @@
 
 
-# Add Web Speech API Fallback for Voice Input
+## Plan: Reimagine the Subscription Section in Settings
 
-## Overview
-Add the browser's built-in Web Speech API as an automatic fallback when the ElevenLabs STT service is unavailable (quota exceeded, API errors, network issues). This ensures voice input keeps working for users even during ElevenLabs outages -- at no additional cost.
+### Problem
+The current subscription section in Settings is bare-bones. For free users it just says "Free Plan" with an upgrade button. For subscribers, it shows the plan name and renewal date but lacks detail and has no cancel option inline.
 
-## How It Works
+### Design
 
-1. User taps the microphone and speaks as usual
-2. Recording stops and audio is sent to ElevenLabs STT (primary)
-3. If ElevenLabs fails (401, 429, 500, network error), the system automatically retries using the browser's Web Speech API
-4. User sees a brief toast: "Using backup transcription..." so they know what happened
-5. The transcribed text is returned exactly the same way -- no UI changes needed
+The subscription card will be redesigned into a richer, more informative component:
 
-## Technical Details
+**For Free users:**
+- Plan name ("Free") with a brief tagline from `planCatalog`
+- A short list of what's included (2-3 key limits like "2 AI Recaps/mo", "30-day history", "Level 10 cap")
+- Prominent "Upgrade" CTA
 
-### File Changes
+**For Subscribed users (active or trialing):**
+- Plan name + tier badge (Starter/Pro/Elite) with colored styling
+- Billing cycle indicator (Monthly/Yearly) derived from the price
+- Status badge: "Active", "Trial", or "Canceling"
+- Next payment date (from `subscriptionEnd`)
+- Monthly/yearly price from `planCatalog`
+- "Manage Subscription" button (existing portal flow)
+- "Cancel Subscription" button with a confirmation dialog (using the existing `cancelSubscription` method from `useSubscription`)
 
-**`src/hooks/useVoiceInput.ts`** -- Main changes:
-- Add a new helper function `transcribeWithWebSpeechAPI()` that uses `window.SpeechRecognition` (or `webkitSpeechRecognition` for Safari/iOS)
-- Modify `stopRecording()` to wrap the ElevenLabs fetch call in a try/catch
-- On ElevenLabs failure, call the Web Speech fallback automatically
-- Since Web Speech API works in real-time (not from a recorded blob), the fallback will re-record a short prompt asking the user to repeat if needed -- OR we use a hybrid approach:
-  - During recording, we silently run `SpeechRecognition` in parallel to capture a fallback transcript
-  - If ElevenLabs fails, we use the already-captured Web Speech transcript immediately
+### Technical Changes
 
-### Recommended Approach: Parallel Capture (Best UX)
+**1. `src/hooks/useSubscription.ts`** — Add `billingCycle` to state
+- The `check-subscription` edge function already returns `stripe_subscription_id` but not billing cycle. We need the edge function to also return the price interval.
 
-During `startRecording()`:
-- Start the MediaRecorder (for ElevenLabs) as before
-- Simultaneously start a `SpeechRecognition` instance in the background
-- Store interim/final results in a ref (`webSpeechResultRef`)
+**2. `supabase/functions/check-subscription/index.ts`** — Return `billing_cycle`
+- Extract `subscription.items.data[0].price.recurring.interval` and return it as `billing_cycle` (`"month"` or `"year"`).
 
-During `stopRecording()`:
-- Stop both MediaRecorder and SpeechRecognition
-- Try ElevenLabs STT first
-- If it fails, return the Web Speech result from the ref
-- Show a toast: "Used backup transcription" so user knows
+**3. `src/components/SettingsPanel.tsx`** — Replace the subscription section (lines 266-320)
+- Import `planCatalog` from `@/lib/plans`
+- Import `AlertDialog` components for cancel confirmation
+- Build a new subscription card with:
+  - Plan name, price, and billing info
+  - Status badge (Active / Trial / Canceling)
+  - Next charge date
+  - Key features summary for free users
+  - Cancel button with AlertDialog confirmation (immediate vs. end-of-period options)
+  - Manage Subscription button for portal access
 
-### New helper: `useWebSpeechFallback.ts`
-A small hook/utility that encapsulates:
-- Checking `window.SpeechRecognition || window.webkitSpeechRecognition` availability
-- Starting/stopping recognition
-- Collecting final transcript results
-- Handling errors gracefully (not all browsers support it)
+### Component Structure
 
-### Type declaration update: `src/types/web-speech.d.ts`
-- Add TypeScript declarations for `SpeechRecognition` and `webkitSpeechRecognition` on the window object
+```text
+┌─────────────────────────────────────────┐
+│ [Crown]  Pro Plan           [Active] ▪  │
+│          $19/mo · Monthly               │
+│                                         │
+│  Next payment: Mar 15, 2026             │
+│                                         │
+│  [Manage Subscription]  [Cancel]        │
+└─────────────────────────────────────────┘
+```
 
-### Browser Compatibility
-- Chrome, Edge, Safari (including iOS Safari) all support Web Speech API
-- Firefox has limited support -- for Firefox users, the existing ElevenLabs-only path remains (with a clear error message if it fails)
+For free users:
+```text
+┌─────────────────────────────────────────┐
+│ [Crown]  Free Plan                      │
+│          Start your journey.            │
+│                                         │
+│  • 2 AI Recaps/month                    │
+│  • 30-day game history                  │
+│  • Level 10 XP cap                      │
+│                                         │
+│  [★ Upgrade to unlock more]             │
+└─────────────────────────────────────────┘
+```
 
-### No changes needed to:
-- Edge functions
-- UI components (CoachChat, PregameTalk, PostGameTalk, AIStatsCapture)
-- AudioWaveform component
-- The `useVoiceInput` return interface stays identical
-
-## Limitations
-- Web Speech API requires an internet connection (it's not offline)
-- Accuracy may be slightly lower than ElevenLabs Scribe
-- Some browsers (Firefox) have limited or no support
-- These are acceptable tradeoffs for a free, zero-config fallback
+### Files Modified
+1. `supabase/functions/check-subscription/index.ts` — add `billing_cycle` to response
+2. `src/hooks/useSubscription.ts` — store `billingCycle` in state
+3. `src/components/SettingsPanel.tsx` — redesigned subscription section with cancel flow
 
