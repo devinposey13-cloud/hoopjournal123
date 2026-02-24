@@ -16,6 +16,8 @@ import GameDetail from "./pages/GameDetail";
 import PublicProfile from "./pages/PublicProfile";
 import ResetPassword from "./pages/ResetPassword";
 import Pricing from "./pages/Pricing";
+import Billing from "./pages/Billing";
+import Upgrade from "./pages/Upgrade";
 import Rewards from "./pages/Rewards";
 import RingOfHonor from "./pages/RingOfHonor";
 import Log from "./pages/Log";
@@ -63,6 +65,9 @@ const App = () => (
                 <Route path="/progress/:subTab" element={<Progress />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/pricing" element={<Pricing />} />
+                <Route path="/billing" element={<Billing />} />
+                <Route path="/settings/billing" element={<Billing />} />
+                <Route path="/upgrade" element={<Upgrade />} />
                 <Route path="/rewards" element={<Rewards />} />
                 <Route path="/ring-of-honor" element={<RingOfHonor />} />
                 <Route path="/game/:id" element={<GameDetail />} />
