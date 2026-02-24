@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, createContext, useContext } from 'rea
 import {
   PlanId, PaywallReason, paywallConfigs, mockUsage, UsageData, track,
   UserAccessInfo, getEffectivePlan, hasSpecialAccess, getAccessBadge, AccessBadge,
+  PRICING_LAUNCH_DATE,
 } from '@/lib/plans';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -34,7 +35,7 @@ export function usePlanState(): PlanState {
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null);
 
-  // Fetch plan overrides from DB
+  // Fetch plan overrides from DB, auto-grandfather early users
   useEffect(() => {
     async function fetchPlanOverride() {
       if (!session?.user?.id) {
@@ -54,13 +55,33 @@ export function usePlanState(): PlanState {
           console.error('Error fetching plan override:', error);
         }
 
+        // Auto-grandfather: if user was created before launch date and not yet tracked
+        const userCreatedAt = session.user.created_at;
+        const shouldGrandfather = userCreatedAt && new Date(userCreatedAt) < new Date(PRICING_LAUNCH_DATE);
+
         if (data) {
+          // If user qualifies but isn't grandfathered yet, update
+          if (shouldGrandfather && !data.is_grandfathered) {
+            await supabase
+              .from('plan_overrides')
+              .update({ is_grandfathered: true })
+              .eq('user_id', session.user.id);
+            data.is_grandfathered = true;
+          }
+
           setAccessInfo({
             subscriptionPlan: (data.subscription_plan as PlanId) || 'free',
             isGrandfathered: data.is_grandfathered || false,
             adminOverridePlan: (data.admin_override_plan as PlanId) || null,
             promoAccessUntil: data.promo_access_until || null,
           });
+        } else if (shouldGrandfather) {
+          // No row yet — create one with grandfathered = true
+          await supabase
+            .from('plan_overrides')
+            .insert({ user_id: session.user.id, is_grandfathered: true, subscription_plan: 'free' });
+
+          setAccessInfo({ ...defaultAccessInfo, isGrandfathered: true });
         } else {
           setAccessInfo(defaultAccessInfo);
         }
