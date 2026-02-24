@@ -89,6 +89,21 @@ export function useSubscription() {
     return data;
   };
 
+  const cancelSubscription = async (immediate = false) => {
+    if (!user) throw new Error('Must be logged in to cancel subscription');
+
+    const { data, error } = await supabase.functions.invoke('cancel-subscription', {
+      body: { immediate },
+    });
+
+    if (error) throw error;
+
+    // Refresh subscription state after cancellation
+    await checkSubscription();
+
+    return data;
+  };
+
   useEffect(() => {
     checkSubscription();
   }, [checkSubscription]);
@@ -104,5 +119,6 @@ export function useSubscription() {
     checkSubscription,
     createCheckout,
     openCustomerPortal,
+    cancelSubscription,
   };
 }

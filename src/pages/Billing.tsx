@@ -1,17 +1,29 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { BillingSummaryCard } from '@/components/billing/BillingSummaryCard';
 import { usePlan } from '@/hooks/usePlanState';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function Billing() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { currentPlan, usage, accessBadge, loading } = usePlan();
-  const { isSubscribed, subscriptionEnd, subscriptionStatus, checkSubscription, openCustomerPortal } = useSubscription();
+  const { isSubscribed, subscriptionEnd, subscriptionStatus, checkSubscription, openCustomerPortal, cancelSubscription } = useSubscription();
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [canceling, setCanceling] = useState(false);
 
   // Handle Stripe redirect success
   useEffect(() => {
@@ -20,6 +32,19 @@ export default function Billing() {
       checkSubscription();
     }
   }, []);
+
+  const handleCancel = async (immediate: boolean) => {
+    setCanceling(true);
+    try {
+      const result = await cancelSubscription(immediate);
+      toast.success(result.message || 'Subscription canceled');
+      setCancelOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to cancel subscription');
+    } finally {
+      setCanceling(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -50,8 +75,43 @@ export default function Billing() {
           subscriptionEnd={subscriptionEnd}
           subscriptionStatus={subscriptionStatus}
           onManageSubscription={openCustomerPortal}
+          onCancelSubscription={() => setCancelOpen(true)}
         />
       </div>
+
+      <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
+            <AlertDialogDescription>
+              How would you like to cancel?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 py-2">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              disabled={canceling}
+              onClick={() => handleCancel(false)}
+            >
+              {canceling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Cancel at end of billing period
+            </Button>
+            <Button
+              variant="destructive"
+              className="w-full justify-start"
+              disabled={canceling}
+              onClick={() => handleCancel(true)}
+            >
+              {canceling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Cancel immediately
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={canceling}>Keep Subscription</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
