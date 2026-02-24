@@ -82,18 +82,18 @@ export function useApprovalStatus() {
           // Check approval request status to see if it's still pending (newly created)
           const { data: approvalData } = await supabase
             .from('account_approval_requests')
-            .select('created_at')
+            .select('created_at, notification_sent')
             .eq('user_id', user.id)
             .eq('status', 'pending')
             .maybeSingle();
           
-          if (approvalData) {
+          if (approvalData && !approvalData.notification_sent) {
             // Check if created within last 5 minutes (likely an OAuth signup needing notification)
             const createdAt = new Date(approvalData.created_at);
             const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
             
             if (createdAt > fiveMinutesAgo) {
-              // Send admin notification for OAuth signup
+              // Fallback: Send admin notification if webhook didn't fire
               notificationSentRef.current.add(user.id);
               try {
                 await supabase.functions.invoke('notify-admin-signup', {
@@ -102,9 +102,14 @@ export function useApprovalStatus() {
                     email: user.email || null,
                   },
                 });
-                console.log('Admin notification sent for OAuth signup');
+                // Mark as sent to prevent duplicates
+                await supabase
+                  .from('account_approval_requests')
+                  .update({ notification_sent: true })
+                  .eq('user_id', user.id);
+                console.log('Fallback admin notification sent for OAuth signup');
               } catch (notifyError) {
-                console.error('Error sending admin notification:', notifyError);
+                console.error('Error sending fallback admin notification:', notifyError);
               }
             }
           }
