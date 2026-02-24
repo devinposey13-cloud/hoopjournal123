@@ -85,7 +85,16 @@ serve(async (req) => {
 
     if (hasActiveSub) {
       const subscription = allSubs[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      const periodEnd = subscription.current_period_end;
+      try {
+        subscriptionEnd = typeof periodEnd === 'number' 
+          ? new Date(periodEnd * 1000).toISOString()
+          : typeof periodEnd === 'string' 
+            ? new Date(periodEnd).toISOString()
+            : null;
+      } catch {
+        subscriptionEnd = null;
+      }
       subscriptionStatus = subscription.status;
       stripeSubscriptionId = subscription.id;
 
