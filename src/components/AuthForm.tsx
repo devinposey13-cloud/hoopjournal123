@@ -79,16 +79,15 @@ export function AuthForm() {
   const LOVABLE_APP_ORIGIN = 'https://hoopjournal123.lovable.app';
 
   const handleCustomDomainOAuth = async (provider: 'google' | 'apple') => {
-    await clearServiceWorkerCaches();
+    // Best-effort SW cache clear (non-blocking on failure)
+    try { await clearServiceWorkerCaches(); } catch (_) {}
     
-    // Generate a random state for CSRF protection
-    const state = crypto.randomUUID();
-    sessionStorage.setItem('oauth_state', state);
-    
-    const redirectUri = window.location.origin;
-    const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+    // Use /auth/callback as the redirect so tokens land on a dedicated lightweight page
+    const redirectUri = `${window.location.origin}/auth/callback`;
+    const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}`;
     
     console.log(`[OAuth] Custom domain redirect to broker: ${brokerUrl}`);
+    console.log(`[OAuth] redirect_uri: ${redirectUri}`);
     window.location.href = brokerUrl;
   };
 
@@ -108,7 +107,7 @@ export function AuthForm() {
       await clearServiceWorkerCaches();
       
       const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: redirectUri,
+        redirect_uri: `${redirectUri}/auth/callback`,
       });
       
       if (error) {
@@ -140,7 +139,7 @@ export function AuthForm() {
       await clearServiceWorkerCaches();
       
       const { error } = await lovable.auth.signInWithOAuth("apple", {
-        redirect_uri: redirectUri,
+        redirect_uri: `${redirectUri}/auth/callback`,
       });
       
       if (error) {
