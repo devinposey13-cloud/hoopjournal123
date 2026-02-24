@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useWebSpeechFallback } from './useWebSpeechFallback';
 
 const STT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-stt`;
 
@@ -28,78 +29,63 @@ export function useVoiceInput(): UseVoiceInputReturn {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
+  // Web Speech API fallback
+  const webSpeech = useWebSpeechFallback();
+
   const cleanup = useCallback(() => {
-    // Stop animation frame
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
-    
-    // Close audio context
     if (audioContextRef.current) {
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
     analyserRef.current = null;
-    
-    // Stop all tracks
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    
-    // Clear timeout
     if (maxDurationTimeoutRef.current) {
       clearTimeout(maxDurationTimeoutRef.current);
       maxDurationTimeoutRef.current = null;
     }
-    
     mediaRecorderRef.current = null;
     audioChunksRef.current = [];
     setAudioData([]);
-  }, []);
+    webSpeech.cleanup();
+  }, [webSpeech]);
 
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      cleanup();
-    };
+    return () => { cleanup(); };
   }, [cleanup]);
 
   const updateAudioData = useCallback(() => {
     if (!analyserRef.current || !isRecording) return;
-    
     const analyser = analyserRef.current;
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
     analyser.getByteFrequencyData(dataArray);
-    
-    // Sample 24 bars from the frequency data
     const barCount = 24;
     const step = Math.floor(dataArray.length / barCount);
     const sampledData: number[] = [];
-    
     for (let i = 0; i < barCount; i++) {
-      // Average a range of frequencies for each bar
       let sum = 0;
       for (let j = 0; j < step; j++) {
         sum += dataArray[i * step + j];
       }
       sampledData.push(sum / step);
     }
-    
     setAudioData(sampledData);
     animationFrameRef.current = requestAnimationFrame(updateAudioData);
   }, [isRecording]);
 
   const startRecording = useCallback(async () => {
     try {
-      // Request microphone permission with mobile-optimized constraints
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          // Mobile-specific: don't require specific sample rates
           sampleRate: { ideal: 16000 },
         } 
       });
@@ -107,13 +93,10 @@ export function useVoiceInput(): UseVoiceInputReturn {
       streamRef.current = stream;
       audioChunksRef.current = [];
       
-      // Set up audio analysis with mobile AudioContext handling
-      // Use webkitAudioContext for older iOS Safari
       const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const audioContext = new AudioContextClass();
       audioContextRef.current = audioContext;
       
-      // Resume AudioContext if suspended (required on iOS/mobile after user gesture)
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
       }
@@ -126,8 +109,6 @@ export function useVoiceInput(): UseVoiceInputReturn {
       const source = audioContext.createMediaStreamSource(stream);
       source.connect(analyser);
       
-      // Determine best supported format - prioritize formats that work on mobile
-      // iOS Safari supports audio/mp4, Android supports audio/webm
       let mimeType = 'audio/webm';
       if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
         mimeType = 'audio/webm;codecs=opus';
@@ -143,7 +124,6 @@ export function useVoiceInput(): UseVoiceInputReturn {
       
       console.log('Using audio MIME type:', mimeType);
       
-      // Create MediaRecorder with fallback for unsupported mimeType
       let mediaRecorder: MediaRecorder;
       try {
         mediaRecorder = new MediaRecorder(stream, { mimeType });
@@ -159,13 +139,14 @@ export function useVoiceInput(): UseVoiceInputReturn {
         }
       };
       
-      mediaRecorder.start(100); // Collect data every 100ms
+      mediaRecorder.start(100);
       setIsRecording(true);
       
-      // Start audio visualization
+      // Start Web Speech API in parallel as fallback
+      webSpeech.start();
+      
       animationFrameRef.current = requestAnimationFrame(updateAudioData);
       
-      // Auto-stop after 60 seconds
       maxDurationTimeoutRef.current = setTimeout(() => {
         if (mediaRecorderRef.current?.state === 'recording') {
           toast.info('Maximum recording time reached (60 seconds)');
@@ -175,7 +156,6 @@ export function useVoiceInput(): UseVoiceInputReturn {
       
     } catch (error) {
       console.error('Failed to start recording:', error);
-      
       if (error instanceof DOMException) {
         if (error.name === 'NotAllowedError') {
           toast.error('Microphone access denied. Please enable microphone access in your browser settings.');
@@ -187,11 +167,47 @@ export function useVoiceInput(): UseVoiceInputReturn {
       } else {
         toast.error('Failed to start recording. Please try again.');
       }
-      
       cleanup();
       throw error;
     }
-  }, [cleanup, updateAudioData]);
+  }, [cleanup, updateAudioData, webSpeech]);
+
+  const transcribeWithElevenLabs = async (audioBlob: Blob, mimeType: string): Promise<string | null> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.access_token) {
+      toast.error('Please sign in to use voice input');
+      return null;
+    }
+    
+    const formData = new FormData();
+    const extension = mimeType.includes('webm') ? 'webm' 
+      : mimeType.includes('mp4') ? 'mp4' 
+      : 'wav';
+    formData.append('audio', audioBlob, `recording.${extension}`);
+    
+    const response = await fetch(STT_URL, {
+      method: 'POST',
+      headers: {
+        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `ElevenLabs STT failed (${response.status})`);
+    }
+    
+    const result = await response.json();
+    
+    if (!result.text || result.text.trim() === '') {
+      return null;
+    }
+    
+    return result.text;
+  };
 
   const stopRecording = useCallback(async (): Promise<string | null> => {
     return new Promise((resolve) => {
@@ -204,66 +220,56 @@ export function useVoiceInput(): UseVoiceInputReturn {
         return;
       }
 
+      // Stop Web Speech capture
+      webSpeech.stop();
+
       mediaRecorder.onstop = async () => {
         setIsRecording(false);
         
-        const audioBlob = new Blob(audioChunksRef.current, { 
-          type: mediaRecorder.mimeType 
-        });
+        const recordedMimeType = mediaRecorder.mimeType;
+        const audioBlob = new Blob(audioChunksRef.current, { type: recordedMimeType });
         
         cleanup();
         
-        // Check if we have audio data
         if (audioBlob.size < 1000) {
           toast.error('Recording too short. Please speak longer and try again.');
           resolve(null);
           return;
         }
         
-        // Transcribe the audio
         setIsTranscribing(true);
         
         try {
-          // Get the current session for authentication
-          const { data: { session } } = await supabase.auth.getSession();
+          // Try ElevenLabs first
+          const text = await transcribeWithElevenLabs(audioBlob, recordedMimeType);
           
-          if (!session?.access_token) {
-            toast.error('Please sign in to use voice input');
-            resolve(null);
+          if (text) {
+            resolve(text);
             return;
           }
           
-          const formData = new FormData();
-          const extension = mediaRecorder.mimeType.includes('webm') ? 'webm' 
-            : mediaRecorder.mimeType.includes('mp4') ? 'mp4' 
-            : 'wav';
-          formData.append('audio', audioBlob, `recording.${extension}`);
-          
-          const response = await fetch(STT_URL, {
-            method: 'POST',
-            headers: {
-              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              'Authorization': `Bearer ${session.access_token}`,
-            },
-            body: formData,
-          });
-          
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Transcription failed');
-          }
-          
-          const result = await response.json();
-          
-          if (!result.text || result.text.trim() === '') {
-            toast.error('Could not understand audio. Please speak clearly and try again.');
-            resolve(null);
+          // ElevenLabs returned empty — try fallback
+          const fallbackText = webSpeech.getTranscript();
+          if (fallbackText) {
+            toast.info('Used backup transcription');
+            resolve(fallbackText);
             return;
           }
           
-          resolve(result.text);
+          toast.error('Could not understand audio. Please speak clearly and try again.');
+          resolve(null);
         } catch (error) {
-          console.error('Transcription error:', error);
+          console.error('ElevenLabs transcription failed, trying fallback:', error);
+          
+          // Try Web Speech fallback
+          const fallbackText = webSpeech.getTranscript();
+          if (fallbackText) {
+            toast.info('Used backup transcription');
+            resolve(fallbackText);
+            return;
+          }
+          
+          // Both failed
           toast.error(error instanceof Error ? error.message : 'Failed to transcribe audio. Please try again.');
           resolve(null);
         } finally {
@@ -273,7 +279,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
       
       mediaRecorder.stop();
     });
-  }, [cleanup]);
+  }, [cleanup, webSpeech]);
 
   const cancelRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === 'recording') {
