@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.extract-game-stats]
 verify_jwt = false
+
+[functions.handle-signup-webhook]
+verify_jwt = false
