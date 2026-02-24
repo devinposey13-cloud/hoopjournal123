@@ -1,104 +1,68 @@
 
 
-# Fix: Reliable Admin Signup Notifications
+# Fix: OAuth Flow on Custom Domain (hoopjournal.me)
 
-## Problem
-Admin email notifications for new signups are sent from the **client-side** only, inside `useApprovalStatus.ts`. This means:
-- If the user's browser doesn't fully load the app after OAuth signup, the notification never fires
-- If the 5-minute window passes before the hook runs, the notification is skipped
-- Service worker interference (the recent mobile OAuth issue) can prevent the hook from executing
-- There is zero fallback -- the notification is simply lost
+## Root Cause
 
-**Evidence:** The most recent signup (`mbcotton23@gmail.com`, today at 2:00 PM UTC) has zero logs in the `notify-admin-signup` function.
+I traced through the `@lovable.dev/cloud-auth-js` library source code and found the exact problem:
 
-## Solution
-Move the notification trigger to a **database webhook** so it fires automatically when a new `account_approval_requests` row is inserted, independent of the client.
+When a user clicks "Continue with Google" on **hoopjournal.me**, the OAuth SDK does this:
 
-### 1. Create a new edge function: `handle-signup-webhook`
-A database webhook handler that:
-- Receives the new `account_approval_requests` row via Supabase webhook payload
-- Calls the existing `notify-admin-signup` logic (sends email via Resend)
-- Consolidates all notification logic server-side
-
-### 2. Create a database webhook trigger
-A SQL migration that:
-- Creates a `pg_net` HTTP request on INSERT to `account_approval_requests`
-- Calls the new edge function automatically when a row is created by the `handle_new_user` trigger
-- This removes dependence on client-side code entirely
-
-### 3. Keep client-side as a fallback
-- Keep the existing `useApprovalStatus` notification logic as a secondary fallback
-- Add a `notification_sent` column to `account_approval_requests` to prevent duplicate emails
-- Both the webhook and client-side check this flag before sending
-
-### 4. Immediate fix for the missed notification
-- Manually trigger the notification for `mbcotton23@gmail.com` by calling the edge function
-
-## Technical Details
-
-### New Edge Function: `supabase/functions/handle-signup-webhook/index.ts`
-- Validates the webhook payload (checks for `type: "INSERT"` and `record` data)
-- Extracts `username` and `email` from the new record
-- Sends the admin notification email via Resend (same template as `notify-admin-signup`)
-- Updates `account_approval_requests.notification_sent = true`
-- Uses service role key for database access
-
-### Database Migration
-```sql
--- Add flag to prevent duplicate notifications
-ALTER TABLE account_approval_requests 
-  ADD COLUMN IF NOT EXISTS notification_sent boolean DEFAULT false;
-
--- Create a trigger function that calls the edge function via pg_net
-CREATE OR REPLACE FUNCTION notify_admin_on_signup()
-RETURNS trigger AS $$
-DECLARE
-  edge_url text;
-  service_key text;
-BEGIN
-  edge_url := 'https://jwoupnumuotmwpwrkmob.supabase.co/functions/v1/handle-signup-webhook';
-  
-  PERFORM net.http_post(
-    url := edge_url,
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key', true)
-    ),
-    body := jsonb_build_object(
-      'type', 'INSERT',
-      'record', jsonb_build_object(
-        'user_id', NEW.user_id,
-        'email', NEW.email,
-        'username', NEW.username,
-        'status', NEW.status
-      )
-    )
-  );
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE TRIGGER on_new_approval_request
-  AFTER INSERT ON account_approval_requests
-  FOR EACH ROW
-  EXECUTE FUNCTION notify_admin_on_signup();
+```
+window.location.href = "/~oauth/initiate?provider=google&redirect_uri=https://hoopjournal.me&state=..."
 ```
 
-### Update `useApprovalStatus.ts`
-- Check `notification_sent` flag before attempting client-side notification
-- Still send as fallback if flag is false (covers edge cases where webhook fails)
-- Mark the flag after successful client-side send
+This navigates to `https://hoopjournal.me/~oauth/initiate` -- but **the `/~oauth` route only exists on `*.lovable.app` domains**, not on your custom domain. The custom domain serves your React app, which catches that unknown route and shows a "Not Found" page (or silently does nothing). That's why it "never navigates to Google."
 
-## Files to Create/Modify
+On **mobile**, the same thing happens -- the OAuth initiation fails because `/~oauth/initiate` doesn't resolve on the custom domain. If a user previously logged in via `hoopjournal123.lovable.app` and then visits `hoopjournal.me`, the session cookie is domain-bound and doesn't carry over.
+
+**The auth logs confirm this:** all successful Google logins have `referer: https://hoopjournal123.lovable.app`, never `hoopjournal.me`.
+
+## Solution
+
+When on the custom domain, bypass the relative `/~oauth/initiate` path and redirect directly to the full `hoopjournal123.lovable.app/~oauth/initiate` URL. The `redirect_uri` stays as `hoopjournal.me` so the user returns to your custom domain after authentication. The existing `detectSessionInUrl: true` setting will pick up the tokens from the URL.
+
+```text
+CURRENT (broken):
+User on hoopjournal.me --> /~oauth/initiate (404!) --> nothing happens
+
+FIXED:
+User on hoopjournal.me --> https://hoopjournal123.lovable.app/~oauth/initiate --> Google --> back to hoopjournal.me with tokens
+```
+
+## What Changes
+
+### 1. Update `AuthForm.tsx` -- Custom Domain OAuth Redirect
+
+Add detection for custom domain and redirect to the absolute lovable.app broker URL:
+
+- Detect custom domain: hostname does NOT include `lovable.app` or `lovableproject.com`
+- When on custom domain, build the OAuth URL manually using `https://hoopjournal123.lovable.app/~oauth/initiate`
+- Pass `redirect_uri` as `window.location.origin` (the custom domain) so the user returns there
+- Generate a CSRF `state` parameter for security
+- When NOT on custom domain, use the existing `lovable.auth.signInWithOAuth()` as before
+
+Both Google and Apple buttons get this same fix.
+
+### 2. Update `index.html` -- Extend Service Worker Bypass
+
+Extend the existing `/~oauth` service worker unregister script to also handle hash-based token callbacks. When the URL contains `access_token` or `refresh_token` in the hash (which happens on the OAuth return), also bypass the service worker to prevent the Progressier PWA from caching or intercepting the token handoff.
+
+### 3. Update `App.tsx` -- Enhanced Token Detection on Return
+
+Add logic to detect when the app loads with OAuth tokens in the URL hash on the custom domain. This ensures `supabase.auth.getSession()` processes the tokens before the auth state check renders the login form.
+
+## Files to Modify
 
 | File | Change |
 |------|--------|
-| `supabase/functions/handle-signup-webhook/index.ts` | **New** -- webhook handler for signup notifications |
-| `src/hooks/useApprovalStatus.ts` | Update to check `notification_sent` flag, keep as fallback |
-| Database migration | Add `notification_sent` column, create trigger function |
-| `supabase/config.toml` | Add `handle-signup-webhook` function config |
+| `src/components/AuthForm.tsx` | Add custom domain detection; redirect to absolute lovable.app broker URL for Google and Apple sign-in |
+| `index.html` | Extend SW bypass to also cover token-bearing callback URLs |
 
-## Immediate Action
-After implementation, manually trigger the notification for the missed signup (`mbcotton23@gmail.com` / username `mbcotton23`) so you can review and approve the account.
+## Important Notes
+
+- The `src/integrations/lovable/index.ts` file is auto-generated and will NOT be modified
+- The `redirect_uri` (hoopjournal.me) must be in the allowed redirect URLs list in the authentication settings. You may need to verify this in your backend settings
+- The existing service worker cache clearing before OAuth initiation is kept as-is
+- All existing email/password auth continues to work unchanged
 
