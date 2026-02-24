@@ -18,6 +18,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Pricing from "./pages/Pricing";
 import Billing from "./pages/Billing";
 import Upgrade from "./pages/Upgrade";
+import OnboardingFinish from "./pages/OnboardingFinish";
 import Rewards from "./pages/Rewards";
 import RingOfHonor from "./pages/RingOfHonor";
 import Log from "./pages/Log";
@@ -68,6 +69,8 @@ const App = () => (
                 <Route path="/billing" element={<Billing />} />
                 <Route path="/settings/billing" element={<Billing />} />
                 <Route path="/upgrade" element={<Upgrade />} />
+                <Route path="/onboarding/finish" element={<OnboardingFinish />} />
+                <Route path="/onboarding/pricing-preview" element={<OnboardingFinish />} />
                 <Route path="/rewards" element={<Rewards />} />
                 <Route path="/ring-of-honor" element={<RingOfHonor />} />
                 <Route path="/game/:id" element={<GameDetail />} />
