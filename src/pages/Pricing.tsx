@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -9,21 +9,41 @@ import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import { PlanCompareTable } from '@/components/pricing/PlanCompareTable';
 import { FAQAccordion } from '@/components/pricing/FAQAccordion';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, track } from '@/lib/plans';
+import { useSubscription } from '@/hooks/useSubscription';
+import { usePlan } from '@/hooks/usePlanState';
 import { toast } from 'sonner';
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
-  // Mock current plan
-  const currentPlan: PlanId = 'free';
+  const { currentPlan } = usePlan();
+  const { createCheckout } = useSubscription();
+  const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
 
-  const handleSelectPlan = (planId: PlanId) => {
-    track('upgrade_clicked', { planId });
+  // Show success/canceled toasts from Stripe redirect
+  const success = searchParams.get('success');
+  const canceled = searchParams.get('canceled');
+
+  const handleSelectPlan = async (planId: PlanId) => {
     if (planId === 'free') {
       toast.info("You're already on the Free plan!");
       return;
     }
-    toast.success(`Selected ${planCatalog[planId].name} plan — checkout coming soon!`);
+    if (planId === currentPlan) {
+      toast.info(`You're already on the ${planCatalog[planId].name} plan!`);
+      return;
+    }
+    track('upgrade_clicked', { planId, cycle });
+    setLoadingPlan(planId);
+    try {
+      await createCheckout(planId, cycle);
+      toast.success('Redirecting to checkout...');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start checkout');
+    } finally {
+      setLoadingPlan(null);
+    }
   };
 
   return (

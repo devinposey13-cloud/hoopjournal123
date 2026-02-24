@@ -12,10 +12,14 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Price and product mappings
-const PRICE_TO_PLAN: Record<string, string> = {
-  "price_1SvKZNRmEndXycaGjqXeIVXg": "monthly",
-  "price_1SvKgjRmEndXycaGRatSCc0m": "annual",
+// Product ID → plan mapping
+const PRODUCT_TO_PLAN: Record<string, string> = {
+  "prod_U2TenmJYJtafl8": "starter",
+  "prod_U2Te369rDpYwBQ": "starter",
+  "prod_U2TeAY16X7k2Ri": "pro",
+  "prod_U2TfBflXbqKewl": "pro",
+  "prod_U2TfBcoxhUepHK": "elite",
+  "prod_U2Tfh9dNymbaRg": "elite",
 };
 
 serve(async (req) => {
@@ -34,15 +38,11 @@ serve(async (req) => {
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
-    logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
-    logStep("Authenticating user with token");
-    
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
     const user = userData.user;
@@ -51,9 +51,9 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    
+
     if (customers.data.length === 0) {
-      logStep("No customer found, returning unsubscribed state");
+      logStep("No customer found");
       return new Response(JSON.stringify({ subscribed: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -68,18 +68,43 @@ serve(async (req) => {
       status: "active",
       limit: 1,
     });
-    const hasActiveSub = subscriptions.data.length > 0;
-    let planType = null;
-    let subscriptionEnd = null;
+
+    // Also check trialing subscriptions
+    const trialingSubs = await stripe.subscriptions.list({
+      customer: customerId,
+      status: "trialing",
+      limit: 1,
+    });
+
+    const allSubs = [...subscriptions.data, ...trialingSubs.data];
+    const hasActiveSub = allSubs.length > 0;
+    let planType: string | null = null;
+    let subscriptionEnd: string | null = null;
+    let subscriptionStatus: string | null = null;
+    let stripeSubscriptionId: string | null = null;
 
     if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
+      const subscription = allSubs[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
-      
-      const priceId = subscription.items.data[0].price.id;
-      planType = PRICE_TO_PLAN[priceId] || "pro";
-      logStep("Determined subscription plan", { priceId, planType });
+      subscriptionStatus = subscription.status;
+      stripeSubscriptionId = subscription.id;
+
+      const productId = subscription.items.data[0].price.product as string;
+      planType = PRODUCT_TO_PLAN[productId] || "pro";
+      logStep("Active subscription found", { subscriptionId: subscription.id, planType, status: subscriptionStatus });
+
+      // Sync to plan_overrides
+      const { error: upsertError } = await supabaseClient
+        .from("plan_overrides")
+        .upsert({
+          user_id: user.id,
+          subscription_plan: planType,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id" });
+
+      if (upsertError) {
+        logStep("Warning: failed to sync plan_overrides", { error: upsertError.message });
+      }
     } else {
       logStep("No active subscription found");
     }
@@ -87,14 +112,16 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       plan_type: planType,
-      subscription_end: subscriptionEnd
+      subscription_end: subscriptionEnd,
+      subscription_status: subscriptionStatus,
+      stripe_subscription_id: stripeSubscriptionId,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in check-subscription", { message: errorMessage });
+    logStep("ERROR", { message: errorMessage });
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

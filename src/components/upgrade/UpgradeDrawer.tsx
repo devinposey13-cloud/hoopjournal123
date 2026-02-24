@@ -10,9 +10,11 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, ArrowRight, Sparkles } from 'lucide-react';
+import { Check, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import { type PlanId, type BillingCycle, planCatalog, getPlanPrice, track } from '@/lib/plans';
+import { useSubscription } from '@/hooks/useSubscription';
+import { toast } from 'sonner';
 
 export interface UpgradeDrawerConfig {
   title: string;
@@ -31,15 +33,26 @@ interface UpgradeDrawerProps {
 
 export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawerProps) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
+  const [isLoading, setIsLoading] = useState(false);
+  const { createCheckout } = useSubscription();
 
   if (!config) return null;
 
   const plan = planCatalog[config.recommendedPlan];
   const price = getPlanPrice(config.recommendedPlan, cycle);
 
-  const handleUpgrade = () => {
-    track('upgrade_clicked', { planId: config.recommendedPlan });
-    onUpgrade(config.recommendedPlan);
+  const handleUpgrade = async () => {
+    track('upgrade_clicked', { planId: config.recommendedPlan, cycle });
+    setIsLoading(true);
+    try {
+      await createCheckout(config.recommendedPlan, cycle);
+      toast.success('Redirecting to checkout...');
+      onUpgrade(config.recommendedPlan);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start checkout');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -101,10 +114,14 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
           <DrawerFooter className="pt-2">
             <Button
               onClick={handleUpgrade}
+              disabled={isLoading}
               className="w-full gradient-primary text-primary-foreground font-semibold h-12"
             >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
               Upgrade to {plan.name}
-              <ArrowRight className="w-4 h-4 ml-2" />
+              {!isLoading && <ArrowRight className="w-4 h-4 ml-2" />}
             </Button>
             <DrawerClose asChild>
               <Button variant="ghost" className="text-muted-foreground">

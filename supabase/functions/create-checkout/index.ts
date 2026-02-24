@@ -12,6 +12,29 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
+// Plan → price ID mapping
+const PLAN_PRICES: Record<string, Record<string, string>> = {
+  starter: {
+    monthly: "price_1T4OgtRmEndXycaGheeNenUl",
+    yearly: "price_1T4Oh8RmEndXycaGDCWstZbx",
+  },
+  pro: {
+    monthly: "price_1T4OhTRmEndXycaGihIBzJ4z",
+    yearly: "price_1T4OhiRmEndXycaGTCZ1brsJ",
+  },
+  elite: {
+    monthly: "price_1T4Oi0RmEndXycaGTr3xvLEP",
+    yearly: "price_1T4OiMRmEndXycaGvwSVdgYK",
+  },
+};
+
+// Trial days per plan
+const TRIAL_DAYS: Record<string, number> = {
+  starter: 7,
+  pro: 7,
+  elite: 0,
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -27,11 +50,9 @@ serve(async (req) => {
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    logStep("Stripe key verified");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
-    logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
@@ -39,9 +60,19 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { priceId, withTrial } = await req.json();
-    if (!priceId) throw new Error("priceId is required");
-    logStep("Price ID received", { priceId, withTrial });
+    const { planId, billingCycle, withTrial } = await req.json();
+    logStep("Request body", { planId, billingCycle, withTrial });
+
+    // Resolve price ID
+    let priceId: string;
+    if (planId && billingCycle && PLAN_PRICES[planId]?.[billingCycle]) {
+      priceId = PLAN_PRICES[planId][billingCycle];
+    } else if (planId && PLAN_PRICES[planId]) {
+      priceId = PLAN_PRICES[planId].monthly;
+    } else {
+      throw new Error(`Invalid planId "${planId}" or billingCycle "${billingCycle}"`);
+    }
+    logStep("Resolved price ID", { priceId });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
@@ -51,36 +82,28 @@ serve(async (req) => {
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       logStep("Found existing customer", { customerId });
-    } else {
-      logStep("No existing customer, will create new");
     }
 
     const origin = req.headers.get("origin") || "https://hoopjournal123.lovable.app";
-    
+
     const sessionParams: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
-      success_url: `${origin}/?subscription=success`,
-      cancel_url: `${origin}/?subscription=cancelled`,
+      success_url: `${origin}/settings/billing?success=true`,
+      cancel_url: `${origin}/pricing?canceled=true`,
+      metadata: { user_id: user.id, plan_id: planId },
     };
 
-    // Add 7-day free trial if requested
-    if (withTrial) {
-      sessionParams.subscription_data = {
-        trial_period_days: 7,
-      };
-      logStep("Adding 7-day free trial");
+    // Add trial if applicable
+    const trialDays = withTrial !== false ? (TRIAL_DAYS[planId] || 0) : 0;
+    if (trialDays > 0) {
+      sessionParams.subscription_data = { trial_period_days: trialDays };
+      logStep("Adding trial", { trialDays });
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);
-
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
     return new Response(JSON.stringify({ url: session.url }), {
@@ -89,7 +112,7 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in create-checkout", { message: errorMessage });
+    logStep("ERROR", { message: errorMessage });
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

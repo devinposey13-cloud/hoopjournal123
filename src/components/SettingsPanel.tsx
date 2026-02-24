@@ -276,7 +276,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                   </p>
                   {isSubscribed && subscriptionEnd && (
                     <p className="text-xs text-muted-foreground">
-                      {planType === 'annual' ? 'Annual' : 'Monthly'} • Renews {new Date(subscriptionEnd).toLocaleDateString()}
+                      {planType ? planType.charAt(0).toUpperCase() + planType.slice(1) : 'Monthly'} • Renews {new Date(subscriptionEnd).toLocaleDateString()}
                     </p>
                   )}
                 </div>

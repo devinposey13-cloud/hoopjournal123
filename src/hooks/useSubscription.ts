@@ -1,30 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { type PlanId, type BillingCycle, STRIPE_PLAN_IDS } from '@/lib/plans';
 
-// Price IDs from Stripe
-export const SUBSCRIPTION_TIERS = {
-  monthly: {
-    price_id: "price_1SvKZNRmEndXycaGjqXeIVXg",
-    product_id: "prod_Tt6msL89CTmjZA",
-    price: 4.99,
-    interval: "month",
-  },
-  annual: {
-    price_id: "price_1SvKgjRmEndXycaGRatSCc0m",
-    product_id: "prod_Tt6ugFMBjcSxU8",
-    price: 39.99,
-    interval: "year",
-  }
-} as const;
-
-// 7-day free trial in days
-export const FREE_TRIAL_DAYS = 7;
-
-interface SubscriptionState {
+export interface SubscriptionState {
   isSubscribed: boolean;
-  planType: string | null;
+  planType: PlanId | null;
   subscriptionEnd: string | null;
+  subscriptionStatus: string | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -35,6 +18,7 @@ export function useSubscription() {
     isSubscribed: false,
     planType: null,
     subscriptionEnd: null,
+    subscriptionStatus: null,
     isLoading: true,
     error: null,
   });
@@ -45,6 +29,7 @@ export function useSubscription() {
         isSubscribed: false,
         planType: null,
         subscriptionEnd: null,
+        subscriptionStatus: null,
         isLoading: false,
         error: null,
       });
@@ -53,15 +38,15 @@ export function useSubscription() {
 
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
-      
+
       const { data, error } = await supabase.functions.invoke('check-subscription');
-      
       if (error) throw error;
-      
+
       setState({
         isSubscribed: data.subscribed || false,
-        planType: data.plan_type || null,
+        planType: (data.plan_type as PlanId) || null,
         subscriptionEnd: data.subscription_end || null,
+        subscriptionStatus: data.subscription_status || null,
         isLoading: false,
         error: null,
       });
@@ -75,17 +60,15 @@ export function useSubscription() {
     }
   }, [user]);
 
-  const createCheckout = async (priceId: string, withTrial: boolean = false) => {
-    if (!user) {
-      throw new Error('Must be logged in to subscribe');
-    }
+  const createCheckout = async (planId: PlanId, billingCycle: BillingCycle = 'monthly') => {
+    if (!user) throw new Error('Must be logged in to subscribe');
 
     const { data, error } = await supabase.functions.invoke('create-checkout', {
-      body: { priceId, withTrial },
+      body: { planId, billingCycle },
     });
 
     if (error) throw error;
-    
+
     if (data.url) {
       window.open(data.url, '_blank');
     }
@@ -94,12 +77,9 @@ export function useSubscription() {
   };
 
   const openCustomerPortal = async () => {
-    if (!user) {
-      throw new Error('Must be logged in to manage subscription');
-    }
+    if (!user) throw new Error('Must be logged in to manage subscription');
 
     const { data, error } = await supabase.functions.invoke('customer-portal');
-
     if (error) throw error;
 
     if (data.url) {
@@ -109,15 +89,12 @@ export function useSubscription() {
     return data;
   };
 
-  // Check subscription on mount and when user changes
   useEffect(() => {
     checkSubscription();
   }, [checkSubscription]);
 
-  // Auto-refresh subscription status periodically (every 60 seconds)
   useEffect(() => {
     if (!user) return;
-    
     const interval = setInterval(checkSubscription, 60000);
     return () => clearInterval(interval);
   }, [user, checkSubscription]);
