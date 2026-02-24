@@ -31,6 +31,26 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      // Ensure OAuth callback routes bypass service worker cache
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', function(event) {
+          if (event.data && event.data.type === 'SKIP_WAITING') {
+            event.source.postMessage({ type: 'CLIENTS_CLAIM' });
+          }
+        });
+        // On OAuth callback paths, unregister SW temporarily to prevent caching
+        if (window.location.pathname.startsWith('/~oauth')) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            registrations.forEach(function(registration) {
+              registration.unregister().then(function() {
+                window.location.reload();
+              });
+            });
+          });
+        }
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -33,6 +33,8 @@ const ERROR_PATTERNS: Array<{ pattern: RegExp | string; type: OAuthErrorType }> 
   { pattern: /fetch/i, type: 'network_error' },
   { pattern: /timeout/i, type: 'network_error' },
   { pattern: /offline/i, type: 'network_error' },
+  { pattern: /failed.*redirect/i, type: 'network_error' },
+  { pattern: /service.*worker/i, type: 'network_error' },
   { pattern: /invalid.*token/i, type: 'session_expired' },
   { pattern: /expired/i, type: 'session_expired' },
   { pattern: /refresh.*token/i, type: 'session_expired' },
@@ -146,9 +148,24 @@ export function parseOAuthError(error: unknown): ParsedOAuthError {
  */
 export function logOAuthInit(provider: 'google' | 'apple', redirectUri: string): void {
   const timestamp = new Date().toISOString();
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
+  const isInIframe = window.self !== window.top;
+  
   console.log(`[OAuth] Initiating sign-in with ${provider} at ${timestamp}`);
   console.log(`[OAuth] Redirect URI: ${redirectUri}`);
   console.log(`[OAuth] User Agent: ${navigator.userAgent}`);
+  console.log(`[OAuth] Mobile: ${isMobile}, Standalone PWA: ${isStandalone}, Iframe: ${isInIframe}`);
+  console.log(`[OAuth] Service Workers: ${'serviceWorker' in navigator ? 'supported' : 'not supported'}`);
+  
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      console.log(`[OAuth] Active service workers: ${regs.length}`);
+      regs.forEach((reg, i) => {
+        console.log(`[OAuth] SW ${i}: scope=${reg.scope}, active=${!!reg.active}`);
+      });
+    });
+  }
 }
 
 /**

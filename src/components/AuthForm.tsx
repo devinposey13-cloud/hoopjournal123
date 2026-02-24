@@ -57,14 +57,29 @@ export function AuthForm() {
   const [appleLoading, setAppleLoading] = useState(false);
   const { signIn, signUp } = useAuth();
 
+  // Clear service worker caches before OAuth to prevent redirect interception
+  const clearServiceWorkerCaches = async () => {
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        console.log('[OAuth] Cleared all service worker caches');
+      } catch (e) {
+        console.warn('[OAuth] Failed to clear caches:', e);
+      }
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     const redirectUri = window.location.origin;
     
-    // Log OAuth initiation for debugging
     logOAuthInit('google', redirectUri);
     
     try {
+      // Clear SW caches to prevent OAuth redirect interception on mobile
+      await clearServiceWorkerCaches();
+      
       const { error } = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: redirectUri,
       });
@@ -73,7 +88,6 @@ export function AuthForm() {
         throw error;
       }
       
-      // Log success (note: this may not be reached if redirect happens)
       logOAuthSuccess('google');
     } catch (error: unknown) {
       const parsedError = parseOAuthError(error);
@@ -87,10 +101,12 @@ export function AuthForm() {
     setAppleLoading(true);
     const redirectUri = window.location.origin;
     
-    // Log OAuth initiation for debugging
     logOAuthInit('apple', redirectUri);
     
     try {
+      // Clear SW caches to prevent OAuth redirect interception on mobile
+      await clearServiceWorkerCaches();
+      
       const { error } = await lovable.auth.signInWithOAuth("apple", {
         redirect_uri: redirectUri,
       });
@@ -99,7 +115,6 @@ export function AuthForm() {
         throw error;
       }
       
-      // Log success (note: this may not be reached if redirect happens)
       logOAuthSuccess('apple');
     } catch (error: unknown) {
       const parsedError = parseOAuthError(error);
