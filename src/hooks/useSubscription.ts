@@ -8,6 +8,8 @@ export interface SubscriptionState {
   planType: PlanId | null;
   subscriptionEnd: string | null;
   subscriptionStatus: string | null;
+  billingCycle: 'month' | 'year' | null;
+  cancelAtPeriodEnd: boolean;
   isLoading: boolean;
   error: string | null;
 }
@@ -19,6 +21,8 @@ export function useSubscription() {
     planType: null,
     subscriptionEnd: null,
     subscriptionStatus: null,
+    billingCycle: null,
+    cancelAtPeriodEnd: false,
     isLoading: true,
     error: null,
   });
@@ -30,6 +34,8 @@ export function useSubscription() {
         planType: null,
         subscriptionEnd: null,
         subscriptionStatus: null,
+        billingCycle: null,
+        cancelAtPeriodEnd: false,
         isLoading: false,
         error: null,
       });
@@ -47,6 +53,8 @@ export function useSubscription() {
         planType: (data.plan_type as PlanId) || null,
         subscriptionEnd: data.subscription_end || null,
         subscriptionStatus: data.subscription_status || null,
+        billingCycle: data.billing_cycle || null,
+        cancelAtPeriodEnd: data.cancel_at_period_end || false,
         isLoading: false,
         error: null,
       });

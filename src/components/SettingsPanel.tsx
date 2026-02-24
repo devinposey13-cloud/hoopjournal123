@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, Crown, CreditCard, Sun, Moon, Monitor, Trophy, ChevronRight, Star, User, Check } from 'lucide-react';
+import { Save, Loader2, Crown, CreditCard, Sun, Moon, Monitor, Trophy, ChevronRight, Star, User, Check, XCircle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
 import { ProfileManagement } from '@/components/settings/ProfileManagement';
 import { toast } from 'sonner';
@@ -15,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/useSubscription';
+import { planCatalog } from '@/lib/plans';
 import { useXpProgress } from '@/hooks/useXpProgress';
 import { useRingOfHonorEligibility } from '@/hooks/useRingOfHonorEligibility';
 import { RingOfHonorOptInModal } from '@/components/xp/RingOfHonorOptInModal';
@@ -37,8 +39,9 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
 
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
   
-  const { isSubscribed, planType, subscriptionEnd, isLoading: subLoading, openCustomerPortal } = useSubscription();
+  const { isSubscribed, planType, subscriptionEnd, subscriptionStatus, billingCycle, cancelAtPeriodEnd, isLoading: subLoading, openCustomerPortal, cancelSubscription } = useSubscription();
   const { theme, setTheme } = useTheme();
   const { progress: xpProgress } = useXpProgress();
   const ringOfHonorEligibility = useRingOfHonorEligibility(xpProgress?.current_level || 1);
@@ -267,61 +270,139 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
           <Separator className="my-6" />
           
           <div className="stat-card bg-secondary/30 p-4 rounded-lg space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Crown className={`w-5 h-5 ${isSubscribed ? 'text-yellow-500' : 'text-muted-foreground'}`} />
-                <div>
-                  <p className="font-medium">
-                    {subLoading ? 'Loading...' : isSubscribed ? 'Pro Member' : 'Free Plan'}
-                  </p>
-                  {isSubscribed && subscriptionEnd && (
-                    <p className="text-xs text-muted-foreground">
-                      {planType ? planType.charAt(0).toUpperCase() + planType.slice(1) : 'Monthly'} • Renews {new Date(subscriptionEnd).toLocaleDateString()}
-                    </p>
+            {subLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Loading plan…</span>
+              </div>
+            ) : isSubscribed && planType ? (
+              <>
+                {/* Subscribed state */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Crown className="w-5 h-5 text-yellow-500" />
+                    <div>
+                      <p className="font-semibold">
+                        {planCatalog[planType]?.name || 'Pro'} Plan
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        ${billingCycle === 'year'
+                          ? `${planCatalog[planType]?.yearlyPrice}/yr`
+                          : `${planCatalog[planType]?.monthlyPrice}/mo`}
+                        {' · '}
+                        {billingCycle === 'year' ? 'Yearly' : 'Monthly'}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge className={
+                    cancelAtPeriodEnd
+                      ? 'bg-orange-500/10 text-orange-600 border-orange-500/20'
+                      : subscriptionStatus === 'trialing'
+                        ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                        : 'bg-green-500/10 text-green-600 border-green-500/20'
+                  }>
+                    {cancelAtPeriodEnd ? 'Canceling' : subscriptionStatus === 'trialing' ? 'Trial' : 'Active'}
+                  </Badge>
+                </div>
+
+                {subscriptionEnd && (
+                  <div className="text-sm text-muted-foreground bg-background/50 rounded-md px-3 py-2 border border-border">
+                    {cancelAtPeriodEnd
+                      ? `Access ends ${new Date(subscriptionEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+                      : `Next payment: ${new Date(subscriptionEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+                    }
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={async () => {
+                      setIsLoadingPortal(true);
+                      try { await openCustomerPortal(); }
+                      catch { toast.error('Failed to open billing portal'); }
+                      finally { setIsLoadingPortal(false); }
+                    }}
+                    disabled={isLoadingPortal}
+                  >
+                    {isLoadingPortal ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                    Manage
+                  </Button>
+
+                  {!cancelAtPeriodEnd && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10">
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Cancel
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Cancel Subscription?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Your plan will remain active until {subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString() : 'the end of the billing period'}. After that, you'll be moved to the Free plan.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Keep Plan</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={async () => {
+                              setIsCanceling(true);
+                              try {
+                                await cancelSubscription(false);
+                                toast.success('Subscription will cancel at end of billing period');
+                              } catch {
+                                toast.error('Failed to cancel subscription');
+                              } finally {
+                                setIsCanceling(false);
+                              }
+                            }}
+                            disabled={isCanceling}
+                          >
+                            {isCanceling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                            Cancel Subscription
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                 </div>
-              </div>
-              {isSubscribed && (
-                <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
-                  Active
-                </Badge>
-              )}
-            </div>
-            
-            <div className="flex gap-2">
-              {isSubscribed ? (
+              </>
+            ) : (
+              <>
+                {/* Free plan state */}
+                <div className="flex items-center gap-2">
+                  <Crown className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-semibold">Free Plan</p>
+                    <p className="text-xs text-muted-foreground">{planCatalog.free.tagline}</p>
+                  </div>
+                </div>
+
+                <ul className="space-y-1.5 text-sm text-muted-foreground pl-1">
+                  <li className="flex items-center gap-2">
+                    <span className="text-primary">•</span> 2 AI Recaps / month
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-primary">•</span> 30-day game history
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-primary">•</span> Level 10 XP cap
+                  </li>
+                </ul>
+
                 <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={async () => {
-                    setIsLoadingPortal(true);
-                    try {
-                      await openCustomerPortal();
-                    } catch (error) {
-                      toast.error('Failed to open billing portal');
-                    } finally {
-                      setIsLoadingPortal(false);
-                    }
-                  }}
-                  disabled={isLoadingPortal}
-                >
-                  {isLoadingPortal ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <CreditCard className="w-4 h-4 mr-2" />
-                  )}
-                  Manage Subscription
-                </Button>
-              ) : (
-                <Button
-                  className="w-full gradient-primary"
+                  className="w-full gradient-primary font-semibold"
                   onClick={() => navigate('/pricing')}
                 >
-                  <Crown className="w-4 h-4 mr-2" />
-                  Upgrade to Pro
+                  <Star className="w-4 h-4 mr-2" />
+                  Upgrade to unlock more
                 </Button>
-              )}
-            </div>
+              </>
+            )}
           </div>
 
           {/* Ring of Honor Section */}
