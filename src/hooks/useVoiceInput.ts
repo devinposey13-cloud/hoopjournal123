@@ -32,6 +32,11 @@ export function useVoiceInput(): UseVoiceInputReturn {
   // Web Speech API fallback
   const webSpeech = useWebSpeechFallback();
 
+  const webSpeechCleanup = webSpeech.cleanup;
+  const webSpeechStart = webSpeech.start;
+  const webSpeechStop = webSpeech.stop;
+  const webSpeechGetTranscript = webSpeech.getTranscript;
+
   const cleanup = useCallback(() => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -53,8 +58,8 @@ export function useVoiceInput(): UseVoiceInputReturn {
     mediaRecorderRef.current = null;
     audioChunksRef.current = [];
     setAudioData([]);
-    webSpeech.cleanup();
-  }, [webSpeech]);
+    webSpeechCleanup();
+  }, [webSpeechCleanup]);
 
   useEffect(() => {
     return () => { cleanup(); };
@@ -143,7 +148,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
       setIsRecording(true);
       
       // Start Web Speech API in parallel as fallback
-      webSpeech.start();
+      webSpeechStart();
       
       animationFrameRef.current = requestAnimationFrame(updateAudioData);
       
@@ -170,7 +175,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
       cleanup();
       throw error;
     }
-  }, [cleanup, updateAudioData, webSpeech]);
+  }, [cleanup, updateAudioData, webSpeechStart]);
 
   const transcribeWithElevenLabs = async (audioBlob: Blob, mimeType: string): Promise<string | null> => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -221,7 +226,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
       }
 
       // Stop Web Speech capture
-      webSpeech.stop();
+      webSpeechStop();
 
       mediaRecorder.onstop = async () => {
         setIsRecording(false);
@@ -249,7 +254,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
           }
           
           // ElevenLabs returned empty — try fallback
-          const fallbackText = webSpeech.getTranscript();
+          const fallbackText = webSpeechGetTranscript();
           if (fallbackText) {
             toast.info('Used backup transcription');
             resolve(fallbackText);
@@ -262,7 +267,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
           console.error('ElevenLabs transcription failed, trying fallback:', error);
           
           // Try Web Speech fallback
-          const fallbackText = webSpeech.getTranscript();
+          const fallbackText = webSpeechGetTranscript();
           if (fallbackText) {
             toast.info('Used backup transcription');
             resolve(fallbackText);
@@ -279,7 +284,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
       
       mediaRecorder.stop();
     });
-  }, [cleanup, webSpeech]);
+  }, [cleanup, webSpeechStop, webSpeechGetTranscript]);
 
   const cancelRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === 'recording') {
