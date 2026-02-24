@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck, ChevronDown, Activity, Cpu, Zap, TrendingUp, Clock, Shield, Star, Calendar as CalendarIcon } from 'lucide-react';
+import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck, ChevronDown, Activity, Cpu, Zap, TrendingUp, Clock, Shield, Star, Calendar as CalendarIcon, CreditCard } from 'lucide-react';
 import { type PlanId, planCatalog, getEffectivePlan, type UserAccessInfo } from '@/lib/plans';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -123,6 +123,13 @@ export function AdminPanel() {
   const [loadingOrphans, setLoadingOrphans] = useState(false);
   const [orphansLoaded, setOrphansLoaded] = useState(false);
   const [deletingOrphan, setDeletingOrphan] = useState(false);
+  const [subscriptionData, setSubscriptionData] = useState<{
+    trials: any[];
+    active: any[];
+    trial_count: number;
+    active_count: number;
+  } | null>(null);
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
 
   // Usage dashboard state
   const [usageStats, setUsageStats] = useState<{
@@ -388,6 +395,28 @@ export function AdminPanel() {
       toast.error(error instanceof Error ? error.message : 'Failed to fetch orphaned users');
     } finally {
       setLoadingOrphans(false);
+    }
+  }
+
+  // Fetch subscription data from Stripe
+  async function fetchSubscriptionData() {
+    setLoadingSubscriptions(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-subscriptions`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch subscriptions');
+      setSubscriptionData(data);
+    } catch (error) {
+      console.error('Error fetching subscriptions:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to fetch subscriptions');
+    } finally {
+      setLoadingSubscriptions(false);
     }
   }
 
@@ -790,6 +819,11 @@ export function AdminPanel() {
             <Shield className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
             <span className="hidden sm:inline">Access</span>
             <span className="sm:hidden">Plan</span>
+          </TabsTrigger>
+          <TabsTrigger value="subscriptions" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0 whitespace-nowrap" onClick={() => { if (!subscriptionData) fetchSubscriptionData(); }}>
+            <CreditCard className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Subs</span>
+            <span className="sm:hidden">Sub</span>
           </TabsTrigger>
             </TabsList>
           </div>
@@ -1887,6 +1921,114 @@ export function AdminPanel() {
         {/* Access Controls Tab */}
         <TabsContent value="access" className="space-y-4">
           <AdminAccessControls users={users} approvalRequests={approvalRequests} />
+        </TabsContent>
+
+        {/* Subscriptions Tab */}
+        <TabsContent value="subscriptions" className="space-y-4">
+          {loadingSubscriptions ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : !subscriptionData ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <CreditCard className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Click this tab to load subscription data from Stripe</p>
+                <Button variant="outline" className="mt-4" onClick={fetchSubscriptionData}>
+                  Load Subscriptions
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {/* Summary cards */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Active Trials</CardDescription>
+                    <CardTitle className="text-3xl">{subscriptionData.trial_count}</CardTitle>
+                  </CardHeader>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Active Subscriptions</CardDescription>
+                    <CardTitle className="text-3xl">{subscriptionData.active_count}</CardTitle>
+                  </CardHeader>
+                </Card>
+              </div>
+
+              {/* Trials */}
+              {subscriptionData.trials.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Free Trials ({subscriptionData.trials.length})
+                  </h3>
+                  {subscriptionData.trials.map((sub: any) => (
+                    <Card key={sub.id}>
+                      <CardContent className="py-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{sub.customer_email}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{sub.plan} plan</p>
+                          </div>
+                          <Badge variant="outline" className="capitalize">trialing</Badge>
+                        </div>
+                        {sub.trial_end && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Trial ends: {format(new Date(sub.trial_end), 'MMM d, yyyy')}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Active */}
+              {subscriptionData.active.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Active Subscriptions ({subscriptionData.active.length})
+                  </h3>
+                  {subscriptionData.active.map((sub: any) => (
+                    <Card key={sub.id}>
+                      <CardContent className="py-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{sub.customer_email}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{sub.plan} plan</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {sub.cancel_at_period_end && (
+                              <Badge variant="destructive" className="text-xs">Canceling</Badge>
+                            )}
+                            <Badge variant="outline" className="capitalize">active</Badge>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Renews: {format(new Date(sub.current_period_end), 'MMM d, yyyy')}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {subscriptionData.trials.length === 0 && subscriptionData.active.length === 0 && (
+                <Card>
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <p>No active subscriptions or trials found</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Button variant="outline" onClick={fetchSubscriptionData} className="w-full">
+                Refresh
+              </Button>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

@@ -17,6 +17,7 @@ interface BillingSummaryCardProps {
   subscriptionEnd?: string | null;
   subscriptionStatus?: string | null;
   onManageSubscription?: () => Promise<any>;
+  onCancelSubscription?: () => void;
 }
 
 export function BillingSummaryCard({
@@ -27,6 +28,7 @@ export function BillingSummaryCard({
   subscriptionEnd,
   subscriptionStatus,
   onManageSubscription,
+  onCancelSubscription,
 }: BillingSummaryCardProps) {
   const navigate = useNavigate();
   const plan = planCatalog[currentPlan];
@@ -104,15 +106,22 @@ export function BillingSummaryCard({
           )}
 
           {!accessBadge && (
-            <div className="flex gap-2 pt-2">
+            <div className="flex flex-wrap gap-2 pt-2">
               {currentPlan === 'free' && !isSubscribed ? (
                 <Button onClick={() => navigate('/pricing')} className="gradient-primary">
                   Upgrade
                 </Button>
               ) : isSubscribed ? (
-                <Button variant="outline" onClick={handleManage}>
-                  Manage Subscription
-                </Button>
+                <>
+                  <Button variant="outline" onClick={handleManage}>
+                    Manage Subscription
+                  </Button>
+                  {onCancelSubscription && (
+                    <Button variant="destructive" size="sm" onClick={onCancelSubscription}>
+                      Cancel
+                    </Button>
+                  )}
+                </>
               ) : null}
               <Button variant="ghost" onClick={() => navigate('/pricing')}>
                 See plans
