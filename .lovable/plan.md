@@ -1,66 +1,66 @@
 
-Goal: make Google OAuth reliable on mobile (especially iOS) so users stay signed in after returning from Google.
 
-What I found from your current code and backend logs:
-- Your custom-domain OAuth currently uses a manual redirect to `https://hoopjournal123.lovable.app/~oauth/initiate`.
-- It also writes `oauth_state` to `sessionStorage` before redirecting.
-- Recent auth logs show no new Google token exchange events for the failing attempts, which indicates some failures happen before session finalization in-app.
-- On mobile, even when auth completes externally, the app can still land back on `/` without session hydration (or with hash tokens not being applied reliably).
+# Add Web Speech API Fallback for Voice Input
 
-Implementation plan
+## Overview
+Add the browser's built-in Web Speech API as an automatic fallback when the ElevenLabs STT service is unavailable (quota exceeded, API errors, network issues). This ensures voice input keeps working for users even during ElevenLabs outages -- at no additional cost.
 
-1) Replace fragile custom redirect logic with a safer custom-domain OAuth launcher
-- Keep using Lovable Cloud OAuth (not raw custom auth implementation changes in generated integration files).
-- In `AuthForm.tsx`, remove the manual `sessionStorage.setItem('oauth_state', ...)` dependency.
-- Use a deterministic redirect URI that points to a dedicated callback route (example: `/auth/callback`) instead of `/`.
-- Ensure OAuth initiation does not depend on storage APIs that can throw on iOS/Safari privacy modes.
-- Keep service-worker cache clearing as best-effort only (non-blocking), so redirect initiation isn’t interrupted.
+## How It Works
 
-2) Add a dedicated OAuth callback route for robust token handoff
-- Create a lightweight callback page/component (e.g., `src/pages/OAuthCallback.tsx`) that:
-  - Reads hash/query params on mount.
-  - If `access_token` + `refresh_token` are present, calls `supabase.auth.setSession(...)`.
-  - Handles error params gracefully with user feedback.
-  - Cleans URL hash/query and redirects to `/` once done.
-- Register route before the `/:username` dynamic route in `App.tsx` to avoid route collision.
-- This isolates OAuth token parsing from heavy app boot logic and prevents “back to login” race conditions.
+1. User taps the microphone and speaks as usual
+2. Recording stops and audio is sent to ElevenLabs STT (primary)
+3. If ElevenLabs fails (401, 429, 500, network error), the system automatically retries using the browser's Web Speech API
+4. User sees a brief toast: "Using backup transcription..." so they know what happened
+5. The transcribed text is returned exactly the same way -- no UI changes needed
 
-3) Harden initial auth bootstrap for mobile callback edge cases
-- In `useAuth.tsx`, add a first-pass bootstrap check that:
-  - Detects token-bearing callback URLs early.
-  - Waits for session establishment before declaring auth “not signed in.”
-- Preserve existing `onAuthStateChange` + `getSession` ordering, but avoid setting `loading=false` prematurely during callback processing windows.
+## Technical Details
 
-4) Expand service worker bypass conditions for callback stability
-- In `index.html`, extend existing OAuth bypass logic to include the dedicated callback path (`/auth/callback`) in addition to token-bearing hashes.
-- Keep current protection so token-bearing URLs are not force-reloaded before session hydration.
+### File Changes
 
-5) Add explicit observability for this flow (temporary diagnostics)
-- Add concise logs around:
-  - OAuth button tap -> initiation URL
-  - Callback route load -> token presence
-  - `setSession` success/failure
-  - final auth state event
-- This makes it straightforward to verify whether failures are at initiation, callback parsing, or session persistence.
+**`src/hooks/useVoiceInput.ts`** -- Main changes:
+- Add a new helper function `transcribeWithWebSpeechAPI()` that uses `window.SpeechRecognition` (or `webkitSpeechRecognition` for Safari/iOS)
+- Modify `stopRecording()` to wrap the ElevenLabs fetch call in a try/catch
+- On ElevenLabs failure, call the Web Speech fallback automatically
+- Since Web Speech API works in real-time (not from a recorded blob), the fallback will re-record a short prompt asking the user to repeat if needed -- OR we use a hybrid approach:
+  - During recording, we silently run `SpeechRecognition` in parallel to capture a fallback transcript
+  - If ElevenLabs fails, we use the already-captured Web Speech transcript immediately
 
-6) Validation checklist (end-to-end)
-- iPhone Safari (non-installed web app): Google sign-in should redirect out and return authenticated.
-- iPhone installed app (home-screen): after Google completes, app should come back authenticated, not stuck on login.
-- Android Chrome: same pass criteria.
-- Regression checks: email/password login and Apple login still work; no `/:username` routing regressions.
+### Recommended Approach: Parallel Capture (Best UX)
 
-Potential edge cases covered
-- Safari storage restrictions throwing before redirect.
-- OAuth token hash present but not hydrated before auth UI renders.
-- Dynamic route (`/:username`) accidentally catching callback path.
-- Service worker interference during callback return.
+During `startRecording()`:
+- Start the MediaRecorder (for ElevenLabs) as before
+- Simultaneously start a `SpeechRecognition` instance in the background
+- Store interim/final results in a ref (`webSpeechResultRef`)
 
-Files planned for update
-- `src/components/AuthForm.tsx`
-- `src/pages/OAuthCallback.tsx` (new)
-- `src/App.tsx`
-- `src/hooks/useAuth.tsx`
-- `index.html`
+During `stopRecording()`:
+- Stop both MediaRecorder and SpeechRecognition
+- Try ElevenLabs STT first
+- If it fails, return the Web Speech result from the ref
+- Show a toast: "Used backup transcription" so user knows
 
-Expected outcome
-- Mobile OAuth completes consistently, and users are signed in immediately after returning from Google instead of being dropped back at the login form.
+### New helper: `useWebSpeechFallback.ts`
+A small hook/utility that encapsulates:
+- Checking `window.SpeechRecognition || window.webkitSpeechRecognition` availability
+- Starting/stopping recognition
+- Collecting final transcript results
+- Handling errors gracefully (not all browsers support it)
+
+### Type declaration update: `src/types/web-speech.d.ts`
+- Add TypeScript declarations for `SpeechRecognition` and `webkitSpeechRecognition` on the window object
+
+### Browser Compatibility
+- Chrome, Edge, Safari (including iOS Safari) all support Web Speech API
+- Firefox has limited support -- for Firefox users, the existing ElevenLabs-only path remains (with a clear error message if it fails)
+
+### No changes needed to:
+- Edge functions
+- UI components (CoachChat, PregameTalk, PostGameTalk, AIStatsCapture)
+- AudioWaveform component
+- The `useVoiceInput` return interface stays identical
+
+## Limitations
+- Web Speech API requires an internet connection (it's not offline)
+- Accuracy may be slightly lower than ElevenLabs Scribe
+- Some browsers (Firefox) have limited or no support
+- These are acceptable tradeoffs for a free, zero-config fallback
+
