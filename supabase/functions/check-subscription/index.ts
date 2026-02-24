@@ -98,9 +98,12 @@ serve(async (req) => {
       subscriptionStatus = subscription.status;
       stripeSubscriptionId = subscription.id;
 
-      const productId = subscription.items.data[0].price.product as string;
+      const priceItem = subscription.items.data[0].price;
+      const productId = priceItem.product as string;
       planType = PRODUCT_TO_PLAN[productId] || "pro";
-      logStep("Active subscription found", { subscriptionId: subscription.id, planType, status: subscriptionStatus });
+      const billingCycle = priceItem.recurring?.interval || null;
+      const cancelAtPeriodEnd = subscription.cancel_at_period_end || false;
+      logStep("Active subscription found", { subscriptionId: subscription.id, planType, status: subscriptionStatus, billingCycle, cancelAtPeriodEnd });
 
       // Sync to plan_overrides
       const { error: upsertError } = await supabaseClient
@@ -118,12 +121,19 @@ serve(async (req) => {
       logStep("No active subscription found");
     }
 
+    // Extract billing cycle and cancel info from the active sub
+    const activeSub = hasActiveSub ? allSubs[0] : null;
+    const resBillingCycle = activeSub?.items?.data?.[0]?.price?.recurring?.interval || null;
+    const resCancelAtPeriodEnd = activeSub?.cancel_at_period_end || false;
+
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       plan_type: planType,
       subscription_end: subscriptionEnd,
       subscription_status: subscriptionStatus,
       stripe_subscription_id: stripeSubscriptionId,
+      billing_cycle: resBillingCycle,
+      cancel_at_period_end: resCancelAtPeriodEnd,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
