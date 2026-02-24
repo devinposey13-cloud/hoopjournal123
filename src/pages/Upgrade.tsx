@@ -1,0 +1,99 @@
+import { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, ArrowRight, Lock } from 'lucide-react';
+import { PlanCard } from '@/components/pricing/PlanCard';
+import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
+import {
+  type BillingCycle,
+  type PlanId,
+  type PaywallReason,
+  planCatalog,
+  planOrder,
+  paywallConfigs,
+  track,
+} from '@/lib/plans';
+import { toast } from 'sonner';
+
+export default function Upgrade() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const reason = (searchParams.get('reason') as PaywallReason) || 'season_report';
+  const config = paywallConfigs[reason];
+  const [cycle, setCycle] = useState<BillingCycle>('monthly');
+  const currentPlan: PlanId = 'free';
+
+  const upgradePlans = planOrder.filter(
+    (id) => id !== 'free' && planOrder.indexOf(id) > planOrder.indexOf(currentPlan)
+  );
+
+  const handleSelect = (planId: PlanId) => {
+    track('upgrade_clicked', { planId });
+    toast.success(`Selected ${planCatalog[planId].name} — checkout coming soon!`);
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="border-b border-border">
+        <div className="container mx-auto px-4 py-4">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex-1 container mx-auto px-4 py-12 max-w-5xl">
+        {/* Reason header */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-10"
+        >
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-4 py-2 mb-4">
+            <Lock className="w-4 h-4" />
+            <span className="text-sm font-medium">{config.title}</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-3 tracking-tight">
+            Upgrade to unlock this feature
+          </h1>
+          <p className="text-muted-foreground max-w-lg mx-auto">
+            {config.description}
+          </p>
+        </motion.div>
+
+        <div className="flex justify-center mb-8">
+          <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
+          {upgradePlans.map((id, i) => (
+            <motion.div
+              key={id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <PlanCard
+                plan={planCatalog[id]}
+                cycle={cycle}
+                currentPlan={currentPlan}
+                onSelect={handleSelect}
+              />
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="text-center">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="text-muted-foreground">
+            Not now
+          </Button>
+          <p className="text-xs text-muted-foreground mt-4">
+            Cancel anytime. Your data stays yours.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

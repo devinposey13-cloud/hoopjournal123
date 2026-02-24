@@ -1,54 +1,29 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Check, ArrowLeft, Loader2, Crown, Zap } from 'lucide-react';
-import { useSubscription, SUBSCRIPTION_TIERS, FREE_TRIAL_DAYS } from '@/hooks/useSubscription';
-import { useAuth } from '@/hooks/useAuth';
+import { Separator } from '@/components/ui/separator';
+import { ArrowLeft } from 'lucide-react';
+import { PlanCard } from '@/components/pricing/PlanCard';
+import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
+import { PlanCompareTable } from '@/components/pricing/PlanCompareTable';
+import { FAQAccordion } from '@/components/pricing/FAQAccordion';
+import { type BillingCycle, type PlanId, planCatalog, planOrder, track } from '@/lib/plans';
 import { toast } from 'sonner';
-
-const FREE_FEATURES = [
-  'Basic game logging',
-  '10 games per season',
-  'Season stats overview',
-  'Basic charts',
-];
-
-const PRO_FEATURES = [
-  'Everything in Free',
-  'Unlimited games',
-  'AI Coach Chat',
-  'Video clip storage',
-  'Advanced analytics',
-  'Player comparison tool',
-  'Priority support',
-  'Trading card generator',
-];
 
 export default function Pricing() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { isSubscribed, planType, isLoading, createCheckout } = useSubscription();
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [cycle, setCycle] = useState<BillingCycle>('monthly');
+  // Mock current plan
+  const currentPlan: PlanId = 'free';
 
-  const handleSubscribe = async (tier: 'monthly' | 'annual', withTrial: boolean = false) => {
-    if (!user) {
-      toast.error('Please log in to subscribe');
-      navigate('/');
+  const handleSelectPlan = (planId: PlanId) => {
+    track('upgrade_clicked', { planId });
+    if (planId === 'free') {
+      toast.info("You're already on the Free plan!");
       return;
     }
-
-    setLoadingPlan(withTrial ? `${tier}-trial` : tier);
-    try {
-      await createCheckout(SUBSCRIPTION_TIERS[tier].price_id, withTrial);
-      toast.success('Redirecting to checkout...');
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast.error('Failed to start checkout. Please try again.');
-    } finally {
-      setLoadingPlan(null);
-    }
+    toast.success(`Selected ${planCatalog[planId].name} plan — checkout coming soon!`);
   };
 
   return (
@@ -56,170 +31,74 @@ export default function Pricing() {
       {/* Header */}
       <div className="border-b border-border">
         <div className="container mx-auto px-4 py-4">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/')}
-            className="gap-2"
-          >
+          <Button variant="ghost" onClick={() => navigate('/')} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back to Journal
           </Button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Level up your game with Hoop Journal Pro. Unlock AI coaching, unlimited games, 
-            and advanced analytics to become a better player.
+      <div className="container mx-auto px-4 py-12 max-w-6xl">
+        {/* Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-10"
+        >
+          <h1 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">
+            Your basketball journey,{' '}
+            <span className="text-gradient">tracked like a pro.</span>
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+            Start free. Upgrade when you're ready.
           </p>
+        </motion.div>
+
+        {/* Toggle */}
+        <div className="flex justify-center mb-10">
+          <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />
         </div>
 
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Free Tier */}
-            <Card className="relative border-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="w-5 h-5" />
-                  Free
-                </CardTitle>
-                <CardDescription>Perfect for getting started</CardDescription>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold">$0</span>
-                  <span className="text-muted-foreground">/forever</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  {FREE_FEATURES.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter>
-                {!isSubscribed ? (
-                  <Badge variant="secondary" className="w-full justify-center py-2">
-                    Current Plan
-                  </Badge>
-                ) : (
-                  <Button variant="outline" className="w-full" disabled>
-                    Free Tier
-                  </Button>
-                )}
-              </CardFooter>
-            </Card>
+        {/* Plan cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          {planOrder.map((id, i) => (
+            <motion.div
+              key={id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+            >
+              <PlanCard
+                plan={planCatalog[id]}
+                cycle={cycle}
+                currentPlan={currentPlan}
+                onSelect={handleSelectPlan}
+              />
+            </motion.div>
+          ))}
+        </div>
 
-            {/* Pro Tier */}
-            <Card className="relative border-2 border-primary shadow-lg">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge className="bg-primary text-primary-foreground px-4 py-1">
-                  Most Popular
-                </Badge>
-              </div>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Crown className="w-5 h-5 text-yellow-500" />
-                  Pro
-                </CardTitle>
-                <CardDescription>For serious ballers</CardDescription>
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold">${SUBSCRIPTION_TIERS.monthly.price}</span>
-                    <span className="text-muted-foreground">/month</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    or ${SUBSCRIPTION_TIERS.annual.price}/year <Badge variant="secondary" className="ml-1">Save 33%</Badge>
-                  </div>
-                  <div className="text-sm text-primary font-medium">
-                    🎉 {FREE_TRIAL_DAYS}-day free trial available!
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  {PRO_FEATURES.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter className="flex flex-col gap-2">
-                {isSubscribed ? (
-                  <Badge className="w-full justify-center py-2 bg-green-500/10 text-green-600 border-green-500/20">
-                    <Check className="w-4 h-4 mr-1" />
-                    {planType === 'annual' ? 'Annual' : 'Monthly'} - Active
-                  </Badge>
-                ) : (
-                  <>
-                    <Button
-                      className="w-full bg-gradient-to-r from-primary to-primary/80"
-                      onClick={() => handleSubscribe('monthly', true)}
-                      disabled={loadingPlan !== null}
-                    >
-                      {loadingPlan === 'monthly-trial' ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : null}
-                      Start {FREE_TRIAL_DAYS}-Day Free Trial
-                    </Button>
-                    <div className="text-xs text-center text-muted-foreground">
-                      Then ${SUBSCRIPTION_TIERS.monthly.price}/month
-                    </div>
-                    <div className="relative my-2">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-card px-2 text-muted-foreground">or subscribe now</span>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => handleSubscribe('monthly')}
-                      disabled={loadingPlan !== null}
-                    >
-                      {loadingPlan === 'monthly' ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : null}
-                      Subscribe Monthly (${SUBSCRIPTION_TIERS.monthly.price}/mo)
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => handleSubscribe('annual')}
-                      disabled={loadingPlan !== null}
-                    >
-                      {loadingPlan === 'annual' ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : null}
-                      Subscribe Annually (${SUBSCRIPTION_TIERS.annual.price}/yr)
-                    </Button>
-                  </>
-                )}
-              </CardFooter>
-            </Card>
-          </div>
-        )}
+        {/* Compare table */}
+        <div className="mb-16">
+          <h2 className="text-2xl font-bold text-center mb-8">Compare Plans</h2>
+          <PlanCompareTable />
+        </div>
 
-        {/* FAQ or additional info */}
-        <div className="mt-16 text-center">
+        <Separator className="mb-16" />
+
+        {/* FAQ */}
+        <div className="max-w-2xl mx-auto mb-16">
+          <h2 className="text-2xl font-bold text-center mb-8">Frequently Asked Questions</h2>
+          <FAQAccordion />
+        </div>
+
+        {/* Footer */}
+        <div className="text-center pb-8">
           <p className="text-sm text-muted-foreground">
-            Questions? Contact us at support@hoopjournal.me
+            Cancel anytime. No long-term contracts.
           </p>
-          <p className="text-xs text-muted-foreground mt-2">
-            All subscriptions are billed securely through Stripe. Cancel anytime.
+          <p className="text-xs text-muted-foreground mt-1">
+            Questions? Contact us at support@hoopjournal.me
           </p>
         </div>
       </div>
