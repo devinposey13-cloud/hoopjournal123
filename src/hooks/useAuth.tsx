@@ -33,41 +33,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Detect if we're on a callback URL with tokens - delay loading=false until resolved
+    const hash = window.location.hash || '';
+    const isCallbackWithTokens = hash.includes('access_token') || 
+      window.location.pathname === '/auth/callback';
+    
+    if (isCallbackWithTokens) {
+      console.log('[Auth] Detected token-bearing callback URL, waiting for session hydration...');
+    }
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        // Enhanced logging for auth state changes
         const timestamp = new Date().toISOString();
         console.log(`[Auth] State change: ${event} at ${timestamp}`);
         
         if (session?.user) {
           console.log(`[Auth] User: ${session.user.id}`);
-          console.log(`[Auth] Email: ${session.user.email || 'N/A'}`);
           console.log(`[Auth] Provider: ${session.user.app_metadata?.provider || 'email'}`);
-        }
-        
-        // Log specific events for debugging
-        switch (event) {
-          case 'SIGNED_IN':
-            console.log('[Auth] User signed in successfully');
-            break;
-          case 'SIGNED_OUT':
-            console.log('[Auth] User signed out');
-            break;
-          case 'TOKEN_REFRESHED':
-            console.log('[Auth] Token refreshed');
-            break;
-          case 'USER_UPDATED':
-            console.log('[Auth] User updated');
-            break;
-          case 'PASSWORD_RECOVERY':
-            console.log('[Auth] Password recovery initiated');
-            break;
-          default:
-            // Log any other events
-            if (event) {
-              console.log(`[Auth] Event: ${event}`);
-            }
         }
         
         setSession(session);
@@ -85,7 +68,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
+      // Only set loading=false immediately if we're NOT on a callback URL
+      // On callback URLs, wait for onAuthStateChange to fire after setSession
+      if (!isCallbackWithTokens) {
+        setLoading(false);
+      } else {
+        // Safety timeout: if no auth event fires within 5s, stop loading anyway
+        setTimeout(() => {
+          setLoading(false);
+        }, 5000);
+      }
     });
 
     return () => subscription.unsubscribe();

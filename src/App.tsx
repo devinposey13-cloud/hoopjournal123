@@ -22,6 +22,7 @@ import Log from "./pages/Log";
 import Progress from "./pages/Progress";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import OAuthCallback from "./pages/OAuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ const App = () => (
             <BrowserRouter>
               <FloatingHomeButton />
               <Routes>
+                <Route path="/auth/callback" element={<OAuthCallback />} />
                 <Route path="/" element={<Index />} />
                 <Route path="/log" element={<Log />} />
                 <Route path="/log/:subTab" element={<Log />} />
