@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { type PlanId, track } from '@/lib/plans';
+import { type PlanId, track, type UserAccessInfo, hasSpecialAccess } from '@/lib/plans';
 import { type UpgradeDrawerConfig } from '@/components/upgrade/UpgradeDrawer';
 
 // Milestone types that trigger upsells
@@ -82,18 +82,23 @@ interface UseMilestoneUpsellsReturn {
   triggerAnalytics: (gamesLogged: number, skillLevel?: string) => void;
 }
 
-export function useMilestoneUpsells(): UseMilestoneUpsellsReturn {
+export function useMilestoneUpsells(accessInfo?: UserAccessInfo): UseMilestoneUpsellsReturn {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerConfig, setDrawerConfig] = useState<UpgradeDrawerConfig | null>(null);
 
   const triggerMilestone = useCallback((milestone: UpsellMilestone) => {
+    // Don't show upsells to grandfathered/override/promo users
+    if (accessInfo && hasSpecialAccess(accessInfo)) return;
+
     const config = milestoneConfigs[milestone];
     track('upgrade_drawer_shown', { milestone });
     setDrawerConfig(config);
     setDrawerOpen(true);
-  }, []);
+  }, [accessInfo]);
 
   const triggerAnalytics = useCallback((gamesLogged: number, skillLevel?: string) => {
+    if (accessInfo && hasSpecialAccess(accessInfo)) return;
+
     const shouldRecommendPro =
       gamesLogged >= 5 || skillLevel === 'competitive' || skillLevel === 'elite';
 
@@ -115,7 +120,7 @@ export function useMilestoneUpsells(): UseMilestoneUpsellsReturn {
     track('upgrade_drawer_shown', { milestone: 'analytics_tab' });
     setDrawerConfig(config);
     setDrawerOpen(true);
-  }, []);
+  }, [accessInfo]);
 
   const closeDrawer = useCallback(() => {
     if (drawerConfig) {

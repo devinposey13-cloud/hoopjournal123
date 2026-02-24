@@ -623,6 +623,42 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_overrides: {
+        Row: {
+          admin_override_plan: string | null
+          created_at: string
+          id: string
+          is_grandfathered: boolean
+          promo_access_until: string | null
+          subscription_plan: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_override_plan?: string | null
+          created_at?: string
+          id?: string
+          is_grandfathered?: boolean
+          promo_access_until?: string | null
+          subscription_plan?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_override_plan?: string | null
+          created_at?: string
+          id?: string
+          is_grandfathered?: boolean
+          promo_access_until?: string | null
+          subscription_plan?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       player_badges: {
         Row: {
           badge_category: string

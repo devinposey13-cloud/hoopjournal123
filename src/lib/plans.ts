@@ -3,6 +3,9 @@
 export type PlanId = 'free' | 'starter' | 'pro' | 'elite';
 export type BillingCycle = 'monthly' | 'yearly';
 
+// Pricing launch date — users created before this are grandfathered
+export const PRICING_LAUNCH_DATE = '2026-03-01';
+
 export interface PlanFeature {
   label: string;
   included: boolean;
@@ -33,6 +36,46 @@ export interface Plan {
     aiDevPlan: boolean;
     shareableLink: boolean;
   };
+}
+
+// --- User access model ---
+export interface UserAccessInfo {
+  subscriptionPlan: PlanId;
+  isGrandfathered: boolean;
+  adminOverridePlan: PlanId | null;
+  promoAccessUntil: string | null; // ISO date
+}
+
+/**
+ * Determines the effective plan for feature gating.
+ * Priority: grandfathered > admin override > promo > subscription
+ */
+export function getEffectivePlan(user: UserAccessInfo): PlanId {
+  if (user.isGrandfathered) return 'elite';
+  if (user.adminOverridePlan) return user.adminOverridePlan;
+  if (user.promoAccessUntil && new Date(user.promoAccessUntil) > new Date()) return 'elite';
+  return user.subscriptionPlan;
+}
+
+/** Returns true if the user has any kind of special access (shouldn't see paywalls) */
+export function hasSpecialAccess(user: UserAccessInfo): boolean {
+  if (user.isGrandfathered) return true;
+  if (user.adminOverridePlan) return true;
+  if (user.promoAccessUntil && new Date(user.promoAccessUntil) > new Date()) return true;
+  return false;
+}
+
+export type AccessBadge =
+  | { type: 'grandfathered'; label: string }
+  | { type: 'admin_override'; label: string; plan: PlanId }
+  | { type: 'promo'; label: string; expiresAt: string }
+  | null;
+
+export function getAccessBadge(user: UserAccessInfo): AccessBadge {
+  if (user.isGrandfathered) return { type: 'grandfathered', label: 'Founding Member' };
+  if (user.adminOverridePlan) return { type: 'admin_override', label: `${planCatalog[user.adminOverridePlan].name} Access (Admin Granted)`, plan: user.adminOverridePlan };
+  if (user.promoAccessUntil && new Date(user.promoAccessUntil) > new Date()) return { type: 'promo', label: 'Promotional Access', expiresAt: user.promoAccessUntil };
+  return null;
 }
 
 export const planCatalog: Record<PlanId, Plan> = {
