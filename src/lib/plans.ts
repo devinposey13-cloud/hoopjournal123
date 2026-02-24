@@ -6,6 +6,32 @@ export type BillingCycle = 'monthly' | 'yearly';
 // Pricing launch date — users created before this are grandfathered
 export const PRICING_LAUNCH_DATE = '2026-03-01';
 
+// Stripe price & product IDs
+export const STRIPE_PLAN_IDS = {
+  starter: {
+    monthly: { price_id: 'price_1T4OgtRmEndXycaGheeNenUl', product_id: 'prod_U2TenmJYJtafl8' },
+    yearly: { price_id: 'price_1T4Oh8RmEndXycaGDCWstZbx', product_id: 'prod_U2Te369rDpYwBQ' },
+  },
+  pro: {
+    monthly: { price_id: 'price_1T4OhTRmEndXycaGihIBzJ4z', product_id: 'prod_U2TeAY16X7k2Ri' },
+    yearly: { price_id: 'price_1T4OhiRmEndXycaGTCZ1brsJ', product_id: 'prod_U2TfBflXbqKewl' },
+  },
+  elite: {
+    monthly: { price_id: 'price_1T4Oi0RmEndXycaGTr3xvLEP', product_id: 'prod_U2TfBcoxhUepHK' },
+    yearly: { price_id: 'price_1T4OiMRmEndXycaGvwSVdgYK', product_id: 'prod_U2Tfh9dNymbaRg' },
+  },
+} as const;
+
+// Reverse lookup: product_id -> PlanId
+export const PRODUCT_TO_PLAN: Record<string, PlanId> = {
+  'prod_U2TenmJYJtafl8': 'starter',
+  'prod_U2Te369rDpYwBQ': 'starter',
+  'prod_U2TeAY16X7k2Ri': 'pro',
+  'prod_U2TfBflXbqKewl': 'pro',
+  'prod_U2TfBcoxhUepHK': 'elite',
+  'prod_U2Tfh9dNymbaRg': 'elite',
+};
+
 export interface PlanFeature {
   label: string;
   included: boolean;

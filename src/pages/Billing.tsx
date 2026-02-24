@@ -1,12 +1,25 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { BillingSummaryCard } from '@/components/billing/BillingSummaryCard';
-import { usePlanState } from '@/hooks/usePlanState';
+import { usePlan } from '@/hooks/usePlanState';
+import { useSubscription } from '@/hooks/useSubscription';
+import { toast } from 'sonner';
 
 export default function Billing() {
   const navigate = useNavigate();
-  const { currentPlan, usage, accessBadge, loading } = usePlanState();
+  const [searchParams] = useSearchParams();
+  const { currentPlan, usage, accessBadge, loading } = usePlan();
+  const { isSubscribed, subscriptionEnd, subscriptionStatus, checkSubscription, openCustomerPortal } = useSubscription();
+
+  // Handle Stripe redirect success
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      toast.success("You're now upgraded! 🎉");
+      checkSubscription();
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -29,7 +42,15 @@ export default function Billing() {
 
       <div className="container mx-auto px-4 py-8 max-w-lg">
         <h1 className="text-2xl font-bold mb-6">Billing</h1>
-        <BillingSummaryCard currentPlan={currentPlan} usage={usage} accessBadge={accessBadge} />
+        <BillingSummaryCard
+          currentPlan={currentPlan}
+          usage={usage}
+          accessBadge={accessBadge}
+          isSubscribed={isSubscribed}
+          subscriptionEnd={subscriptionEnd}
+          subscriptionStatus={subscriptionStatus}
+          onManageSubscription={openCustomerPortal}
+        />
       </div>
     </div>
   );

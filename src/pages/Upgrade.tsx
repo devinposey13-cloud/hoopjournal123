@@ -14,6 +14,8 @@ import {
   paywallConfigs,
   track,
 } from '@/lib/plans';
+import { useSubscription } from '@/hooks/useSubscription';
+import { usePlan } from '@/hooks/usePlanState';
 import { toast } from 'sonner';
 
 export default function Upgrade() {
@@ -22,15 +24,25 @@ export default function Upgrade() {
   const reason = (searchParams.get('reason') as PaywallReason) || 'season_report';
   const config = paywallConfigs[reason];
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
-  const currentPlan: PlanId = 'free';
+  const { currentPlan } = usePlan();
+  const { createCheckout } = useSubscription();
+  const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
 
   const upgradePlans = planOrder.filter(
     (id) => id !== 'free' && planOrder.indexOf(id) > planOrder.indexOf(currentPlan)
   );
 
-  const handleSelect = (planId: PlanId) => {
-    track('upgrade_clicked', { planId });
-    toast.success(`Selected ${planCatalog[planId].name} — checkout coming soon!`);
+  const handleSelect = async (planId: PlanId) => {
+    track('upgrade_clicked', { planId, cycle });
+    setLoadingPlan(planId);
+    try {
+      await createCheckout(planId, cycle);
+      toast.success('Redirecting to checkout...');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start checkout');
+    } finally {
+      setLoadingPlan(null);
+    }
   };
 
   return (

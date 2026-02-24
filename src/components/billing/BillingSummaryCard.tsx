@@ -7,17 +7,39 @@ import { Crown, CreditCard, Calendar, Sparkles, Mic, FileText, Clock, Star, Shie
 import { planCatalog, type PlanId, type UsageData, type AccessBadge } from '@/lib/plans';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface BillingSummaryCardProps {
   currentPlan: PlanId;
   usage: UsageData;
   accessBadge?: AccessBadge;
+  isSubscribed?: boolean;
+  subscriptionEnd?: string | null;
+  subscriptionStatus?: string | null;
+  onManageSubscription?: () => Promise<any>;
 }
 
-export function BillingSummaryCard({ currentPlan, usage, accessBadge }: BillingSummaryCardProps) {
+export function BillingSummaryCard({
+  currentPlan,
+  usage,
+  accessBadge,
+  isSubscribed,
+  subscriptionEnd,
+  subscriptionStatus,
+  onManageSubscription,
+}: BillingSummaryCardProps) {
   const navigate = useNavigate();
   const plan = planCatalog[currentPlan];
   const limits = plan.limits;
+
+  const handleManage = async () => {
+    if (!onManageSubscription) return;
+    try {
+      await onManageSubscription();
+    } catch (err) {
+      toast.error('Failed to open subscription management');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -60,31 +82,38 @@ export function BillingSummaryCard({ currentPlan, usage, accessBadge }: BillingS
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">{plan.tagline}</p>
-          
-          {currentPlan !== 'free' && !accessBadge && (
+
+          {isSubscribed && subscriptionEnd && !accessBadge && (
             <>
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Renews on March 24, 2026</span>
+                <span className="text-muted-foreground">
+                  {subscriptionStatus === 'trialing' ? 'Trial ends' : 'Renews'}{' '}
+                  {format(new Date(subscriptionEnd), 'MMM d, yyyy')}
+                </span>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <CreditCard className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">•••• 4242</span>
-              </div>
+              {subscriptionStatus && (
+                <div className="flex items-center gap-2 text-sm">
+                  <CreditCard className="w-4 h-4 text-muted-foreground" />
+                  <Badge variant="outline" className="text-xs capitalize">
+                    {subscriptionStatus}
+                  </Badge>
+                </div>
+              )}
             </>
           )}
 
           {!accessBadge && (
             <div className="flex gap-2 pt-2">
-              {currentPlan === 'free' ? (
+              {currentPlan === 'free' && !isSubscribed ? (
                 <Button onClick={() => navigate('/pricing')} className="gradient-primary">
                   Upgrade
                 </Button>
-              ) : (
-                <Button variant="outline" disabled>
+              ) : isSubscribed ? (
+                <Button variant="outline" onClick={handleManage}>
                   Manage Subscription
                 </Button>
-              )}
+              ) : null}
               <Button variant="ghost" onClick={() => navigate('/pricing')}>
                 See plans
               </Button>
