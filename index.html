@@ -39,12 +39,16 @@
             event.source.postMessage({ type: 'CLIENTS_CLAIM' });
           }
         });
-        // On OAuth callback paths, unregister SW temporarily to prevent caching
-        if (window.location.pathname.startsWith('/~oauth')) {
+        // On OAuth callback paths or token-bearing URLs, unregister SW to prevent caching
+        var hash = window.location.hash || '';
+        var hasOAuthTokens = hash.includes('access_token') || hash.includes('refresh_token');
+        if (window.location.pathname.startsWith('/~oauth') || hasOAuthTokens) {
           navigator.serviceWorker.getRegistrations().then(function(registrations) {
             registrations.forEach(function(registration) {
               registration.unregister().then(function() {
-                window.location.reload();
+                if (!hasOAuthTokens) {
+                  window.location.reload();
+                }
               });
             });
           });

@@ -70,6 +70,28 @@ export function AuthForm() {
     }
   };
 
+  // Detect if running on a custom domain (not lovable infrastructure)
+  const isCustomDomain = 
+    !window.location.hostname.includes('lovable.app') && 
+    !window.location.hostname.includes('lovableproject.com') &&
+    window.location.hostname !== 'localhost';
+
+  const LOVABLE_APP_ORIGIN = 'https://hoopjournal123.lovable.app';
+
+  const handleCustomDomainOAuth = async (provider: 'google' | 'apple') => {
+    await clearServiceWorkerCaches();
+    
+    // Generate a random state for CSRF protection
+    const state = crypto.randomUUID();
+    sessionStorage.setItem('oauth_state', state);
+    
+    const redirectUri = window.location.origin;
+    const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+    
+    console.log(`[OAuth] Custom domain redirect to broker: ${brokerUrl}`);
+    window.location.href = brokerUrl;
+  };
+
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     const redirectUri = window.location.origin;
@@ -77,6 +99,11 @@ export function AuthForm() {
     logOAuthInit('google', redirectUri);
     
     try {
+      if (isCustomDomain) {
+        await handleCustomDomainOAuth('google');
+        return; // Page will navigate away
+      }
+
       // Clear SW caches to prevent OAuth redirect interception on mobile
       await clearServiceWorkerCaches();
       
@@ -104,6 +131,11 @@ export function AuthForm() {
     logOAuthInit('apple', redirectUri);
     
     try {
+      if (isCustomDomain) {
+        await handleCustomDomainOAuth('apple');
+        return; // Page will navigate away
+      }
+
       // Clear SW caches to prevent OAuth redirect interception on mobile
       await clearServiceWorkerCaches();
       
