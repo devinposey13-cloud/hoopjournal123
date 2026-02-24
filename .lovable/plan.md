@@ -1,146 +1,104 @@
 
-# Enhanced OAuth Error Logging & User-Facing Messages
 
-## Overview
-Add comprehensive error logging and user-friendly error messages to the OAuth login flow (Google/Apple) to help diagnose issues like Asia's and improve the user experience when authentication fails.
+# Fix: Reliable Admin Signup Notifications
 
-## What Will Change
+## Problem
+Admin email notifications for new signups are sent from the **client-side** only, inside `useApprovalStatus.ts`. This means:
+- If the user's browser doesn't fully load the app after OAuth signup, the notification never fires
+- If the 5-minute window passes before the hook runs, the notification is skipped
+- Service worker interference (the recent mobile OAuth issue) can prevent the hook from executing
+- There is zero fallback -- the notification is simply lost
 
-### For Users
-- **Clear, actionable error messages** instead of generic "sign-in failed"
-- **Specific guidance** based on error type (e.g., "Please allow popups" or "Check your internet connection")
-- **Recovery suggestions** when things go wrong
+**Evidence:** The most recent signup (`mbcotton23@gmail.com`, today at 2:00 PM UTC) has zero logs in the `notify-admin-signup` function.
 
-### For Debugging
-- **Detailed console logs** with timestamps and error codes
-- **OAuth event tracking** including auth state changes
-- **URL parameter error detection** from OAuth callbacks
+## Solution
+Move the notification trigger to a **database webhook** so it fires automatically when a new `account_approval_requests` row is inserted, independent of the client.
 
-## Implementation Details
+### 1. Create a new edge function: `handle-signup-webhook`
+A database webhook handler that:
+- Receives the new `account_approval_requests` row via Supabase webhook payload
+- Calls the existing `notify-admin-signup` logic (sends email via Resend)
+- Consolidates all notification logic server-side
 
-### 1. Create OAuth Error Utility (`src/utils/oauthErrors.ts`)
-A new utility file to:
-- Parse and categorize OAuth errors
-- Map error codes to user-friendly messages
-- Log detailed debugging information to console
+### 2. Create a database webhook trigger
+A SQL migration that:
+- Creates a `pg_net` HTTP request on INSERT to `account_approval_requests`
+- Calls the new edge function automatically when a row is created by the `handle_new_user` trigger
+- This removes dependence on client-side code entirely
 
-**Error Categories:**
-| Error Type | User Message | Debug Info |
-|------------|--------------|------------|
-| Popup blocked | "Popup was blocked. Please allow popups for this site." | Browser popup blocker detected |
-| Network error | "Connection failed. Check your internet and try again." | Network/fetch failure |
-| Cancelled by user | "Sign-in was cancelled." | User closed OAuth popup |
-| Invalid credentials | "Could not verify your account. Please try again." | OAuth provider rejection |
-| Session expired | "Your session expired. Please sign in again." | Token refresh failed |
-| Unknown error | "Sign-in failed. Please try again or use email login." | Fallback with raw error |
+### 3. Keep client-side as a fallback
+- Keep the existing `useApprovalStatus` notification logic as a secondary fallback
+- Add a `notification_sent` column to `account_approval_requests` to prevent duplicate emails
+- Both the webhook and client-side check this flag before sending
 
-### 2. Update AuthForm.tsx
+### 4. Immediate fix for the missed notification
+- Manually trigger the notification for `mbcotton23@gmail.com` by calling the edge function
 
-**Enhanced Google/Apple Sign-In Handlers:**
-- Log OAuth initiation with timestamp
-- Catch and categorize specific error types
-- Show appropriate toast messages with recovery hints
-- Log complete error details to console for support
+## Technical Details
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│  User clicks "Continue with Google"                     │
-└────────────────────┬────────────────────────────────────┘
-                     ▼
-┌─────────────────────────────────────────────────────────┐
-│  Log: "OAuth initiated: google @ 2026-02-08T21:00:00"   │
-└────────────────────┬────────────────────────────────────┘
-                     ▼
-┌─────────────────────────────────────────────────────────┐
-│  lovable.auth.signInWithOAuth("google", {...})          │
-└────────────────────┬────────────────────────────────────┘
-                     ▼
-          ┌──────────┴──────────┐
-          ▼                     ▼
-    ┌───────────┐         ┌───────────┐
-    │  Success  │         │   Error   │
-    └─────┬─────┘         └─────┬─────┘
-          │                     │
-          │                     ▼
-          │         ┌─────────────────────────────────────┐
-          │         │  parseOAuthError(error)             │
-          │         │  → Categorize error type            │
-          │         │  → Log detailed debug info          │
-          │         │  → Show user-friendly toast         │
-          │         └─────────────────────────────────────┘
-          ▼
-┌─────────────────────────────────────────────────────────┐
-│  Log: "OAuth success: google, uid: xxx"                 │
-└─────────────────────────────────────────────────────────┘
+### New Edge Function: `supabase/functions/handle-signup-webhook/index.ts`
+- Validates the webhook payload (checks for `type: "INSERT"` and `record` data)
+- Extracts `username` and `email` from the new record
+- Sends the admin notification email via Resend (same template as `notify-admin-signup`)
+- Updates `account_approval_requests.notification_sent = true`
+- Uses service role key for database access
+
+### Database Migration
+```sql
+-- Add flag to prevent duplicate notifications
+ALTER TABLE account_approval_requests 
+  ADD COLUMN IF NOT EXISTS notification_sent boolean DEFAULT false;
+
+-- Create a trigger function that calls the edge function via pg_net
+CREATE OR REPLACE FUNCTION notify_admin_on_signup()
+RETURNS trigger AS $$
+DECLARE
+  edge_url text;
+  service_key text;
+BEGIN
+  edge_url := 'https://jwoupnumuotmwpwrkmob.supabase.co/functions/v1/handle-signup-webhook';
+  
+  PERFORM net.http_post(
+    url := edge_url,
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key', true)
+    ),
+    body := jsonb_build_object(
+      'type', 'INSERT',
+      'record', jsonb_build_object(
+        'user_id', NEW.user_id,
+        'email', NEW.email,
+        'username', NEW.username,
+        'status', NEW.status
+      )
+    )
+  );
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_new_approval_request
+  AFTER INSERT ON account_approval_requests
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_admin_on_signup();
 ```
 
-### 3. Add URL OAuth Error Detection (App.tsx or useAuth.tsx)
+### Update `useApprovalStatus.ts`
+- Check `notification_sent` flag before attempting client-side notification
+- Still send as fallback if flag is false (covers edge cases where webhook fails)
+- Mark the flag after successful client-side send
 
-Check for OAuth error parameters on app load:
-- `?error=` and `?error_description=` in URL query
-- `#error=` and `#error_description=` in URL hash
-- Show toast and log details if OAuth callback failed
+## Files to Create/Modify
 
-### 4. Enhanced Auth State Logging (useAuth.tsx)
+| File | Change |
+|------|--------|
+| `supabase/functions/handle-signup-webhook/index.ts` | **New** -- webhook handler for signup notifications |
+| `src/hooks/useApprovalStatus.ts` | Update to check `notification_sent` flag, keep as fallback |
+| Database migration | Add `notification_sent` column, create trigger function |
+| `supabase/config.toml` | Add `handle-signup-webhook` function config |
 
-Add event-type logging to `onAuthStateChange`:
-- Log sign-in events with user email/provider
-- Log sign-out events
-- Log token refresh events
-- Log any error events from auth state changes
+## Immediate Action
+After implementation, manually trigger the notification for the missed signup (`mbcotton23@gmail.com` / username `mbcotton23`) so you can review and approve the account.
 
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/utils/oauthErrors.ts` | **New file** - Error parsing and user message mapping |
-| `src/components/AuthForm.tsx` | Enhanced error handling with detailed logging |
-| `src/hooks/useAuth.tsx` | Auth state change logging for debugging |
-| `src/App.tsx` | URL-based OAuth error detection on mount |
-
-## Console Log Examples
-
-**On OAuth Initiation:**
-```
-[OAuth] Initiating sign-in with Google at 2026-02-08T21:00:00.000Z
-[OAuth] Redirect URI: https://hoopjournal.lovable.app
-```
-
-**On OAuth Error:**
-```
-[OAuth Error] Provider: google
-[OAuth Error] Type: popup_blocked
-[OAuth Error] Message: The popup was blocked by the browser
-[OAuth Error] Raw: Error: popup_blocked at...
-[OAuth Error] User agent: Mozilla/5.0...
-[OAuth Error] Timestamp: 2026-02-08T21:00:05.000Z
-```
-
-**On OAuth Success:**
-```
-[OAuth] Sign-in successful with Google
-[OAuth] User: abc123 (email: user@example.com)
-```
-
-## User-Facing Error Examples
-
-**Popup Blocked:**
-> 🚫 Popup blocked
-> Please allow popups for Hoop Journal and try again.
-
-**Network Error:**
-> 📡 Connection failed  
-> Check your internet connection and try again.
-
-**Unknown Error:**
-> ⚠️ Sign-in failed
-> Something went wrong. Try again or use email login instead.
-> 
-> *If this keeps happening, contact support with error code: OA-1707423600*
-
-## Technical Notes
-
-- Error codes will include timestamps for support correlation
-- All logging uses `console.log`/`console.error` which are captured by the session replay
-- No sensitive data (passwords, tokens) logged
-- User agent logged to identify device-specific issues (iOS Safari, etc.)
