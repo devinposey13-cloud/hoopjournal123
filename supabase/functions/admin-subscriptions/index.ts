@@ -85,21 +85,38 @@ serve(async (req) => {
       expand: ["data.customer"],
     });
 
+    const safeDate = (val: any): string | null => {
+      if (!val) return null;
+      try {
+        // Handle both unix timestamps and date strings
+        if (typeof val === 'number') {
+          return new Date(val * 1000).toISOString();
+        }
+        if (typeof val === 'string') {
+          const d = new Date(val);
+          return isNaN(d.getTime()) ? null : d.toISOString();
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    };
+
     const formatSub = (sub: Stripe.Subscription) => {
       const customer = sub.customer as Stripe.Customer;
       const productId = sub.items.data[0]?.price?.product as string;
       return {
         id: sub.id,
-        customer_email: customer.email || "unknown",
-        customer_name: customer.name || null,
+        customer_email: customer?.email || "unknown",
+        customer_name: customer?.name || null,
         plan: PRODUCT_TO_PLAN[productId] || "unknown",
         status: sub.status,
-        current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-        trial_start: sub.trial_start ? new Date(sub.trial_start * 1000).toISOString() : null,
-        trial_end: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
+        current_period_start: safeDate(sub.current_period_start),
+        current_period_end: safeDate(sub.current_period_end),
+        trial_start: safeDate(sub.trial_start),
+        trial_end: safeDate(sub.trial_end),
         cancel_at_period_end: sub.cancel_at_period_end,
-        created: new Date(sub.created * 1000).toISOString(),
+        created: safeDate(sub.created),
       };
     };
 
