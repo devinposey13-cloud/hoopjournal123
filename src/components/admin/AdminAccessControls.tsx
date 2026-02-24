@@ -13,8 +13,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Search, Shield, Star, Loader2, Calendar as CalendarIcon, Trash2, Crown } from 'lucide-react';
-import { type PlanId, planCatalog, getEffectivePlan, type UserAccessInfo } from '@/lib/plans';
+import { Search, Shield, Star, Loader2, Calendar as CalendarIcon, Trash2, Crown, Users } from 'lucide-react';
+import { type PlanId, planCatalog, getEffectivePlan, PRICING_LAUNCH_DATE, type UserAccessInfo } from '@/lib/plans';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -52,6 +52,8 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
   const [override, setOverride] = useState<PlanOverrideRecord | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{ grandfathered: number; total: number } | null>(null);
 
   // Editable fields
   const [isGrandfathered, setIsGrandfathered] = useState(false);
@@ -194,9 +196,108 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
     }
   }
 
+  async function handleBulkGrandfather() {
+    setBulkLoading(true);
+    setBulkResult(null);
+    try {
+      // Get all users from player_settings created before launch date
+      const { data: earlyUsers, error: fetchError } = await supabase
+        .from('player_settings')
+        .select('user_id, created_at')
+        .lt('created_at', PRICING_LAUNCH_DATE);
+
+      if (fetchError) throw fetchError;
+      if (!earlyUsers || earlyUsers.length === 0) {
+        toast.info('No users found created before the pricing launch date');
+        setBulkLoading(false);
+        return;
+      }
+
+      // Get existing plan_overrides
+      const { data: existing } = await supabase
+        .from('plan_overrides')
+        .select('user_id, is_grandfathered');
+
+      const existingMap = new Map((existing || []).map(e => [e.user_id, e.is_grandfathered]));
+
+      let grandfatheredCount = 0;
+
+      for (const user of earlyUsers) {
+        const alreadyGrandfathered = existingMap.get(user.user_id);
+        if (alreadyGrandfathered === true) continue; // already done
+
+        if (existingMap.has(user.user_id)) {
+          // Update existing row
+          await supabase
+            .from('plan_overrides')
+            .update({ is_grandfathered: true, updated_by: session?.user?.id || null })
+            .eq('user_id', user.user_id);
+        } else {
+          // Insert new row
+          await supabase
+            .from('plan_overrides')
+            .insert({
+              user_id: user.user_id,
+              is_grandfathered: true,
+              subscription_plan: 'free',
+              updated_by: session?.user?.id || null,
+            });
+        }
+        grandfatheredCount++;
+      }
+
+      setBulkResult({ grandfathered: grandfatheredCount, total: earlyUsers.length });
+      toast.success(`Grandfathered ${grandfatheredCount} user(s) as Founding Members`);
+    } catch (err) {
+      console.error('Bulk grandfather error:', err);
+      toast.error('Failed to bulk grandfather users');
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
-      {/* Search */}
+      {/* Bulk Grandfather Action */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="w-4 h-4 text-amber-500" />
+            Bulk Grandfather
+          </CardTitle>
+          <CardDescription>
+            Grant Founding Member status to all users created before {format(new Date(PRICING_LAUNCH_DATE), 'PPP')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {bulkResult && (
+            <div className="bg-muted/50 rounded-lg p-3 text-sm">
+              <p><strong>{bulkResult.grandfathered}</strong> user(s) newly grandfathered out of <strong>{bulkResult.total}</strong> eligible.</p>
+              {bulkResult.grandfathered === 0 && <p className="text-muted-foreground text-xs mt-1">All eligible users were already grandfathered.</p>}
+            </div>
+          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="w-full" disabled={bulkLoading}>
+                {bulkLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Star className="w-4 h-4 mr-2 text-amber-500" />}
+                Grandfather All Early Users
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Bulk Grandfather Confirmation</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will grant <strong>Founding Member</strong> (full Elite access) to every user created before {format(new Date(PRICING_LAUNCH_DATE), 'PPP')}. Users already grandfathered will be skipped.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleBulkGrandfather}>Grandfather All</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
