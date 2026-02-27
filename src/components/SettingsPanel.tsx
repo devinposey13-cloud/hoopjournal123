@@ -502,7 +502,16 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
             <div className="text-center pt-2">
               <p className="text-xs text-muted-foreground">
                 Or reach us directly at{' '}
-                <a href="mailto:support@hoopjournal.me" className="text-primary hover:underline font-medium">
+                <a 
+                  href="mailto:support@hoopjournal.me" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open('mailto:support@hoopjournal.me', '_blank');
+                  }}
+                  className="text-primary hover:underline font-medium"
+                >
                   support@hoopjournal.me
                 </a>
               </p>
