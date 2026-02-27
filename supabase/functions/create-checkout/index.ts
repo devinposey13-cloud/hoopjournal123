@@ -60,8 +60,8 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { planId, billingCycle, withTrial } = await req.json();
-    logStep("Request body", { planId, billingCycle, withTrial });
+    const { planId, billingCycle, withTrial, skipTrial } = await req.json();
+    logStep("Request body", { planId, billingCycle, withTrial, skipTrial });
 
     // Resolve price ID
     let priceId: string;
@@ -97,7 +97,7 @@ serve(async (req) => {
     };
 
     // Add trial if applicable
-    const trialDays = withTrial !== false ? (TRIAL_DAYS[planId] || 0) : 0;
+    const trialDays = skipTrial ? 0 : (withTrial !== false ? (TRIAL_DAYS[planId] || 0) : 0);
     if (trialDays > 0) {
       sessionParams.subscription_data = { trial_period_days: trialDays };
       logStep("Adding trial", { trialDays });
