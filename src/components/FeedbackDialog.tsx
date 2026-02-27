@@ -65,6 +65,15 @@ export function FeedbackDialog() {
 
       if (error) throw error;
 
+      // Send email notification (fire-and-forget)
+      supabase.functions.invoke('notify-feedback', {
+        body: {
+          category,
+          message: message.trim(),
+          userEmail: session.user.email,
+        },
+      }).catch((err) => console.error('Failed to send feedback notification:', err));
+
       toast.success('Thank you for your feedback!');
       setOpen(false);
       setCategory('general');

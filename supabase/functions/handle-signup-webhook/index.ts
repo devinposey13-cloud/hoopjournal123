@@ -43,10 +43,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const adminEmail = Deno.env.get("ADMIN_NOTIFICATION_EMAIL")?.trim();
-    if (!adminEmail) {
-      throw new Error("ADMIN_NOTIFICATION_EMAIL not configured");
-    }
+    const adminEmail = "support@hoopjournal.me";
 
     console.log("Sending admin notification for:", username, email ? maskEmail(email) : "no email");
 
