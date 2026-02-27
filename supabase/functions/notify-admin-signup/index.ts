@@ -35,18 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const adminEmail = Deno.env.get("ADMIN_NOTIFICATION_EMAIL")?.trim();
-    
-    console.log("Admin email configured:", adminEmail ? maskEmail(adminEmail) : "NOT SET");
-    
-    if (!adminEmail) {
-      throw new Error("ADMIN_NOTIFICATION_EMAIL not configured");
-    }
-
-    if (!isValidEmail(adminEmail)) {
-      console.error("Invalid admin email format:", maskEmail(adminEmail));
-      throw new Error(`ADMIN_NOTIFICATION_EMAIL has invalid format: ${maskEmail(adminEmail)}`);
-    }
+    const adminEmail = "support@hoopjournal.me";
 
     const { username, email }: SignupNotificationRequest = await req.json();
 

@@ -499,6 +499,14 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
               </p>
             </div>
             <FeedbackDialog />
+            <div className="text-center pt-2">
+              <p className="text-xs text-muted-foreground">
+                Or reach us directly at{' '}
+                <a href="mailto:support@hoopjournal.me" className="text-primary hover:underline font-medium">
+                  support@hoopjournal.me
+                </a>
+              </p>
+            </div>
           </div>
 
           {/* Danger Zone Section */}
