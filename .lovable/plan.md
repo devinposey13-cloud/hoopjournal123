@@ -1,76 +1,28 @@
 
 
-## Plan: Reimagine the Subscription Section in Settings
+## Testing Stripe Payments Without Waiting for Trial End
 
-### Problem
-The current subscription section in Settings is bare-bones. For free users it just says "Free Plan" with an upgrade button. For subscribers, it shows the plan name and renewal date but lacks detail and has no cancel option inline.
+There are several ways to test this immediately without any code changes:
 
-### Design
+### Option 1: Use Stripe Dashboard to End Trial Early
+In your Stripe Dashboard, go to **Subscriptions**, find the trialing subscription, and click **Update subscription** → **End trial now**. This immediately converts it to a paid subscription and charges the test card.
 
-The subscription card will be redesigned into a richer, more informative component:
+### Option 2: Create a Subscription Without Trial
+Your current code in `create-checkout` conditionally adds `subscription_data.trial_period_days` based on the plan. You could temporarily create a checkout for the **Elite** plan, which already has no trial period configured.
 
-**For Free users:**
-- Plan name ("Free") with a brief tagline from `planCatalog`
-- A short list of what's included (2-3 key limits like "2 AI Recaps/mo", "30-day history", "Level 10 cap")
-- Prominent "Upgrade" CTA
+### Option 3: Use Stripe Test Clocks (Recommended)
+Stripe Test Clocks let you simulate time advancing. Create a test clock in Stripe Dashboard → **Developers → Test Clocks**, attach a customer to it, and advance time past the trial period to trigger the payment immediately.
 
-**For Subscribed users (active or trialing):**
-- Plan name + tier badge (Starter/Pro/Elite) with colored styling
-- Billing cycle indicator (Monthly/Yearly) derived from the price
-- Status badge: "Active", "Trial", or "Canceling"
-- Next payment date (from `subscriptionEnd`)
-- Monthly/yearly price from `planCatalog`
-- "Manage Subscription" button (existing portal flow)
-- "Cancel Subscription" button with a confirmation dialog (using the existing `cancelSubscription` method from `useSubscription`)
+### Option 4: Code Change — Add a `skipTrial` Parameter
+Add an optional `skipTrial` flag to `create-checkout` so you can bypass the trial for testing purposes. This is a small, safe change:
 
-### Technical Changes
+**File: `supabase/functions/create-checkout/index.ts`**
+- Accept `skipTrial` boolean from the request body
+- When `skipTrial` is true, omit `trial_period_days` from `subscription_data`
+- No other changes needed — the frontend can pass `skipTrial: true` during testing
 
-**1. `src/hooks/useSubscription.ts`** — Add `billingCycle` to state
-- The `check-subscription` edge function already returns `stripe_subscription_id` but not billing cycle. We need the edge function to also return the price interval.
+This is the most developer-friendly option since you can test from your own app without leaving to the Stripe Dashboard.
 
-**2. `supabase/functions/check-subscription/index.ts`** — Return `billing_cycle`
-- Extract `subscription.items.data[0].price.recurring.interval` and return it as `billing_cycle` (`"month"` or `"year"`).
-
-**3. `src/components/SettingsPanel.tsx`** — Replace the subscription section (lines 266-320)
-- Import `planCatalog` from `@/lib/plans`
-- Import `AlertDialog` components for cancel confirmation
-- Build a new subscription card with:
-  - Plan name, price, and billing info
-  - Status badge (Active / Trial / Canceling)
-  - Next charge date
-  - Key features summary for free users
-  - Cancel button with AlertDialog confirmation (immediate vs. end-of-period options)
-  - Manage Subscription button for portal access
-
-### Component Structure
-
-```text
-┌─────────────────────────────────────────┐
-│ [Crown]  Pro Plan           [Active] ▪  │
-│          $19/mo · Monthly               │
-│                                         │
-│  Next payment: Mar 15, 2026             │
-│                                         │
-│  [Manage Subscription]  [Cancel]        │
-└─────────────────────────────────────────┘
-```
-
-For free users:
-```text
-┌─────────────────────────────────────────┐
-│ [Crown]  Free Plan                      │
-│          Start your journey.            │
-│                                         │
-│  • 2 AI Recaps/month                    │
-│  • 30-day game history                  │
-│  • Level 10 XP cap                      │
-│                                         │
-│  [★ Upgrade to unlock more]             │
-└─────────────────────────────────────────┘
-```
-
-### Files Modified
-1. `supabase/functions/check-subscription/index.ts` — add `billing_cycle` to response
-2. `src/hooks/useSubscription.ts` — store `billingCycle` in state
-3. `src/components/SettingsPanel.tsx` — redesigned subscription section with cancel flow
+### Recommendation
+**Option 1** (end trial via Stripe Dashboard) is the fastest — zero code changes, immediate result. **Option 4** is best if you want a reusable testing mechanism built into your app.
 
