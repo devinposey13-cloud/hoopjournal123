@@ -133,6 +133,7 @@ export function AdminPanel() {
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
   const [planOverrides, setPlanOverrides] = useState<Map<string, any>>(new Map());
   const [updatingPlan, setUpdatingPlan] = useState<string | null>(null);
+  const [pendingOverride, setPendingOverride] = useState<{ userId: string; userName: string; currentPlan: string; newPlan: string } | null>(null);
 
   // Usage dashboard state
   const [usageStats, setUsageStats] = useState<{
@@ -431,17 +432,20 @@ export function AdminPanel() {
     }
   }
 
-  // Inline plan change from users table
-  async function handleInlinePlanChange(userId: string, newPlan: string) {
+  // Inline admin override change from users table
+  async function handleConfirmedOverrideChange() {
+    if (!pendingOverride) return;
+    const { userId, newPlan } = pendingOverride;
     setUpdatingPlan(userId);
+    setPendingOverride(null);
     try {
       const existing = planOverrides.get(userId);
+      const overrideValue = newPlan === 'none' ? null : newPlan;
       if (existing) {
         const { error } = await supabase
           .from('plan_overrides')
           .update({
-            subscription_plan: newPlan,
-            admin_override_plan: null,
+            admin_override_plan: overrideValue,
             updated_by: session?.user?.id || null,
           })
           .eq('user_id', userId);
@@ -451,7 +455,8 @@ export function AdminPanel() {
           .from('plan_overrides')
           .insert({
             user_id: userId,
-            subscription_plan: newPlan,
+            admin_override_plan: overrideValue,
+            subscription_plan: 'free',
             updated_by: session?.user?.id || null,
           });
         if (error) throw error;
@@ -459,13 +464,13 @@ export function AdminPanel() {
       // Update local state
       setPlanOverrides(prev => {
         const next = new Map(prev);
-        next.set(userId, { ...(existing || {}), user_id: userId, subscription_plan: newPlan });
+        next.set(userId, { ...(existing || {}), user_id: userId, admin_override_plan: overrideValue });
         return next;
       });
-      toast.success(`Plan updated to ${newPlan}`);
+      toast.success(overrideValue ? `Admin override set to ${overrideValue}` : 'Admin override removed');
     } catch (error) {
-      console.error('Error updating plan:', error);
-      toast.error('Failed to update plan');
+      console.error('Error updating admin override:', error);
+      toast.error('Failed to update admin override');
     } finally {
       setUpdatingPlan(null);
     }
@@ -1235,25 +1240,33 @@ export function AdminPanel() {
                       </td>
                       <td className="p-3">
                         <div className="flex flex-col gap-1">
-                          <Select
-                            value={currentPlan}
-                            onValueChange={(val) => handleInlinePlanChange(user.user_id, val)}
-                            disabled={updatingPlan === user.user_id}
-                          >
-                            <SelectTrigger className="h-7 text-xs w-[110px]">
-                              {updatingPlan === user.user_id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <SelectValue />
-                              )}
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="free">Free</SelectItem>
-                              <SelectItem value="starter">Starter</SelectItem>
-                              <SelectItem value="pro">Pro</SelectItem>
-                              <SelectItem value="elite">Elite</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-muted-foreground">{planCatalog[effectivePlan].name}</span>
+                            <Select
+                              value={userOverride?.admin_override_plan || 'none'}
+                              onValueChange={(val) => setPendingOverride({
+                                userId: user.user_id,
+                                userName: user.display_name || user.name,
+                                currentPlan: effectivePlan,
+                                newPlan: val,
+                              })}
+                              disabled={updatingPlan === user.user_id}
+                            >
+                              <SelectTrigger className="h-7 text-xs w-[110px]">
+                                {updatingPlan === user.user_id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <SelectValue placeholder="Override..." />
+                                )}
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">No Override</SelectItem>
+                                <SelectItem value="starter">Starter</SelectItem>
+                                <SelectItem value="pro">Pro</SelectItem>
+                                <SelectItem value="elite">Elite</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                           <div className="flex flex-wrap gap-1">
                             {isUserGrandfathered && (
                               <Badge variant="outline" className="text-[10px] h-4 px-1 gap-0.5">
@@ -2077,6 +2090,26 @@ export function AdminPanel() {
           <AdminLeaderboards />
         </TabsContent>
       </Tabs>
+
+      {/* Admin Override Confirmation Dialog */}
+      <AlertDialog open={!!pendingOverride} onOpenChange={(open) => !open && setPendingOverride(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Admin Override</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingOverride?.newPlan === 'none' ? (
+                <>Remove the admin override for <strong>{pendingOverride?.userName}</strong>? They will revert to their base subscription plan.</>
+              ) : (
+                <>Set an admin override of <strong className="capitalize">{pendingOverride?.newPlan}</strong> for <strong>{pendingOverride?.userName}</strong>? This overrides their billing plan without affecting their Stripe subscription.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmedOverrideChange}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
