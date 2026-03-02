@@ -68,11 +68,11 @@ export function useSubscription() {
     }
   }, [user]);
 
-  const createCheckout = async (planId: PlanId, billingCycle: BillingCycle = 'monthly') => {
+  const createCheckout = async (planId: PlanId, billingCycle: BillingCycle = 'monthly', source?: string) => {
     if (!user) throw new Error('Must be logged in to subscribe');
 
     const { data, error } = await supabase.functions.invoke('create-checkout', {
-      body: { planId, billingCycle },
+      body: { planId, billingCycle, source },
     });
 
     if (error) throw error;

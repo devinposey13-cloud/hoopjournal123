@@ -2,13 +2,52 @@ import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Play, LayoutDashboard } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import canvasConfetti from 'canvas-confetti';
 import { track } from '@/lib/plans';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export default function OnboardingFinish() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const confettiFired = useRef(false);
+  const onboardingCompleted = useRef(false);
+
+  // Auto-complete onboarding when returning from Stripe checkout
+  useEffect(() => {
+    if (onboardingCompleted.current) return;
+    onboardingCompleted.current = true;
+
+    const completeOnboarding = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Mark onboarding as complete in the database
+        const { error } = await supabase
+          .from('player_settings')
+          .update({ onboarding_completed_at: new Date().toISOString() })
+          .eq('user_id', user.id)
+          .eq('is_active_profile', true);
+
+        if (error) {
+          console.error('[OnboardingFinish] Failed to mark onboarding complete:', error);
+        } else {
+          console.log('[OnboardingFinish] Onboarding marked complete');
+        }
+
+        if (searchParams.get('success') === 'true') {
+          toast.success('Subscription activated! 🎉');
+          track('onboarding_checkout_success', {});
+        }
+      } catch (err) {
+        console.error('[OnboardingFinish] Error completing onboarding:', err);
+      }
+    };
+
+    completeOnboarding();
+  }, [searchParams]);
 
   useEffect(() => {
     if (confettiFired.current) return;

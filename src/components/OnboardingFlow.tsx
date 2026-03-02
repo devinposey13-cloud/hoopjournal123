@@ -109,7 +109,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     console.log('[Onboarding] Starting checkout for paid plan:', { planId, billingCycle });
 
     try {
-      const result = await createCheckout(planId, billingCycle);
+      const result = await createCheckout(planId, billingCycle, 'onboarding');
       console.log('[Onboarding] Checkout session created, redirecting:', result?.url);
       // createCheckout opens URL in new tab via window.open
       // Show a message so user knows what happened
