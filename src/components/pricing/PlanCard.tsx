@@ -11,10 +11,12 @@ interface PlanCardProps {
   cycle: BillingCycle;
   currentPlan?: PlanId;
   onSelect: (planId: PlanId) => void;
+  promoApplied?: boolean;
 }
 
-export function PlanCard({ plan, cycle, currentPlan, onSelect }: PlanCardProps) {
-  const price = getPlanPrice(plan.id, cycle);
+export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied }: PlanCardProps) {
+  const originalPrice = getPlanPrice(plan.id, cycle);
+  const price = (promoApplied && plan.id !== 'free') ? getPlanPrice('starter', cycle) : originalPrice;
   const savings = getYearlySavingsPercent(plan.id);
   const isCurrent = currentPlan === plan.id;
   const isHighlighted = plan.highlighted;
