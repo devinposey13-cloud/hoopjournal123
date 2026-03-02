@@ -131,6 +131,8 @@ export function AdminPanel() {
     active_count: number;
   } | null>(null);
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
+  const [planOverrides, setPlanOverrides] = useState<Map<string, any>>(new Map());
+  const [updatingPlan, setUpdatingPlan] = useState<string | null>(null);
 
   // Usage dashboard state
   const [usageStats, setUsageStats] = useState<{
@@ -205,6 +207,14 @@ export function AdminPanel() {
 
       if (approvalError) throw approvalError;
       setApprovalRequests(approvalData || []);
+
+      // Fetch plan overrides for all users
+      const { data: overridesData } = await supabase
+        .from('plan_overrides')
+        .select('*');
+      const overridesMap = new Map<string, any>();
+      (overridesData || []).forEach((o: any) => overridesMap.set(o.user_id, o));
+      setPlanOverrides(overridesMap);
 
       // Fetch usage stats
       const now = new Date();
@@ -418,6 +428,46 @@ export function AdminPanel() {
       toast.error(error instanceof Error ? error.message : 'Failed to fetch subscriptions');
     } finally {
       setLoadingSubscriptions(false);
+    }
+  }
+
+  // Inline plan change from users table
+  async function handleInlinePlanChange(userId: string, newPlan: string) {
+    setUpdatingPlan(userId);
+    try {
+      const existing = planOverrides.get(userId);
+      if (existing) {
+        const { error } = await supabase
+          .from('plan_overrides')
+          .update({
+            subscription_plan: newPlan,
+            admin_override_plan: null,
+            updated_by: session?.user?.id || null,
+          })
+          .eq('user_id', userId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('plan_overrides')
+          .insert({
+            user_id: userId,
+            subscription_plan: newPlan,
+            updated_by: session?.user?.id || null,
+          });
+        if (error) throw error;
+      }
+      // Update local state
+      setPlanOverrides(prev => {
+        const next = new Map(prev);
+        next.set(userId, { ...(existing || {}), user_id: userId, subscription_plan: newPlan });
+        return next;
+      });
+      toast.success(`Plan updated to ${newPlan}`);
+    } catch (error) {
+      console.error('Error updating plan:', error);
+      toast.error('Failed to update plan');
+    } finally {
+      setUpdatingPlan(null);
     }
   }
 
@@ -821,11 +871,7 @@ export function AdminPanel() {
             <span className="hidden sm:inline">Access</span>
             <span className="sm:hidden">Plan</span>
           </TabsTrigger>
-          <TabsTrigger value="subscriptions" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0 whitespace-nowrap" onClick={() => { if (!subscriptionData) fetchSubscriptionData(); }}>
-            <CreditCard className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
-            <span className="hidden sm:inline">Subs</span>
-            <span className="sm:hidden">Sub</span>
-          </TabsTrigger>
+          
           <TabsTrigger value="leaderboards" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0 whitespace-nowrap">
             <Trophy className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
             <span className="hidden sm:inline">Leaders</span>
@@ -1092,6 +1138,26 @@ export function AdminPanel() {
             </CardContent>
           </Card>
 
+          {/* Plan distribution summary */}
+          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+            {(['free', 'starter', 'pro', 'elite'] as const).map(plan => {
+              const count = users.filter(u => (planOverrides.get(u.user_id)?.subscription_plan || 'free') === plan).length;
+              return (
+                <span key={plan} className="flex items-center gap-1">
+                  <span className="capitalize font-medium text-foreground">{plan}</span>
+                  <Badge variant="outline" className="h-5 text-[10px]">{count}</Badge>
+                </span>
+              );
+            })}
+            <span className="flex items-center gap-1">
+              <Star className="w-3 h-3 text-amber-500" />
+              <span className="font-medium text-foreground">Founders</span>
+              <Badge variant="outline" className="h-5 text-[10px]">
+                {users.filter(u => planOverrides.get(u.user_id)?.is_grandfathered).length}
+              </Badge>
+            </span>
+          </div>
+
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -1110,159 +1176,208 @@ export function AdminPanel() {
                 <tr>
                   <th className="text-left p-3 font-medium">Name</th>
                   <th className="text-left p-3 font-medium">Email</th>
-                  <th className="text-left p-3 font-medium">Team</th>
-                  <th className="text-left p-3 font-medium">Grade</th>
-                  <th className="text-left p-3 font-medium">Public</th>
-                  <th className="text-left p-3 font-medium">Joined</th>
+                  <th className="text-left p-3 font-medium">Plan</th>
+                  <th className="text-left p-3 font-medium hidden md:table-cell">Team</th>
+                  <th className="text-left p-3 font-medium hidden lg:table-cell">Grade</th>
+                  <th className="text-left p-3 font-medium hidden lg:table-cell">Public</th>
+                  <th className="text-left p-3 font-medium hidden md:table-cell">Joined</th>
                   <th className="text-right p-3 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((user) => (
-                  <tr key={user.id} className="border-t">
-                    <td className="p-3">
-                      <div>
-                        <div className="font-medium">{user.name}</div>
-                        {user.display_name && (
-                          <div className="text-xs text-muted-foreground">@{user.display_name}</div>
+                {filteredUsers.map((user) => {
+                  const userOverride = planOverrides.get(user.user_id);
+                  const currentPlan = userOverride?.subscription_plan || 'free';
+                  const isUserGrandfathered = userOverride?.is_grandfathered || false;
+                  const hasAdminOverride = !!userOverride?.admin_override_plan;
+                  const isPromoLocked = userOverride?.promo_locked_in || false;
+
+                  return (
+                    <tr key={user.id} className="border-t">
+                      <td className="p-3">
+                        <div>
+                          <div className="font-medium">{user.name}</div>
+                          {user.display_name && (
+                            <div className="text-xs text-muted-foreground">@{user.display_name}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="text-sm text-muted-foreground max-w-[200px] truncate" title={userEmailMap.get(user.user_id) || ''}>
+                          {userEmailMap.get(user.user_id) || '—'}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex flex-col gap-1">
+                          <Select
+                            value={currentPlan}
+                            onValueChange={(val) => handleInlinePlanChange(user.user_id, val)}
+                            disabled={updatingPlan === user.user_id}
+                          >
+                            <SelectTrigger className="h-7 text-xs w-[110px]">
+                              {updatingPlan === user.user_id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <SelectValue />
+                              )}
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="free">Free</SelectItem>
+                              <SelectItem value="starter">Starter</SelectItem>
+                              <SelectItem value="pro">Pro</SelectItem>
+                              <SelectItem value="elite">Elite</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <div className="flex flex-wrap gap-1">
+                            {isUserGrandfathered && (
+                              <Badge variant="outline" className="text-[10px] h-4 px-1 gap-0.5">
+                                <Star className="w-2.5 h-2.5" /> Founder
+                              </Badge>
+                            )}
+                            {hasAdminOverride && (
+                              <Badge variant="secondary" className="text-[10px] h-4 px-1">
+                                Override: {userOverride.admin_override_plan}
+                              </Badge>
+                            )}
+                            {isPromoLocked && (
+                              <Badge variant="outline" className="text-[10px] h-4 px-1 text-primary border-primary/30">
+                                Promo 🔒
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3 text-muted-foreground hidden md:table-cell">{user.team}</td>
+                      <td className="p-3 text-muted-foreground hidden lg:table-cell">{user.grade}</td>
+                      <td className="p-3 hidden lg:table-cell">
+                        {user.is_profile_public ? (
+                          <Badge variant="secondary">Public</Badge>
+                        ) : (
+                          <Badge variant="outline">Private</Badge>
                         )}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div className="text-sm text-muted-foreground max-w-[200px] truncate" title={userEmailMap.get(user.user_id) || ''}>
-                        {userEmailMap.get(user.user_id) || '—'}
-                      </div>
-                    </td>
-                    <td className="p-3 text-muted-foreground">{user.team}</td>
-                    <td className="p-3 text-muted-foreground">{user.grade}</td>
-                    <td className="p-3">
-                      {user.is_profile_public ? (
-                        <Badge variant="secondary">Public</Badge>
-                      ) : (
-                        <Badge variant="outline">Private</Badge>
-                      )}
-                    </td>
-                    <td className="p-3 text-muted-foreground text-sm">
-                      {format(new Date(user.created_at), 'MMM d, yyyy')}
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center justify-end gap-2">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setEditingUser(user);
-                                setEditName(user.name);
-                                setEditTeam(user.team);
-                                setEditGrade(user.grade);
-                                setEditUsername(user.username || '');
-                              }}
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Edit User Profile</DialogTitle>
-                              <DialogDescription>
-                                Update profile details for this user.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div className="space-y-2">
-                                <Label>Name</Label>
-                                <Input
-                                  value={editName}
-                                  onChange={(e) => setEditName(e.target.value)}
-                                  placeholder="Player Name"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Team</Label>
-                                <Input
-                                  value={editTeam}
-                                  onChange={(e) => setEditTeam(e.target.value)}
-                                  placeholder="Team Name"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Grade</Label>
-                                <Select value={editGrade} onValueChange={setEditGrade}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select grade" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {grades.map((grade) => (
-                                      <SelectItem key={grade} value={grade}>
-                                        {grade}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Profile URL</Label>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-muted-foreground">hoopjournal.me/</span>
+                      </td>
+                      <td className="p-3 text-muted-foreground text-sm hidden md:table-cell">
+                        {format(new Date(user.created_at), 'MMM d, yyyy')}
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setEditingUser(user);
+                                  setEditName(user.name);
+                                  setEditTeam(user.team);
+                                  setEditGrade(user.grade);
+                                  setEditUsername(user.username || '');
+                                }}
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Edit User Profile</DialogTitle>
+                                <DialogDescription>
+                                  Update profile details for this user.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                  <Label>Name</Label>
                                   <Input
-                                    value={editUsername}
-                                    onChange={(e) => setEditUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
-                                    placeholder="username"
-                                    className="flex-1"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    placeholder="Player Name"
                                   />
                                 </div>
-                                <p className="text-xs text-muted-foreground">
-                                  Only lowercase letters and numbers allowed
-                                </p>
+                                <div className="space-y-2">
+                                  <Label>Team</Label>
+                                  <Input
+                                    value={editTeam}
+                                    onChange={(e) => setEditTeam(e.target.value)}
+                                    placeholder="Team Name"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Grade</Label>
+                                  <Select value={editGrade} onValueChange={setEditGrade}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select grade" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {grades.map((grade) => (
+                                        <SelectItem key={grade} value={grade}>
+                                          {grade}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Profile URL</Label>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-muted-foreground">hoopjournal.me/</span>
+                                    <Input
+                                      value={editUsername}
+                                      onChange={(e) => setEditUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+                                      placeholder="username"
+                                      className="flex-1"
+                                    />
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Only lowercase letters and numbers allowed
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                            <DialogFooter>
-                              <Button onClick={handleUpdateUser} disabled={savingUser}>
-                                {savingUser ? (
-                                  <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Saving...
-                                  </>
-                                ) : (
-                                  'Save Changes'
-                                )}
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                              <DialogFooter>
+                                <Button onClick={handleUpdateUser} disabled={savingUser}>
+                                  {savingUser ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                      Saving...
+                                    </>
+                                  ) : (
+                                    'Save Changes'
+                                  )}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
 
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handlePasswordReset('', user.user_id)}
-                          disabled={resettingPassword === user.user_id}
-                        >
-                          {resettingPassword === user.user_id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Key className="w-4 h-4" />
-                          )}
-                        </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handlePasswordReset('', user.user_id)}
+                            disabled={resettingPassword === user.user_id}
+                          >
+                            {resettingPassword === user.user_id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Key className="w-4 h-4" />
+                            )}
+                          </Button>
 
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteUser(user.id, user.user_id)}
-                          disabled={deletingUser === user.id}
-                        >
-                          {deletingUser === user.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteUser(user.id, user.user_id)}
+                            disabled={deletingUser === user.id}
+                          >
+                            {deletingUser === user.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {filteredUsers.length === 0 && (
@@ -1929,113 +2044,7 @@ export function AdminPanel() {
           <AdminAccessControls users={users} approvalRequests={approvalRequests} />
         </TabsContent>
 
-        {/* Subscriptions Tab */}
-        <TabsContent value="subscriptions" className="space-y-4">
-          {loadingSubscriptions ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          ) : !subscriptionData ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <CreditCard className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Click this tab to load subscription data from Stripe</p>
-                <Button variant="outline" className="mt-4" onClick={fetchSubscriptionData}>
-                  Load Subscriptions
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-6">
-              {/* Summary cards */}
-              <div className="grid grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Active Trials</CardDescription>
-                    <CardTitle className="text-3xl">{subscriptionData.trial_count}</CardTitle>
-                  </CardHeader>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Active Subscriptions</CardDescription>
-                    <CardTitle className="text-3xl">{subscriptionData.active_count}</CardTitle>
-                  </CardHeader>
-                </Card>
-              </div>
 
-              {/* Trials */}
-              {subscriptionData.trials.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    Free Trials ({subscriptionData.trials.length})
-                  </h3>
-                  {subscriptionData.trials.map((sub: any) => (
-                    <Card key={sub.id}>
-                      <CardContent className="py-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{sub.customer_email}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{sub.plan} plan</p>
-                          </div>
-                          <Badge variant="outline" className="capitalize">trialing</Badge>
-                        </div>
-                        {sub.trial_end && (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Trial ends: {format(new Date(sub.trial_end), 'MMM d, yyyy')}
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-
-              {/* Active */}
-              {subscriptionData.active.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
-                    Active Subscriptions ({subscriptionData.active.length})
-                  </h3>
-                  {subscriptionData.active.map((sub: any) => (
-                    <Card key={sub.id}>
-                      <CardContent className="py-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{sub.customer_email}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{sub.plan} plan</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {sub.cancel_at_period_end && (
-                              <Badge variant="destructive" className="text-xs">Canceling</Badge>
-                            )}
-                            <Badge variant="outline" className="capitalize">active</Badge>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Renews: {format(new Date(sub.current_period_end), 'MMM d, yyyy')}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-
-              {subscriptionData.trials.length === 0 && subscriptionData.active.length === 0 && (
-                <Card>
-                  <CardContent className="py-12 text-center text-muted-foreground">
-                    <p>No active subscriptions or trials found</p>
-                  </CardContent>
-                </Card>
-              )}
-
-              <Button variant="outline" onClick={fetchSubscriptionData} className="w-full">
-                Refresh
-              </Button>
-            </div>
-          )}
-        </TabsContent>
 
         {/* Leaderboards Tab */}
         <TabsContent value="leaderboards">
