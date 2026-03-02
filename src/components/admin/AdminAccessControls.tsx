@@ -126,6 +126,11 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
     isGrandfathered,
     adminOverridePlan: adminOverridePlan !== 'none' ? adminOverridePlan as PlanId : null,
     promoAccessUntil: promoDate ? promoDate.toISOString() : null,
+    promoEligible: false,
+    promoType: null,
+    promoLockedIn: false,
+    promoStartDate: null,
+    promoSource: null,
   };
   const effectivePlan = getEffectivePlan(effectiveAccess);
 

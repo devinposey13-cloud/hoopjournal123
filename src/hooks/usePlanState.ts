@@ -6,6 +6,7 @@ import {
 } from '@/lib/plans';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface PlanState {
   currentPlan: PlanId; // effective plan (computed)
@@ -26,10 +27,16 @@ const defaultAccessInfo: UserAccessInfo = {
   isGrandfathered: false,
   adminOverridePlan: null,
   promoAccessUntil: null,
+  promoEligible: false,
+  promoType: null,
+  promoLockedIn: false,
+  promoStartDate: null,
+  promoSource: null,
 };
 
 export function usePlanState(): PlanState {
   const { session } = useAuth();
+  const { subscriptionStatus } = useSubscription();
   const [accessInfo, setAccessInfo] = useState<UserAccessInfo>(defaultAccessInfo);
   const [loading, setLoading] = useState(true);
   const [paywallOpen, setPaywallOpen] = useState(false);
@@ -74,6 +81,12 @@ export function usePlanState(): PlanState {
             isGrandfathered: data.is_grandfathered || false,
             adminOverridePlan: (data.admin_override_plan as PlanId) || null,
             promoAccessUntil: data.promo_access_until || null,
+            promoEligible: data.promo_eligible || false,
+            promoType: data.promo_type || null,
+            promoLockedIn: data.promo_locked_in || false,
+            promoStartDate: data.promo_start_date || null,
+            promoSource: data.promo_source || null,
+            subscriptionStatus: subscriptionStatus || undefined,
           });
         } else if (shouldGrandfather) {
           // No row yet — create one with grandfathered = true
@@ -93,7 +106,7 @@ export function usePlanState(): PlanState {
     }
 
     fetchPlanOverride();
-  }, [session?.user?.id]);
+  }, [session?.user?.id, subscriptionStatus]);
 
   const effectivePlan = getEffectivePlan(accessInfo);
   const accessBadge = getAccessBadge(accessInfo);

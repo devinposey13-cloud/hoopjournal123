@@ -52,15 +52,15 @@ export function BillingSummaryCard({
             <div className="flex items-center gap-3">
               {accessBadge.type === 'grandfathered' && <Star className="w-5 h-5 text-amber-500" />}
               {accessBadge.type === 'admin_override' && <Shield className="w-5 h-5 text-primary" />}
-              {accessBadge.type === 'promo' && <Zap className="w-5 h-5 text-primary" />}
+              {accessBadge.type === 'promo_locked' && <Zap className="w-5 h-5 text-primary" />}
               <div>
                 <p className="font-semibold text-sm">{accessBadge.label}</p>
                 {accessBadge.type === 'grandfathered' && (
                   <p className="text-xs text-muted-foreground">You have full access as an early supporter.</p>
                 )}
-                {accessBadge.type === 'promo' && (
+                {accessBadge.type === 'promo_locked' && (
                   <p className="text-xs text-muted-foreground">
-                    Expires {format(new Date(accessBadge.expiresAt), 'MMM d, yyyy')}
+                    Elite access locked in while your Starter subscription is active.
                   </p>
                 )}
               </div>
@@ -90,7 +90,7 @@ export function BillingSummaryCard({
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
                 <span className="text-muted-foreground">
-                  {subscriptionStatus === 'trialing' ? 'Trial ends' : 'Renews'}{' '}
+                  Renews{' '}
                   {format(new Date(subscriptionEnd), 'MMM d, yyyy')}
                 </span>
               </div>

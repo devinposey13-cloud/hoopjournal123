@@ -69,22 +69,14 @@ serve(async (req) => {
       limit: 1,
     });
 
-    // Also check trialing subscriptions
-    const trialingSubs = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "trialing",
-      limit: 1,
-    });
-
-    const allSubs = [...subscriptions.data, ...trialingSubs.data];
-    const hasActiveSub = allSubs.length > 0;
+    const hasActiveSub = subscriptions.data.length > 0;
     let planType: string | null = null;
     let subscriptionEnd: string | null = null;
     let subscriptionStatus: string | null = null;
     let stripeSubscriptionId: string | null = null;
 
     if (hasActiveSub) {
-      const subscription = allSubs[0];
+      const subscription = subscriptions.data[0];
       const periodEnd = subscription.current_period_end;
       try {
         subscriptionEnd = typeof periodEnd === 'number' 
@@ -122,7 +114,7 @@ serve(async (req) => {
     }
 
     // Extract billing cycle and cancel info from the active sub
-    const activeSub = hasActiveSub ? allSubs[0] : null;
+    const activeSub = hasActiveSub ? subscriptions.data[0] : null;
     const resBillingCycle = activeSub?.items?.data?.[0]?.price?.recurring?.interval || null;
     const resCancelAtPeriodEnd = activeSub?.cancel_at_period_end || false;
 
