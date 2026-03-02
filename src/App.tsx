@@ -27,6 +27,7 @@ import Progress from "./pages/Progress";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import OAuthCallback from "./pages/OAuthCallback";
+import ParentDashboard from "./pages/ParentDashboard";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ const App = () => (
                   <Route path="/game/:id" element={<GameDetail />} />
                   <Route path="/game/scheduled/:scheduledId" element={<GameDetail />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/parent/:token" element={<ParentDashboard />} />
                   <Route path="/:username" element={<PublicProfile />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

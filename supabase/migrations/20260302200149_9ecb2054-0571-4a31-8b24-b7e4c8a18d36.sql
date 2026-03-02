@@ -1,0 +1,131 @@
+
+-- Create parent_dashboard_tokens table
+CREATE TABLE public.parent_dashboard_tokens (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  profile_id uuid REFERENCES public.player_settings(id) ON DELETE CASCADE,
+  token text UNIQUE NOT NULL,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  last_viewed_at timestamp with time zone
+);
+
+-- Enable RLS
+ALTER TABLE public.parent_dashboard_tokens ENABLE ROW LEVEL SECURITY;
+
+-- Users can view their own tokens
+CREATE POLICY "Users can view their own tokens"
+ON public.parent_dashboard_tokens
+FOR SELECT USING (auth.uid() = user_id);
+
+-- Users can create their own tokens
+CREATE POLICY "Users can create their own tokens"
+ON public.parent_dashboard_tokens
+FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Users can update their own tokens
+CREATE POLICY "Users can update their own tokens"
+ON public.parent_dashboard_tokens
+FOR UPDATE USING (auth.uid() = user_id);
+
+-- Users can delete their own tokens
+CREATE POLICY "Users can delete their own tokens"
+ON public.parent_dashboard_tokens
+FOR DELETE USING (auth.uid() = user_id);
+
+-- Security definer function to validate token and return parent dashboard data
+CREATE OR REPLACE FUNCTION public.get_parent_dashboard_data(p_token text)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_token_row parent_dashboard_tokens%ROWTYPE;
+  v_profile player_settings%ROWTYPE;
+  v_games jsonb;
+  v_milestones jsonb;
+  v_xp jsonb;
+  v_result jsonb;
+BEGIN
+  -- Validate token
+  SELECT * INTO v_token_row
+  FROM parent_dashboard_tokens
+  WHERE token = p_token AND is_active = true;
+
+  IF v_token_row.id IS NULL THEN
+    RETURN jsonb_build_object('error', 'invalid_token');
+  END IF;
+
+  -- Update last_viewed_at
+  UPDATE parent_dashboard_tokens SET last_viewed_at = now() WHERE id = v_token_row.id;
+
+  -- Get profile info (exclude PII like phone)
+  SELECT * INTO v_profile
+  FROM player_settings
+  WHERE (v_token_row.profile_id IS NOT NULL AND id = v_token_row.profile_id)
+     OR (v_token_row.profile_id IS NULL AND user_id = v_token_row.user_id AND is_active_profile = true)
+  LIMIT 1;
+
+  IF v_profile.id IS NULL THEN
+    RETURN jsonb_build_object('error', 'profile_not_found');
+  END IF;
+
+  -- Get recent games (last 20)
+  SELECT COALESCE(jsonb_agg(g ORDER BY g.date DESC), '[]'::jsonb) INTO v_games
+  FROM (
+    SELECT id, date, opponent, points, rebounds, assists, steals, blocks, turnovers, fouls,
+           minutes_played, fg_made, fg_attempted, three_pt_made, three_pt_attempted,
+           ft_made, ft_attempted, is_win, final_score_us, final_score_them, team_id
+    FROM games
+    WHERE user_id = v_token_row.user_id
+      AND (v_token_row.profile_id IS NULL OR profile_id = v_token_row.profile_id)
+    ORDER BY date DESC
+    LIMIT 20
+  ) g;
+
+  -- Get milestones with definitions
+  SELECT COALESCE(jsonb_agg(m), '[]'::jsonb) INTO v_milestones
+  FROM (
+    SELECT pm.id, pm.earned_at, pm.stats_snapshot,
+           md.name, md.description, md.icon, md.category, md.rarity
+    FROM player_milestones pm
+    JOIN milestone_definitions md ON md.id = pm.milestone_id
+    WHERE pm.user_id = v_token_row.user_id
+      AND (v_token_row.profile_id IS NULL OR pm.profile_id = v_token_row.profile_id)
+    ORDER BY pm.earned_at DESC
+    LIMIT 50
+  ) m;
+
+  -- Get XP progress
+  SELECT COALESCE(to_jsonb(x), '{}'::jsonb) INTO v_xp
+  FROM (
+    SELECT current_xp, current_level, peak_level, games_logged, quarter
+    FROM player_xp_progress
+    WHERE user_id = v_token_row.user_id
+      AND (v_token_row.profile_id IS NULL OR profile_id = v_token_row.profile_id)
+    ORDER BY updated_at DESC
+    LIMIT 1
+  ) x;
+
+  -- Build result
+  v_result := jsonb_build_object(
+    'profile', jsonb_build_object(
+      'id', v_profile.id,
+      'name', COALESCE(v_profile.display_name, v_profile.name),
+      'team', v_profile.team,
+      'position', v_profile.position,
+      'number', v_profile.number,
+      'height', v_profile.height,
+      'grade', v_profile.grade,
+      'avatar_url', v_profile.avatar_url
+    ),
+    'games', v_games,
+    'milestones', v_milestones,
+    'xp', v_xp
+  );
+
+  RETURN v_result;
+END;
+$$;

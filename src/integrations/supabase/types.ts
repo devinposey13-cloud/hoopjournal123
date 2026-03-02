@@ -557,6 +557,51 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_dashboard_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          last_viewed_at: string | null
+          profile_id: string | null
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_viewed_at?: string | null
+          profile_id?: string | null
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_viewed_at?: string | null
+          profile_id?: string | null
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_dashboard_tokens_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_dashboard_tokens_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       password_reset_requests: {
         Row: {
           admin_notes: string | null
@@ -1818,6 +1863,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_parent_dashboard_data: { Args: { p_token: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

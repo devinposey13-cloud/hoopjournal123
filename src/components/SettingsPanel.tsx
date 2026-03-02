@@ -20,6 +20,7 @@ import { planCatalog } from '@/lib/plans';
 import { useXpProgress } from '@/hooks/useXpProgress';
 import { useRingOfHonorEligibility } from '@/hooks/useRingOfHonorEligibility';
 import { RingOfHonorOptInModal } from '@/components/xp/RingOfHonorOptInModal';
+import { ParentDashboardSettings } from '@/components/settings/ParentDashboardSettings';
 
 interface SettingsPanelProps {
   profile: PlayerProfile;
@@ -404,6 +405,9 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
               </>
             )}
           </div>
+
+          {/* Parent Dashboard Section */}
+          <ParentDashboardSettings />
 
           {/* Ring of Honor Section */}
           <Separator className="my-6" />
