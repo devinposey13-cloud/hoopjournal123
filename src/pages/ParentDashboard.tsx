@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Trophy, TrendingUp, Target, Shield, Zap, Calendar, Award } from 'lucide-react';
+import { Trophy, TrendingUp, Target, Shield, Zap, Calendar, Award, MapPin, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 
@@ -58,6 +58,15 @@ interface ParentDashboardData {
     games_logged: number;
     quarter: string;
   } | null;
+  upcoming_games: Array<{
+    id: string;
+    date: string;
+    time: string;
+    opponent: string;
+    location: string;
+    is_home: boolean;
+    tournament: string | null;
+  }>;
 }
 
 export default function ParentDashboard() {
@@ -133,7 +142,7 @@ export default function ParentDashboard() {
     );
   }
 
-  const { profile, games, milestones, xp } = data;
+  const { profile, games, milestones, xp, upcoming_games } = data;
 
   // Compute season averages
   const gamesCount = games.length;
@@ -263,6 +272,55 @@ export default function ParentDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Upcoming Games */}
+        {upcoming_games && upcoming_games.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-primary" />
+                Upcoming Games
+                <Badge variant="secondary" className="ml-auto text-xs">{upcoming_games.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {upcoming_games.map((game) => (
+                <div
+                  key={game.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant="outline"
+                      className={`text-xs w-12 justify-center ${
+                        game.is_home ? 'border-primary/40 text-primary' : ''
+                      }`}
+                    >
+                      {game.is_home ? 'Home' : 'Away'}
+                    </Badge>
+                    <div>
+                      <div className="text-sm font-medium">vs {game.opponent}</div>
+                      <div className="text-xs text-muted-foreground flex items-center gap-2">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {format(new Date(game.date), 'MMM d, yyyy')}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {game.time}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-1 max-w-[120px] truncate">
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{game.location}</span>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Recent Games */}
         <Card>
