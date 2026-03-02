@@ -35,7 +35,7 @@ serve(async (req) => {
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
   try {
@@ -56,16 +56,30 @@ serve(async (req) => {
     const { planId, billingCycle, cancelUrl: reqCancelUrl, source } = await req.json();
     logStep("Request body", { planId, billingCycle, cancelUrl: reqCancelUrl, source });
 
+    // Check if user has promo eligibility — if so, always charge Starter price
+    let effectivePlanId = planId;
+    const { data: promoData } = await supabaseClient
+      .from('plan_overrides')
+      .select('promo_eligible, promo_locked_in, promo_type')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const hasPromo = promoData?.promo_eligible && promoData?.promo_type === 'AAU_MARCH_2026_ELITE_LOCK';
+    if (hasPromo && planId !== 'free') {
+      effectivePlanId = 'starter';
+      logStep("Promo active — overriding price to Starter", { originalPlan: planId });
+    }
+
     // Resolve price ID
     let priceId: string;
-    if (planId && billingCycle && PLAN_PRICES[planId]?.[billingCycle]) {
-      priceId = PLAN_PRICES[planId][billingCycle];
-    } else if (planId && PLAN_PRICES[planId]) {
-      priceId = PLAN_PRICES[planId].monthly;
+    if (effectivePlanId && billingCycle && PLAN_PRICES[effectivePlanId]?.[billingCycle]) {
+      priceId = PLAN_PRICES[effectivePlanId][billingCycle];
+    } else if (effectivePlanId && PLAN_PRICES[effectivePlanId]) {
+      priceId = PLAN_PRICES[effectivePlanId].monthly;
     } else {
       throw new Error(`Invalid planId "${planId}" or billingCycle "${billingCycle}"`);
     }
-    logStep("Resolved price ID", { priceId });
+    logStep("Resolved price ID", { priceId, effectivePlanId, originalPlan: planId });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
