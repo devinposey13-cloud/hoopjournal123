@@ -1,20 +1,24 @@
 
 
-## Fix: Settings Panel Not Showing Grandfathered Status
+## Analysis: Recap Sharing vs PDF Export
 
-### Problem
-The Settings panel uses `useSubscription()` (which only checks Stripe) to determine what plan to display. Grandfathered users have no Stripe subscription, so the code falls to the "Free Plan" branch at line 375-400 of `SettingsPanel.tsx`, showing "Free Plan" with upgrade prompts.
+**Short answer:** The recap sharing feature does NOT send a PDF. It sends a styled HTML email with stats and text. These are entirely separate features. No paywall bypass occurs through recap sharing.
 
-The `usePlan()` hook correctly computes the effective plan (Elite for grandfathered users) and provides an `accessBadge` with "Founding Member" label, but **it's never used in SettingsPanel**.
+**However, there is a real gap:** The PDF export button (`GameDetail.tsx` line 922, `GameCard.tsx` line 119) has **zero plan gating**. The plan catalog marks `exportPdf` as Elite-only, but `canUseFeature` is never checked before allowing the export. Any user on any plan can currently download PDFs.
 
-### Fix
-Modify `src/components/SettingsPanel.tsx` to:
+---
 
-1. **Import and use `usePlan()`** alongside `useSubscription()` 
-2. **Add a new UI branch** before the "Free Plan" fallback: if the user has special access (grandfathered, admin override, or promo), show the effective plan name with the appropriate badge (e.g., "Founding Member — Elite Access") and hide the upgrade/cancel buttons
-3. **Adjust the condition logic**: `subLoading ? loading UI : isSubscribed ? Stripe UI : hasSpecialAccess ? Founding Member UI : Free plan UI`
+### Recommended Fix
+
+**Gate the PDF export behind the Elite plan:**
+
+1. **`src/pages/GameDetail.tsx`** — Import `usePlan` and `canUseFeature`. Before calling `exportGameBoxScorePdf`, check `canUseFeature(currentPlan, 'exportPdf')`. If not allowed, show a paywall/upgrade prompt instead. Conditionally hide or disable the export button for non-Elite users.
+
+2. **`src/components/GameCard.tsx`** — Same gating: import plan hooks, check access, and either hide the PDF button or show an upgrade toast when clicked by a non-Elite user.
+
+3. **No changes needed** to `PostGameRecap.tsx` or `send-parent-recap` — the email feature is HTML-only and doesn't touch PDF logic.
 
 ### Scope
-- **1 file changed**: `src/components/SettingsPanel.tsx`
-- No database or backend changes needed — the data is already correct in `plan_overrides` (`is_grandfathered: true`)
+- **2 files modified**: `GameDetail.tsx`, `GameCard.tsx`
+- No backend changes needed
 
