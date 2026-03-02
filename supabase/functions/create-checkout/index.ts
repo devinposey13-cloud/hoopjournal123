@@ -53,8 +53,8 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { planId, billingCycle } = await req.json();
-    logStep("Request body", { planId, billingCycle });
+    const { planId, billingCycle, cancelUrl: reqCancelUrl } = await req.json();
+    logStep("Request body", { planId, billingCycle, cancelUrl: reqCancelUrl });
 
     // Resolve price ID
     let priceId: string;
@@ -85,7 +85,7 @@ serve(async (req) => {
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
       success_url: `${origin}/settings/billing?success=true`,
-      cancel_url: `${origin}/pricing?canceled=true`,
+      cancel_url: reqCancelUrl || `${origin}/pricing?canceled=true`,
       metadata: { user_id: user.id, plan_id: planId },
     };
 

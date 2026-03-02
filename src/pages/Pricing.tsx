@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,16 @@ export default function Pricing() {
   // Show success/canceled toasts from Stripe redirect
   const success = searchParams.get('success');
   const canceled = searchParams.get('canceled');
+
+  // Show toast on cancel/success redirect
+  useEffect(() => {
+    if (canceled === 'true') {
+      toast.info("Checkout canceled — you're still on the Free plan.");
+    }
+    if (success === 'true') {
+      toast.success('Subscription activated! 🎉');
+    }
+  }, [canceled, success]);
 
   const handleSelectPlan = async (planId: PlanId) => {
     if (planId === 'free') {

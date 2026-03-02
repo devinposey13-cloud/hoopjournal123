@@ -9,8 +9,9 @@ import { GoalsCard } from './onboarding/GoalsCard';
 import { HabitHookCard } from './onboarding/HabitHookCard';
 import { CoachPreviewCard } from './onboarding/CoachPreviewCard';
 import { PricingPreviewCard } from './onboarding/PricingPreviewCard';
-import { CompletionCard } from './onboarding/CompletionCard';
-import { track } from '@/lib/plans';
+import { track, type PlanId, type BillingCycle } from '@/lib/plans';
+import { useSubscription } from '@/hooks/useSubscription';
+import { toast } from 'sonner';
 
 export interface OnboardingData {
   name: string;
@@ -27,7 +28,7 @@ interface OnboardingFlowProps {
   onComplete: (data: OnboardingData, action?: OnboardingCompletionAction) => void;
 }
 
-const TOTAL_STEPS = 7; // Welcome, Identity, PlayerIdentity, Goals, HabitHook, CoachPreview, PricingPreview
+const TOTAL_STEPS = 7;
 const SWIPE_THRESHOLD = 50;
 const SWIPE_VELOCITY_THRESHOLD = 500;
 
@@ -35,6 +36,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
   const navigate = useNavigate();
+  const { createCheckout } = useSubscription();
   const [data, setData] = useState<OnboardingData>({
     name: '',
     courtRole: '',
@@ -102,10 +104,20 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     onComplete(data, 'explore_dashboard');
   };
 
-  const handleSelectStarter = () => {
-    track('onboarding_plan_selected', { planId: 'starter' });
-    navigate('/onboarding/finish');
-    onComplete(data, 'explore_dashboard');
+  const handleSelectPaid = async (planId: PlanId, billingCycle: BillingCycle) => {
+    track('onboarding_plan_checkout_started', { planId, billingCycle });
+    console.log('[Onboarding] Starting checkout for paid plan:', { planId, billingCycle });
+
+    try {
+      const result = await createCheckout(planId, billingCycle);
+      console.log('[Onboarding] Checkout session created, redirecting:', result?.url);
+      // createCheckout opens URL in new tab via window.open
+      // Show a message so user knows what happened
+      toast.info('Complete checkout in the new tab to activate your plan.');
+    } catch (err) {
+      console.error('[Onboarding] Checkout failed:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to start checkout. Try again.');
+    }
   };
 
   // Track pricing preview view
@@ -197,7 +209,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             {currentStep === 6 && (
               <PricingPreviewCard
                 onSelectFree={handleSelectFree}
-                onSelectStarter={handleSelectStarter}
+                onSelectPaid={handleSelectPaid}
               />
             )}
           </motion.div>
