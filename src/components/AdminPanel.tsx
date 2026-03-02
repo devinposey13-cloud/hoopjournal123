@@ -1138,10 +1138,24 @@ export function AdminPanel() {
             </CardContent>
           </Card>
 
-          {/* Plan distribution summary */}
+          {/* Plan distribution summary (by effective plan) */}
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
             {(['free', 'starter', 'pro', 'elite'] as const).map(plan => {
-              const count = users.filter(u => (planOverrides.get(u.user_id)?.subscription_plan || 'free') === plan).length;
+              const count = users.filter(u => {
+                const o = planOverrides.get(u.user_id);
+                const access: UserAccessInfo = {
+                  subscriptionPlan: (o?.subscription_plan || 'free') as PlanId,
+                  isGrandfathered: o?.is_grandfathered || false,
+                  adminOverridePlan: o?.admin_override_plan || null,
+                  promoAccessUntil: o?.promo_access_until || null,
+                  promoEligible: o?.promo_eligible || false,
+                  promoType: o?.promo_type || null,
+                  promoLockedIn: o?.promo_locked_in || false,
+                  promoStartDate: o?.promo_start_date || null,
+                  promoSource: o?.promo_source || null,
+                };
+                return getEffectivePlan(access) === plan;
+              }).length;
               return (
                 <span key={plan} className="flex items-center gap-1">
                   <span className="capitalize font-medium text-foreground">{plan}</span>
@@ -1187,10 +1201,22 @@ export function AdminPanel() {
               <tbody>
                 {filteredUsers.map((user) => {
                   const userOverride = planOverrides.get(user.user_id);
-                  const currentPlan = userOverride?.subscription_plan || 'free';
                   const isUserGrandfathered = userOverride?.is_grandfathered || false;
                   const hasAdminOverride = !!userOverride?.admin_override_plan;
                   const isPromoLocked = userOverride?.promo_locked_in || false;
+                  const userAccess: UserAccessInfo = {
+                    subscriptionPlan: (userOverride?.subscription_plan || 'free') as PlanId,
+                    isGrandfathered: isUserGrandfathered,
+                    adminOverridePlan: userOverride?.admin_override_plan || null,
+                    promoAccessUntil: userOverride?.promo_access_until || null,
+                    promoEligible: userOverride?.promo_eligible || false,
+                    promoType: userOverride?.promo_type || null,
+                    promoLockedIn: isPromoLocked,
+                    promoStartDate: userOverride?.promo_start_date || null,
+                    promoSource: userOverride?.promo_source || null,
+                  };
+                  const effectivePlan = getEffectivePlan(userAccess);
+                  const currentPlan = effectivePlan;
 
                   return (
                     <tr key={user.id} className="border-t">
