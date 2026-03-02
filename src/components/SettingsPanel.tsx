@@ -16,7 +16,8 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/useSubscription';
-import { planCatalog } from '@/lib/plans';
+import { usePlan } from '@/hooks/usePlanState';
+import { planCatalog, hasSpecialAccess } from '@/lib/plans';
 import { useXpProgress } from '@/hooks/useXpProgress';
 import { useRingOfHonorEligibility } from '@/hooks/useRingOfHonorEligibility';
 import { RingOfHonorOptInModal } from '@/components/xp/RingOfHonorOptInModal';
@@ -43,6 +44,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
   const [isCanceling, setIsCanceling] = useState(false);
   
   const { isSubscribed, planType, subscriptionEnd, subscriptionStatus, billingCycle, cancelAtPeriodEnd, isLoading: subLoading, openCustomerPortal, cancelSubscription } = useSubscription();
+  const { currentPlan, accessInfo, accessBadge, loading: planLoading } = usePlan();
   const { theme, setTheme } = useTheme();
   const { progress: xpProgress } = useXpProgress();
   const ringOfHonorEligibility = useRingOfHonorEligibility(xpProgress?.current_level || 1);
@@ -371,6 +373,47 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                     </AlertDialog>
                   )}
                 </div>
+              </>
+            ) : hasSpecialAccess(accessInfo) ? (
+              <>
+                {/* Special access state (grandfathered, admin override, promo) */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Crown className="w-5 h-5 text-yellow-500" />
+                    <div>
+                      <p className="font-semibold">
+                        {planCatalog[currentPlan]?.name || 'Elite'} Plan
+                      </p>
+                      {accessBadge && (
+                        <p className="text-xs text-muted-foreground">
+                          {accessBadge.label}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                    {accessBadge?.type === 'grandfathered' ? '⭐ Founding Member' : accessBadge?.label || 'Active'}
+                  </Badge>
+                </div>
+
+                <div className="text-sm text-muted-foreground bg-background/50 rounded-md px-3 py-2 border border-border">
+                  {accessBadge?.type === 'grandfathered'
+                    ? 'You have lifetime Elite access as an early supporter. Thank you! 🏀'
+                    : accessBadge?.type === 'promo'
+                      ? `Promotional access until ${new Date(accessBadge.expiresAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+                      : 'Your access has been granted by an administrator.'}
+                </div>
+
+                <ul className="space-y-1.5 text-sm text-muted-foreground pl-1">
+                  {planCatalog[currentPlan]?.features
+                    .filter(f => f.included)
+                    .slice(0, 4)
+                    .map((f, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <span className="text-yellow-500">✓</span> {f.label}
+                      </li>
+                    ))}
+                </ul>
               </>
             ) : (
               <>
