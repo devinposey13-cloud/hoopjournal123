@@ -1,24 +1,41 @@
 
 
-## Analysis: Recap Sharing vs PDF Export
+## Plan: Add Upcoming Games to Parent Dashboard
 
-**Short answer:** The recap sharing feature does NOT send a PDF. It sends a styled HTML email with stats and text. These are entirely separate features. No paywall bypass occurs through recap sharing.
+### What changes
 
-**However, there is a real gap:** The PDF export button (`GameDetail.tsx` line 922, `GameCard.tsx` line 119) has **zero plan gating**. The plan catalog marks `exportPdf` as Elite-only, but `canUseFeature` is never checked before allowing the export. Any user on any plan can currently download PDFs.
+**1. Database function (`get_parent_dashboard_data`)** — Add a new query block that fetches upcoming scheduled games (date >= now, limit 10) from `scheduled_games` for the player's user_id/profile_id. Return as a new `upcoming_games` key in the JSON response.
 
----
+**2. Frontend (`src/pages/ParentDashboard.tsx`)** — Add an `upcoming_games` array to the `ParentDashboardData` interface and render a new "Upcoming Games" card between the Season Averages and Recent Games sections, showing date, time, opponent, location, and home/away badge.
 
-### Recommended Fix
+### Technical details
 
-**Gate the PDF export behind the Elite plan:**
+**SQL migration** — Recreate `get_parent_dashboard_data` to include:
+```sql
+SELECT COALESCE(jsonb_agg(sg ORDER BY sg.date ASC), '[]'::jsonb) INTO v_upcoming
+FROM (
+  SELECT id, date, time, opponent, location, is_home, tournament
+  FROM scheduled_games
+  WHERE user_id = v_token_row.user_id
+    AND (v_token_row.profile_id IS NULL OR profile_id = v_token_row.profile_id)
+    AND date >= now()
+  ORDER BY date ASC
+  LIMIT 10
+) sg;
+```
+Add `'upcoming_games', v_upcoming` to the final `jsonb_build_object`.
 
-1. **`src/pages/GameDetail.tsx`** — Import `usePlan` and `canUseFeature`. Before calling `exportGameBoxScorePdf`, check `canUseFeature(currentPlan, 'exportPdf')`. If not allowed, show a paywall/upgrade prompt instead. Conditionally hide or disable the export button for non-Elite users.
-
-2. **`src/components/GameCard.tsx`** — Same gating: import plan hooks, check access, and either hide the PDF button or show an upgrade toast when clicked by a non-Elite user.
-
-3. **No changes needed** to `PostGameRecap.tsx` or `send-parent-recap` — the email feature is HTML-only and doesn't touch PDF logic.
+**Frontend** — New interface field:
+```typescript
+upcoming_games: Array<{
+  id: string; date: string; time: string;
+  opponent: string; location: string;
+  is_home: boolean; tournament: string | null;
+}>;
+```
+New card with Calendar icon, rendering each game with date, time, opponent, location, and Home/Away badge.
 
 ### Scope
-- **2 files modified**: `GameDetail.tsx`, `GameCard.tsx`
-- No backend changes needed
+- 1 SQL migration (re-create function)
+- 1 file edited: `src/pages/ParentDashboard.tsx`
 
