@@ -59,16 +59,38 @@ serve(async (req) => {
         const userId = session.metadata?.user_id;
         const planId = session.metadata?.plan_id;
         if (userId && planId) {
-          await supabase.from("plan_overrides").upsert({
-            user_id: userId,
-            subscription_plan: planId,
-            admin_override_plan: null,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "user_id" });
-          logStep("Plan updated from checkout", { userId, planId });
+          // Check if user is promo-eligible — if so, set starter + lock in immediately
+          const { data: promoData } = await supabase
+            .from("plan_overrides")
+            .select("promo_eligible, promo_type, promo_locked_in")
+            .eq("user_id", userId)
+            .maybeSingle();
 
-          // AAU promo lock-in check
-          await checkAndLockPromo(supabase, userId, planId);
+          const isPromoEligible = promoData?.promo_eligible &&
+            promoData?.promo_type === "AAU_MARCH_2026_ELITE_LOCK" &&
+            planId !== "free";
+
+          if (isPromoEligible && !promoData?.promo_locked_in) {
+            // Promo user: set actual billing plan (starter) and lock in Elite
+            await supabase.from("plan_overrides").upsert({
+              user_id: userId,
+              subscription_plan: "starter",
+              promo_locked_in: true,
+              promo_start_date: new Date().toISOString(),
+              admin_override_plan: null,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "user_id" });
+            logStep("Promo lock-in set from checkout", { userId, originalPlan: planId });
+          } else {
+            // Normal user: set plan from metadata
+            await supabase.from("plan_overrides").upsert({
+              user_id: userId,
+              subscription_plan: isPromoEligible ? "starter" : planId,
+              admin_override_plan: null,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "user_id" });
+            logStep("Plan updated from checkout", { userId, planId, promoAlreadyLocked: promoData?.promo_locked_in });
+          }
         }
         break;
       }
