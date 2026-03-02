@@ -37,6 +37,8 @@ import { SpotifyPlayer } from '@/components/SpotifyPlayer';
 import { SeasonAveragesCard } from '@/components/SeasonAveragesCard';
 import { EditScheduleDialog } from '@/components/EditScheduleDialog';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
+import { usePlan } from '@/hooks/usePlanState';
+import { canUseFeature } from '@/lib/plans';
 import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users, Check } from 'lucide-react';
 import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import {
@@ -74,6 +76,7 @@ export default function GameDetail() {
     getOccurrenceCount,
   } = useGameWithMilestones();
   const { teams } = usePlayerTeams();
+  const { currentPlan } = usePlan();
   const [lastSavedGameId, setLastSavedGameId] = useState<string | null>(null);
   const [game, setGame] = useState<GameStats | null>(null);
   const [scheduledGame, setScheduledGame] = useState<ScheduledGame | null>(null);
@@ -469,6 +472,10 @@ export default function GameDetail() {
 
   // Handle PDF export
   const handleExportPdf = async () => {
+    if (!canUseFeature(currentPlan, 'exportPdf')) {
+      navigate('/upgrade?reason=export_pdf');
+      return;
+    }
     if (!game || !profile) {
       toast.error('Cannot export: missing game or profile data');
       return;

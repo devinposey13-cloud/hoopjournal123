@@ -13,6 +13,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { toast } from 'sonner';
+import { usePlan } from '@/hooks/usePlanState';
+import { canUseFeature } from '@/lib/plans';
+import { useNavigate } from 'react-router-dom';
 
 interface GameCardProps {
   game: GameStats;
@@ -23,6 +26,8 @@ interface GameCardProps {
 }
 
 export function GameCard({ game, profile, onDelete, teams, onTeamChange }: GameCardProps) {
+  const { currentPlan } = usePlan();
+  const navigate = useNavigate();
   const handleTeamChange = (teamId: string | null, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -33,6 +38,11 @@ export function GameCard({ game, profile, onDelete, teams, onTeamChange }: GameC
   const handleExportPdf = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (!canUseFeature(currentPlan, 'exportPdf')) {
+      navigate('/upgrade?reason=export_pdf');
+      return;
+    }
     
     if (!profile) {
       toast.error('Profile not available for export');
