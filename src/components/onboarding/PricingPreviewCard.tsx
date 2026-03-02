@@ -52,7 +52,7 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
         body: { code: promoCode.trim() },
       });
       if (error) throw error;
-      if (data?.valid) {
+      if (data?.valid || data?.success) {
         setPromoApplied(true);
         toast.success('Code applied! Subscribe to Starter to lock in Elite access.');
         track('promo_code_applied', { code: promoCode.trim(), source: 'onboarding' });
