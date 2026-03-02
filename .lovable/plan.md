@@ -1,65 +1,54 @@
 
 
-## Plan: Fix Onboarding Pricing UI & Stripe Checkout Flow
+## Analysis: Stripe Webhook Promo Lock-in Flow
 
-### What changes
+I traced the full flow and found **two issues** that could prevent `promo_locked_in` from being set correctly:
 
-**1. Rewrite `PricingPreviewCard` to show all 4 plans + AAU promo**
-- Display Free, Starter, Pro, Elite cards in a scrollable 2x2 grid
-- Add AAU promo banner above cards
-- Add "Have an Event Code?" collapsible section with input that calls `validate-promo-code` edge function
-- Starter badge: "Eligible for Elite (with event code)"; Elite badge: "Unlockable via event code"
-- Show success toast when promo code is applied
+### Issue 1: `checkout.session.completed` passes the wrong planId to lock-in check
 
-**2. Fix `OnboardingFlow` to redirect paid plans to Stripe Checkout**
-- Replace `onSelectStarter` with `onSelectPaid(planId, billingCycle)`
-- When a paid plan is selected: call `createCheckout` (from `useSubscription`) which invokes the `create-checkout` edge function → redirects to Stripe
-- Free selection still completes onboarding normally
-- Never silently fall through to dashboard for paid plans
+In `create-checkout`, when a promo user selects Elite, the metadata is set as `plan_id: "elite"` (the original plan), but the actual Stripe price used is Starter. When `checkout.session.completed` fires:
+- It sets `subscription_plan: "elite"` in the DB (line 64)
+- It calls `checkAndLockPromo(supabase, userId, "elite")`
+- `checkAndLockPromo` immediately returns because `planId !== "starter"` (line 142)
 
-**3. Update `create-checkout` edge function cancel URL**
-- Change cancel URL from `/pricing?canceled=true` to include an onboarding flag: `/pricing?canceled=true&from=onboarding` so the app can route back appropriately
-- Alternatively, accept a `returnUrl` param from the client to handle onboarding vs settings contexts
+So the lock-in does NOT happen on checkout completion.
 
-**4. Handle checkout cancel/success return**
-- On `/settings/billing?success=true`: existing flow works (subscription check refreshes)
-- On cancel: user sees the pricing page with a toast "Checkout canceled — you're still on Free"
-- Onboarding does NOT complete until Free is explicitly chosen or Stripe checkout succeeds
+### Issue 2: `customer.subscription.updated` overwrites with "starter"
 
-### Files to change
+When Stripe fires `customer.subscription.updated`, the product ID maps to `"starter"` via `PRODUCT_TO_PLAN`. This:
+- Overwrites `subscription_plan` to `"starter"` (correct for billing)
+- Calls `checkAndLockPromo(_, _, "starter")` which DOES trigger the lock-in
 
-| File | Change |
-|------|--------|
-| `src/components/onboarding/PricingPreviewCard.tsx` | Full rewrite: 4-plan grid, promo banner, event code input, calls `createCheckout` for paid plans |
-| `src/components/OnboardingFlow.tsx` | Update props/handlers: `onSelectFree` stays, remove `onSelectStarter`, add paid plan checkout flow that doesn't call `onComplete` |
-| `supabase/functions/create-checkout/index.ts` | Accept optional `cancelUrl` param; pass onboarding context in metadata |
-| `src/pages/Pricing.tsx` | Show toast on `?canceled=true` query param |
+**However**, `getEffectivePlan` requires `subscriptionPlan === 'starter'` AND `promoLockedIn === true` to grant Elite access. So the subscription.updated path actually works correctly end-to-end, but relies on event ordering (subscription.updated must fire after checkout.session.completed).
 
-### What stays the same
+### Issue 3: `checkout.session.completed` sets `subscription_plan: planId` (e.g., "elite")
 
-- `getEffectivePlan` in `lib/plans.ts` — already correctly handles promo lock-in priority
-- `stripe-webhook/index.ts` — already handles `checkAndLockPromo` correctly
-- `validate-promo-code` edge function — already works server-side
-- `useSubscription` hook — `createCheckout` already invokes the edge function and opens the URL
+If checkout.session.completed fires *after* subscription.updated, it would overwrite `subscription_plan` from "starter" back to "elite". Then `getEffectivePlan` would see `subscriptionPlan === 'elite'` which doesn't match the promo condition (`=== 'starter'`), so it falls through to return "elite" directly. This actually works by accident, but is fragile.
 
-### Technical details
+### Fix Plan
 
-**PricingPreviewCard** key changes:
-- State: `selectedPlan: PlanId` (not just `'free' | 'starter'`)
-- For paid plans, button calls `supabase.functions.invoke('create-checkout', { body: { planId, billingCycle } })` then `window.location.href = data.url`
-- Promo code section uses `supabase.functions.invoke('validate-promo-code', { body: { code } })`
-- Loading states on buttons during checkout creation
+**In `checkout.session.completed`**: When the user is promo-eligible, set `subscription_plan` to `"starter"` (the actual billing plan) instead of the metadata `planId`, and trigger the lock-in immediately.
 
-**OnboardingFlow** key changes:
-- `handleSelectFree` → completes onboarding, navigates to `/onboarding/finish`
-- `handleSelectPaid` → does NOT call `onComplete`, instead creates checkout session and redirects to Stripe. Onboarding completion happens after successful subscription via the billing success page.
+Specifically:
+1. After getting `userId` and `planId` from metadata, query `plan_overrides` for promo eligibility
+2. If promo eligible and planId is a paid plan, set `subscription_plan: "starter"` and `promo_locked_in: true` in one upsert
+3. If not promo eligible, keep current behavior (`subscription_plan: planId`)
 
-**create-checkout** edge function:
-- Accept optional `cancelUrl` in request body, default to current behavior
-- From onboarding, pass `cancelUrl: origin + '/pricing?canceled=true&from=onboarding'`
+**In `customer.subscription.updated`**: No changes needed -- it already correctly maps Starter product to "starter" and calls `checkAndLockPromo`.
 
-### Scope
-- 2 component files edited
-- 1 edge function updated + redeployed
-- 1 page file minor edit (toast on cancel)
+### Technical Detail
+
+```text
+BEFORE (broken ordering scenario):
+  checkout.session.completed → subscription_plan = "elite", lock-in skipped
+  subscription.updated → subscription_plan = "starter", lock-in triggered
+  ✓ Works only if events arrive in this order
+
+AFTER (robust):
+  checkout.session.completed → detects promo, sets subscription_plan = "starter" + promo_locked_in = true
+  subscription.updated → subscription_plan = "starter", lock-in already done (idempotent)
+  ✓ Works regardless of event ordering
+```
+
+The change is isolated to ~15 lines in `supabase/functions/stripe-webhook/index.ts` within the `checkout.session.completed` case block.
 
