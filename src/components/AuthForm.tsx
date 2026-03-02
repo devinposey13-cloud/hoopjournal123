@@ -220,7 +220,7 @@ export function AuthForm() {
             number: 0,
             height: "5'8\"",
             grade: '1st Grade',
-            is_approved: false, // Require admin approval during trial period
+            is_approved: false, // Require admin approval
           };
           
           // Store phone number in player_settings if using phone auth

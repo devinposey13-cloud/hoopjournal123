@@ -8,6 +8,7 @@ import { PlanCard } from '@/components/pricing/PlanCard';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import { PlanCompareTable } from '@/components/pricing/PlanCompareTable';
 import { FAQAccordion } from '@/components/pricing/FAQAccordion';
+import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, track } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePlan } from '@/hooks/usePlanState';
@@ -96,6 +97,11 @@ export default function Pricing() {
               />
             </motion.div>
           ))}
+        </div>
+
+        {/* Promo Code */}
+        <div className="mb-12">
+          <PromoCodeInput />
         </div>
 
         {/* Compare table */}

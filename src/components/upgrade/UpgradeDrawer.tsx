@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
+import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
 import { type PlanId, type BillingCycle, planCatalog, getPlanPrice, track } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
@@ -109,6 +110,9 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
                 </Badge>
               </div>
             )}
+
+            {/* Promo Code */}
+            <PromoCodeInput />
           </div>
 
           <DrawerFooter className="pt-2">

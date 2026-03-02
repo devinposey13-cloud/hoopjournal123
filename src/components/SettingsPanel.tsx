@@ -300,11 +300,9 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                   <Badge className={
                     cancelAtPeriodEnd
                       ? 'bg-orange-500/10 text-orange-600 border-orange-500/20'
-                      : subscriptionStatus === 'trialing'
-                        ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                        : 'bg-green-500/10 text-green-600 border-green-500/20'
+                      : 'bg-green-500/10 text-green-600 border-green-500/20'
                   }>
-                    {cancelAtPeriodEnd ? 'Canceling' : subscriptionStatus === 'trialing' ? 'Trial' : 'Active'}
+                    {cancelAtPeriodEnd ? 'Canceling' : 'Active'}
                   </Badge>
                 </div>
 
@@ -399,8 +397,8 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                 <div className="text-sm text-muted-foreground bg-background/50 rounded-md px-3 py-2 border border-border">
                   {accessBadge?.type === 'grandfathered'
                     ? 'You have lifetime Elite access as an early supporter. Thank you! 🏀'
-                    : accessBadge?.type === 'promo'
-                      ? `Promotional access until ${new Date(accessBadge.expiresAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+                    : accessBadge?.type === 'promo_locked'
+                      ? 'Elite access locked in while your Starter subscription is active. 🏀'
                       : 'Your access has been granted by an administrator.'}
                 </div>
 

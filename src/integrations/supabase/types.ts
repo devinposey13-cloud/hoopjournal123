@@ -675,6 +675,11 @@ export type Database = {
           id: string
           is_grandfathered: boolean
           promo_access_until: string | null
+          promo_eligible: boolean
+          promo_locked_in: boolean
+          promo_source: string | null
+          promo_start_date: string | null
+          promo_type: string | null
           subscription_plan: string
           updated_at: string
           updated_by: string | null
@@ -686,6 +691,11 @@ export type Database = {
           id?: string
           is_grandfathered?: boolean
           promo_access_until?: string | null
+          promo_eligible?: boolean
+          promo_locked_in?: boolean
+          promo_source?: string | null
+          promo_start_date?: string | null
+          promo_type?: string | null
           subscription_plan?: string
           updated_at?: string
           updated_by?: string | null
@@ -697,6 +707,11 @@ export type Database = {
           id?: string
           is_grandfathered?: boolean
           promo_access_until?: string | null
+          promo_eligible?: boolean
+          promo_locked_in?: boolean
+          promo_source?: string | null
+          promo_start_date?: string | null
+          promo_type?: string | null
           subscription_plan?: string
           updated_at?: string
           updated_by?: string | null

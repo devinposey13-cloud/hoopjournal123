@@ -70,16 +70,31 @@ export interface UserAccessInfo {
   isGrandfathered: boolean;
   adminOverridePlan: PlanId | null;
   promoAccessUntil: string | null; // ISO date
+  // AAU promo fields
+  promoEligible: boolean;
+  promoType: string | null;
+  promoLockedIn: boolean;
+  promoStartDate: string | null;
+  promoSource: string | null;
+  subscriptionStatus?: string; // 'active' | 'trialing' | etc.
 }
 
 /**
  * Determines the effective plan for feature gating.
- * Priority: grandfathered > admin override > promo > subscription
+ * Priority: grandfathered > admin override > promo lock-in > subscription
  */
 export function getEffectivePlan(user: UserAccessInfo): PlanId {
   if (user.isGrandfathered) return 'elite';
   if (user.adminOverridePlan) return user.adminOverridePlan;
-  if (user.promoAccessUntil && new Date(user.promoAccessUntil) > new Date()) return 'elite';
+  // AAU promo lock-in: Elite access while on active Starter subscription
+  if (
+    user.promoLockedIn &&
+    user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
+    user.subscriptionPlan === 'starter' &&
+    user.subscriptionStatus === 'active'
+  ) {
+    return 'elite';
+  }
   return user.subscriptionPlan;
 }
 
@@ -87,20 +102,32 @@ export function getEffectivePlan(user: UserAccessInfo): PlanId {
 export function hasSpecialAccess(user: UserAccessInfo): boolean {
   if (user.isGrandfathered) return true;
   if (user.adminOverridePlan) return true;
-  if (user.promoAccessUntil && new Date(user.promoAccessUntil) > new Date()) return true;
+  if (
+    user.promoLockedIn &&
+    user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
+    user.subscriptionPlan === 'starter' &&
+    user.subscriptionStatus === 'active'
+  ) return true;
   return false;
 }
 
 export type AccessBadge =
   | { type: 'grandfathered'; label: string }
   | { type: 'admin_override'; label: string; plan: PlanId }
-  | { type: 'promo'; label: string; expiresAt: string }
+  | { type: 'promo_locked'; label: string }
   | null;
 
 export function getAccessBadge(user: UserAccessInfo): AccessBadge {
   if (user.isGrandfathered) return { type: 'grandfathered', label: 'Founding Member' };
   if (user.adminOverridePlan) return { type: 'admin_override', label: `${planCatalog[user.adminOverridePlan].name} Access (Admin Granted)`, plan: user.adminOverridePlan };
-  if (user.promoAccessUntil && new Date(user.promoAccessUntil) > new Date()) return { type: 'promo', label: 'Promotional Access', expiresAt: user.promoAccessUntil };
+  if (
+    user.promoLockedIn &&
+    user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
+    user.subscriptionPlan === 'starter' &&
+    user.subscriptionStatus === 'active'
+  ) {
+    return { type: 'promo_locked', label: 'AAU Founding Member — Elite Access Locked In' };
+  }
   return null;
 }
 

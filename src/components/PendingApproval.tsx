@@ -48,7 +48,7 @@ export function PendingApproval({ onRefresh }: PendingApprovalProps) {
         <CardContent className="space-y-4">
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
             <p className="text-sm text-center text-muted-foreground">
-              We're currently in a trial period and manually reviewing all new accounts. 
+              We're currently manually reviewing all new accounts. 
               You'll receive access once an admin approves your registration.
             </p>
           </div>

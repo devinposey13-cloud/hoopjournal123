@@ -66,6 +66,9 @@ serve(async (req) => {
             updated_at: new Date().toISOString(),
           }, { onConflict: "user_id" });
           logStep("Plan updated from checkout", { userId, planId });
+
+          // AAU promo lock-in check
+          await checkAndLockPromo(supabase, userId, planId);
         }
         break;
       }
@@ -78,13 +81,18 @@ serve(async (req) => {
           const planId = PRODUCT_TO_PLAN[productId] || "free";
           const userId = await getUserIdByEmail(supabase, customerEmail);
           if (userId) {
-            const isActive = subscription.status === "active" || subscription.status === "trialing";
+            const isActive = subscription.status === "active";
             await supabase.from("plan_overrides").upsert({
               user_id: userId,
               subscription_plan: isActive ? planId : "free",
               updated_at: new Date().toISOString(),
             }, { onConflict: "user_id" });
             logStep("Subscription updated", { userId, planId, status: subscription.status });
+
+            // AAU promo lock-in check on subscription activation
+            if (isActive) {
+              await checkAndLockPromo(supabase, userId, planId);
+            }
           }
         }
         break;
@@ -96,12 +104,12 @@ serve(async (req) => {
         if (customerEmail) {
           const userId = await getUserIdByEmail(supabase, customerEmail);
           if (userId) {
-            await supabase.from("plan_overrides").upsert({
-              user_id: userId,
+            // Keep promo_locked_in = true so it can be restored on resubscription
+            await supabase.from("plan_overrides").update({
               subscription_plan: "free",
               updated_at: new Date().toISOString(),
-            }, { onConflict: "user_id" });
-            logStep("Subscription canceled, reverted to free", { userId });
+            }).eq("user_id", userId);
+            logStep("Subscription canceled, reverted to free (promo lock preserved)", { userId });
           }
         }
         break;
@@ -125,6 +133,50 @@ serve(async (req) => {
     status: 200,
   });
 });
+
+/**
+ * Check if user is promo-eligible and lock in Elite access
+ * when they subscribe to Starter during the promo window.
+ */
+async function checkAndLockPromo(supabase: any, userId: string, planId: string) {
+  if (planId !== "starter") return;
+
+  const { data } = await supabase
+    .from("plan_overrides")
+    .select("promo_eligible, promo_type, promo_locked_in")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!data) return;
+
+  // Already locked in
+  if (data.promo_locked_in) {
+    logStep("Promo already locked in", { userId });
+    return;
+  }
+
+  // Check eligibility
+  if (
+    data.promo_eligible &&
+    data.promo_type === "AAU_MARCH_2026_ELITE_LOCK"
+  ) {
+    // Verify we're still in March 2026
+    const now = new Date();
+    const promoStart = new Date("2026-03-01T00:00:00Z");
+    const promoEnd = new Date("2026-04-01T00:00:00Z");
+
+    if (now >= promoStart && now < promoEnd) {
+      await supabase.from("plan_overrides").update({
+        promo_locked_in: true,
+        promo_start_date: now.toISOString(),
+        updated_at: now.toISOString(),
+      }).eq("user_id", userId);
+      logStep("AAU promo locked in!", { userId });
+    } else {
+      logStep("Promo window expired, not locking in", { userId });
+    }
+  }
+}
 
 async function getCustomerEmail(stripe: Stripe, customerId: string): Promise<string | null> {
   try {

@@ -28,13 +28,6 @@ const PLAN_PRICES: Record<string, Record<string, string>> = {
   },
 };
 
-// Trial days per plan
-const TRIAL_DAYS: Record<string, number> = {
-  starter: 7,
-  pro: 7,
-  elite: 0,
-};
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -60,8 +53,8 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { planId, billingCycle, withTrial, skipTrial } = await req.json();
-    logStep("Request body", { planId, billingCycle, withTrial, skipTrial });
+    const { planId, billingCycle } = await req.json();
+    logStep("Request body", { planId, billingCycle });
 
     // Resolve price ID
     let priceId: string;
@@ -96,13 +89,7 @@ serve(async (req) => {
       metadata: { user_id: user.id, plan_id: planId },
     };
 
-    // Add trial if applicable
-    const trialDays = skipTrial ? 0 : (withTrial !== false ? (TRIAL_DAYS[planId] || 0) : 0);
-    if (trialDays > 0) {
-      sessionParams.subscription_data = { trial_period_days: trialDays };
-      logStep("Adding trial", { trialDays });
-    }
-
+    // No trials - immediate charge
     const session = await stripe.checkout.sessions.create(sessionParams);
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
