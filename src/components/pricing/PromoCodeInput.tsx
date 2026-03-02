@@ -6,7 +6,7 @@ import { ChevronDown, Ticket, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export function PromoCodeInput() {
+export function PromoCodeInput({ onApplied }: { onApplied?: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -28,6 +28,7 @@ export function PromoCodeInput() {
 
       if (data?.success) {
         setApplied(true);
+        onApplied?.();
         toast.success(data.message);
       } else {
         toast.error(data?.error || 'Invalid event code.');

@@ -12,6 +12,7 @@ import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, track } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePlan } from '@/hooks/usePlanState';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export default function Pricing() {
@@ -21,6 +22,24 @@ export default function Pricing() {
   const { currentPlan } = usePlan();
   const { createCheckout } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
+  const [promoApplied, setPromoApplied] = useState(false);
+
+  // Check if user already has promo_eligible in plan_overrides
+  useEffect(() => {
+    const checkPromo = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('plan_overrides')
+        .select('promo_eligible, promo_type')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data?.promo_eligible) {
+        setPromoApplied(true);
+      }
+    };
+    checkPromo();
+  }, []);
 
   // Show success/canceled toasts from Stripe redirect
   const success = searchParams.get('success');
@@ -104,6 +123,7 @@ export default function Pricing() {
                 cycle={cycle}
                 currentPlan={currentPlan}
                 onSelect={handleSelectPlan}
+                promoApplied={promoApplied}
               />
             </motion.div>
           ))}
@@ -111,7 +131,7 @@ export default function Pricing() {
 
         {/* Promo Code */}
         <div className="mb-12">
-          <PromoCodeInput />
+          <PromoCodeInput onApplied={() => setPromoApplied(true)} />
         </div>
 
         {/* Compare table */}
