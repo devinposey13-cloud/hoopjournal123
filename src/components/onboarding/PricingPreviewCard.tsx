@@ -150,7 +150,9 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
       <div className="grid grid-cols-2 gap-2.5 w-full max-w-lg mb-3">
         {planOrder.map((id, i) => {
           const plan = planCatalog[id];
-          const price = getPlanPrice(id, cycle);
+          const originalPrice = getPlanPrice(id, cycle);
+          // When promo is applied, all paid plans show Starter price
+          const price = (promoApplied && id !== 'free') ? getPlanPrice('starter', cycle) : originalPrice;
           const savings = getYearlySavingsPercent(id);
           const isSelected = selectedPlan === id;
           const promoBadge = PLAN_PROMO_BADGE[id];
