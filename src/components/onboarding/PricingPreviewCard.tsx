@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Check, Sparkles, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import {
   type BillingCycle,
   type PlanId,
@@ -39,7 +39,7 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('free');
   const [loadingCheckout, setLoadingCheckout] = useState(false);
-  const [showPromoInput, setShowPromoInput] = useState(false);
+  
   const [promoCode, setPromoCode] = useState('');
   const [promoValidating, setPromoValidating] = useState(false);
   const [promoApplied, setPromoApplied] = useState(false);
@@ -100,7 +100,7 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
         Start free. Upgrade when you're ready. No credit card required for Free.
       </p>
 
-      {/* AAU Promo Banner */}
+      {/* AAU Promo Banner + Event Code Input */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -111,9 +111,31 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
           <span className="text-lg">🏀</span>
           <span className="font-bold text-sm text-foreground">AAU EVENT SPECIAL</span>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Enter the event code at checkout to unlock <strong className="text-foreground">ELITE features</strong> for the <strong className="text-foreground">STARTER price</strong>.
+        <p className="text-xs text-muted-foreground mb-2">
+          Enter the event code to unlock <strong className="text-foreground">ELITE features</strong> for the <strong className="text-foreground">STARTER price</strong>.
         </p>
+        <div className="flex gap-2 max-w-xs mx-auto">
+          <Input
+            placeholder="Enter event code"
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value)}
+            disabled={promoApplied}
+            className="text-sm h-9"
+          />
+          <Button
+            size="sm"
+            onClick={handleValidatePromo}
+            disabled={promoValidating || promoApplied || !promoCode.trim()}
+            className="h-9 px-3"
+          >
+            {promoValidating ? <Loader2 className="w-4 h-4 animate-spin" /> : promoApplied ? '✓ Applied' : 'Apply'}
+          </Button>
+        </div>
+        {promoApplied && (
+          <p className="text-[10px] text-primary mt-1.5 font-medium">
+            ✓ Code applied! Subscribe to Starter to lock in Elite access.
+          </p>
+        )}
         <p className="text-[10px] text-muted-foreground mt-1">
           Valid for event attendees. Must complete Starter subscription.
         </p>
@@ -190,46 +212,6 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
           );
         })}
       </div>
-
-      {/* Have a code? */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-        className="w-full max-w-lg mb-4"
-      >
-        <button
-          onClick={() => setShowPromoInput(!showPromoInput)}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mx-auto"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
-          Have an Event Code?
-          {showPromoInput ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-        </button>
-        {showPromoInput && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="flex gap-2 mt-2 max-w-xs mx-auto"
-          >
-            <Input
-              placeholder="Enter code"
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value)}
-              disabled={promoApplied}
-              className="text-sm h-9"
-            />
-            <Button
-              size="sm"
-              onClick={handleValidatePromo}
-              disabled={promoValidating || promoApplied || !promoCode.trim()}
-              className="h-9 px-3"
-            >
-              {promoValidating ? <Loader2 className="w-4 h-4 animate-spin" /> : promoApplied ? '✓' : 'Apply'}
-            </Button>
-          </motion.div>
-        )}
-      </motion.div>
 
       {/* CTA */}
       <div className="w-full max-w-sm space-y-2">
