@@ -77,9 +77,11 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
     // Paid plan → redirect to Stripe
     setLoadingCheckout(true);
     try {
-      onSelectPaid(selectedPlan, cycle);
+      await onSelectPaid(selectedPlan, cycle);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to start checkout');
+      console.error('[Onboarding] Checkout error:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to start checkout. Please try again.');
+    } finally {
       setLoadingCheckout(false);
     }
   };
