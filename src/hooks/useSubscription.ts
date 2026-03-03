@@ -78,7 +78,14 @@ export function useSubscription() {
     if (error) throw error;
 
     if (data.url) {
-      window.open(data.url, '_blank');
+      // Mobile browsers block window.open after async calls — redirect in same tab instead
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+        window.innerWidth < 768;
+      if (isMobile) {
+        window.location.href = data.url;
+      } else {
+        window.open(data.url, '_blank');
+      }
     }
 
     return data;

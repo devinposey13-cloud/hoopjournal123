@@ -97,11 +97,9 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     console.log('[Onboarding] Starting checkout for paid plan:', { planId, billingCycle });
 
     try {
-      const result = await createCheckout(planId, billingCycle, 'onboarding');
-      console.log('[Onboarding] Checkout session created, redirecting:', result?.url);
-      // createCheckout opens URL in new tab via window.open
-      // Show a message so user knows what happened
-      toast.info('Complete checkout in the new tab to activate your plan.');
+      await createCheckout(planId, billingCycle, 'onboarding');
+      // On mobile, createCheckout redirects in same tab, so this toast may not be seen
+      toast.info('Redirecting to checkout...');
     } catch (err) {
       console.error('[Onboarding] Checkout failed:', err);
       toast.error(err instanceof Error ? err.message : 'Failed to start checkout. Try again.');
