@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { AgeConfirmationGate } from './onboarding/AgeConfirmationGate';
 import { ProgressDots } from './onboarding/ProgressDots';
 import { WelcomeCard } from './onboarding/WelcomeCard';
-import { IdentityCard } from './onboarding/IdentityCard';
 import { PlayerIdentityCard } from './onboarding/PlayerIdentityCard';
 import { GoalsCard } from './onboarding/GoalsCard';
 
@@ -29,7 +28,7 @@ interface OnboardingFlowProps {
   onComplete: (data: OnboardingData, action?: OnboardingCompletionAction) => void;
 }
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
@@ -59,24 +58,22 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   }, []);
 
   // Step handlers
-  const handleWelcome = () => goForward(1);
+  const handleWelcome = (name: string) => {
+    setData(prev => ({ ...prev, name }));
+    goForward(1);
+  };
   const handleSkip = () => {
     onComplete(data, 'explore_dashboard');
   };
 
-  const handleNameSubmit = (name: string) => {
-    setData(prev => ({ ...prev, name }));
-    goForward(2);
-  };
-
   const handlePlayerIdentitySubmit = (role: string, level: string) => {
     setData(prev => ({ ...prev, courtRole: role, playingLevel: level }));
-    goForward(3);
+    goForward(2);
   };
 
   const handleGoalsSubmit = (goals: string[]) => {
     setData(prev => ({ ...prev, seasonGoals: goals }));
-    goForward(4);
+    goForward(3);
   };
 
 
@@ -102,7 +99,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   // Track pricing preview view
   useEffect(() => {
-    if (currentStep === 4) {
+    if (currentStep === 3) {
       track('onboarding_pricing_viewed', {});
     }
   }, [currentStep]);
@@ -165,22 +162,19 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             className="w-full"
           >
             {currentStep === 0 && (
-              <WelcomeCard onNext={handleWelcome} onSkip={handleSkip} />
+              <WelcomeCard value={data.name} onNext={handleWelcome} onSkip={handleSkip} />
             )}
             {currentStep === 1 && (
-              <IdentityCard value={data.name} onNext={handleNameSubmit} />
-            )}
-            {currentStep === 2 && (
               <PlayerIdentityCard
                 roleValue={data.courtRole}
                 levelValue={data.playingLevel}
                 onNext={handlePlayerIdentitySubmit}
               />
             )}
-            {currentStep === 3 && (
+            {currentStep === 2 && (
               <GoalsCard value={data.seasonGoals} onNext={handleGoalsSubmit} />
             )}
-            {currentStep === 4 && (
+            {currentStep === 3 && (
               <PricingPreviewCard
                 onSelectFree={handleSelectFree}
                 onSelectPaid={handleSelectPaid}

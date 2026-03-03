@@ -1,13 +1,25 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { BookOpen } from 'lucide-react';
 
 interface WelcomeCardProps {
-  onNext: () => void;
+  value: string;
+  onNext: (name: string) => void;
   onSkip?: () => void;
 }
 
-export function WelcomeCard({ onNext, onSkip }: WelcomeCardProps) {
+export function WelcomeCard({ value, onNext, onSkip }: WelcomeCardProps) {
+  const [name, setName] = useState(value);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (name.trim()) {
+      onNext(name.trim());
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 50 }}
@@ -19,18 +31,18 @@ export function WelcomeCard({ onNext, onSkip }: WelcomeCardProps) {
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="mb-6"
+        className="mb-5"
       >
-        <div className="w-20 h-20 rounded-2xl gradient-primary flex items-center justify-center shadow-glow">
-          <BookOpen className="w-10 h-10 text-primary-foreground" />
+        <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center shadow-glow">
+          <BookOpen className="w-8 h-8 text-primary-foreground" />
         </div>
       </motion.div>
 
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15, duration: 0.4 }}
-        className="text-3xl md:text-4xl font-bold mb-3 text-foreground"
+        transition={{ delay: 0.1, duration: 0.4 }}
+        className="text-3xl md:text-4xl font-bold mb-2 text-foreground"
       >
         Welcome to Hoop Journal
       </motion.h2>
@@ -38,22 +50,36 @@ export function WelcomeCard({ onNext, onSkip }: WelcomeCardProps) {
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.3, duration: 0.4 }}
-        className="text-muted-foreground mb-8 text-sm max-w-xs leading-relaxed"
+        transition={{ delay: 0.2, duration: 0.4 }}
+        className="text-muted-foreground mb-6 text-sm max-w-xs leading-relaxed"
       >
-        Track your games. Build your habits.
-        <br />
-        Watch yourself improve.
+        Track your games. Build your habits. Watch yourself improve.
       </motion.p>
 
-      <motion.div
+      <motion.form
+        onSubmit={handleSubmit}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.45, duration: 0.4 }}
-        className="w-full max-w-xs space-y-3"
+        transition={{ delay: 0.3, duration: 0.4 }}
+        className="w-full max-w-xs space-y-4"
       >
+        <div className="text-left">
+          <label className="text-sm font-medium text-foreground mb-2 block">
+            What should we call you?
+          </label>
+          <Input
+            type="text"
+            placeholder="e.g. Alex"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="text-center text-lg h-14 bg-card border-2 focus:border-primary"
+            autoFocus
+          />
+        </div>
+
         <Button
-          onClick={onNext}
+          type="submit"
+          disabled={!name.trim()}
           className="w-full h-12 text-lg gradient-primary"
         >
           Continue
@@ -61,13 +87,14 @@ export function WelcomeCard({ onNext, onSkip }: WelcomeCardProps) {
 
         {onSkip && (
           <button
+            type="button"
             onClick={onSkip}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Skip for now
           </button>
         )}
-      </motion.div>
+      </motion.form>
     </motion.div>
   );
 }
