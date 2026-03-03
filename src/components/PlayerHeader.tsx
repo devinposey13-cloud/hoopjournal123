@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { PlayerProfile, SeasonStats, GameStats } from '@/types/basketball';
 import { Trophy, TrendingUp, FileDown, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -122,12 +123,22 @@ export function PlayerHeader({ profile, seasonStats, games, xpProgress, tierAchi
       {profile.avatar && (
         <Dialog open={showAvatarPreview} onOpenChange={setShowAvatarPreview}>
           <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-transparent border-none shadow-none">
-            <div className="flex items-center justify-center">
-              <img 
-                src={profile.avatar} 
-                alt={profile.name}
-                className="w-72 h-72 md:w-80 md:h-80 rounded-2xl object-cover border-4 border-primary/30 shadow-2xl"
-              />
+            <div className="flex flex-col items-center justify-center">
+              <div className="relative">
+                <img 
+                  src={profile.avatar} 
+                  alt={profile.name}
+                  className="w-72 h-72 md:w-80 md:h-80 rounded-2xl object-cover border-4 border-primary/30 shadow-2xl"
+                />
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.4, ease: 'easeOut' }}
+                  className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-sm font-bold px-4 py-1 rounded-full whitespace-nowrap shadow-lg"
+                >
+                  {profile.name}
+                </motion.div>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

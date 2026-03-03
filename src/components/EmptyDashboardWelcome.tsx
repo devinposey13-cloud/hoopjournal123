@@ -710,13 +710,23 @@ export function EmptyDashboardWelcome({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
             transition={{ type: "spring", duration: 0.4 }}
-            className="flex items-center justify-center"
+            className="flex flex-col items-center justify-center"
           >
-            <img 
-              src={avatarUrl} 
-              alt={playerName}
-              className="w-72 h-72 md:w-80 md:h-80 rounded-2xl object-contain border-4 border-primary/30 shadow-2xl bg-background"
-            />
+            <div className="relative">
+              <img 
+                src={avatarUrl} 
+                alt={playerName}
+                className="w-72 h-72 md:w-80 md:h-80 rounded-2xl object-contain border-4 border-primary/30 shadow-2xl bg-background"
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.4, ease: 'easeOut' }}
+                className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-sm font-bold px-4 py-1 rounded-full whitespace-nowrap shadow-lg"
+              >
+                {playerName}
+              </motion.div>
+            </div>
           </motion.div>
         </DialogContent>
       </Dialog>
