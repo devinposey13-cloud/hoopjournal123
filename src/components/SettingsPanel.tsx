@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { LegalPolicyViewer, PrivacyPolicyContent, TermsOfServiceContent } from '@/components/settings/LegalPolicyViewer';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { PlayerProfile } from '@/types/basketball';
@@ -6,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, Crown, CreditCard, Sun, Moon, Monitor, Trophy, ChevronRight, Star, User, Check, XCircle } from 'lucide-react';
+import { Save, Loader2, Crown, CreditCard, Sun, Moon, Monitor, Trophy, ChevronRight, Star, User, Check, XCircle, Shield, FileText } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
 import { ProfileManagement } from '@/components/settings/ProfileManagement';
@@ -49,6 +50,8 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
   const { progress: xpProgress } = useXpProgress();
   const ringOfHonorEligibility = useRingOfHonorEligibility(xpProgress?.current_level || 1);
   const [showRingOfHonorModal, setShowRingOfHonorModal] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showTermsOfService, setShowTermsOfService] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
@@ -533,6 +536,37 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
             )}
           </div>
 
+          {/* Legal Section */}
+          <Separator className="my-6" />
+          
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Legal</Label>
+            <button
+              onClick={() => setShowPrivacyPolicy(true)}
+              className="w-full stat-card bg-secondary/30 p-4 rounded-lg hover:bg-secondary/50 transition-colors text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Shield className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Privacy Policy</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </button>
+            <button
+              onClick={() => setShowTermsOfService(true)}
+              className="w-full stat-card bg-secondary/30 p-4 rounded-lg hover:bg-secondary/50 transition-colors text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Terms of Service</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </button>
+          </div>
+
           {/* Feedback Section */}
           <Separator className="my-6" />
           
@@ -582,6 +616,25 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
           onSuccess={() => ringOfHonorEligibility.checkEligibility()}
         />
       )}
+
+      {/* Legal Policy Modals */}
+      <LegalPolicyViewer
+        open={showPrivacyPolicy}
+        onClose={() => setShowPrivacyPolicy(false)}
+        title="Privacy Policy"
+        lastUpdated="March 3, 2026"
+      >
+        <PrivacyPolicyContent />
+      </LegalPolicyViewer>
+
+      <LegalPolicyViewer
+        open={showTermsOfService}
+        onClose={() => setShowTermsOfService(false)}
+        title="Terms of Service"
+        lastUpdated="March 3, 2026"
+      >
+        <TermsOfServiceContent />
+      </LegalPolicyViewer>
     </div>
   );
 }
