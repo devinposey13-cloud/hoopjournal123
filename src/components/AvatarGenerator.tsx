@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2, Check, X, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -156,15 +157,37 @@ export function AvatarGenerator({
               </Avatar>
               <p className="text-[10px] text-muted-foreground mt-1">Original</p>
             </div>
-            <div className="text-muted-foreground">→</div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.15, duration: 0.3 }}
+              className="text-muted-foreground"
+            >
+              →
+            </motion.div>
             <div className="text-center">
-              <Avatar className="w-16 h-16 border-2 border-primary mx-auto ring-2 ring-primary/20">
-                <AvatarImage src={generatedPreview} alt="AI Generated" />
-                <AvatarFallback>
-                  <Sparkles className="w-6 h-6" />
-                </AvatarFallback>
-              </Avatar>
-              <p className="text-[10px] text-primary mt-1 font-medium">AI Generated</p>
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.25, type: 'spring', stiffness: 200, damping: 18 }}
+                className="relative"
+              >
+                <Avatar className="w-20 h-20 border-2 border-primary mx-auto ring-2 ring-primary/20">
+                  <AvatarImage src={generatedPreview} alt="AI Generated" />
+                  <AvatarFallback>
+                    <Sparkles className="w-6 h-6" />
+                  </AvatarFallback>
+                </Avatar>
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.55, duration: 0.4, ease: 'easeOut' }}
+                  className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-md"
+                >
+                  {playerName}
+                </motion.div>
+              </motion.div>
+              <p className="text-[10px] text-primary mt-4 font-medium">AI Generated</p>
             </div>
           </div>
 
