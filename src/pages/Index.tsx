@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AnimatePresence } from 'framer-motion';
 import { Navigation, Tab } from '@/components/Navigation';
@@ -63,6 +63,7 @@ import { toast } from 'sonner';
 
 export default function Index() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const isMobile = useIsMobile();
   const [showQuickLiveStatsDialog, setShowQuickLiveStatsDialog] = useState(false);
@@ -160,6 +161,19 @@ export default function Index() {
     hasShownRingOfHonorModal,
     showLevelUpCelebration,
   ]);
+
+  // Auto-open live stats when navigating from onboarding finish
+  useEffect(() => {
+    const state = location.state as { openLiveStats?: boolean } | null;
+    if (state?.openLiveStats) {
+      // Clear the state so it doesn't re-trigger
+      navigate('/', { replace: true, state: {} });
+      // Small delay to let the page render first
+      setTimeout(() => {
+        setShowQuickLiveStatsDialog(true);
+      }, 300);
+    }
+  }, [location.state, navigate]);
 
   // useFirstLogin now uses database as source of truth
   const { showOnboarding, loading: introLoading, completeOnboarding } = useFirstLogin({
