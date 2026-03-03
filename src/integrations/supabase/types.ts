@@ -1209,6 +1209,30 @@ export type Database = {
           },
         ]
       }
+      policy_views: {
+        Row: {
+          id: string
+          policy_type: string
+          policy_version: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          policy_type: string
+          policy_version: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          policy_type?: string
+          policy_version?: string
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
       postgame_insights: {
         Row: {
           areas_to_improve: string[] | null
