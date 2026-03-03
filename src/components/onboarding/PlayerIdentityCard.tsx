@@ -56,13 +56,16 @@ export function PlayerIdentityCard({ roleValue, levelValue, onNext }: PlayerIden
   return (
     <div className="relative w-full">
       <motion.div
-        ref={scrollRef}
-        style={{ scrollBehavior: 'smooth' }}
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -50 }}
-        className="flex flex-col items-center text-center px-6 py-2 max-h-[75vh] overflow-y-auto scroll-smooth overscroll-contain"
+        className="flex flex-col items-center text-center px-6 py-2"
       >
+        <div
+          ref={scrollRef}
+          className="w-full max-h-[70vh] overflow-y-auto scroll-smooth overscroll-contain touch-pan-y pb-4"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
         {/* Question 1: Player Type */}
         <div className="w-full max-w-sm mb-6">
           <h3 className="text-xl font-semibold text-foreground mb-1">
@@ -123,11 +126,12 @@ export function PlayerIdentityCard({ roleValue, levelValue, onNext }: PlayerIden
             ))}
           </div>
         </div>
+        </div>
 
         <Button
           onClick={() => onNext(selectedRole, selectedLevel)}
           disabled={!canContinue}
-          className="w-full max-w-sm h-12 text-lg gradient-primary"
+          className="w-full max-w-sm h-12 text-lg gradient-primary mt-4"
         >
           Continue
         </Button>
