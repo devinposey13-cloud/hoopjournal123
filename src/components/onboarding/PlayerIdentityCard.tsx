@@ -63,7 +63,7 @@ export function PlayerIdentityCard({ roleValue, levelValue, onNext }: PlayerIden
       >
         <div
           ref={scrollRef}
-          className="w-full max-h-[70vh] overflow-y-auto scroll-smooth overscroll-contain touch-pan-y pb-4"
+          className="w-full max-h-[70vh] overflow-y-auto scroll-smooth overscroll-contain touch-pan-y pb-4 flex flex-col items-center"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
         {/* Question 1: Player Type */}
