@@ -722,7 +722,7 @@ export function EmptyDashboardWelcome({
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.4, ease: 'easeOut' }}
-                className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-sm font-bold px-4 py-1 rounded-full whitespace-nowrap shadow-lg"
+                className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/90 text-foreground text-sm font-bold px-4 py-1.5 rounded-full whitespace-nowrap shadow-lg backdrop-blur-sm border border-border"
               >
                 {playerName}
               </motion.div>
