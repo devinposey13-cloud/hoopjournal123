@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { AgeConfirmationGate } from './onboarding/AgeConfirmationGate';
+import { OnboardingBackground } from './onboarding/OnboardingBackground';
 import { ProgressDots } from './onboarding/ProgressDots';
 import { WelcomeCard } from './onboarding/WelcomeCard';
 import { PlayerIdentityCard } from './onboarding/PlayerIdentityCard';
@@ -136,6 +137,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className="fixed inset-0 z-50 bg-background flex flex-col overflow-hidden"
     >
+      <OnboardingBackground />
+
       {/* Header with progress */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
