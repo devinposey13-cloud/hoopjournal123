@@ -2,10 +2,10 @@ import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 
 const ORBS = [
-  { size: 280, x: '15%', y: '20%', color: 'hsl(var(--primary) / 0.08)', duration: 18, delay: 0 },
-  { size: 220, x: '75%', y: '65%', color: 'hsl(var(--primary) / 0.06)', duration: 22, delay: 2 },
-  { size: 160, x: '60%', y: '15%', color: 'hsl(var(--accent) / 0.07)', duration: 16, delay: 4 },
-  { size: 200, x: '25%', y: '75%', color: 'hsl(var(--accent) / 0.05)', duration: 20, delay: 1 },
+  { size: 280, x: '15%', y: '20%', duration: 18, delay: 0 },
+  { size: 220, x: '75%', y: '65%', duration: 22, delay: 2 },
+  { size: 160, x: '60%', y: '15%', duration: 16, delay: 4 },
+  { size: 200, x: '25%', y: '75%', duration: 20, delay: 1 },
 ];
 
 export function OnboardingBackground() {
@@ -13,26 +13,28 @@ export function OnboardingBackground() {
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-      {/* Soft radial gradient base */}
-      <div
-        className="absolute inset-0"
+      {/* Radial gradient base — stronger in dark, softer in light */}
+      <div className="absolute inset-0 dark:opacity-100 opacity-60"
         style={{
           background:
-            'radial-gradient(ellipse 80% 60% at 50% 40%, hsl(var(--primary) / 0.04) 0%, transparent 70%)',
+            'radial-gradient(ellipse 80% 60% at 50% 40%, hsl(var(--primary) / 0.06) 0%, transparent 70%)',
         }}
       />
 
-      {/* Floating orbs */}
+      {/* Floating orbs — use CSS variables so they adapt to theme */}
       {orbs.map((orb, i) => (
         <motion.div
           key={i}
-          className="absolute rounded-full"
+          className={`absolute rounded-full dark:opacity-100 opacity-50 ${
+            i % 2 === 0
+              ? 'bg-[radial-gradient(circle,hsl(var(--primary)/0.10)_0%,transparent_70%)] dark:bg-[radial-gradient(circle,hsl(var(--primary)/0.12)_0%,transparent_70%)]'
+              : 'bg-[radial-gradient(circle,hsl(var(--accent)/0.08)_0%,transparent_70%)] dark:bg-[radial-gradient(circle,hsl(var(--accent)/0.10)_0%,transparent_70%)]'
+          }`}
           style={{
             width: orb.size,
             height: orb.size,
             left: orb.x,
             top: orb.y,
-            background: `radial-gradient(circle, ${orb.color} 0%, transparent 70%)`,
             filter: 'blur(40px)',
             willChange: 'transform',
           }}
@@ -50,9 +52,9 @@ export function OnboardingBackground() {
         />
       ))}
 
-      {/* Subtle grain texture overlay */}
+      {/* Grain texture — visible in dark, near-invisible in light */}
       <div
-        className="absolute inset-0 opacity-[0.02]"
+        className="absolute inset-0 dark:opacity-[0.025] opacity-[0.01]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
         }}
