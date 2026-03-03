@@ -73,7 +73,7 @@ export default function OnboardingFinish() {
 
   const handleLogGame = () => {
     track('onboarding_finished', { action: 'log_game' });
-    navigate('/', { state: { openGameDialog: true } });
+    navigate('/', { state: { openLiveStats: true } });
   };
 
   const handleExplore = () => {
