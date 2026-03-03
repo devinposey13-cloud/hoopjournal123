@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { AgeConfirmationGate } from './onboarding/AgeConfirmationGate';
 import { ProgressDots } from './onboarding/ProgressDots';
 import { WelcomeCard } from './onboarding/WelcomeCard';
 import { IdentityCard } from './onboarding/IdentityCard';
@@ -31,6 +32,7 @@ interface OnboardingFlowProps {
 const TOTAL_STEPS = 7;
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
   const navigate = useNavigate();
@@ -127,6 +129,10 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       opacity: 0,
     }),
   };
+
+  if (!ageConfirmed) {
+    return <AgeConfirmationGate onConfirmed={() => setAgeConfirmed(true)} />;
+  }
 
   return (
     <motion.div

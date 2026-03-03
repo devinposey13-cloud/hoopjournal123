@@ -89,6 +89,39 @@ export type Database = {
         }
         Relationships: []
       }
+      age_confirmations: {
+        Row: {
+          age_declared: string
+          consent_timestamp: string | null
+          created_at: string
+          device_metadata: Json | null
+          id: string
+          ip_address: string | null
+          parent_consent: boolean
+          user_id: string
+        }
+        Insert: {
+          age_declared: string
+          consent_timestamp?: string | null
+          created_at?: string
+          device_metadata?: Json | null
+          id?: string
+          ip_address?: string | null
+          parent_consent?: boolean
+          user_id: string
+        }
+        Update: {
+          age_declared?: string
+          consent_timestamp?: string | null
+          created_at?: string
+          device_metadata?: Json | null
+          id?: string
+          ip_address?: string | null
+          parent_consent?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       badge_definitions: {
         Row: {
           bronze_threshold: Json
