@@ -7,7 +7,7 @@ import { WelcomeCard } from './onboarding/WelcomeCard';
 import { IdentityCard } from './onboarding/IdentityCard';
 import { PlayerIdentityCard } from './onboarding/PlayerIdentityCard';
 import { GoalsCard } from './onboarding/GoalsCard';
-import { HabitHookCard } from './onboarding/HabitHookCard';
+
 import { CoachPreviewCard } from './onboarding/CoachPreviewCard';
 import { PricingPreviewCard } from './onboarding/PricingPreviewCard';
 import { track, type PlanId, type BillingCycle } from '@/lib/plans';
@@ -20,7 +20,7 @@ export interface OnboardingData {
   playingLevel: string;
   seasonGoals: string[];
   parentEmail: string | null;
-  loggingFrequency: string;
+  
 }
 
 export type OnboardingCompletionAction = 'start_game' | 'pregame_talk' | 'explore_dashboard';
@@ -29,7 +29,7 @@ interface OnboardingFlowProps {
   onComplete: (data: OnboardingData, action?: OnboardingCompletionAction) => void;
 }
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
@@ -43,7 +43,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     playingLevel: '',
     seasonGoals: [],
     parentEmail: null,
-    loggingFrequency: '',
+    
   });
 
   const goBack = useCallback(() => {
@@ -79,14 +79,10 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     goForward(4);
   };
 
-  const handleHabitSubmit = (frequency: string) => {
-    setData(prev => ({ ...prev, loggingFrequency: frequency }));
+  const handleCoachPreview = () => {
     goForward(5);
   };
 
-  const handleCoachPreview = () => {
-    goForward(6);
-  };
 
   const handleSelectFree = () => {
     track('onboarding_plan_selected', { planId: 'free' });
@@ -110,7 +106,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   // Track pricing preview view
   useEffect(() => {
-    if (currentStep === 6) {
+    if (currentStep === 5) {
       track('onboarding_pricing_viewed', {});
     }
   }, [currentStep]);
@@ -189,12 +185,9 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               <GoalsCard value={data.seasonGoals} onNext={handleGoalsSubmit} />
             )}
             {currentStep === 4 && (
-              <HabitHookCard value={data.loggingFrequency} onNext={handleHabitSubmit} />
-            )}
-            {currentStep === 5 && (
               <CoachPreviewCard playerName={data.name} onNext={handleCoachPreview} />
             )}
-            {currentStep === 6 && (
+            {currentStep === 5 && (
               <PricingPreviewCard
                 onSelectFree={handleSelectFree}
                 onSelectPaid={handleSelectPaid}
