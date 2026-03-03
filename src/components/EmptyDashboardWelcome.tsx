@@ -639,7 +639,7 @@ export function EmptyDashboardWelcome({
                       Generate AI Avatar
                     </Button>
                     <Button
-                      onClick={onUploadPhoto}
+                      onClick={() => fileInputRef.current?.click()}
                       variant="ghost"
                       className="w-full h-10 text-muted-foreground"
                     >
@@ -650,7 +650,7 @@ export function EmptyDashboardWelcome({
                 ) : (
                   <>
                     <Button
-                      onClick={onUploadPhoto}
+                      onClick={() => fileInputRef.current?.click()}
                       className="w-full h-12 gradient-primary"
                     >
                       <Camera className="w-4 h-4 mr-2" />
