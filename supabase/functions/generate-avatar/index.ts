@@ -38,14 +38,14 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
+        model: "google/gemini-3-pro-image-preview",
         messages: [
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Transform this photo into a stylized basketball player avatar in a vibrant cartoon/illustrated style. Keep the person's facial features and likeness recognizable but make it look like an NBA trading card illustration with dynamic lighting and a sporty feel. Add subtle basketball-themed elements like court lines or basketball texture in the background. Make it look professional and polished."
+                text: "Create a stylized illustrated portrait of the person in this photo as a basketball player avatar. CRITICAL: You MUST precisely preserve the person's exact facial structure, skin tone, eye shape, nose shape, mouth shape, hairstyle, hair color, and any distinguishing facial features — the result must be immediately recognizable as the same person. Apply a vibrant digital illustration style similar to NBA 2K cover art or trading card illustrations. Use dynamic lighting with rim lighting effects. Add a subtle basketball-themed background with soft bokeh court lights. The style should be polished and professional while keeping the likeness perfectly intact."
               },
               {
                 type: "image_url",
