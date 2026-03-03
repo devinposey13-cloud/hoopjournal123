@@ -715,7 +715,7 @@ export function EmptyDashboardWelcome({
             <img 
               src={avatarUrl} 
               alt={playerName}
-              className="w-72 h-72 md:w-80 md:h-80 rounded-full object-cover border-4 border-primary/30 shadow-2xl"
+              className="w-72 h-72 md:w-80 md:h-80 rounded-2xl object-contain border-4 border-primary/30 shadow-2xl bg-background"
             />
           </motion.div>
         </DialogContent>
