@@ -623,6 +623,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
         onClose={() => setShowPrivacyPolicy(false)}
         title="Privacy Policy"
         lastUpdated="March 3, 2026"
+        policyType="privacy_policy"
       >
         <PrivacyPolicyContent />
       </LegalPolicyViewer>
@@ -632,6 +633,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
         onClose={() => setShowTermsOfService(false)}
         title="Terms of Service"
         lastUpdated="March 3, 2026"
+        policyType="terms_of_service"
       >
         <TermsOfServiceContent />
       </LegalPolicyViewer>

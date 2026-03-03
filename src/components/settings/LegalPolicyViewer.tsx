@@ -1,17 +1,51 @@
-import { useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { supabase } from '@/integrations/supabase/client';
+
+export const POLICY_VERSIONS = {
+  privacy_policy: '1.0.0',
+  terms_of_service: '1.0.0',
+} as const;
+
+export type PolicyType = keyof typeof POLICY_VERSIONS;
 
 interface LegalPolicyViewerProps {
   open: boolean;
   onClose: () => void;
   title: string;
   lastUpdated: string;
+  policyType: PolicyType;
   children: React.ReactNode;
 }
 
-export function LegalPolicyViewer({ open, onClose, title, lastUpdated, children }: LegalPolicyViewerProps) {
+async function recordPolicyView(policyType: PolicyType) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await (supabase as any).from('policy_views').insert({
+      user_id: user.id,
+      policy_type: policyType,
+      policy_version: POLICY_VERSIONS[policyType],
+    });
+  } catch (e) {
+    console.error('Failed to record policy view:', e);
+  }
+}
+
+export function LegalPolicyViewer({ open, onClose, title, lastUpdated, policyType, children }: LegalPolicyViewerProps) {
+  const recorded = useRef(false);
+
+  useEffect(() => {
+    if (open && !recorded.current) {
+      recorded.current = true;
+      recordPolicyView(policyType);
+    }
+    if (!open) recorded.current = false;
+  }, [open, policyType]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -26,7 +60,7 @@ export function LegalPolicyViewer({ open, onClose, title, lastUpdated, children 
           <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-10">
             <div>
               <h1 className="text-lg font-bold text-foreground">{title}</h1>
-              <p className="text-xs text-muted-foreground">Last Updated: {lastUpdated}</p>
+              <p className="text-xs text-muted-foreground">Last Updated: {lastUpdated} · v{POLICY_VERSIONS[policyType]}</p>
             </div>
             <button
               onClick={onClose}
