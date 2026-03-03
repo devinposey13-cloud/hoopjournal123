@@ -929,7 +929,7 @@ export function useCloudData() {
         .from('avatars')
         .getPublicUrl(filePath);
 
-      const avatarUrl = publicUrlData.publicUrl;
+      const avatarUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
 
       // Update profile with new avatar URL
       await updateProfile({ avatar: avatarUrl });
