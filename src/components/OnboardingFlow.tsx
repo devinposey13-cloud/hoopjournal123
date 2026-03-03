@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ProgressDots } from './onboarding/ProgressDots';
 import { WelcomeCard } from './onboarding/WelcomeCard';
@@ -29,8 +29,6 @@ interface OnboardingFlowProps {
 }
 
 const TOTAL_STEPS = 7;
-const SWIPE_THRESHOLD = 50;
-const SWIPE_VELOCITY_THRESHOLD = 500;
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [currentStep, setCurrentStep] = useState(0);
@@ -57,16 +55,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     setDirection(1);
     setCurrentStep(step);
   }, []);
-
-  const handleDragEnd = useCallback((_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    const { offset, velocity } = info;
-    if (
-      (offset.x > SWIPE_THRESHOLD || velocity.x > SWIPE_VELOCITY_THRESHOLD) &&
-      currentStep > 0
-    ) {
-      goBack();
-    }
-  }, [currentStep, goBack]);
 
   // Step handlers
   const handleWelcome = () => goForward(1);
@@ -178,11 +166,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               x: { type: 'spring', stiffness: 300, damping: 30 },
               opacity: { duration: 0.25 },
             }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.2}
-            onDragEnd={handleDragEnd}
-            className="w-full touch-pan-y"
+            className="w-full"
           >
             {currentStep === 0 && (
               <WelcomeCard onNext={handleWelcome} onSkip={handleSkip} />

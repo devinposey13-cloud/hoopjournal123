@@ -32,7 +32,8 @@ export function GoalsCard({ value, onNext }: GoalsCardProps) {
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -50 }}
-      className="flex flex-col items-center text-center px-6"
+      className="flex flex-col items-center text-center px-6 max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y"
+      style={{ WebkitOverflowScrolling: 'touch' }}
     >
       <h2 
         className="text-2xl md:text-3xl mb-2 text-foreground font-semibold"
