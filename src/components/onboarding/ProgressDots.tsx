@@ -7,24 +7,37 @@ interface ProgressDotsProps {
 
 export function ProgressDots({ currentStep, totalSteps }: ProgressDotsProps) {
   return (
-    <div className="flex justify-center gap-2 mb-8">
-      {Array.from({ length: totalSteps }).map((_, index) => (
-        <motion.div
-          key={index}
-          className={`w-2.5 h-2.5 rounded-full transition-colors duration-300 ${
-            index < currentStep 
-              ? 'bg-primary' 
-              : index === currentStep 
-                ? 'bg-primary/60' 
-                : 'bg-muted'
-          }`}
-          initial={{ scale: 0.8 }}
-          animate={{ 
-            scale: index === currentStep ? 1.2 : 1,
-          }}
-          transition={{ duration: 0.2 }}
-        />
-      ))}
+    <div className="flex justify-center items-center gap-2 mb-8">
+      {Array.from({ length: totalSteps }).map((_, index) => {
+        const isActive = index === currentStep;
+        const isCompleted = index < currentStep;
+
+        return (
+          <motion.div
+            key={index}
+            layout
+            className="rounded-full"
+            initial={false}
+            animate={{
+              width: isActive ? 24 : 10,
+              height: 10,
+              backgroundColor: isCompleted
+                ? 'hsl(var(--primary))'
+                : isActive
+                  ? 'hsl(var(--primary) / 0.8)'
+                  : 'hsl(var(--muted))',
+              boxShadow: isActive
+                ? '0 0 12px hsl(var(--primary) / 0.4)'
+                : '0 0 0px transparent',
+            }}
+            transition={{
+              layout: { type: 'spring', stiffness: 400, damping: 30 },
+              backgroundColor: { duration: 0.3 },
+              boxShadow: { duration: 0.4 },
+            }}
+          />
+        );
+      })}
     </div>
   );
 }

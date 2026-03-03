@@ -106,16 +106,22 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   const variants = {
     enter: (direction: number) => ({
-      x: direction > 0 ? 300 : -300,
+      x: direction > 0 ? 200 : -200,
       opacity: 0,
+      scale: 0.95,
+      filter: 'blur(4px)',
     }),
     center: {
       x: 0,
       opacity: 1,
+      scale: 1,
+      filter: 'blur(0px)',
     },
     exit: (direction: number) => ({
-      x: direction > 0 ? -300 : 300,
+      x: direction > 0 ? -200 : 200,
       opacity: 0,
+      scale: 0.95,
+      filter: 'blur(4px)',
     }),
   };
 
@@ -156,8 +162,10 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             animate="center"
             exit="exit"
             transition={{
-              x: { type: 'spring', stiffness: 300, damping: 30 },
-              opacity: { duration: 0.25 },
+              x: { type: 'spring', stiffness: 260, damping: 26 },
+              opacity: { duration: 0.3, ease: 'easeInOut' },
+              scale: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
+              filter: { duration: 0.3 },
             }}
             className="w-full"
           >
@@ -185,18 +193,23 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       </motion.div>
 
       {/* Back button */}
-      {currentStep > 0 && (
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 0.6, x: 0 }}
-          whileHover={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          onClick={goBack}
-          className="absolute bottom-8 left-8 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          ← Back
-        </motion.button>
-      )}
+      <AnimatePresence>
+        {currentStep > 0 && (
+          <motion.button
+            key="back-button"
+            initial={{ opacity: 0, x: -12 }}
+            animate={{ opacity: 0.6, x: 0 }}
+            exit={{ opacity: 0, x: -12 }}
+            whileHover={{ opacity: 1, x: 2 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            onClick={goBack}
+            className="absolute bottom-8 left-8 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            ← Back
+          </motion.button>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
