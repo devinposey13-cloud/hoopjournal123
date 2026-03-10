@@ -288,15 +288,15 @@ export function LogSection({
   const getStatusBadge = (status: GameStatus) => {
     switch (status) {
       case 'game_day':
-        return <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase">Game Day</Badge>;
+        return <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase gap-1"><Zap className="w-3 h-3" />Game Day</Badge>;
       case 'live':
-        return <Badge className="bg-primary/20 text-primary border-primary/40 text-[10px] font-bold uppercase animate-pulse">● Live</Badge>;
+        return <Badge className="bg-primary/20 text-primary border-primary/40 text-[10px] font-bold uppercase animate-pulse gap-1"><Radio className="w-3 h-3" />Live</Badge>;
       case 'logged':
-        return <Badge className="bg-green-500/15 text-green-500 border-green-500/30 text-[10px] font-bold uppercase"><Check className="w-3 h-3 mr-0.5" />Logged</Badge>;
+        return <Badge className="bg-green-500/15 text-green-500 border-green-500/30 text-[10px] font-bold uppercase gap-1"><Check className="w-3 h-3" />Logged</Badge>;
       case 'stats_missing':
-        return <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase"><AlertCircle className="w-3 h-3 mr-0.5" />Stats Missing</Badge>;
+        return <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase gap-1"><Clock className="w-3 h-3" />Stats Missing</Badge>;
       default:
-        return <Badge variant="outline" className="text-[10px] font-bold uppercase text-muted-foreground">Scheduled</Badge>;
+        return <Badge variant="outline" className="text-[10px] font-bold uppercase text-muted-foreground gap-1"><Calendar className="w-3 h-3" />Scheduled</Badge>;
     }
   };
 
@@ -345,12 +345,12 @@ export function LogSection({
                   {smartPrompt?.type === 'live' ? (
                     <>
                       <p className="font-semibold text-sm">Resume Live Game</p>
-                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — continue tracking</p>
+                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — continue tracking your stats</p>
                     </>
                   ) : smartPrompt?.type === 'stats_missing' ? (
                     <>
                       <p className="font-semibold text-sm">Did you just play a game?</p>
-                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — log it while it's fresh</p>
+                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — log it now while it's fresh.</p>
                     </>
                   ) : smartPrompt?.type === 'game_day' ? (
                     <>
@@ -360,7 +360,7 @@ export function LogSection({
                   ) : (
                     <>
                       <p className="font-semibold text-sm">Did you just play a game?</p>
-                      <p className="text-xs text-muted-foreground">Log it now while it's fresh</p>
+                      <p className="text-xs text-muted-foreground">Log it now while it's fresh.</p>
                     </>
                   )}
                 </div>
@@ -371,7 +371,7 @@ export function LogSection({
                     onClick={() => handleStartQuickCapture(smartPrompt.game.opponent, smartPrompt.game.id, smartPrompt.game.teamId)}
                   >
                     <Radio className="w-3.5 h-3.5" />
-                    {smartPrompt.type === 'live' ? 'Resume' : 'Go Live'}
+                    {smartPrompt.type === 'live' ? 'Resume Live Game' : 'Start Live Game'}
                   </Button>
                 ) : (
                   <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
@@ -389,9 +389,9 @@ export function LogSection({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-bold mb-1">Start Live Game</h2>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Track stats in real-time during your game
-                  </p>
+                   <p className="text-sm text-muted-foreground mb-3">
+                     Track stats in real time during your game.
+                   </p>
                   <Button
                     onClick={handleQuickLiveStatsClick}
                     size="lg"
@@ -414,9 +414,9 @@ export function LogSection({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-base font-semibold mb-0.5">Log Your Last Game</h2>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Enter stats from a completed game
-                  </p>
+                   <p className="text-sm text-muted-foreground mb-3">
+                     Enter stats from a completed game.
+                   </p>
                   <AddGameDialog 
                     onAddGame={addGame} 
                     isMobile={isMobile}
@@ -493,7 +493,7 @@ export function LogSection({
                         className="gradient-primary shrink-0 gap-1 text-xs font-semibold"
                       >
                         <Radio className="w-3.5 h-3.5" />
-                        {status.status === 'live' ? 'Go Live' : 'Start Live'}
+                        {status.status === 'live' ? 'Resume Live Game' : 'Start Live Game'}
                       </Button>
                     ) : status.status === 'stats_missing' ? (
                       <Button
@@ -515,10 +515,10 @@ export function LogSection({
               <Card className="border-border/40">
                 <CardContent className="p-5 text-center">
                   <Calendar className="h-7 w-7 mx-auto text-muted-foreground/40 mb-2" />
-                  <p className="text-sm text-muted-foreground mb-1">No upcoming games scheduled</p>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Add your schedule so Hoop Journal can help you track on game day.
-                  </p>
+                   <p className="text-sm font-medium mb-1">No upcoming games scheduled</p>
+                   <p className="text-xs text-muted-foreground mb-3">
+                     Add your schedule so Hoop Journal can help you track your games.
+                   </p>
                   <AddScheduleDialog 
                     onAddGame={addScheduledGame} 
                     onBulkAddGames={bulkImportScheduledGames} 
@@ -697,7 +697,7 @@ export function LogSection({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold">Calendar</h2>
-              <p className="text-xs text-muted-foreground">Your game schedule and game days</p>
+              <p className="text-xs text-muted-foreground">Your game schedule and game days.</p>
             </div>
             <div className="flex gap-2">
               <ImportScheduleDialog onImport={bulkImportScheduledGames} isMobile={isMobile} />
@@ -875,7 +875,7 @@ export function LogSection({
                                   className="gradient-primary gap-1 text-[11px] font-semibold h-8"
                                 >
                                   <Radio className="w-3 h-3" />
-                                  {game.status === 'live' ? 'Go Live' : 'Start Live'}
+                                  {game.status === 'live' ? 'Resume Live Game' : 'Start Live Game'}
                                 </Button>
                               )}
                               {game.status === 'stats_missing' && (
@@ -954,7 +954,7 @@ export function LogSection({
             </div>
 
             <div className="pt-4 border-t border-border/50 text-center space-y-3">
-              <p className="text-xs text-muted-foreground">Want to add a game to your calendar?</p>
+              <p className="text-xs text-muted-foreground">Want to add a game to your calendar schedule?</p>
               <AddScheduleDialog 
                 onAddGame={addScheduledGame} 
                 onBulkAddGames={bulkImportScheduledGames} 
