@@ -55,6 +55,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { QuickDuplicateDialog } from '@/components/QuickDuplicateDialog';
 import { MilestoneCard } from '@/components/milestones/MilestoneCard';
 import { GamePerformanceCard } from '@/components/xp/GamePerformanceCard';
+import { GameReportCard } from '@/components/GameReportCard';
 import { toast } from 'sonner';
 
 export default function GameDetail() {
