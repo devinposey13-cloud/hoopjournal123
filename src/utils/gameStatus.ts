@@ -276,3 +276,59 @@ export function getNextRelevantGame(
 
   return live || gameDay || nextScheduled || statsMissing || null;
 }
+
+/**
+ * Get all scheduled games that are missing stats, sorted most recent first.
+ */
+export function getMissingGames(
+  scheduledGames: ScheduledGame[],
+  loggedGames: GameStats[],
+  now: Date = new Date()
+): { game: ScheduledGame; statusResult: GameStatusResult }[] {
+  return scheduledGames
+    .map(sg => ({ game: sg, statusResult: getGameStatus(sg, loggedGames, now) }))
+    .filter(item => item.statusResult.status === 'stats_missing')
+    .sort((a, b) => new Date(b.game.date).getTime() - new Date(a.game.date).getTime());
+}
+
+/**
+ * Get season tracking summary: total scheduled, logged, missing.
+ */
+export function getSeasonTrackingSummary(
+  scheduledGames: ScheduledGame[],
+  loggedGames: GameStats[],
+  now: Date = new Date()
+): { totalScheduled: number; logged: number; missing: number; upcoming: number } {
+  let logged = 0;
+  let missing = 0;
+  let upcoming = 0;
+
+  for (const sg of scheduledGames) {
+    const status = getGameStatus(sg, loggedGames, now);
+    if (status.status === 'logged') logged++;
+    else if (status.status === 'stats_missing') missing++;
+    else if (status.status === 'scheduled' || status.status === 'game_day' || status.status === 'live') upcoming++;
+  }
+
+  return { totalScheduled: scheduledGames.length, logged, missing, upcoming };
+}
+
+/** Check if smart prompt dismiss cooldown has expired (12 hours). */
+export function isPromptDismissCooldownActive(): boolean {
+  try {
+    const dismissed = localStorage.getItem('hj_smart_prompt_dismissed');
+    if (!dismissed) return false;
+    const dismissedAt = parseInt(dismissed, 10);
+    const COOLDOWN_MS = 12 * 60 * 60 * 1000; // 12 hours
+    return Date.now() - dismissedAt < COOLDOWN_MS;
+  } catch {
+    return false;
+  }
+}
+
+/** Record that the smart prompt was dismissed. */
+export function dismissSmartPrompt(): void {
+  try {
+    localStorage.setItem('hj_smart_prompt_dismissed', Date.now().toString());
+  } catch {}
+}
