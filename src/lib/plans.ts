@@ -215,6 +215,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       { label: 'AI development plan (monthly)', included: true },
       { label: 'Shareable player summary link', included: true },
       { label: 'Season awards', included: true },
+      { label: 'Shareable game report cards', included: false },
       { label: 'Recruiting profile', included: false },
     ],
     limits: {
