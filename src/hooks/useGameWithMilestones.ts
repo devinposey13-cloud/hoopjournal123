@@ -105,7 +105,17 @@ export function useGameWithMilestones() {
       ? XP_CONFIG.RECOVERY_BONUS_XP
       : 0;
     
-    const xpResult = await xpProgress.addXp(performance.xpEarned, performance.finalScore, recoveryBonus);
+    // Calculate consistency streak (including the new game)
+    const { current: streakCount } = calculateConsistencyStreak(allGames, cloudData.schedule);
+    const streakBonus = getStreakXpBonus(streakCount);
+    
+    const xpResult = await xpProgress.addXp(
+      performance.xpEarned,
+      performance.finalScore,
+      recoveryBonus,
+      streakBonus,
+      streakCount
+    );
     
     // Check for first-time tier achievement
     const isNewTier = !tierAchievements.hasTierBeenAchieved(performance.tier);

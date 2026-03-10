@@ -124,7 +124,9 @@ export function useXpProgress() {
   const addXp = useCallback(async (
     xpAmount: number,
     performanceScore: number,
-    recoveryBonus: number = 0
+    recoveryBonus: number = 0,
+    streakBonus: number = 0,
+    streakCount: number = 0
   ): Promise<XpGainResult | null> => {
     if (!user) return null;
 
@@ -135,9 +137,9 @@ export function useXpProgress() {
       if (!currentProgress) return null;
     }
 
-    // Calculate the XP gain result (recoveryBonus is added inside)
+    // Calculate the XP gain result (recoveryBonus + streakBonus added inside)
     const unlockedRewardIds = unlockedRewards.map(r => r.reward_id);
-    const result = calculateXpGain(currentProgress, xpAmount, rewards, unlockedRewardIds, recoveryBonus);
+    const result = calculateXpGain(currentProgress, xpAmount, rewards, unlockedRewardIds, recoveryBonus, streakBonus, streakCount);
 
     // Update progress in database
     const newPeakLevel = Math.max(currentProgress.peak_level, result.newLevel);
