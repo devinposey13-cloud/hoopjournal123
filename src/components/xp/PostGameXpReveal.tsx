@@ -5,7 +5,7 @@ import { formatXp, getLevelTierGradient } from '@/utils/xpCalculations';
 import { LevelBadge } from './LevelBadge';
 import { XpProgressBar } from './XpProgressBar';
 import { Button } from '@/components/ui/button';
-import { X, TrendingUp, Zap, Star, Trophy } from 'lucide-react';
+import { X, TrendingUp, Zap, Star, Trophy, Flame } from 'lucide-react';
 import type { PerformanceResult, XpGainResult, LevelReward } from '@/types/xp';
 
 interface PostGameXpRevealProps {
