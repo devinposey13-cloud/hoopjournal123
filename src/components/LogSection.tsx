@@ -12,7 +12,7 @@ import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { ScheduleCalendar } from '@/components/ScheduleCalendar';
 import { GameStats, ScheduledGame, PlayerTeam } from '@/types/basketball';
 import { getLetterGradeFromScore, calculateGameScore, getGradeColor } from '@/utils/gameGrading';
-import { getGameStatus, getSmartPrompt, getNextRelevantGame, findLinkedLoggedGame, type GameStatus, type GameStatusResult } from '@/utils/gameStatus';
+import { getGameStatus, getSmartPrompt, getNextRelevantGame, findLinkedLoggedGame, getMissingGames, getSeasonTrackingSummary, isPromptDismissCooldownActive, dismissSmartPrompt, type GameStatus, type GameStatusResult } from '@/utils/gameStatus';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format, getHours } from 'date-fns';
 import { Radio, Calendar, MapPin, Clock, ChevronRight, ChevronLeft, Trophy, Users, X, Zap, ClipboardList, Home, Plane, AlertCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
@@ -93,7 +93,7 @@ export function LogSection({
   const [quickCaptureScheduledGameId, setQuickCaptureScheduledGameId] = useState<string | undefined>();
   const [quickCaptureTeamId, setQuickCaptureTeamId] = useState<string | undefined>();
   const [isSavingQuickCapture, setIsSavingQuickCapture] = useState(false);
-  const [dismissedSmartPrompt, setDismissedSmartPrompt] = useState(false);
+  const [dismissedSmartPrompt, setDismissedSmartPrompt] = useState(() => isPromptDismissCooldownActive());
 
   // Calendar month state
   const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -153,6 +153,12 @@ export function LogSection({
   const recentGames = [...games]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
+
+  // Missing games for recovery prompts
+  const missingGames = useMemo(() => getMissingGames(schedule, games), [schedule, games]);
+
+  // Season tracking summary
+  const seasonSummary = useMemo(() => getSeasonTrackingSummary(schedule, games), [schedule, games]);
 
   // Season averages
   const seasonAvgs = useMemo(() => {
@@ -333,7 +339,7 @@ export function LogSection({
                 variant="ghost"
                 size="icon"
                 className="absolute top-2 right-2 h-7 w-7"
-                onClick={() => setDismissedSmartPrompt(true)}
+                onClick={() => { setDismissedSmartPrompt(true); dismissSmartPrompt(); }}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -373,6 +379,23 @@ export function LogSection({
                     <Radio className="w-3.5 h-3.5" />
                     {smartPrompt.type === 'live' ? 'Resume Live Game' : 'Start Live Game'}
                   </Button>
+                ) : smartPrompt?.type === 'stats_missing' ? (
+                  <AddGameDialog
+                    onAddGame={addGame}
+                    isMobile={isMobile}
+                    prefill={{
+                      date: new Date(smartPrompt.game.date),
+                      opponent: smartPrompt.game.opponent,
+                      teamId: smartPrompt.game.teamId,
+                      scheduledGameId: smartPrompt.game.id,
+                    }}
+                    customTrigger={
+                      <Button size="sm" className="gradient-primary gap-1 text-xs font-semibold shrink-0">
+                        <ClipboardList className="w-3.5 h-3.5" />
+                        Log Your Game
+                      </Button>
+                    }
+                  />
                 ) : (
                   <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
                 )}
@@ -529,28 +552,58 @@ export function LogSection({
             )}
           </section>
 
-          {/* Mini Season Summary */}
-          {seasonAvgs && (
-            <div className="flex items-center justify-center gap-6 py-3 px-4 rounded-xl bg-card border border-border/50">
-              <div className="text-center">
-                <p className="text-lg font-bold">{seasonAvgs.ppg}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">PPG</p>
-              </div>
-              <div className="w-px h-8 bg-border" />
-              <div className="text-center">
-                <p className="text-lg font-bold">{seasonAvgs.rpg}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">RPG</p>
-              </div>
-              <div className="w-px h-8 bg-border" />
-              <div className="text-center">
-                <p className="text-lg font-bold">{seasonAvgs.apg}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">APG</p>
-              </div>
-              <div className="w-px h-8 bg-border" />
-              <div className="text-center">
-                <p className="text-lg font-bold">{games.length}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">GP</p>
-              </div>
+          {/* Season Tracking Summary */}
+          {(seasonAvgs || seasonSummary.totalScheduled > 0) && (
+            <div className="rounded-xl bg-card border border-border/50 overflow-hidden">
+              {/* Stats row */}
+              {seasonAvgs && (
+                <div className="flex items-center justify-center gap-6 py-3 px-4">
+                  <div className="text-center">
+                    <p className="text-lg font-bold">{seasonAvgs.ppg}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">PPG</p>
+                  </div>
+                  <div className="w-px h-8 bg-border" />
+                  <div className="text-center">
+                    <p className="text-lg font-bold">{seasonAvgs.rpg}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">RPG</p>
+                  </div>
+                  <div className="w-px h-8 bg-border" />
+                  <div className="text-center">
+                    <p className="text-lg font-bold">{seasonAvgs.apg}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">APG</p>
+                  </div>
+                  <div className="w-px h-8 bg-border" />
+                  <div className="text-center">
+                    <p className="text-lg font-bold">{games.length}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">GP</p>
+                  </div>
+                </div>
+              )}
+              {/* Season tracking strip */}
+              {seasonSummary.totalScheduled > 0 && (
+                <div className={cn(
+                  "flex items-center justify-between px-4 py-2.5 text-xs",
+                  seasonAvgs ? "border-t border-border/50" : ""
+                )}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground font-medium">Season Tracking</span>
+                    <span className="font-bold text-foreground">
+                      {seasonSummary.logged} / {seasonSummary.totalScheduled} games logged
+                    </span>
+                  </div>
+                  {seasonSummary.missing > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-amber-500 hover:text-amber-400 gap-1 h-7 text-xs px-2"
+                      onClick={() => handleTabChange('schedule')}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {seasonSummary.missing} missing
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -573,7 +626,7 @@ export function LogSection({
               )}
             </div>
 
-            {recentGames.length === 0 ? (
+            {recentGames.length === 0 && missingGames.length === 0 ? (
               <Card className="border-border/40">
                 <CardContent className="p-6 text-center space-y-3">
                   <Trophy className="h-8 w-8 mx-auto text-muted-foreground/40" />
@@ -588,6 +641,53 @@ export function LogSection({
               </Card>
             ) : (
               <div className="space-y-1.5">
+                {/* Missing Game Recovery Cards */}
+                {missingGames.slice(0, 3).map(({ game: mg }) => (
+                  <Card
+                    key={`missing-${mg.id}`}
+                    className="overflow-hidden border-amber-500/20 bg-gradient-to-r from-amber-500/5 via-card to-card"
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/10 border border-amber-500/20">
+                          <Clock className="w-4 h-4 text-amber-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm truncate">vs {mg.opponent}</span>
+                            <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase gap-1">
+                              <AlertCircle className="w-3 h-3" />Stats Missing
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {format(new Date(mg.date), 'MMM d')} {mg.time ? `• ${mg.time}` : ''} {mg.location ? `• ${mg.location}` : ''}
+                          </p>
+                        </div>
+                        <AddGameDialog
+                          onAddGame={addGame}
+                          isMobile={isMobile}
+                          prefill={{
+                            date: new Date(mg.date),
+                            opponent: mg.opponent,
+                            teamId: mg.teamId,
+                            scheduledGameId: mg.id,
+                          }}
+                          customTrigger={
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-amber-500 border-amber-500/30 hover:bg-amber-500/10 text-xs font-semibold shrink-0 h-8"
+                            >
+                              Log Game
+                            </Button>
+                          }
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {/* Logged Games */}
                 {recentGames.map((game) => {
                   const gs = calculateGameScore(game);
                   const grade = getLetterGradeFromScore(gs);
@@ -879,14 +979,26 @@ export function LogSection({
                                 </Button>
                               )}
                               {game.status === 'stats_missing' && (
-                                <Button
-                                  onClick={(e) => { e.stopPropagation(); }}
-                                  variant="outline"
-                                  size="sm"
-                                  className="text-amber-500 border-amber-500/30 text-[11px] h-8"
-                                >
-                                  Log Game
-                                </Button>
+                                <AddGameDialog
+                                  onAddGame={addGame}
+                                  isMobile={isMobile}
+                                  prefill={{
+                                    date: new Date(game.date),
+                                    opponent: game.opponent,
+                                    teamId: game.teamId,
+                                    scheduledGameId: game.id,
+                                  }}
+                                  customTrigger={
+                                    <Button
+                                      onClick={(e) => { e.stopPropagation(); }}
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-amber-500 border-amber-500/30 text-[11px] h-8"
+                                    >
+                                      Log Game
+                                    </Button>
+                                  }
+                                />
                               )}
                               <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
                             </div>

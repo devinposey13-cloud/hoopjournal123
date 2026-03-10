@@ -1,9 +1,11 @@
 import { format, isToday, isTomorrow, differenceInHours } from 'date-fns';
-import { Calendar, Radio, MessageSquare, Flame, ChevronRight, MapPin, Clock } from 'lucide-react';
+import { Calendar, Radio, MessageSquare, Flame, ChevronRight, MapPin, Clock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScheduledGame, GameStats } from '@/types/basketball';
+import { getMissingGames } from '@/utils/gameStatus';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface TodayCardProps {
   schedule: ScheduledGame[];
@@ -24,6 +26,8 @@ export function TodayCard({
   onOpenCoach,
   onStartLiveCapture,
 }: TodayCardProps) {
+  const navigate = useNavigate();
+
   // Find next upcoming game
   const now = new Date();
   const upcomingGames = schedule
@@ -36,6 +40,10 @@ export function TodayCard({
   const nextGame = upcomingGames[0];
   const todayGame = upcomingGames.find(g => isToday(new Date(g.date)));
   const tomorrowGame = !todayGame ? upcomingGames.find(g => isTomorrow(new Date(g.date))) : null;
+
+  // Missing games
+  const missingGames = getMissingGames(schedule, games);
+  const topMissing = missingGames.length > 0 ? missingGames[0] : null;
 
   // Calculate time until game
   const getTimeLabel = () => {
@@ -94,6 +102,27 @@ export function TodayCard({
         </div>
       </div>
 
+      {/* Missing Game Recovery Prompt — shown when no upcoming game */}
+      {topMissing && !displayGame && (
+        <div
+          className="mb-4 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 cursor-pointer hover:bg-amber-500/10 transition-colors"
+          onClick={() => navigate('/log/history')}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+            <span className="text-sm font-semibold">Game needs stats</span>
+          </div>
+          <p className="text-xs text-muted-foreground ml-6">
+            vs {topMissing.game.opponent} • {format(new Date(topMissing.game.date), 'MMM d')}
+          </p>
+          {missingGames.length > 1 && (
+            <p className="text-[10px] text-amber-500/80 ml-6 mt-0.5">
+              +{missingGames.length - 1} more game{missingGames.length > 2 ? 's' : ''} missing stats
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Next Game Info */}
       {displayGame ? (
         <div className="mb-5">
@@ -125,6 +154,19 @@ export function TodayCard({
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </div>
+
+          {/* Subtle missing game note when there IS an upcoming game too */}
+          {topMissing && (
+            <div
+              className="mt-3 pt-2.5 border-t border-border/30 flex items-center gap-2 cursor-pointer"
+              onClick={(e) => { e.stopPropagation(); navigate('/log/history'); }}
+            >
+              <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span className="text-xs text-amber-500">
+                {missingGames.length} game{missingGames.length > 1 ? 's' : ''} need{missingGames.length === 1 ? 's' : ''} stats
+              </span>
+            </div>
+          )}
         </div>
       ) : (
         <div className="mb-5">

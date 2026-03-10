@@ -18,9 +18,17 @@ interface AddGameDialogProps {
   isMobile?: boolean;
   autoOpen?: boolean;
   onAutoOpenConsumed?: () => void;
+  prefill?: {
+    date?: Date;
+    opponent?: string;
+    teamId?: string;
+    scheduledGameId?: string;
+  };
+  /** Custom trigger element. If provided, replaces the default button. */
+  customTrigger?: React.ReactNode;
 }
 
-export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsumed }: AddGameDialogProps) {
+export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsumed, prefill, customTrigger }: AddGameDialogProps) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'manual' | 'ai'>('ai');
 
@@ -33,22 +41,33 @@ export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsume
   }, [autoOpen, open, onAutoOpenConsumed]);
 
   const handleSubmit = async (gameData: Omit<GameStats, 'id'>) => {
-    await onAddGame(gameData);
+    const enriched = prefill?.scheduledGameId 
+      ? { ...gameData, scheduledGameId: prefill.scheduledGameId } 
+      : gameData;
+    await onAddGame(enriched);
     setOpen(false);
   };
+
+  const initialData = prefill ? {
+    date: prefill.date,
+    opponent: prefill.opponent,
+    teamId: prefill.teamId,
+  } : undefined;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button 
-          className="gradient-primary font-semibold"
-          size={isMobile ? "icon" : "default"}
-          title="Add Game"
-        >
-          <Plus className="w-4 h-4" />
-          {!isMobile && <span className="ml-2">Add Game</span>}
-          {isMobile && <span className="sr-only">Add Game</span>}
-        </Button>
+        {customTrigger || (
+          <Button 
+            className="gradient-primary font-semibold"
+            size={isMobile ? "icon" : "default"}
+            title="Add Game"
+          >
+            <Plus className="w-4 h-4" />
+            {!isMobile && <span className="ml-2">Add Game</span>}
+            {isMobile && <span className="sr-only">Add Game</span>}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
@@ -68,7 +87,7 @@ export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsume
           </TabsContent>
           
           <TabsContent value="manual" className="mt-4">
-            <GameStatsForm onSubmit={handleSubmit} />
+            <GameStatsForm onSubmit={handleSubmit} initialData={initialData} />
           </TabsContent>
         </Tabs>
       </DialogContent>
