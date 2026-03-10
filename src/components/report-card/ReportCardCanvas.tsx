@@ -4,6 +4,7 @@ import type { GameStats } from '@/types/basketball';
 import { getGameGradeData } from '@/utils/gameGrading';
 import { calculateCareerHighs } from '@/utils/statsCalculations';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
+import hoopJournalQr from '@/assets/hoop-journal-qr.png';
 
 interface ReportCardCanvasProps {
   game: GameStats;
