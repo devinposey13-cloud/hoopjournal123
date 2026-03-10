@@ -1,13 +1,15 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Target, Percent, Zap, Trophy, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { GameStats, SeasonStats } from '@/types/basketball';
+import type { GameStats, SeasonStats, ScheduledGame } from '@/types/basketball';
 import type { XpProgress } from '@/types/xp';
+import { calculateConsistencyStreak } from '@/utils/xpCalculations';
 
 interface QuickStatsRowProps {
   games: GameStats[];
   seasonStats: SeasonStats;
   xpProgress?: XpProgress | null;
+  schedule?: ScheduledGame[];
 }
 
 interface QuickStatCardProps {
