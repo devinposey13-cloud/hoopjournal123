@@ -143,7 +143,7 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
           <SocialPreview platform={platform} onPlatformChange={setPlatform} />
         </div>
 
-        {/* Preview container */}
+        {/* Preview container (scaled for display) */}
         <div className="flex-1 min-h-0 overflow-y-auto px-4">
           <div
             className="w-full overflow-hidden rounded-lg border border-border/30 mx-auto mb-4"
@@ -158,7 +158,7 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
                 left: 0,
               }}>
                 <ReportCardCanvas
-                  ref={cardRef}
+                  ref={previewRef}
                   game={game}
                   playerName={playerName}
                   playerTeam={playerTeam}
@@ -168,6 +168,18 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Hidden full-size canvas for export (no CSS transform) */}
+        <div style={{ position: 'fixed', top: -9999, left: -9999, pointerEvents: 'none', opacity: 0 }}>
+          <ReportCardCanvas
+            ref={exportRef}
+            game={game}
+            playerName={playerName}
+            playerTeam={playerTeam}
+            avatarUrl={avatarUrl}
+            allGames={allGames}
+          />
         </div>
 
         {/* Sticky action footer */}
