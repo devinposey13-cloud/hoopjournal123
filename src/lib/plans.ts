@@ -147,6 +147,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       { label: 'Basic dashboard stats', included: true },
       { label: 'Unlimited history', included: false },
       { label: 'Advanced analytics', included: false },
+      { label: 'Shareable game report cards', included: false },
       { label: 'Recruiting profile', included: false },
     ],
     limits: {
@@ -214,6 +215,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       { label: 'AI development plan (monthly)', included: true },
       { label: 'Shareable player summary link', included: true },
       { label: 'Season awards', included: true },
+      { label: 'Shareable game report cards', included: false },
       { label: 'Recruiting profile', included: false },
     ],
     limits: {
@@ -242,6 +244,7 @@ export const planCatalog: Record<PlanId, Plan> = {
     cta: 'Go Elite',
     features: [
       { label: 'Everything in Pro', included: true },
+      { label: 'Shareable game report cards', included: true },
       { label: 'Recruiting profile page + link', included: true },
       { label: 'Exportable PDF season report', included: true },
       { label: 'Parent dashboard view', included: true },
