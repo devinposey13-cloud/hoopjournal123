@@ -35,6 +35,7 @@ export interface GameStats {
   finalScoreUs?: number;
   finalScoreThem?: number;
   gameScore?: number;
+  scheduledGameId?: string;
 }
 
 export interface HalfStats {

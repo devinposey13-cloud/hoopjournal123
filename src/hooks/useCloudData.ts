@@ -147,6 +147,7 @@ export function useCloudData() {
         isWin: g.is_win,
         teamId: g.team_id || undefined,
         teamName: (g.player_teams as any)?.name || undefined,
+        scheduledGameId: (g as any).scheduled_game_id || undefined,
       })) || []);
 
       // Fetch scheduled games (filtered by profile and season) with team info
@@ -495,7 +496,8 @@ export function useCloudData() {
           ft_attempted: game.ftAttempted,
           is_win: game.isWin,
           game_score: game.gameScore ?? null,
-        })
+          scheduled_game_id: (game as any).scheduledGameId ?? null,
+        } as any)
         .select('*, player_teams(name)')
         .single();
 

@@ -12,6 +12,7 @@ import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { ScheduleCalendar } from '@/components/ScheduleCalendar';
 import { GameStats, ScheduledGame, PlayerTeam } from '@/types/basketball';
 import { getLetterGradeFromScore, calculateGameScore, getGradeColor } from '@/utils/gameGrading';
+import { getGameStatus, getSmartPrompt, getNextRelevantGame, findLinkedLoggedGame, type GameStatus, type GameStatusResult } from '@/utils/gameStatus';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format, getHours } from 'date-fns';
 import { Radio, Calendar, MapPin, Clock, ChevronRight, ChevronLeft, Trophy, Users, X, Zap, ClipboardList, Home, Plane, AlertCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
@@ -97,18 +98,21 @@ export function LogSection({
   // Calendar month state
   const [calendarMonth, setCalendarMonth] = useState(new Date());
 
-  const showSmartPrompt = useMemo(() => {
-    const hour = getHours(new Date());
-    // Also check if a scheduled game passed today without stats
-    const hasMissingTodayGame = schedule.some(sg => {
-      if (!isToday(new Date(sg.date))) return false;
-      return !games.some(g => 
-        g.opponent.toLowerCase() === sg.opponent.toLowerCase() && 
-        isSameDay(new Date(g.date), new Date(sg.date))
-      );
-    });
-    return (hour >= 17 && hour <= 23) || hasMissingTodayGame;
+  // Smart prompt using the game status engine
+  const smartPrompt = useMemo(() => {
+    return getSmartPrompt(schedule, games);
   }, [games, schedule]);
+
+  const showSmartPrompt = useMemo(() => {
+    if (smartPrompt) return true;
+    const hour = getHours(new Date());
+    return hour >= 17 && hour <= 23;
+  }, [smartPrompt]);
+
+  // Next relevant game for the upcoming game card (uses status engine)
+  const nextRelevantGame = useMemo(() => {
+    return getNextRelevantGame(schedule, games);
+  }, [schedule, games]);
 
   const today = startOfDay(new Date());
   const tournaments = [...new Set(schedule.filter(g => g.tournament).map(g => g.tournament!))].sort();
@@ -135,20 +139,16 @@ export function LogSection({
           : g.teamId === gamesTabTeamFilter
       );
 
-  const findLinkedGame = (scheduledGame: { opponent: string; date: string }) => {
-    const scheduleDate = new Date(scheduledGame.date);
-    return games.find((pg) => {
-      const playedDate = new Date(pg.date);
-      return (
-        pg.opponent.toLowerCase() === scheduledGame.opponent.toLowerCase() &&
-        isSameDay(scheduleDate, playedDate)
-      );
-    });
+  const findLinkedGame = (scheduledGame: ScheduledGame) => {
+    return findLinkedLoggedGame(scheduledGame, games);
   };
 
-  const nextGame = upcomingGames.length > 0 
-    ? [...upcomingGames].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
-    : null;
+  const nextGame = nextRelevantGame?.game ?? (
+    upcomingGames.length > 0 
+      ? [...upcomingGames].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
+      : null
+  );
+  const nextGameStatus = nextGame ? getGameStatus(nextGame, games) : null;
 
   const recentGames = [...games]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -181,29 +181,19 @@ export function LogSection({
     }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     // Group by date string
-    const grouped: { date: string; tournament?: string; games: (ScheduledGame & { status: string; linkedGame?: GameStats })[] }[] = [];
+    const grouped: { date: string; tournament?: string; games: (ScheduledGame & { status: GameStatus; statusResult: GameStatusResult; linkedGame?: GameStats })[] }[] = [];
     
     monthScheduled.forEach(sg => {
       const dateKey = format(new Date(sg.date), 'yyyy-MM-dd');
-      const linked = findLinkedGame(sg);
-      const gameDate = new Date(sg.date);
-      
-      let status = 'Scheduled';
-      if (linked) {
-        status = 'Logged';
-      } else if (isToday(gameDate)) {
-        status = 'Game Day';
-      } else if (isBefore(gameDate, today) && !isToday(gameDate)) {
-        status = 'Stats Missing';
-      }
+      const statusResult = getGameStatus(sg, games);
+      const linked = findLinkedLoggedGame(sg, games);
 
       let group = grouped.find(g => g.date === dateKey);
       if (!group) {
         group = { date: dateKey, games: [] };
-        // If all games on this date share a tournament, set it
         grouped.push(group);
       }
-      group.games.push({ ...sg, status, linkedGame: linked });
+      group.games.push({ ...sg, status: statusResult.status, statusResult, linkedGame: linked });
     });
 
     // Set tournament label if all games in a group share it
@@ -261,6 +251,7 @@ export function LogSection({
         defensiveRebounds: halfData?.total.defensiveRebounds ?? stats.defensiveRebounds,
         gamePhotoUrl: halfData?.gamePhotoUrl,
         teamId: quickCaptureTeamId,
+        scheduledGameId: quickCaptureScheduledGameId,
       };
       await addGame(gameData);
       toast.success('Game saved successfully!');
@@ -294,13 +285,15 @@ export function LogSection({
     );
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: GameStatus) => {
     switch (status) {
-      case 'Game Day':
+      case 'game_day':
         return <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase">Game Day</Badge>;
-      case 'Logged':
+      case 'live':
+        return <Badge className="bg-primary/20 text-primary border-primary/40 text-[10px] font-bold uppercase animate-pulse">● Live</Badge>;
+      case 'logged':
         return <Badge className="bg-green-500/15 text-green-500 border-green-500/30 text-[10px] font-bold uppercase"><Check className="w-3 h-3 mr-0.5" />Logged</Badge>;
-      case 'Stats Missing':
+      case 'stats_missing':
         return <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase"><AlertCircle className="w-3 h-3 mr-0.5" />Stats Missing</Badge>;
       default:
         return <Badge variant="outline" className="text-[10px] font-bold uppercase text-muted-foreground">Scheduled</Badge>;
@@ -328,9 +321,14 @@ export function LogSection({
         {/* ===================== LOG HOME (ALL GAMES) ===================== */}
         <TabsContent value="history" className="mt-5 space-y-5">
           
-          {/* Smart Prompt */}
+          {/* Smart Prompt - uses game status engine */}
           {showSmartPrompt && !dismissedSmartPrompt && (
-            <Card className="relative overflow-hidden border-primary/30 bg-gradient-to-r from-primary/10 via-card to-card">
+            <Card className={cn(
+              "relative overflow-hidden border-primary/30",
+              smartPrompt?.type === 'live' 
+                ? "bg-gradient-to-r from-primary/15 via-card to-card" 
+                : "bg-gradient-to-r from-primary/10 via-card to-card"
+            )}>
               <Button
                 variant="ghost"
                 size="icon"
@@ -344,10 +342,40 @@ export function LogSection({
                   <Zap className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-sm">Did you just play a game?</p>
-                  <p className="text-xs text-muted-foreground">Log it now while it's fresh</p>
+                  {smartPrompt?.type === 'live' ? (
+                    <>
+                      <p className="font-semibold text-sm">Resume Live Game</p>
+                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — continue tracking</p>
+                    </>
+                  ) : smartPrompt?.type === 'stats_missing' ? (
+                    <>
+                      <p className="font-semibold text-sm">Did you just play a game?</p>
+                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — log it while it's fresh</p>
+                    </>
+                  ) : smartPrompt?.type === 'game_day' ? (
+                    <>
+                      <p className="font-semibold text-sm">Game Day!</p>
+                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} {smartPrompt.game.time ? `at ${smartPrompt.game.time}` : 'today'}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-semibold text-sm">Did you just play a game?</p>
+                      <p className="text-xs text-muted-foreground">Log it now while it's fresh</p>
+                    </>
+                  )}
                 </div>
-                <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+                {smartPrompt?.type === 'live' || smartPrompt?.type === 'game_day' ? (
+                  <Button 
+                    size="sm" 
+                    className="gradient-primary gap-1 text-xs font-semibold shrink-0"
+                    onClick={() => handleStartQuickCapture(smartPrompt.game.opponent, smartPrompt.game.id, smartPrompt.game.teamId)}
+                  >
+                    <Radio className="w-3.5 h-3.5" />
+                    {smartPrompt.type === 'live' ? 'Resume' : 'Go Live'}
+                  </Button>
+                ) : (
+                  <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+                )}
               </CardContent>
             </Card>
           )}
@@ -405,25 +433,30 @@ export function LogSection({
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">
               Upcoming Game
             </h2>
-            {nextGame ? (
+            {nextGame ? (() => {
+              const status = nextGameStatus!;
+              const isActionable = status.status === 'game_day' || status.status === 'live' || status.status === 'stats_missing';
+              const linkedLog = findLinkedLoggedGame(nextGame, games);
+              return (
               <Card 
                 className={cn(
                   "overflow-hidden hover:border-primary/20 transition-all cursor-pointer",
-                  isToday(new Date(nextGame.date))
+                  (status.status === 'game_day' || status.status === 'live')
                     ? "border-primary/40 bg-gradient-to-r from-primary/5 via-card to-card" 
+                    : status.status === 'stats_missing'
+                    ? "border-amber-500/20"
                     : "border-border/60"
                 )}
-                onClick={() => navigate(`/game/scheduled/${nextGame.id}`)}
+                onClick={() => {
+                  if (linkedLog) navigate(`/game/${linkedLog.id}`);
+                  else navigate(`/game/scheduled/${nextGame.id}`);
+                }}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
-                        {isToday(new Date(nextGame.date)) ? (
-                          <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase tracking-wider">
-                            Game Day
-                          </Badge>
-                        ) : null}
+                        {getStatusBadge(status.status)}
                         <span className={cn(
                           "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase",
                           nextGame.isHome 
@@ -453,14 +486,23 @@ export function LogSection({
                         )}
                       </div>
                     </div>
-                    {isToday(new Date(nextGame.date)) ? (
+                    {(status.status === 'game_day' || status.status === 'live') ? (
                       <Button
-                        onClick={(e) => { e.stopPropagation(); handleQuickLiveStatsClick(); }}
+                        onClick={(e) => { e.stopPropagation(); handleStartQuickCapture(nextGame.opponent, nextGame.id, nextGame.teamId); }}
                         size="sm"
                         className="gradient-primary shrink-0 gap-1 text-xs font-semibold"
                       >
                         <Radio className="w-3.5 h-3.5" />
-                        Go Live
+                        {status.status === 'live' ? 'Go Live' : 'Start Live'}
+                      </Button>
+                    ) : status.status === 'stats_missing' ? (
+                      <Button
+                        onClick={(e) => { e.stopPropagation(); }}
+                        variant="outline"
+                        size="sm"
+                        className="text-amber-500 border-amber-500/30 shrink-0 text-xs font-semibold"
+                      >
+                        Log Game
                       </Button>
                     ) : (
                       <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
@@ -468,7 +510,8 @@ export function LogSection({
                   </div>
                 </CardContent>
               </Card>
-            ) : (
+              );
+            })() : (
               <Card className="border-border/40">
                 <CardContent className="p-5 text-center">
                   <Calendar className="h-7 w-7 mx-auto text-muted-foreground/40 mb-2" />
@@ -768,7 +811,7 @@ export function LogSection({
                           isTodayGroup 
                             ? "border-primary/30 bg-gradient-to-r from-primary/5 via-card to-card hover:border-primary/40" 
                             : "border-border/50 hover:border-border",
-                          game.status === 'Stats Missing' && "border-amber-500/20"
+                          game.status === 'stats_missing' && "border-amber-500/20"
                         )}
                         onClick={() => {
                           if (game.linkedGame) {
@@ -825,19 +868,19 @@ export function LogSection({
                               )}
                             </div>
                             <div className="shrink-0 flex items-center gap-2">
-                              {game.status === 'Game Day' && (
+                              {(game.status === 'game_day' || game.status === 'live') && (
                                 <Button
                                   onClick={(e) => { e.stopPropagation(); handleStartQuickCapture(game.opponent, game.id, game.teamId); }}
                                   size="sm"
                                   className="gradient-primary gap-1 text-[11px] font-semibold h-8"
                                 >
                                   <Radio className="w-3 h-3" />
-                                  Go Live
+                                  {game.status === 'live' ? 'Go Live' : 'Start Live'}
                                 </Button>
                               )}
-                              {game.status === 'Stats Missing' && (
+                              {game.status === 'stats_missing' && (
                                 <Button
-                                  onClick={(e) => { e.stopPropagation(); /* Opens add game flow */ }}
+                                  onClick={(e) => { e.stopPropagation(); }}
                                   variant="outline"
                                   size="sm"
                                   className="text-amber-500 border-amber-500/30 text-[11px] h-8"
