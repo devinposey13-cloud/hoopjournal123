@@ -759,7 +759,7 @@ export function LogSection({
                           isTodayGroup 
                             ? "border-primary/30 bg-gradient-to-r from-primary/5 via-card to-card hover:border-primary/40" 
                             : "border-border/50 hover:border-border",
-                          game.status === 'Stats Missing' && "border-amber-500/20"
+                          game.status === 'stats_missing' && "border-amber-500/20"
                         )}
                         onClick={() => {
                           if (game.linkedGame) {
