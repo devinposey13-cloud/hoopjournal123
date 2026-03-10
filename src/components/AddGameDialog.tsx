@@ -57,15 +57,17 @@ export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsume
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button 
-          className="gradient-primary font-semibold"
-          size={isMobile ? "icon" : "default"}
-          title="Add Game"
-        >
-          <Plus className="w-4 h-4" />
-          {!isMobile && <span className="ml-2">Add Game</span>}
-          {isMobile && <span className="sr-only">Add Game</span>}
-        </Button>
+        {customTrigger || (
+          <Button 
+            className="gradient-primary font-semibold"
+            size={isMobile ? "icon" : "default"}
+            title="Add Game"
+          >
+            <Plus className="w-4 h-4" />
+            {!isMobile && <span className="ml-2">Add Game</span>}
+            {isMobile && <span className="sr-only">Add Game</span>}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
