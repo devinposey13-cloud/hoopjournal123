@@ -288,15 +288,15 @@ export function LogSection({
   const getStatusBadge = (status: GameStatus) => {
     switch (status) {
       case 'game_day':
-        return <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase">Game Day</Badge>;
+        return <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase gap-1"><Zap className="w-3 h-3" />Game Day</Badge>;
       case 'live':
-        return <Badge className="bg-primary/20 text-primary border-primary/40 text-[10px] font-bold uppercase animate-pulse">● Live</Badge>;
+        return <Badge className="bg-primary/20 text-primary border-primary/40 text-[10px] font-bold uppercase animate-pulse gap-1"><Radio className="w-3 h-3" />Live</Badge>;
       case 'logged':
-        return <Badge className="bg-green-500/15 text-green-500 border-green-500/30 text-[10px] font-bold uppercase"><Check className="w-3 h-3 mr-0.5" />Logged</Badge>;
+        return <Badge className="bg-green-500/15 text-green-500 border-green-500/30 text-[10px] font-bold uppercase gap-1"><Check className="w-3 h-3" />Logged</Badge>;
       case 'stats_missing':
-        return <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase"><AlertCircle className="w-3 h-3 mr-0.5" />Stats Missing</Badge>;
+        return <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase gap-1"><Clock className="w-3 h-3" />Stats Missing</Badge>;
       default:
-        return <Badge variant="outline" className="text-[10px] font-bold uppercase text-muted-foreground">Scheduled</Badge>;
+        return <Badge variant="outline" className="text-[10px] font-bold uppercase text-muted-foreground gap-1"><Calendar className="w-3 h-3" />Scheduled</Badge>;
     }
   };
 
