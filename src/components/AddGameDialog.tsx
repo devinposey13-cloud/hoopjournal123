@@ -41,9 +41,18 @@ export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsume
   }, [autoOpen, open, onAutoOpenConsumed]);
 
   const handleSubmit = async (gameData: Omit<GameStats, 'id'>) => {
-    await onAddGame(gameData);
+    const enriched = prefill?.scheduledGameId 
+      ? { ...gameData, scheduledGameId: prefill.scheduledGameId } 
+      : gameData;
+    await onAddGame(enriched);
     setOpen(false);
   };
+
+  const initialData = prefill ? {
+    date: prefill.date,
+    opponent: prefill.opponent,
+    teamId: prefill.teamId,
+  } : undefined;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
