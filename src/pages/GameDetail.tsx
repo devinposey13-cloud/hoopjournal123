@@ -969,7 +969,13 @@ export default function GameDetail() {
               {isMobile && <span className="sr-only">Export PDF</span>}
             </Button>
             <Button 
-              onClick={() => setShowReportCard(true)}
+              onClick={() => {
+                if (!canUseFeature(plan.currentPlan, 'reportCard')) {
+                  plan.openPaywall('report_card');
+                  return;
+                }
+                setShowReportCard(true);
+              }}
               size={isMobile ? "icon" : "default"}
               title="Share Report Card"
               className="gradient-primary"
