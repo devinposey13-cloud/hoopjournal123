@@ -338,6 +338,7 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
             </div>
           </div>
         </div>
+        </div>
 
         {/* Action buttons */}
         <div className="flex gap-2 mt-3">
