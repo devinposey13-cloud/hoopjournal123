@@ -297,7 +297,7 @@ export function LogSection({
       case 'logged':
         return <Badge className="bg-green-500/15 text-green-500 border-green-500/30 text-[10px] font-bold uppercase gap-1"><Check className="w-3 h-3" />Logged</Badge>;
       case 'stats_missing':
-        return <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase gap-1"><Clock className="w-3 h-3" />Stats Missing</Badge>;
+        return <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase gap-1"><AlertCircle className="w-3 h-3" />⚠ Missing Stats</Badge>;
       default:
         return <Badge variant="outline" className="text-[10px] font-bold uppercase text-muted-foreground gap-1"><Calendar className="w-3 h-3" />Scheduled</Badge>;
     }
