@@ -624,8 +624,8 @@ export function LogSection({
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-sm truncate">vs {mg.opponent}</span>
                             <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase gap-1">
-                              <AlertCircle className="w-3 h-3" />Stats Missing
-                            </Badge>
+                              <AlertCircle className="w-3 h-3" />⚠ Missing Stats
+                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {format(new Date(mg.date), 'MMM d')} {mg.time ? `• ${mg.time}` : ''} {mg.location ? `• ${mg.location}` : ''}
