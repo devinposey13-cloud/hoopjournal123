@@ -1,4 +1,6 @@
 import type { LevelReward, XpGainResult, XpProgress } from '@/types/xp';
+import type { GameStats, ScheduledGame } from '@/types/basketball';
+import { isStatsMissing, findLinkedLoggedGame } from '@/utils/gameStatus';
 
 // XP curve configuration
 export const XP_CONFIG = {
@@ -9,6 +11,14 @@ export const XP_CONFIG = {
   RECOVERY_BONUS_XP: 15,
   /** Hours after game date within which recovery XP is eligible */
   RECOVERY_WINDOW_HOURS: 72,
+  /** Streak XP bonus tiers: [gamesRequired, xpBonus] */
+  STREAK_BONUSES: [
+    [20, 75],
+    [10, 40],
+    [5, 20],
+    [3, 10],
+    [1, 5],
+  ] as readonly [number, number][],
 } as const;
 
 /**
