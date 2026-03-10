@@ -49,8 +49,9 @@ export function usePostGameInsights(games: GameStats[]) {
         const mapped: StoredInsight[] = data
           .filter(d => d.key_takeaways && Array.isArray(d.key_takeaways) && d.key_takeaways.length > 0)
           .map(d => {
-            const payload = d.key_takeaways as any[];
-            const insight = payload[0] || {};
+            const raw = (d.key_takeaways as string[])[0];
+            let insight: any = {};
+            try { insight = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch { /* ignore */ }
             return {
               id: d.id,
               gameId: d.game_id,
