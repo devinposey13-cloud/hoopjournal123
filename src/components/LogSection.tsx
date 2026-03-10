@@ -493,7 +493,7 @@ export function LogSection({
                         className="gradient-primary shrink-0 gap-1 text-xs font-semibold"
                       >
                         <Radio className="w-3.5 h-3.5" />
-                        {status.status === 'live' ? 'Go Live' : 'Start Live'}
+                        {status.status === 'live' ? 'Resume Live Game' : 'Start Live Game'}
                       </Button>
                     ) : status.status === 'stats_missing' ? (
                       <Button
