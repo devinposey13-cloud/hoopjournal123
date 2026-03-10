@@ -1,12 +1,16 @@
 import type { GameStats } from '@/types/basketball';
 import { format } from 'date-fns';
+import { calculateGameScore } from '@/utils/gameGrading';
 
 export interface CareerHigh {
   stat: string;
   value: number;
+  displayValue: string;
   opponent: string;
   date: string;
   gameId: string;
+  icon: string;
+  category: 'counting' | 'percentage' | 'composite';
 }
 
 export interface StatSplit {
