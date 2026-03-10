@@ -1,74 +1,54 @@
 
 
-# Hoop Journal Shareable Game Report Card
+## Analysis: Stripe Webhook Promo Lock-in Flow
 
-## Overview
-Build a shareable post-game report card component that renders a premium sports graphic (1080x1350) using HTML/Canvas, with export/share functionality. The QR code image will be embedded from the uploaded asset.
+I traced the full flow and found **two issues** that could prevent `promo_locked_in` from being set correctly:
 
-## New Files
+### Issue 1: `checkout.session.completed` passes the wrong planId to lock-in check
 
-### 1. `src/components/GameReportCard.tsx`
-The main component that renders the report card as an HTML element styled to 1080x1350 ratio, then converts to an image for export.
+In `create-checkout`, when a promo user selects Elite, the metadata is set as `plan_id: "elite"` (the original plan), but the actual Stripe price used is Starter. When `checkout.session.completed` fires:
+- It sets `subscription_plan: "elite"` in the DB (line 64)
+- It calls `checkAndLockPromo(supabase, userId, "elite")`
+- `checkAndLockPromo` immediately returns because `planId !== "starter"` (line 142)
 
-**Structure:**
-- Accepts `GameStats`, player profile data (name, avatar, team), and XP earned
-- Computes a letter grade from the performance score (using existing `calculatePerformance` from `performanceScoring.ts`)
-- Maps performance tiers to letter grades: legendary=A+, elite=A, great=A-, solid=B, rising=C, starter=D
-- Color-codes the grade (gold for A/A+, orange for B, gray for C, red for D/F)
+So the lock-in does NOT happen on checkout completion.
 
-**Card layout (rendered as a styled div, captured via `html2canvas`):**
-- Dark gradient background (navy-to-black)
-- Header: circular avatar with orange ring, player name
-- Large game grade with glow effect
-- Game info: VS opponent, score, W/L, date
-- 2x3 stat grid: PTS, AST, REB, STL, BLK, TOV
-- Performance tag badge (e.g., "Double Double", "Hot Shooting") — auto-detected from stats
-- XP earned display
-- Footer: Hoop Journal branding + QR code (from uploaded image)
+### Issue 2: `customer.subscription.updated` overwrites with "starter"
 
-**Export functionality:**
-- Uses `html2canvas` (new dependency) to render the div to a canvas at 1080px width
-- "Download Image" — saves as PNG via anchor download
-- "Share" — uses Web Share API (navigator.share) when available for native sharing to Instagram, Twitter, Snapchat, etc.
-- Fallback: copy image to clipboard
+When Stripe fires `customer.subscription.updated`, the product ID maps to `"starter"` via `PRODUCT_TO_PLAN`. This:
+- Overwrites `subscription_plan` to `"starter"` (correct for billing)
+- Calls `checkAndLockPromo(_, _, "starter")` which DOES trigger the lock-in
 
-### 2. `src/utils/gameGrading.ts`
-Utility to compute letter grade + performance tag from `GameStats`:
-- Grade mapping from performance tier
-- Auto-detect tags: "Double Double" (2+ stats ≥ 10), "Hot Shooting" (FG% ≥ 55%), "Playmaker Night" (assists ≥ 8), "Lockdown D" (steals + blocks ≥ 5), etc.
+**However**, `getEffectivePlan` requires `subscriptionPlan === 'starter'` AND `promoLockedIn === true` to grant Elite access. So the subscription.updated path actually works correctly end-to-end, but relies on event ordering (subscription.updated must fire after checkout.session.completed).
 
-### 3. Copy QR code asset
-Copy `user-uploads://Untitled_design_1.png` to `src/assets/hoop-journal-qr.png`
+### Issue 3: `checkout.session.completed` sets `subscription_plan: planId` (e.g., "elite")
 
-## Modified Files
+If checkout.session.completed fires *after* subscription.updated, it would overwrite `subscription_plan` from "starter" back to "elite". Then `getEffectivePlan` would see `subscriptionPlan === 'elite'` which doesn't match the promo condition (`=== 'starter'`), so it falls through to return "elite" directly. This actually works by accident, but is fragile.
 
-### `src/pages/GameDetail.tsx`
-- Add a "Share Report Card" button in the action bar (next to Export PDF)
-- Opens a dialog/drawer showing the `GameReportCard` component with animated grade reveal
-- Pass game data, profile info, and avatar URL
+### Fix Plan
 
-### `package.json`
-- Add `html2canvas` dependency for high-quality image export
+**In `checkout.session.completed`**: When the user is promo-eligible, set `subscription_plan` to `"starter"` (the actual billing plan) instead of the metadata `planId`, and trigger the lock-in immediately.
 
-## Grade Animation
-When the report card dialog opens:
-- Grade scales in with a flash/glow effect using framer-motion
-- XP earned fades in with a delay
-- Stats grid staggers in
+Specifically:
+1. After getting `userId` and `planId` from metadata, query `plan_overrides` for promo eligibility
+2. If promo eligible and planId is a paid plan, set `subscription_plan: "starter"` and `promo_locked_in: true` in one upsert
+3. If not promo eligible, keep current behavior (`subscription_plan: planId`)
 
-## Performance Tag Detection Logic
+**In `customer.subscription.updated`**: No changes needed -- it already correctly maps Starter product to "starter" and calls `checkAndLockPromo`.
+
+### Technical Detail
+
 ```text
-Double Double  → 2+ categories ≥ 10 (pts, reb, ast, stl, blk)
-Triple Double  → 3+ categories ≥ 10
-Hot Shooting   → FG% ≥ 55% with ≥ 8 attempts
-Playmaker      → Assists ≥ 8
-Lockdown D     → Steals + Blocks ≥ 5
-Scoring Machine → Points ≥ 30
+BEFORE (broken ordering scenario):
+  checkout.session.completed → subscription_plan = "elite", lock-in skipped
+  subscription.updated → subscription_plan = "starter", lock-in triggered
+  ✓ Works only if events arrive in this order
+
+AFTER (robust):
+  checkout.session.completed → detects promo, sets subscription_plan = "starter" + promo_locked_in = true
+  subscription.updated → subscription_plan = "starter", lock-in already done (idempotent)
+  ✓ Works regardless of event ordering
 ```
 
-## Technical Notes
-- The card is rendered as a hidden 1080x1350 div, scaled down for preview in the dialog
-- `html2canvas` captures at full resolution for crisp social media sharing
-- Web Share API handles Instagram/Twitter/Snapchat natively on mobile; desktop gets download option
-- QR code points to the published Hoop Journal app URL
+The change is isolated to ~15 lines in `supabase/functions/stripe-webhook/index.ts` within the `checkout.session.completed` case block.
 

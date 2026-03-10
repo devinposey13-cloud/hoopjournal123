@@ -39,7 +39,7 @@ import { EditScheduleDialog } from '@/components/EditScheduleDialog';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { usePlan } from '@/hooks/usePlanState';
 import { canUseFeature } from '@/lib/plans';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users, Check } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users, Check, Share2 } from 'lucide-react';
 import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import {
   Select,
@@ -55,6 +55,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { QuickDuplicateDialog } from '@/components/QuickDuplicateDialog';
 import { MilestoneCard } from '@/components/milestones/MilestoneCard';
 import { GamePerformanceCard } from '@/components/xp/GamePerformanceCard';
+import { GameReportCard } from '@/components/GameReportCard';
 import { toast } from 'sonner';
 
 export default function GameDetail() {
@@ -92,6 +93,7 @@ export default function GameDetail() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [showDeletePhotoDialog, setShowDeletePhotoDialog] = useState(false);
+  const [showReportCard, setShowReportCard] = useState(false);
 
   const handleRecapChange = useCallback((recap: string | null, includeInPdf: boolean) => {
     setCoachRecap(recap);
@@ -936,6 +938,16 @@ export default function GameDetail() {
               {!isMobile && "Export PDF"}
               {isMobile && <span className="sr-only">Export PDF</span>}
             </Button>
+            <Button 
+              onClick={() => setShowReportCard(true)}
+              size={isMobile ? "icon" : "default"}
+              title="Share Report Card"
+              className="gradient-primary"
+            >
+              <Share2 className={cn("w-4 h-4", !isMobile && "mr-2")} />
+              {!isMobile && "Report Card"}
+              {isMobile && <span className="sr-only">Report Card</span>}
+            </Button>
           </div>
         </div>
 
@@ -1205,6 +1217,16 @@ export default function GameDetail() {
           }}
         />
       )}
+
+      {/* Game Report Card */}
+      <GameReportCard
+        open={showReportCard}
+        onOpenChange={setShowReportCard}
+        game={game}
+        playerName={profile?.name || 'Player'}
+        playerTeam={profile?.team || ''}
+        avatarUrl={profile?.avatar}
+      />
     </div>
   );
 }
