@@ -61,6 +61,7 @@ export interface Plan {
     voiceJournaling: boolean;
     aiDevPlan: boolean;
     shareableLink: boolean;
+    reportCard: boolean;
   };
 }
 
