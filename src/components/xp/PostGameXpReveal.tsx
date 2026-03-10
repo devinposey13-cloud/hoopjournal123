@@ -22,7 +22,8 @@ export function PostGameXpReveal({
   performance, 
   xpResult, 
   onClose,
-  onContinue 
+  onContinue,
+  insight,
 }: PostGameXpRevealProps) {
   const tierGradient = getTierGradient(performance.tier);
   const tierColor = getTierColorClass(performance.tier);
