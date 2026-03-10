@@ -1,11 +1,12 @@
 import { format, isToday, isTomorrow, differenceInHours } from 'date-fns';
-import { Calendar, Radio, MessageSquare, Flame, ChevronRight, MapPin, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, Radio, MessageSquare, Flame, ChevronRight, MapPin, Clock, AlertCircle, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScheduledGame, GameStats } from '@/types/basketball';
 import { getMissingGames } from '@/utils/gameStatus';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import type { StoredInsight } from '@/hooks/usePostGameInsights';
 
 interface TodayCardProps {
   schedule: ScheduledGame[];
@@ -15,6 +16,8 @@ interface TodayCardProps {
   onLogGame: () => void;
   onOpenCoach: () => void;
   onStartLiveCapture?: () => void;
+  latestUnseenInsight?: StoredInsight | null;
+  onViewInsight?: (id: string) => void;
 }
 
 export function TodayCard({
