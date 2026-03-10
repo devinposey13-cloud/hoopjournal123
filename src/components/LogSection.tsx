@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { GameCard } from '@/components/GameCard';
 import { AddGameDialog } from '@/components/AddGameDialog';
 import { AddScheduleDialog } from '@/components/AddScheduleDialog';
@@ -11,8 +12,9 @@ import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { ScheduleCalendar } from '@/components/ScheduleCalendar';
 import { ScheduleCard } from '@/components/ScheduleCard';
 import { GameStats, ScheduledGame, PlayerTeam } from '@/types/basketball';
-import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
-import { Radio, Plus, Calendar, MapPin, Clock, ChevronRight, Trophy, Users, X } from 'lucide-react';
+import { getLetterGradeFromScore, calculateGameScore, getGradeColor } from '@/utils/gameGrading';
+import { isAfter, isBefore, isToday, startOfDay, isSameDay, format, getHours } from 'date-fns';
+import { Radio, Plus, Calendar, MapPin, Clock, ChevronRight, Trophy, Users, X, Zap, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
