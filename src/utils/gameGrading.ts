@@ -1,33 +1,51 @@
 import type { GameStats } from '@/types/basketball';
-import type { PerformanceTier } from '@/types/xp';
 import { calculatePerformance } from '@/utils/performanceScoring';
 
-export type LetterGrade = 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'C' | 'D' | 'F';
+export type LetterGrade = 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'B-' | 'C+';
 
-const TIER_TO_GRADE: Record<PerformanceTier, LetterGrade> = {
-  legendary: 'A+',
-  elite: 'A',
-  great: 'A-',
-  solid: 'B+',
-  rising: 'B',
-  starter: 'C',
-};
+/**
+ * Calculate Game Score using the weighted formula:
+ * Points + Rebounds + (1.5 × Assists) + (2 × Steals) + (2 × Blocks) - (1.5 × Turnovers)
+ */
+export function calculateGameScore(game: Pick<GameStats, 'points' | 'rebounds' | 'assists' | 'steals' | 'blocks' | 'turnovers'>): number {
+  const raw =
+    game.points +
+    game.rebounds +
+    1.5 * game.assists +
+    2 * game.steals +
+    2 * game.blocks -
+    1.5 * game.turnovers;
+  return Math.round(raw * 10) / 10;
+}
 
-export function getLetterGrade(tier: PerformanceTier): LetterGrade {
-  return TIER_TO_GRADE[tier];
+export function getLetterGradeFromScore(score: number): LetterGrade {
+  if (score >= 30) return 'A+';
+  if (score >= 24) return 'A';
+  if (score >= 19) return 'A-';
+  if (score >= 15) return 'B+';
+  if (score >= 12) return 'B';
+  if (score >= 9) return 'B-';
+  return 'C+';
 }
 
 export function getGradeColor(grade: LetterGrade): string {
-  if (grade.startsWith('A')) return '#FFD700'; // gold
-  if (grade.startsWith('B')) return '#FF6B00'; // orange
-  if (grade === 'C') return '#94A3B8'; // gray
-  return '#EF4444'; // red
+  switch (grade) {
+    case 'A+': return '#FFD700'; // gold
+    case 'A':  return '#FF6B00'; // orange
+    case 'A-': return '#FFA94D'; // light orange
+    case 'B+': return '#FFB870'; // soft orange
+    case 'B':  return '#94A3B8'; // neutral gray
+    case 'B-': return '#CBD5E1'; // light gray
+    case 'C+': return '#9CA3AF'; // muted gray
+  }
 }
 
 export function getGradeGlow(grade: LetterGrade): string {
-  if (grade.startsWith('A')) return '0 0 60px rgba(255, 215, 0, 0.5)';
-  if (grade.startsWith('B')) return '0 0 60px rgba(255, 107, 0, 0.4)';
-  return '0 0 40px rgba(148, 163, 184, 0.3)';
+  if (grade === 'A+') return '0 0 60px rgba(255, 215, 0, 0.5)';
+  if (grade === 'A') return '0 0 60px rgba(255, 107, 0, 0.5)';
+  if (grade === 'A-') return '0 0 50px rgba(255, 169, 77, 0.4)';
+  if (grade.startsWith('B')) return '0 0 40px rgba(255, 184, 112, 0.3)';
+  return '0 0 30px rgba(148, 163, 184, 0.2)';
 }
 
 export interface PerformanceTag {
@@ -64,15 +82,17 @@ export function detectPerformanceTags(game: GameStats): PerformanceTag[] {
     tags.push({ label: 'Lockdown D', emoji: '🛡️' });
   }
 
-  return tags.slice(0, 2); // max 2 tags
+  return tags.slice(0, 2);
 }
 
 export function getGameGradeData(game: GameStats) {
-  const perf = calculatePerformance(game);
-  const grade = getLetterGrade(perf.tier);
+  const gameScore = calculateGameScore(game);
+  const grade = getLetterGradeFromScore(gameScore);
   const color = getGradeColor(grade);
   const glow = getGradeGlow(grade);
   const tags = detectPerformanceTags(game);
+  // XP stays independent via the performance scoring system
+  const perf = calculatePerformance(game);
 
-  return { grade, color, glow, tags, xpEarned: perf.xpEarned, tier: perf.tier };
+  return { grade, color, glow, tags, xpEarned: perf.xpEarned, tier: perf.tier, gameScore };
 }

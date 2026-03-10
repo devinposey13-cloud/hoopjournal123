@@ -1,0 +1,1 @@
+ALTER TABLE public.games ADD COLUMN game_score NUMERIC(5,1);
