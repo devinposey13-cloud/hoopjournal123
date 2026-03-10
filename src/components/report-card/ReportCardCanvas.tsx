@@ -3,7 +3,6 @@ import { format } from 'date-fns';
 import type { GameStats } from '@/types/basketball';
 import { getGameGradeData } from '@/utils/gameGrading';
 import { calculateCareerHighs } from '@/utils/statsCalculations';
-import hoopJournalQr from '@/assets/hoop-journal-qr.png';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 
 interface ReportCardCanvasProps {
@@ -49,208 +48,225 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
       { label: 'TOV', value: game.turnovers },
     ];
 
+    // Shared text style helper
+    const s = {
+      muted: '#64748b' as const,
+      dim: '#475569' as const,
+      bright: '#f8fafc' as const,
+      sub: '#94a3b8' as const,
+    };
+
     return (
       <div
         ref={ref}
         style={{
           width: 1080,
           height: 1920,
-          fontFamily: "'Inter', sans-serif",
-          background: 'linear-gradient(180deg, #0a0f1e 0%, #070b16 30%, #0d1220 65%, #111827 100%)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          padding: '200px 72px 250px',
+          fontFamily: "'Inter', 'SF Pro Display', sans-serif",
+          background: 'linear-gradient(180deg, #070b16 0%, #0a0f1e 25%, #0d1424 50%, #0a0f1e 75%, #070b16 100%)',
           position: 'relative',
           overflow: 'hidden',
           boxSizing: 'border-box',
         }}
       >
-        {/* Background ambient glow */}
+        {/* ── Background Effects ── */}
         <div style={{
-          position: 'absolute',
-          top: '38%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 900,
-          height: 900,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${color}12 0%, transparent 60%)`,
+          position: 'absolute', top: '22%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: 800, height: 800, borderRadius: '50%',
+          background: `radial-gradient(circle, ${color}08 0%, transparent 70%)`,
           pointerEvents: 'none',
         }} />
-        {/* Top light streak */}
         <div style={{
-          position: 'absolute',
-          top: 0,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 900,
-          height: 3,
-          background: `linear-gradient(90deg, transparent, ${color}60, transparent)`,
+          position: 'absolute', top: 0, left: 0, right: 0, height: 4,
+          background: `linear-gradient(90deg, transparent 10%, ${color}50 50%, transparent 90%)`,
+        }} />
+        {/* Subtle vertical lines for sports graphic feel */}
+        <div style={{
+          position: 'absolute', top: 0, bottom: 0, left: 80, width: 1,
+          background: 'linear-gradient(180deg, transparent, rgba(100,116,139,0.08) 30%, rgba(100,116,139,0.08) 70%, transparent)',
+        }} />
+        <div style={{
+          position: 'absolute', top: 0, bottom: 0, right: 80, width: 1,
+          background: 'linear-gradient(180deg, transparent, rgba(100,116,139,0.08) 30%, rgba(100,116,139,0.08) 70%, transparent)',
         }} />
 
-        {/* Content */}
+        {/* ── Content Safe Zone ── */}
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
+          position: 'absolute',
+          top: 200, bottom: 250, left: 80, right: 80,
+          display: 'flex', flexDirection: 'column',
           alignItems: 'center',
-          width: '100%',
-          maxWidth: 936,
-          flex: 1,
-          justifyContent: 'space-between',
         }}>
-          {/* ── TOP: Player Identity ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+
+          {/* ═══ ZONE 1: Player Header (~15%) ═══ */}
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            marginBottom: 16,
+          }}>
             {/* Avatar */}
             <div style={{
-              width: 140,
-              height: 140,
-              borderRadius: '50%',
-              border: `4px solid ${color}`,
-              overflow: 'hidden',
-              marginBottom: 16,
-              boxShadow: `0 0 50px ${color}50, 0 0 100px ${color}20`,
-              flexShrink: 0,
+              width: 160, height: 160, borderRadius: '50%',
+              border: `5px solid ${color}`,
+              overflow: 'hidden', marginBottom: 20,
+              boxShadow: `0 0 60px ${color}40, 0 0 120px ${color}15`,
             }}>
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
               ) : (
                 <div style={{
                   width: '100%', height: '100%', background: '#1e293b',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64,
                 }}>🏀</div>
               )}
             </div>
-
             <div style={{
-              color: '#f8fafc', fontSize: 40, fontWeight: 800,
-              letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4,
-              textAlign: 'center', lineHeight: 1.1,
+              color: s.bright, fontSize: 44, fontWeight: 900,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              textAlign: 'center', lineHeight: 1,
             }}>{playerName}</div>
             <div style={{
-              color: '#64748b', fontSize: 18, fontWeight: 700,
-              letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 24,
+              color: s.muted, fontSize: 18, fontWeight: 700,
+              letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 8,
               textAlign: 'center',
             }}>{playerTeam}</div>
+          </div>
 
-            {/* ── GRADE (Hero Element) ── */}
+          {/* ═══ ZONE 2: Grade Hero (~25%) ═══ */}
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            marginBottom: 8, position: 'relative',
+          }}>
+            {/* Grade glow backdrop */}
             <div style={{
-              color: '#475569', fontSize: 14, fontWeight: 700,
-              letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 0,
-              textAlign: 'center',
+              position: 'absolute', top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 400, height: 400, borderRadius: '50%',
+              background: `radial-gradient(circle, ${color}15 0%, transparent 60%)`,
+              pointerEvents: 'none',
+            }} />
+            <div style={{
+              color: s.dim, fontSize: 16, fontWeight: 800,
+              letterSpacing: '0.4em', textTransform: 'uppercase',
+              textAlign: 'center', marginBottom: 0,
             }}>GAME GRADE</div>
             <div style={{
-              fontSize: 220, fontWeight: 900, color, lineHeight: 0.85,
-              marginBottom: 8, textShadow: glow, letterSpacing: '-0.02em',
-              textAlign: 'center',
+              fontSize: 320, fontWeight: 900, color,
+              lineHeight: 0.82, textShadow: glow,
+              letterSpacing: '-0.03em', textAlign: 'center',
+              position: 'relative',
             }}>{grade}</div>
 
-            {/* Tags */}
+            {/* Tags row */}
             {tags.length > 0 && (
-              <div style={{ display: 'flex', gap: 10, marginBottom: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <div style={{
+                display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center',
+                marginTop: 4,
+              }}>
                 {tags.slice(0, 3).map((tag, i) => (
                   <div key={i} style={{
-                    background: `${color}18`,
-                    border: `1px solid ${color}35`,
-                    borderRadius: 50,
-                    padding: '6px 20px',
-                    color: color,
-                    fontSize: 15,
-                    fontWeight: 700,
+                    background: `${color}15`,
+                    border: `1px solid ${color}30`,
+                    borderRadius: 50, padding: '6px 22px',
+                    color, fontSize: 16, fontWeight: 700,
                   }}>{tag.emoji} {tag.label}</div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* ── MIDDLE: Context + Stats ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-            {/* Opponent + Result */}
+          {/* ═══ ZONE 3: Game Context ═══ */}
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            marginBottom: 28,
+          }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 16,
-              marginBottom: 6, fontSize: 22, fontWeight: 700,
-              justifyContent: 'center',
+              fontSize: 24, fontWeight: 700,
             }}>
               <span style={{ color: '#cbd5e1' }}>vs {game.opponent}</span>
               <span style={{
                 color: game.isWin ? '#4ade80' : '#f87171',
-                fontWeight: 800, fontSize: 18, letterSpacing: '0.05em',
-                background: game.isWin ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)',
-                border: `1px solid ${game.isWin ? 'rgba(74,222,128,0.25)' : 'rgba(248,113,113,0.25)'}`,
-                borderRadius: 8, padding: '4px 16px',
+                fontWeight: 800, fontSize: 20,
+                background: game.isWin ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
+                border: `1px solid ${game.isWin ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)'}`,
+                borderRadius: 8, padding: '4px 18px',
               }}>{game.isWin ? 'WIN' : 'LOSS'}{scoreDisplay ? ` ${scoreDisplay}` : ''}</span>
             </div>
-            <div style={{
-              color: '#475569', fontSize: 15, fontWeight: 500, marginBottom: 20,
-              textAlign: 'center',
-            }}>{format(new Date(game.date), 'MMM d, yyyy')}</div>
+            <div style={{ color: s.dim, fontSize: 16, fontWeight: 500, marginTop: 6 }}>
+              {format(new Date(game.date), 'MMM d, yyyy')}
+            </div>
+          </div>
 
-            {/* Game Score + Best Impact */}
+          {/* ═══ ZONE 4: Stat Panel (~40%) ═══ */}
+          <div style={{
+            width: '100%', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', flex: 1, justifyContent: 'center',
+          }}>
+            {/* Game Score row */}
             <div style={{
-              display: 'flex', gap: 16, marginBottom: 24, justifyContent: 'center', flexWrap: 'wrap',
+              display: 'flex', gap: 20, marginBottom: 28, justifyContent: 'center',
             }}>
-              <div style={{
-                background: 'rgba(30,41,59,0.6)',
-                border: '1px solid rgba(100,116,139,0.15)',
-                borderRadius: 16, padding: '14px 40px',
-                textAlign: 'center',
-              }}>
-                <div style={{ color: '#64748b', fontSize: 12, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Game Score</div>
-                <div style={{ color: '#f8fafc', fontSize: 44, fontWeight: 900, lineHeight: 1.1 }}>{gameScore}</div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ color: s.dim, fontSize: 12, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>GAME SCORE</div>
+                <div style={{ color: s.bright, fontSize: 52, fontWeight: 900, lineHeight: 1 }}>{gameScore}</div>
               </div>
               {bestImpact.value > 0 && (
-                <div style={{
-                  background: `linear-gradient(135deg, ${color}12, ${color}06)`,
-                  border: `1px solid ${color}25`,
-                  borderRadius: 16, padding: '14px 32px',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <div style={{ color: '#64748b', fontSize: 12, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Best Impact</div>
-                  <div style={{ color: '#f8fafc', fontSize: 44, fontWeight: 900, lineHeight: 1.1 }}>
-                    {bestImpact.value} <span style={{ fontSize: 20, color: '#94a3b8', fontWeight: 700 }}>{bestImpact.stat}</span>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: s.dim, fontSize: 12, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>BEST IMPACT</div>
+                  <div style={{ color: s.bright, fontSize: 52, fontWeight: 900, lineHeight: 1 }}>
+                    {bestImpact.value} <span style={{ fontSize: 22, color: s.sub, fontWeight: 700 }}>{bestImpact.stat}</span>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* ── Stat Grid 2×3 (Large Tiles) ── */}
+            {/* Separator */}
+            <div style={{
+              width: '60%', height: 1, marginBottom: 28,
+              background: `linear-gradient(90deg, transparent, ${color}30, transparent)`,
+            }} />
+
+            {/* Stat Grid */}
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 14, width: '100%', marginBottom: 20,
+              gap: 16, width: '100%',
             }}>
-              {stats.map((s) => (
-                <div key={s.label} style={{
-                  background: 'rgba(30,41,59,0.7)',
-                  border: '1px solid rgba(100,116,139,0.15)',
-                  borderRadius: 18, padding: '24px 12px 20px',
+              {stats.map((st) => (
+                <div key={st.label} style={{
+                  background: 'rgba(15,23,42,0.8)',
+                  border: '1px solid rgba(100,116,139,0.12)',
+                  borderRadius: 20, padding: '28px 8px 22px',
                   textAlign: 'center',
                 }}>
                   <div style={{
-                    fontSize: 56, fontWeight: 900, color: '#f8fafc', lineHeight: 1,
-                  }}>{s.value}</div>
+                    fontSize: 68, fontWeight: 900, color: s.bright, lineHeight: 1,
+                  }}>{st.value}</div>
                   <div style={{
-                    fontSize: 14, fontWeight: 700, color: '#64748b',
-                    letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 6,
-                  }}>{s.label}</div>
+                    fontSize: 15, fontWeight: 800, color: s.muted,
+                    letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 8,
+                  }}>{st.label}</div>
                 </div>
               ))}
             </div>
+          </div>
 
+          {/* ═══ ZONE 5: Achievements + XP ═══ */}
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            marginTop: 24, gap: 14,
+          }}>
             {/* Career High Badges */}
             {careerHighsInGame.length > 0 && (
-              <div style={{
-                display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center',
-                marginBottom: 16,
-              }}>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
                 {careerHighsInGame.slice(0, 3).map((ch, i) => (
                   <div key={i} style={{
-                    background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08))',
-                    border: '1px solid rgba(255,215,0,0.3)',
-                    borderRadius: 10, padding: '8px 18px',
-                    display: 'flex', alignItems: 'center', gap: 8,
+                    background: 'linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,165,0,0.06))',
+                    border: '1px solid rgba(255,215,0,0.25)',
+                    borderRadius: 12, padding: '10px 22px',
+                    display: 'flex', alignItems: 'center', gap: 10,
                   }}>
-                    <span style={{ fontSize: 16 }}>🏆</span>
-                    <span style={{ color: '#fbbf24', fontSize: 14, fontWeight: 800, letterSpacing: '0.02em' }}>
+                    <span style={{ fontSize: 18 }}>🏆</span>
+                    <span style={{ color: '#fbbf24', fontSize: 15, fontWeight: 800 }}>
                       Career High: {ch.displayValue} {ch.stat}
                     </span>
                   </div>
@@ -258,31 +274,26 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               </div>
             )}
 
-            {/* XP Earned */}
+            {/* XP Banner */}
             <div style={{
-              background: 'linear-gradient(135deg, rgba(255,107,0,0.15), rgba(255,165,0,0.08))',
+              background: 'linear-gradient(135deg, rgba(255,107,0,0.18), rgba(255,165,0,0.08))',
               border: '1px solid rgba(255,107,0,0.3)',
-              borderRadius: 50, padding: '10px 36px',
-              color: '#ff8c3a', fontSize: 20, fontWeight: 800,
-              boxShadow: '0 0 30px rgba(255,107,0,0.15)',
+              borderRadius: 50, padding: '12px 44px',
+              color: '#ff8c3a', fontSize: 22, fontWeight: 900,
+              boxShadow: '0 0 40px rgba(255,107,0,0.12)',
+              letterSpacing: '0.02em',
             }}>⚡ +{xpEarned} XP Earned</div>
           </div>
 
-          {/* ── FOOTER: Branding ── */}
+          {/* ═══ FOOTER: Branding ═══ */}
           <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            width: '100%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: 14, marginTop: 28, opacity: 0.7,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <img src={hoopJournalLogo} alt="" style={{ width: 40, height: 40, borderRadius: 8 }} crossOrigin="anonymous" />
-              <div>
-                <div style={{ color: '#f8fafc', fontSize: 16, fontWeight: 800 }}>Hoop Journal</div>
-                <div style={{ color: '#475569', fontSize: 11, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-              <div style={{ color: '#475569', fontSize: 9, fontWeight: 600, letterSpacing: '0.05em' }}>Scan to track your game</div>
-              <img src={hoopJournalQr} alt="QR" style={{ width: 56, height: 56, borderRadius: 6 }} crossOrigin="anonymous" />
+            <img src={hoopJournalLogo} alt="" style={{ width: 36, height: 36, borderRadius: 8 }} crossOrigin="anonymous" />
+            <div>
+              <div style={{ color: s.bright, fontSize: 15, fontWeight: 800 }}>Hoop Journal</div>
+              <div style={{ color: s.dim, fontSize: 10, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
             </div>
           </div>
         </div>
