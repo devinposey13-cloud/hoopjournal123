@@ -12,10 +12,10 @@ import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { ScheduleCalendar } from '@/components/ScheduleCalendar';
 import { GameStats, ScheduledGame, PlayerTeam } from '@/types/basketball';
 import { getLetterGradeFromScore, calculateGameScore, getGradeColor } from '@/utils/gameGrading';
-import { getGameStatus, getSmartPrompt, getNextRelevantGame, findLinkedLoggedGame, getMissingGames, getSeasonTrackingSummary, isPromptDismissCooldownActive, dismissSmartPrompt, type GameStatus, type GameStatusResult } from '@/utils/gameStatus';
+import { getGameStatus, getSmartPrompt, getNextRelevantGame, findLinkedLoggedGame, getMissingGames, getSeasonTrackingSummary, type GameStatus, type GameStatusResult } from '@/utils/gameStatus';
 import { calculateConsistencyStreak } from '@/utils/xpCalculations';
-import { isAfter, isBefore, isToday, startOfDay, isSameDay, format, getHours } from 'date-fns';
-import { Radio, Calendar, MapPin, Clock, ChevronRight, ChevronLeft, Trophy, Users, X, Zap, ClipboardList, Home, Plane, AlertCircle, Check, Flame } from 'lucide-react';
+import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
+import { Radio, Calendar, MapPin, Clock, ChevronRight, ChevronLeft, Trophy, Users, X, Zap, ClipboardList, AlertCircle, Check, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -94,21 +94,14 @@ export function LogSection({
   const [quickCaptureScheduledGameId, setQuickCaptureScheduledGameId] = useState<string | undefined>();
   const [quickCaptureTeamId, setQuickCaptureTeamId] = useState<string | undefined>();
   const [isSavingQuickCapture, setIsSavingQuickCapture] = useState(false);
-  const [dismissedSmartPrompt, setDismissedSmartPrompt] = useState(() => isPromptDismissCooldownActive());
 
   // Calendar month state
   const [calendarMonth, setCalendarMonth] = useState(new Date());
 
-  // Smart prompt using the game status engine
+  // Smart prompt - only used for game day context in unified card
   const smartPrompt = useMemo(() => {
     return getSmartPrompt(schedule, games);
   }, [games, schedule]);
-
-  const showSmartPrompt = useMemo(() => {
-    if (smartPrompt) return true;
-    const hour = getHours(new Date());
-    return hour >= 17 && hour <= 23;
-  }, [smartPrompt]);
 
   // Next relevant game for the upcoming game card (uses status engine)
   const nextRelevantGame = useMemo(() => {
@@ -330,127 +323,83 @@ export function LogSection({
 
         {/* ===================== LOG HOME (ALL GAMES) ===================== */}
         <TabsContent value="history" className="mt-5 space-y-5">
-          
-          {/* Smart Prompt - uses game status engine */}
-          {showSmartPrompt && !dismissedSmartPrompt && (
-            <Card className={cn(
-              "relative overflow-hidden border-primary/30",
-              smartPrompt?.type === 'live' 
-                ? "bg-gradient-to-r from-primary/15 via-card to-card" 
-                : "bg-gradient-to-r from-primary/10 via-card to-card"
-            )}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 h-7 w-7"
-                onClick={() => { setDismissedSmartPrompt(true); dismissSmartPrompt(); }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="p-2.5 rounded-xl bg-primary/15">
-                  <Zap className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  {smartPrompt?.type === 'live' ? (
-                    <>
-                      <p className="font-semibold text-sm">Resume Live Game</p>
-                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — continue tracking your stats</p>
-                    </>
-                  ) : smartPrompt?.type === 'stats_missing' ? (
-                    <>
-                      <p className="font-semibold text-sm">Did you just play a game?</p>
-                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — log it now while it's fresh.</p>
-                    </>
-                  ) : smartPrompt?.type === 'game_day' ? (
-                    <>
-                      <p className="font-semibold text-sm">Game Day!</p>
-                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} {smartPrompt.game.time ? `at ${smartPrompt.game.time}` : 'today'}</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-semibold text-sm">Did you just play a game?</p>
-                      <p className="text-xs text-muted-foreground">Log it now while it's fresh.</p>
-                    </>
-                  )}
-                </div>
-                {smartPrompt?.type === 'live' || smartPrompt?.type === 'game_day' ? (
-                  <Button 
-                    size="sm" 
-                    className="gradient-primary gap-1 text-xs font-semibold shrink-0"
-                    onClick={() => handleStartQuickCapture(smartPrompt.game.opponent, smartPrompt.game.id, smartPrompt.game.teamId)}
-                  >
-                    <Radio className="w-3.5 h-3.5" />
-                    {smartPrompt.type === 'live' ? 'Resume Live Game' : 'Start Live Game'}
-                  </Button>
-                ) : smartPrompt?.type === 'stats_missing' ? (
-                  <AddGameDialog
-                    onAddGame={addGame}
-                    isMobile={isMobile}
-                    prefill={{
-                      date: new Date(smartPrompt.game.date),
-                      opponent: smartPrompt.game.opponent,
-                      teamId: smartPrompt.game.teamId,
-                      scheduledGameId: smartPrompt.game.id,
-                    }}
-                    customTrigger={
-                      <Button size="sm" className="gradient-primary gap-1 text-xs font-semibold shrink-0">
-                        <ClipboardList className="w-3.5 h-3.5" />
-                        Log Your Game
-                      </Button>
-                    }
-                  />
-                ) : (
-                  <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+
+          {/* Unified Game Actions Card */}
+          <Card className={cn(
+            "overflow-hidden transition-all",
+            (smartPrompt?.type === 'game_day' || smartPrompt?.type === 'live')
+              ? "border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card shadow-[0_0_24px_hsl(var(--primary)/0.08)]"
+              : "border-primary/20 bg-gradient-to-br from-primary/8 via-card to-card"
+          )}>
+            <CardContent className="p-5 space-y-4">
+              {/* Header */}
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Game Actions</h2>
+                {(smartPrompt?.type === 'game_day' || smartPrompt?.type === 'live') && (
+                  <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase gap-1">
+                    <Zap className="w-3 h-3" />
+                    Game Day
+                  </Badge>
                 )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Primary CTA */}
-          <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/8 via-card to-card hover:border-primary/30 transition-all group">
-            <CardContent className="p-5">
-              <div className="flex items-start gap-4">
-                <div className="p-3 rounded-xl bg-primary/15 shrink-0 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-shadow">
-                  <Radio className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-bold mb-1">Start Live Game</h2>
-                   <p className="text-sm text-muted-foreground mb-3">
-                     Track stats in real time during your game.
-                   </p>
-                  <Button
-                    onClick={handleQuickLiveStatsClick}
-                    size="lg"
-                    className="w-full sm:w-auto gradient-primary gap-2 font-semibold shadow-lg hover:shadow-xl transition-shadow"
-                  >
-                    <Radio className="w-4 h-4" />
-                    Start Live Game
-                  </Button>
-                </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Secondary CTA */}
-          <Card className="overflow-hidden border-border/60 hover:border-border transition-all">
-            <CardContent className="p-5">
-              <div className="flex items-start gap-4">
-                <div className="p-3 rounded-xl bg-muted shrink-0">
-                  <ClipboardList className="h-5 w-5 text-foreground" />
+              {/* Game Day context */}
+              {(smartPrompt?.type === 'game_day' || smartPrompt?.type === 'live') && smartPrompt?.game && (
+                <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/5 border border-primary/15">
+                  <Radio className="w-4 h-4 text-primary shrink-0 animate-pulse" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">vs {smartPrompt.game.opponent}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {isToday(new Date(smartPrompt.game.date)) ? 'Today' : format(new Date(smartPrompt.game.date), 'EEE, MMM d')}
+                      {smartPrompt.game.time ? ` • ${smartPrompt.game.time}` : ''}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-base font-semibold mb-0.5">Log Your Last Game</h2>
-                   <p className="text-sm text-muted-foreground mb-3">
-                     Enter stats from a completed game.
-                   </p>
-                  <AddGameDialog 
-                    onAddGame={addGame} 
-                    isMobile={isMobile}
-                    autoOpen={autoOpenAddGame}
-                    onAutoOpenConsumed={onAutoOpenAddGameConsumed}
-                  />
-                </div>
+              )}
+
+              {/* Primary: Start Live Game */}
+              <div>
+                <p className="text-sm text-muted-foreground mb-2.5">
+                  Track stats in real time during your game.
+                </p>
+                <Button
+                  onClick={() => {
+                    if (smartPrompt?.type === 'game_day' || smartPrompt?.type === 'live') {
+                      handleStartQuickCapture(smartPrompt.game.opponent, smartPrompt.game.id, smartPrompt.game.teamId);
+                    } else {
+                      handleQuickLiveStatsClick();
+                    }
+                  }}
+                  size="lg"
+                  className="w-full gradient-primary gap-2 font-semibold shadow-lg hover:shadow-xl transition-shadow text-base"
+                >
+                  <Radio className="w-5 h-5" />
+                  {smartPrompt?.type === 'live' ? 'Resume Live Game' : 'Start Live Game'}
+                </Button>
+              </div>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-border/60" />
+                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">or</span>
+                <div className="flex-1 h-px bg-border/60" />
+              </div>
+
+              {/* Secondary: Log Game */}
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">Just finished a game?</p>
+                <AddGameDialog 
+                  onAddGame={addGame} 
+                  isMobile={isMobile}
+                  autoOpen={autoOpenAddGame}
+                  onAutoOpenConsumed={onAutoOpenAddGameConsumed}
+                  customTrigger={
+                    <Button variant="ghost" size="sm" className="text-foreground gap-1.5 font-semibold text-sm h-9 px-4 border border-border/60 hover:border-border">
+                      <ClipboardList className="w-4 h-4" />
+                      Log Game
+                    </Button>
+                  }
+                />
               </div>
             </CardContent>
           </Card>
