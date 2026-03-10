@@ -38,18 +38,8 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
   const captureCard = useCallback(async (): Promise<Blob | null> => {
     if (!cardRef.current) return null;
 
-    const clone = cardRef.current.cloneNode(true) as HTMLElement;
-    clone.style.position = 'fixed';
-    clone.style.top = '-9999px';
-    clone.style.left = '-9999px';
-    clone.style.width = `${CANVAS_W}px`;
-    clone.style.height = `${CANVAS_H}px`;
-    clone.style.transform = 'none';
-    clone.style.zIndex = '-1';
-    document.body.appendChild(clone);
-
     try {
-      const rawCanvas = await html2canvas(clone, {
+      const rawCanvas = await html2canvas(cardRef.current, {
         scale: 1,
         backgroundColor: null,
         useCORS: true,
@@ -68,30 +58,11 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
 
       ctx.fillStyle = '#070b16';
       ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-      const srcW = rawCanvas.width;
-      const srcH = rawCanvas.height;
-      const targetAR = CANVAS_W / CANVAS_H;
-      const srcAR = srcW / srcH;
-
-      let drawW: number, drawH: number, offsetX: number, offsetY: number;
-      if (srcAR > targetAR) {
-        drawW = CANVAS_W;
-        drawH = CANVAS_W / srcAR;
-        offsetX = 0;
-        offsetY = (CANVAS_H - drawH) / 2;
-      } else {
-        drawH = CANVAS_H;
-        drawW = CANVAS_H * srcAR;
-        offsetX = (CANVAS_W - drawW) / 2;
-        offsetY = 0;
-      }
-
-      ctx.drawImage(rawCanvas, 0, 0, srcW, srcH, offsetX, offsetY, drawW, drawH);
+      ctx.drawImage(rawCanvas, 0, 0, CANVAS_W, CANVAS_H);
 
       return new Promise(resolve => targetCanvas.toBlob(blob => resolve(blob), 'image/png'));
-    } finally {
-      document.body.removeChild(clone);
+    } catch {
+      return null;
     }
   }, []);
 
