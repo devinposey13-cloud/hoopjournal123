@@ -360,7 +360,7 @@ export function LogSection({
                   ) : (
                     <>
                       <p className="font-semibold text-sm">Did you just play a game?</p>
-                      <p className="text-xs text-muted-foreground">Log it now while it's fresh</p>
+                      <p className="text-xs text-muted-foreground">Log it now while it's fresh.</p>
                     </>
                   )}
                 </div>
