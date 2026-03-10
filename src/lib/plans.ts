@@ -244,6 +244,7 @@ export const planCatalog: Record<PlanId, Plan> = {
     cta: 'Go Elite',
     features: [
       { label: 'Everything in Pro', included: true },
+      { label: 'Shareable game report cards', included: true },
       { label: 'Recruiting profile page + link', included: true },
       { label: 'Exportable PDF season report', included: true },
       { label: 'Parent dashboard view', included: true },
