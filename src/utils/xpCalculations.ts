@@ -80,12 +80,14 @@ export function calculateXpGain(
   currentProgress: XpProgress | null,
   xpGained: number,
   allRewards: LevelReward[],
-  unlockedRewardIds: string[]
+  unlockedRewardIds: string[],
+  recoveryBonus: number = 0
 ): XpGainResult {
   const previousXp = currentProgress?.current_xp ?? 0;
   const previousLevel = currentProgress?.current_level ?? 1;
   
-  const newXp = previousXp + xpGained;
+  const totalXpGained = xpGained + recoveryBonus;
+  const newXp = previousXp + totalXpGained;
   const newLevel = Math.min(XP_CONFIG.MAX_LEVEL, getLevelFromXp(newXp));
   
   const didLevelUp = newLevel > previousLevel;
@@ -107,7 +109,7 @@ export function calculateXpGain(
   return {
     previousXp,
     newXp,
-    xpGained,
+    xpGained: totalXpGained,
     previousLevel,
     newLevel,
     didLevelUp,
@@ -115,7 +117,20 @@ export function calculateXpGain(
     xpToNextLevel,
     xpProgressInLevel,
     newRewards,
+    recoveryBonus,
   };
+}
+
+/**
+ * Check if a game qualifies for Recovery XP bonus.
+ * Eligible when: game was scheduled, is stats_missing, and logged within 72hrs of game date.
+ */
+export function isRecoveryEligible(gameDate: string, scheduledGameId?: string): boolean {
+  if (!scheduledGameId) return false;
+  const gameTime = new Date(gameDate).getTime();
+  const now = Date.now();
+  const windowMs = XP_CONFIG.RECOVERY_WINDOW_HOURS * 60 * 60 * 1000;
+  return now - gameTime <= windowMs && now > gameTime;
 }
 
 /**
