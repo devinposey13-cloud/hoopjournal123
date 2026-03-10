@@ -970,8 +970,8 @@ export default function GameDetail() {
             </Button>
             <Button 
               onClick={() => {
-                if (!canUseFeature(plan.currentPlan, 'reportCard')) {
-                  plan.openPaywall('report_card');
+                if (!canUseFeature(currentPlan, 'reportCard')) {
+                  openPaywall('report_card');
                   return;
                 }
                 setShowReportCard(true);
