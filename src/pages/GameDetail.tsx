@@ -921,7 +921,7 @@ export default function GameDetail() {
             </div>
             <h1 className="text-3xl font-bold">vs {game.opponent}</h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {/* Hidden file input for photo capture */}
             <input
               ref={photoInputRef}
