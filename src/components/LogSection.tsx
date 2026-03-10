@@ -345,7 +345,7 @@ export function LogSection({
                   {smartPrompt?.type === 'live' ? (
                     <>
                       <p className="font-semibold text-sm">Resume Live Game</p>
-                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — continue tracking</p>
+                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — continue tracking your stats</p>
                     </>
                   ) : smartPrompt?.type === 'stats_missing' ? (
                     <>
