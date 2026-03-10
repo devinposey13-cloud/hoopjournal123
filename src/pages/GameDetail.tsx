@@ -82,6 +82,7 @@ export default function GameDetail() {
   } = useGameWithMilestones();
   const { teams } = usePlayerTeams();
   const { currentPlan } = usePlan();
+  const { games: allGames } = useCloudData();
   const [lastSavedGameId, setLastSavedGameId] = useState<string | null>(null);
   const [game, setGame] = useState<GameStats | null>(null);
   const [scheduledGame, setScheduledGame] = useState<ScheduledGame | null>(null);
@@ -98,6 +99,8 @@ export default function GameDetail() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [showDeletePhotoDialog, setShowDeletePhotoDialog] = useState(false);
   const [showReportCard, setShowReportCard] = useState(false);
+  const [newCareerHighs, setNewCareerHighs] = useState<CareerHigh[]>([]);
+  const [showCareerHighCelebration, setShowCareerHighCelebration] = useState(false);
 
   const handleRecapChange = useCallback((recap: string | null, includeInPdf: boolean) => {
     setCoachRecap(recap);
