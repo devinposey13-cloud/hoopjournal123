@@ -236,6 +236,14 @@ export function LogSection({
     );
   }
 
+  // Smart prompt: show "Did you just play?" banner in evening hours (5pm-11pm)
+  const showSmartPrompt = useMemo(() => {
+    const hour = getHours(new Date());
+    return hour >= 17 && hour <= 23 && games.length > 0;
+  }, [games.length]);
+
+  const [dismissedSmartPrompt, setDismissedSmartPrompt] = useState(false);
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Quick Live Stats Dialog */}
@@ -247,63 +255,138 @@ export function LogSection({
         onStartCapture={handleStartQuickCapture}
       />
 
-      {/* ===================== CONTEXT ZONE (TOP) ===================== */}
-      <section className="space-y-3">
+      {/* ===================== SMART PROMPT ===================== */}
+      {showSmartPrompt && !dismissedSmartPrompt && (
+        <Card className="relative overflow-hidden border-primary/30 bg-gradient-to-r from-primary/10 via-card to-card">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 h-7 w-7"
+            onClick={() => setDismissedSmartPrompt(true)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="p-2.5 rounded-xl bg-primary/15">
+              <Zap className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-sm">Did you just play a game?</p>
+              <p className="text-xs text-muted-foreground">Log it now while it's fresh</p>
+            </div>
+            <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ===================== PRIMARY CTA - START LIVE GAME ===================== */}
+      <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/8 via-card to-card hover:border-primary/30 transition-all">
+        <CardContent className="p-5">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-xl bg-primary/15 shrink-0">
+              <Radio className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-bold mb-1">Start Live Game</h2>
+              <p className="text-sm text-muted-foreground mb-3">
+                Track stats in real-time during your game
+              </p>
+              <Button
+                onClick={handleQuickLiveStatsClick}
+                size="lg"
+                className="w-full sm:w-auto gradient-primary gap-2 font-semibold shadow-lg hover:shadow-xl transition-shadow"
+              >
+                <Radio className="w-4 h-4" />
+                Start Live Game
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ===================== SECONDARY CTA - QUICK LOG ===================== */}
+      <Card className="overflow-hidden border-border/60 hover:border-border transition-all">
+        <CardContent className="p-5">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-xl bg-muted shrink-0">
+              <ClipboardList className="h-5 w-5 text-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base font-semibold mb-0.5">Log Your Last Game</h2>
+              <p className="text-sm text-muted-foreground mb-3">
+                Enter stats from a completed game
+              </p>
+              <AddGameDialog 
+                onAddGame={addGame} 
+                isMobile={isMobile}
+                autoOpen={autoOpenAddGame}
+                onAutoOpenConsumed={onAutoOpenAddGameConsumed}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ===================== UPCOMING GAME ===================== */}
+      <section>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Upcoming Game
+        </h2>
         {nextGame ? (
-          <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <Card 
+            className="overflow-hidden border-border/60 hover:border-primary/20 transition-all cursor-pointer"
+            onClick={() => navigate(`/game/scheduled/${nextGame.id}`)}
+          >
             <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-primary uppercase tracking-wider mb-1">
-                    {isToday(new Date(nextGame.date)) ? '🏀 Today' : 'Next Game'}
-                  </p>
-                  <h2 className="text-xl font-bold truncate">
-                    vs {nextGame.opponent}
-                  </h2>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5" />
-                      {format(new Date(nextGame.date), 'EEE, MMM d')}
-                    </span>
-                    {nextGame.time && (
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5" />
-                        {nextGame.time}
-                      </span>
+                  <div className="flex items-center gap-2 mb-1">
+                    {isToday(new Date(nextGame.date)) && (
+                      <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/30 text-[10px] font-semibold uppercase">
+                        Today
+                      </Badge>
                     )}
-                    {nextGame.location && (
-                      <span className="flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span className="truncate max-w-[150px]">{nextGame.location}</span>
-                      </span>
-                    )}
-                  </div>
-                  {nextGame.isHome !== undefined && (
                     <span className={cn(
-                      "inline-block mt-2 px-2 py-0.5 text-xs font-medium rounded-full",
+                      "text-xs font-medium px-2 py-0.5 rounded-full",
                       nextGame.isHome 
                         ? "bg-green-500/10 text-green-600 dark:text-green-400" 
                         : "bg-orange-500/10 text-orange-600 dark:text-orange-400"
                     )}>
                       {nextGame.isHome ? 'Home' : 'Away'}
                     </span>
-                  )}
+                  </div>
+                  <h3 className="text-lg font-bold truncate">vs {nextGame.opponent}</h3>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {format(new Date(nextGame.date), 'EEE, MMM d')}
+                    </span>
+                    {nextGame.time && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {nextGame.time}
+                      </span>
+                    )}
+                    {nextGame.location && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        <span className="truncate max-w-[140px]">{nextGame.location}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleTabChange('schedule')}
-                  className="shrink-0"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </Button>
+                <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
               </div>
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-dashed border-2 border-muted-foreground/20">
-            <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground mb-3">No upcoming games scheduled</p>
+          <Card className="border-border/40">
+            <CardContent className="p-5 text-center">
+              <Calendar className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+              <p className="text-sm text-muted-foreground mb-1">No upcoming games scheduled</p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Add your schedule so Hoop Journal can remind you before tip-off.
+              </p>
               <AddScheduleDialog 
                 onAddGame={addScheduledGame} 
                 onBulkAddGames={bulkImportScheduledGames} 
@@ -314,106 +397,97 @@ export function LogSection({
         )}
       </section>
 
-      {/* ===================== PRIMARY ACTION ZONE ===================== */}
+      {/* ===================== RECENT GAMES ===================== */}
       <section className="space-y-3">
-        {/* Primary Action - Start/Resume Live Game */}
-        <Button
-          onClick={handleQuickLiveStatsClick}
-          size="lg"
-          className="w-full h-14 text-lg font-semibold gradient-primary gap-3 shadow-lg hover:shadow-xl transition-shadow"
-        >
-          <Radio className="w-5 h-5" />
-          {todayGames.length > 0 ? 'Start Live Game' : 'Start Live Game'}
-        </Button>
-
-        {/* Secondary Actions */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="w-full">
-            <AddGameDialog 
-              onAddGame={addGame} 
-              isMobile={false} 
-              autoOpen={autoOpenAddGame}
-              onAutoOpenConsumed={onAutoOpenAddGameConsumed}
-            />
-          </div>
-          <Button 
-            variant="outline" 
-            className="w-full gap-2"
-            onClick={() => handleTabChange('schedule')}
-          >
-            <Calendar className="w-4 h-4" />
-            Schedule
-          </Button>
-        </div>
-      </section>
-
-      {/* ===================== HISTORY ZONE ===================== */}
-      <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Recent Games</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Recent Games
+          </h2>
           {games.length > 5 && (
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => handleTabChange('history')}
-              className="text-muted-foreground hover:text-foreground gap-1"
+              className="text-muted-foreground hover:text-foreground gap-1 text-xs"
             >
               View All
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5" />
             </Button>
           )}
         </div>
 
         {recentGames.length === 0 ? (
-          <Card className="border-dashed border-2 border-muted-foreground/20">
-            <CardContent className="p-8 text-center space-y-3">
-              <p className="text-muted-foreground">No games recorded yet</p>
-              <p className="text-sm text-muted-foreground">
-                Start tracking your season by logging your first game!
-              </p>
+          <Card className="border-border/40">
+            <CardContent className="p-6 text-center space-y-3">
+              <Trophy className="h-8 w-8 mx-auto text-muted-foreground/40" />
+              <div>
+                <p className="text-sm font-medium">No games recorded yet</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Start tracking your season by logging your first game.
+                </p>
+              </div>
+              <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {recentGames.map((game) => (
-              <Card 
-                key={game.id} 
-                className="overflow-hidden hover:bg-accent/50 transition-colors cursor-pointer"
-                onClick={() => navigate(`/game/${game.id}`)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className={cn(
-                          "w-2 h-2 rounded-full shrink-0",
-                          game.isWin ? "bg-green-500" : "bg-red-500"
-                        )} />
-                        <span className="font-medium truncate">vs {game.opponent}</span>
-                        <span className={cn(
-                          "text-xs font-semibold px-1.5 py-0.5 rounded",
-                          game.isWin 
-                            ? "bg-green-500/10 text-green-600 dark:text-green-400" 
-                            : "bg-red-500/10 text-red-600 dark:text-red-400"
-                        )}>
-                          {game.isWin ? 'W' : 'L'}
-                        </span>
+          <div className="space-y-2">
+            {recentGames.map((game) => {
+              const gs = calculateGameScore(game);
+              const grade = getLetterGradeFromScore(gs);
+              const gradeColor = getGradeColor(grade);
+              
+              return (
+                <Card 
+                  key={game.id} 
+                  className="overflow-hidden hover:bg-accent/30 transition-colors cursor-pointer border-border/50"
+                  onClick={() => navigate(`/game/${game.id}`)}
+                >
+                  <CardContent className="p-3.5">
+                    <div className="flex items-center gap-3">
+                      {/* Grade Badge */}
+                      <div 
+                        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-black text-sm"
+                        style={{ 
+                          backgroundColor: `${gradeColor}15`,
+                          color: gradeColor,
+                          border: `1px solid ${gradeColor}30`,
+                        }}
+                      >
+                        {grade}
                       </div>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {format(new Date(game.date), 'MMM d, yyyy')}
-                      </p>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "w-1.5 h-1.5 rounded-full shrink-0",
+                            game.isWin ? "bg-green-500" : "bg-red-500"
+                          )} />
+                          <span className="font-semibold text-sm truncate">vs {game.opponent}</span>
+                          <span className={cn(
+                            "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                            game.isWin 
+                              ? "bg-green-500/10 text-green-600 dark:text-green-400" 
+                              : "bg-red-500/10 text-red-600 dark:text-red-400"
+                          )}>
+                            {game.isWin ? 'W' : 'L'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {game.points} PTS • {game.assists} AST • {game.rebounds} REB
+                        </p>
+                      </div>
+                      
+                      <div className="text-right shrink-0">
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(game.date), 'MMM d')}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-lg font-bold">{game.points} pts</p>
-                      <p className="text-xs text-muted-foreground">
-                        {game.rebounds} reb • {game.assists} ast
-                      </p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </section>
