@@ -86,6 +86,7 @@ export default function GameDetail() {
   const { teams } = usePlayerTeams();
   const { currentPlan } = usePlan();
   const { games: allGames } = useCloudData();
+  const insightsHook = usePostGameInsights(allGames);
   const [lastSavedGameId, setLastSavedGameId] = useState<string | null>(null);
   const [game, setGame] = useState<GameStats | null>(null);
   const [scheduledGame, setScheduledGame] = useState<ScheduledGame | null>(null);
