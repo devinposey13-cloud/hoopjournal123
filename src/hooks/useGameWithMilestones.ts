@@ -99,7 +99,13 @@ export function useGameWithMilestones() {
 
     // Calculate performance and award XP
     const performance = calculatePerformance(savedGame);
-    const xpResult = await xpProgress.addXp(performance.xpEarned, performance.finalScore);
+    
+    // Check for Recovery XP eligibility
+    const recoveryBonus = isRecoveryEligible(savedGame.date, savedGame.scheduledGameId)
+      ? XP_CONFIG.RECOVERY_BONUS_XP
+      : 0;
+    
+    const xpResult = await xpProgress.addXp(performance.xpEarned, performance.finalScore, recoveryBonus);
     
     // Check for first-time tier achievement
     const isNewTier = !tierAchievements.hasTierBeenAchieved(performance.tier);
