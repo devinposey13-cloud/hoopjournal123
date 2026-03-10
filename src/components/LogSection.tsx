@@ -161,6 +161,9 @@ export function LogSection({
   // Season tracking summary
   const seasonSummary = useMemo(() => getSeasonTrackingSummary(schedule, games), [schedule, games]);
 
+  // Consistency streak
+  const streak = useMemo(() => calculateConsistencyStreak(games, schedule), [games, schedule]);
+
   // Season averages
   const seasonAvgs = useMemo(() => {
     if (games.length === 0) return null;
