@@ -57,6 +57,9 @@ import { QuickDuplicateDialog } from '@/components/QuickDuplicateDialog';
 import { MilestoneCard } from '@/components/milestones/MilestoneCard';
 import { GamePerformanceCard } from '@/components/xp/GamePerformanceCard';
 import { GameReportCard } from '@/components/GameReportCard';
+import { CareerHighCelebration } from '@/components/stats/CareerHighCelebration';
+import { detectNewCareerHighs, type CareerHigh } from '@/utils/statsCalculations';
+import { useCloudData } from '@/hooks/useCloudData';
 import { toast } from 'sonner';
 
 export default function GameDetail() {
