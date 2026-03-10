@@ -300,7 +300,8 @@ export type PaywallReason =
   | 'advanced_analytics'
   | 'export_pdf'
   | 'parent_dashboard'
-  | 'recruiting_profile';
+  | 'recruiting_profile'
+  | 'report_card';
 
 export interface PaywallConfig {
   title: string;
