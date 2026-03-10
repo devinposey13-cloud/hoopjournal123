@@ -162,6 +162,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       voiceJournaling: false,
       aiDevPlan: false,
       shareableLink: false,
+      reportCard: false,
     },
   },
   starter: {
