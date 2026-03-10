@@ -1,7 +1,6 @@
 import { useRef, useState, useCallback } from 'react';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
-import { motion } from 'framer-motion';
 import { Download, Share2, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
