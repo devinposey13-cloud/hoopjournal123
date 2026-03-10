@@ -323,18 +323,8 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             }}>⚡ +{xpEarned} XP Earned</div>
           </div>
 
-          {/* ═══ FOOTER: Branding ═══ */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            gap: 14, marginTop: 28, opacity: 0.7,
-          }}>
-            <img src={hoopJournalLogo} alt="" style={{ width: 36, height: 36, borderRadius: 8 }} crossOrigin="anonymous" />
-            <div>
-              <div style={{ color: s.bright, fontSize: 15, fontWeight: 800 }}>Hoop Journal</div>
-              <div style={{ color: s.dim, fontSize: 10, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
-            </div>
-          </div>
         </div>
+
       </div>
     );
   }
