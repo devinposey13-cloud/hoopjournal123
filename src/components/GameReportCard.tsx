@@ -122,18 +122,20 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
 
         {/* Scaled preview of the 1080x1350 card */}
         <div className="w-full overflow-hidden rounded-lg" style={{ aspectRatio: '1080/1350' }}>
-          <div
-            ref={cardRef}
-            style={{
-              width: 1080,
-              height: 1350,
-              transformOrigin: 'top left',
-              transform: 'scale(var(--card-scale))',
-              fontFamily: "'Inter', sans-serif",
-            }}
-            className="relative [--card-scale:calc(100cqw/1080)]"
-            // We use a wrapper with container query to scale
-          >
+          <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+            <div
+              ref={cardRef}
+              style={{
+                width: 1080,
+                height: 1350,
+                transformOrigin: 'top left',
+                transform: `scale(${1 / (1080 / 440)})`,
+                fontFamily: "'Inter', sans-serif",
+                position: 'absolute',
+                top: 0,
+                left: 0,
+              }}
+            >
             {/* Use inline styles for export fidelity */}
             <div style={{
               width: 1080,
