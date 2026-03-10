@@ -24,7 +24,8 @@ const CANVAS_H = 1920;
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 export function GameReportCard({ open, onOpenChange, game, playerName, playerTeam, avatarUrl, allGames }: GameReportCardProps) {
-  const cardRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [platform, setPlatform] = useState<'instagram' | 'twitter' | 'imessage'>('instagram');
@@ -36,10 +37,10 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
   );
 
   const captureCard = useCallback(async (): Promise<Blob | null> => {
-    if (!cardRef.current) return null;
+    if (!exportRef.current) return null;
 
     try {
-      const rawCanvas = await html2canvas(cardRef.current, {
+      const rawCanvas = await html2canvas(exportRef.current, {
         scale: 1,
         backgroundColor: null,
         useCORS: true,
@@ -61,7 +62,8 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
       ctx.drawImage(rawCanvas, 0, 0, CANVAS_W, CANVAS_H);
 
       return new Promise(resolve => targetCanvas.toBlob(blob => resolve(blob), 'image/png'));
-    } catch {
+    } catch (err) {
+      console.error('[ReportCard] Export failed:', err);
       return null;
     }
   }, []);
@@ -141,7 +143,7 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
           <SocialPreview platform={platform} onPlatformChange={setPlatform} />
         </div>
 
-        {/* Preview container */}
+        {/* Preview container (scaled for display) */}
         <div className="flex-1 min-h-0 overflow-y-auto px-4">
           <div
             className="w-full overflow-hidden rounded-lg border border-border/30 mx-auto mb-4"
@@ -156,7 +158,7 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
                 left: 0,
               }}>
                 <ReportCardCanvas
-                  ref={cardRef}
+                  ref={previewRef}
                   game={game}
                   playerName={playerName}
                   playerTeam={playerTeam}
@@ -166,6 +168,18 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Hidden full-size canvas for export (no CSS transform) */}
+        <div style={{ position: 'fixed', top: -9999, left: -9999, pointerEvents: 'none', opacity: 0 }}>
+          <ReportCardCanvas
+            ref={exportRef}
+            game={game}
+            playerName={playerName}
+            playerTeam={playerTeam}
+            avatarUrl={avatarUrl}
+            allGames={allGames}
+          />
         </div>
 
         {/* Sticky action footer */}
