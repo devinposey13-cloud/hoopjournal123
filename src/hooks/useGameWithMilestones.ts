@@ -57,8 +57,9 @@ export function useGameWithMilestones() {
   const [showTierCelebration, setShowTierCelebration] = useState(false);
 
   const addGameWithMilestones = useCallback(async (game: Omit<GameStats, 'id'>) => {
-    // First, save the game using the original addGame
-    const savedGame = await cloudData.addGame(game);
+    // Calculate and attach game score before saving
+    const gameScore = calculateGameScore(game);
+    const savedGame = await cloudData.addGame({ ...game, gameScore });
     
     if (!savedGame) {
       return null;
