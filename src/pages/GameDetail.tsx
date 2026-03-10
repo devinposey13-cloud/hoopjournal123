@@ -57,6 +57,9 @@ import { QuickDuplicateDialog } from '@/components/QuickDuplicateDialog';
 import { MilestoneCard } from '@/components/milestones/MilestoneCard';
 import { GamePerformanceCard } from '@/components/xp/GamePerformanceCard';
 import { GameReportCard } from '@/components/GameReportCard';
+import { CareerHighCelebration } from '@/components/stats/CareerHighCelebration';
+import { detectNewCareerHighs, type CareerHigh } from '@/utils/statsCalculations';
+import { useCloudData } from '@/hooks/useCloudData';
 import { toast } from 'sonner';
 
 export default function GameDetail() {
@@ -79,6 +82,7 @@ export default function GameDetail() {
   } = useGameWithMilestones();
   const { teams } = usePlayerTeams();
   const { currentPlan } = usePlan();
+  const { games: allGames } = useCloudData();
   const [lastSavedGameId, setLastSavedGameId] = useState<string | null>(null);
   const [game, setGame] = useState<GameStats | null>(null);
   const [scheduledGame, setScheduledGame] = useState<ScheduledGame | null>(null);
@@ -95,6 +99,8 @@ export default function GameDetail() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [showDeletePhotoDialog, setShowDeletePhotoDialog] = useState(false);
   const [showReportCard, setShowReportCard] = useState(false);
+  const [newCareerHighs, setNewCareerHighs] = useState<CareerHigh[]>([]);
+  const [showCareerHighCelebration, setShowCareerHighCelebration] = useState(false);
 
   const handleRecapChange = useCallback((recap: string | null, includeInPdf: boolean) => {
     setCoachRecap(recap);
@@ -192,6 +198,14 @@ export default function GameDetail() {
     }
   }, [id, scheduledId, user, authLoading]);
 
+  // Detect if current game holds any career highs
+  useEffect(() => {
+    if (game && allGames.length > 0) {
+      const highs = detectNewCareerHighs(game, allGames);
+      setNewCareerHighs(highs);
+    }
+  }, [game?.id, allGames.length]);
+
   const handleAddGame = async (gameData: Omit<GameStats, 'id'>) => {
     if (!user) return;
     
@@ -205,6 +219,14 @@ export default function GameDetail() {
         toast.success('Game stats saved!');
         setShowAddStatsDialog(false);
         setShowLiveCapture(false);
+        
+        // Detect new career highs
+        const gamesWithNew = [...allGames.filter(g => g.id !== savedGame.id), savedGame];
+        const highs = detectNewCareerHighs(savedGame, gamesWithNew);
+        if (highs.length > 0) {
+          setNewCareerHighs(highs);
+          setShowCareerHighCelebration(true);
+        }
         
         // Navigate to the new game detail page (but don't navigate if milestones are showing)
         // The milestone reveal will handle navigation when closed
@@ -1133,6 +1155,26 @@ export default function GameDetail() {
               </p>
             </div>
           </div>
+
+          {/* Career High Celebration (post-save) */}
+          {showCareerHighCelebration && newCareerHighs.length > 0 && (
+            <CareerHighCelebration
+              newHighs={newCareerHighs}
+              onDismiss={() => setShowCareerHighCelebration(false)}
+            />
+          )}
+
+          {/* Career High Badges (existing game view) */}
+          {!showCareerHighCelebration && newCareerHighs.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {newCareerHighs.map(h => (
+                <Badge key={h.stat} variant="secondary" className="gap-1.5 bg-primary/10 text-primary border-primary/20">
+                  <Trophy className="h-3 w-3" />
+                  Career High: {h.stat} ({h.displayValue})
+                </Badge>
+              ))}
+            </div>
+          )}
 
           {/* XP Performance Score */}
           <GamePerformanceCard game={game} className="mb-6 border-0 shadow-none p-0" />

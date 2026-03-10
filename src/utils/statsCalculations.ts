@@ -1,12 +1,16 @@
 import type { GameStats } from '@/types/basketball';
 import { format } from 'date-fns';
+import { calculateGameScore } from '@/utils/gameGrading';
 
 export interface CareerHigh {
   stat: string;
   value: number;
+  displayValue: string;
   opponent: string;
   date: string;
   gameId: string;
+  icon: string;
+  category: 'counting' | 'percentage' | 'composite';
 }
 
 export interface StatSplit {
@@ -42,31 +46,97 @@ export interface TrendData {
 export function calculateCareerHighs(games: GameStats[]): CareerHigh[] {
   if (games.length === 0) return [];
 
-  const statCategories = [
-    { key: 'points', label: 'Points' },
-    { key: 'rebounds', label: 'Rebounds' },
-    { key: 'assists', label: 'Assists' },
-    { key: 'steals', label: 'Steals' },
-    { key: 'blocks', label: 'Blocks' },
-    { key: 'threePtMade', label: '3-Pointers Made' },
-    { key: 'ftMade', label: 'Free Throws Made' },
-  ] as const;
+  const results: CareerHigh[] = [];
 
-  return statCategories.map(({ key, label }) => {
+  // Counting stats
+  const countingStats: { key: keyof GameStats; label: string; icon: string }[] = [
+    { key: 'points', label: 'Points', icon: '🔥' },
+    { key: 'assists', label: 'Assists', icon: '🎯' },
+    { key: 'rebounds', label: 'Rebounds', icon: '💪' },
+    { key: 'steals', label: 'Steals', icon: '🔒' },
+    { key: 'blocks', label: 'Blocks', icon: '🛡️' },
+  ];
+
+  for (const { key, label, icon } of countingStats) {
     const highGame = games.reduce((best, game) => {
-      const currentValue = game[key] as number;
-      const bestValue = best[key] as number;
-      return currentValue > bestValue ? game : best;
+      const cv = game[key] as number;
+      const bv = best[key] as number;
+      return cv > bv ? game : best;
     }, games[0]);
+    const val = highGame[key] as number;
+    if (val > 0) {
+      results.push({
+        stat: label, value: val, displayValue: String(val),
+        opponent: highGame.opponent, date: highGame.date, gameId: highGame.id,
+        icon, category: 'counting',
+      });
+    }
+  }
 
-    return {
-      stat: label,
-      value: highGame[key] as number,
-      opponent: highGame.opponent,
-      date: highGame.date,
-      gameId: highGame.id,
-    };
-  }).filter(high => high.value > 0);
+  // FG% (min 5 FGA)
+  const fgEligible = games.filter(g => g.fgAttempted >= 5);
+  if (fgEligible.length > 0) {
+    const best = fgEligible.reduce((b, g) => {
+      const gPct = g.fgMade / g.fgAttempted;
+      const bPct = b.fgMade / b.fgAttempted;
+      return gPct > bPct ? g : b;
+    }, fgEligible[0]);
+    const pct = Math.round((best.fgMade / best.fgAttempted) * 100);
+    results.push({
+      stat: 'FG%', value: pct, displayValue: `${pct}%`,
+      opponent: best.opponent, date: best.date, gameId: best.id,
+      icon: '🏀', category: 'percentage',
+    });
+  }
+
+  // FT% (min 3 FTA)
+  const ftEligible = games.filter(g => g.ftAttempted >= 3);
+  if (ftEligible.length > 0) {
+    const best = ftEligible.reduce((b, g) => {
+      const gPct = g.ftMade / g.ftAttempted;
+      const bPct = b.ftMade / b.ftAttempted;
+      return gPct > bPct ? g : b;
+    }, ftEligible[0]);
+    const pct = Math.round((best.ftMade / best.ftAttempted) * 100);
+    results.push({
+      stat: 'FT%', value: pct, displayValue: `${pct}%`,
+      opponent: best.opponent, date: best.date, gameId: best.id,
+      icon: '🎯', category: 'percentage',
+    });
+  }
+
+  // Game Score
+  const bestGS = games.reduce((b, g) => {
+    return calculateGameScore(g) > calculateGameScore(b) ? g : b;
+  }, games[0]);
+  const gsVal = calculateGameScore(bestGS);
+  if (gsVal > 0) {
+    results.push({
+      stat: 'Game Score', value: gsVal, displayValue: String(gsVal),
+      opponent: bestGS.opponent, date: bestGS.date, gameId: bestGS.id,
+      icon: '⭐', category: 'composite',
+    });
+  }
+
+  // Efficiency = PTS + REB + AST + STL + BLK - TOV
+  const calcEff = (g: GameStats) => g.points + g.rebounds + g.assists + g.steals + g.blocks - g.turnovers;
+  const bestEff = games.reduce((b, g) => calcEff(g) > calcEff(b) ? g : b, games[0]);
+  const effVal = calcEff(bestEff);
+  if (effVal > 0) {
+    results.push({
+      stat: 'Efficiency', value: effVal, displayValue: String(effVal),
+      opponent: bestEff.opponent, date: bestEff.date, gameId: bestEff.id,
+      icon: '📈', category: 'composite',
+    });
+  }
+
+  return results;
+}
+
+// Detect new career highs comparing a single game against existing highs
+export function detectNewCareerHighs(game: GameStats, allGames: GameStats[]): CareerHigh[] {
+  const currentHighs = calculateCareerHighs(allGames);
+  return currentHighs.filter(h => h.gameId === game.id);
 }
 
 // Calculate perfect games (special achievements)

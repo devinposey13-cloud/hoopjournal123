@@ -1,170 +1,165 @@
 import { motion } from 'framer-motion';
-import { Trophy, Target, Repeat, Zap, Shield, HandMetal, Star, CircleDot } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Trophy, Flame, Target, Repeat, Shield, Zap, Star, TrendingUp } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AnimatedCounter } from '@/components/ui/animated-counter';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import type { GameStats } from '@/types/basketball';
-import { calculateCareerHighs, findPerfectGames, type CareerHigh } from '@/utils/statsCalculations';
+import { calculateCareerHighs, type CareerHigh } from '@/utils/statsCalculations';
 
 interface CareerHighsProps {
   games: GameStats[];
 }
 
 const statIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  Points: Target,
+  Points: Flame,
+  Assists: Target,
   Rebounds: Repeat,
-  Assists: Zap,
   Steals: Shield,
-  Blocks: HandMetal,
-  '3-Pointers Made': CircleDot,
-  'Free Throws Made': CircleDot,
+  Blocks: Shield,
+  'FG%': Target,
+  'FT%': Target,
+  'Game Score': Star,
+  Efficiency: TrendingUp,
 };
 
+// All possible career high categories for empty state placeholders
+const allCategories = [
+  { stat: 'Points', icon: '🔥' },
+  { stat: 'Assists', icon: '🎯' },
+  { stat: 'Rebounds', icon: '💪' },
+  { stat: 'Steals', icon: '🔒' },
+  { stat: 'Blocks', icon: '🛡️' },
+  { stat: 'FG%', icon: '🏀' },
+  { stat: 'FT%', icon: '🎯' },
+  { stat: 'Game Score', icon: '⭐' },
+  { stat: 'Efficiency', icon: '📈' },
+];
+
 export function CareerHighs({ games }: CareerHighsProps) {
+  const navigate = useNavigate();
   const careerHighs = calculateCareerHighs(games);
-  const perfectGames = findPerfectGames(games);
+
+  // Find most recent career high
+  const mostRecent = careerHighs.length > 0
+    ? [...careerHighs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+    : null;
 
   if (games.length === 0) {
     return (
-      <Card className="text-center py-12">
+      <Card className="text-center py-12 border-border/50 bg-card/50">
         <CardContent>
-          <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">Log games to see your career highs!</p>
+          <Trophy className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+          <h3 className="font-semibold text-lg mb-2">No Career Highs Yet</h3>
+          <p className="text-muted-foreground text-sm mb-4">
+            Start logging games to build your personal record book.
+          </p>
+          <button
+            onClick={() => navigate('/log')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors"
+          >
+            Log Your First Game
+          </button>
         </CardContent>
       </Card>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Career Highs Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {careerHighs.map((high, index) => {
-          const Icon = statIcons[high.stat] || Trophy;
-          return (
-            <motion.div
-              key={high.stat}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <Card className="relative overflow-hidden hover:shadow-lg transition-all group">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/10 to-transparent" />
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Icon className="h-4 w-4 text-primary" />
-                    </div>
-                    <CardTitle className="text-base">{high.stat}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <p className="text-4xl font-bold text-primary">
-                        <AnimatedCounter value={high.value} delay={index * 0.05} />
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">vs {high.opponent}</p>
-                      <Badge variant="secondary" className="mt-2">
-                        {format(new Date(high.date), 'MMM d, yyyy')}
-                      </Badge>
-                    </div>
-                    <Trophy className="h-8 w-8 text-amber-500/50 group-hover:text-amber-500 transition-colors" />
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
-      </div>
+  // Build a map for easy lookup
+  const highMap = new Map(careerHighs.map(h => [h.stat, h]));
 
-      {/* Perfect Games Section */}
-      {perfectGames.length > 0 && (
+  return (
+    <div className="space-y-5">
+      {/* Latest Personal Best - Featured Card */}
+      {mostRecent && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ duration: 0.3 }}
         >
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Star className="h-5 w-5 text-amber-500" />
-                <CardTitle className="text-lg">Perfect Games</CardTitle>
+          <Card className="relative overflow-hidden border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/15 to-transparent" />
+            <CardContent className="pt-5 pb-4 px-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Badge variant="secondary" className="text-xs bg-primary/15 text-primary border-primary/30 font-semibold">
+                  Latest Personal Best
+                </Badge>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {perfectGames.map(({ type, games: perfectGamesList }) => (
-                  <div key={type} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium">{type}</p>
-                      <Badge variant="outline">{perfectGamesList.length} game{perfectGamesList.length !== 1 ? 's' : ''}</Badge>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {perfectGamesList.slice(0, 5).map((game) => (
-                        <Badge key={game.id} variant="secondary" className="text-xs">
-                          vs {game.opponent} • {format(new Date(game.date), 'MMM d')}
-                        </Badge>
-                      ))}
-                      {perfectGamesList.length > 5 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{perfectGamesList.length - 5} more
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{mostRecent.stat}</p>
+                  <p className="text-3xl font-black text-primary">{mostRecent.displayValue}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    vs {mostRecent.opponent} • {format(new Date(mostRecent.date), 'MMM d, yyyy')}
+                  </p>
+                </div>
+                <div className="text-4xl opacity-60">{mostRecent.icon}</div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
       )}
 
-      {/* Career Highs Summary */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <Card className="bg-gradient-to-br from-amber-500/10 via-background to-primary/5 border-amber-500/20">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <Trophy className="h-10 w-10 mx-auto text-amber-500 mb-3" />
-              <h3 className="font-semibold text-lg mb-1">Season Stats</h3>
-              <p className="text-muted-foreground text-sm mb-4">
-                {games.length} games logged this season
-              </p>
-              <div className="flex justify-center gap-6 text-sm">
-                <div>
-                  <p className="font-bold text-2xl text-primary">
-                    <AnimatedCounter value={games.filter(g => g.isWin).length} delay={0.4} />
-                  </p>
-                  <p className="text-muted-foreground">Wins</p>
-                </div>
-                <div className="border-l border-border" />
-                <div>
-                  <p className="font-bold text-2xl text-destructive">
-                    <AnimatedCounter value={games.filter(g => !g.isWin).length} delay={0.45} />
-                  </p>
-                  <p className="text-muted-foreground">Losses</p>
-                </div>
-                <div className="border-l border-border" />
-                <div>
-                  <p className="font-bold text-2xl">
-                    <AnimatedCounter 
-                      value={games.length > 0 ? Math.round((games.filter(g => g.isWin).length / games.length) * 100) : 0} 
-                      suffix="%" 
-                      delay={0.5} 
-                    />
-                  </p>
-                  <p className="text-muted-foreground">Win Rate</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+      {/* Career Highs Grid - 2 columns on mobile */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
+        {allCategories.map((cat, index) => {
+          const high = highMap.get(cat.stat);
+          const isHighlight = cat.stat === 'Points' || cat.stat === 'Game Score' || cat.stat === 'Efficiency';
+
+          return (
+            <motion.div
+              key={cat.stat}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.04 }}
+            >
+              <Card className={`relative overflow-hidden h-full transition-all hover:shadow-md ${
+                high && isHighlight
+                  ? 'border-primary/30 shadow-[0_0_15px_rgba(var(--primary-rgb,255,107,0),0.08)]'
+                  : 'border-border/50'
+              }`}>
+                <CardContent className="p-4">
+                  {high ? (
+                    <>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-lg">{cat.icon}</span>
+                        {isHighlight && (
+                          <Trophy className="h-3.5 w-3.5 text-amber-500" />
+                        )}
+                      </div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                        {cat.stat}
+                      </p>
+                      <p className={`text-2xl font-black ${isHighlight ? 'text-primary' : 'text-foreground'}`}>
+                        {high.displayValue}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-1.5 leading-tight">
+                        vs {high.opponent}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {format(new Date(high.date), 'MMM d, yyyy')}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="mb-2">
+                        <span className="text-lg opacity-40">{cat.icon}</span>
+                      </div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                        {cat.stat}
+                      </p>
+                      <p className="text-2xl font-black text-muted-foreground/30">—</p>
+                      <p className="text-[11px] text-muted-foreground/60 mt-1.5">
+                        Log games to set your record
+                      </p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
+      </div>
     </div>
   );
 }
