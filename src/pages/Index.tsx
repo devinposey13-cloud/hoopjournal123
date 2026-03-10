@@ -625,6 +625,8 @@ export default function Index() {
                       onLogGame={() => setActiveTab('games')}
                       onOpenCoach={() => setActiveTab('coach')}
                       onStartLiveCapture={todayGames.length > 0 ? handleQuickLiveStatsClick : undefined}
+                      latestUnseenInsight={insightsHook.latestUnseen}
+                      onViewInsight={(id) => insightsHook.markInsightSeen(id)}
                     />
                   </AnimatedSection>
 
