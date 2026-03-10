@@ -285,13 +285,15 @@ export function LogSection({
     );
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: GameStatus) => {
     switch (status) {
-      case 'Game Day':
+      case 'game_day':
         return <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase">Game Day</Badge>;
-      case 'Logged':
+      case 'live':
+        return <Badge className="bg-primary/20 text-primary border-primary/40 text-[10px] font-bold uppercase animate-pulse">● Live</Badge>;
+      case 'logged':
         return <Badge className="bg-green-500/15 text-green-500 border-green-500/30 text-[10px] font-bold uppercase"><Check className="w-3 h-3 mr-0.5" />Logged</Badge>;
-      case 'Stats Missing':
+      case 'stats_missing':
         return <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase"><AlertCircle className="w-3 h-3 mr-0.5" />Stats Missing</Badge>;
       default:
         return <Badge variant="outline" className="text-[10px] font-bold uppercase text-muted-foreground">Scheduled</Badge>;
