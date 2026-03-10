@@ -389,8 +389,8 @@ export function LogSection({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-bold mb-1">Start Live Game</h2>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Track stats in real-time during your game
+                   <p className="text-sm text-muted-foreground mb-3">
+                     Track stats in real time during your game.</p>
                   </p>
                   <Button
                     onClick={handleQuickLiveStatsClick}
