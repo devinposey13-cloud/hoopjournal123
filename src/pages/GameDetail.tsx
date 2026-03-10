@@ -1183,6 +1183,25 @@ export default function GameDetail() {
           {/* XP Performance Score */}
           <GamePerformanceCard game={game} className="mb-6 border-0 shadow-none p-0" />
 
+          {/* Post-Game Insight */}
+          {(() => {
+            const storedInsight = insightsHook.getInsightForGame(game.id);
+            const insight = storedInsight
+              ? { type: storedInsight.type, title: storedInsight.title, body: storedInsight.body, statCallout: storedInsight.statCallout || undefined, icon: '' }
+              : (allGames.length > 0 ? generatePostGameInsight(game, allGames) : null);
+            if (!insight) return null;
+            return (
+              <div className="mb-6">
+                <InsightCard
+                  insight={insight as any}
+                  animate={false}
+                  isNew={storedInsight ? !storedInsight.isSeen : false}
+                  onView={() => storedInsight && !storedInsight.isSeen && insightsHook.markInsightSeen(storedInsight.id)}
+                />
+              </div>
+            );
+          })()}
+
           {/* Milestones Earned in This Game */}
           {earnedMilestones.filter(m => m.gameId === game.id).length > 0 && (
             <>
