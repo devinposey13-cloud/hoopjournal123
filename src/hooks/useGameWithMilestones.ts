@@ -43,6 +43,7 @@ export function useGameWithMilestones() {
   
   const xpProgress = useXpProgress();
   const tierAchievements = useTierAchievements();
+  const insightsHook = usePostGameInsights(cloudData.games);
   
   const [pendingMilestones, setPendingMilestones] = useState<NewMilestoneResult[]>([]);
   const [showReveal, setShowReveal] = useState(false);
