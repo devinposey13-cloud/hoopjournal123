@@ -1217,6 +1217,16 @@ export default function GameDetail() {
           }}
         />
       )}
+
+      {/* Game Report Card */}
+      <GameReportCard
+        open={showReportCard}
+        onOpenChange={setShowReportCard}
+        game={game}
+        playerName={profile?.name || 'Player'}
+        playerTeam={profile?.team || ''}
+        avatarUrl={profile?.avatar}
+      />
     </div>
   );
 }
