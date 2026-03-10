@@ -143,8 +143,12 @@ export function useGameWithMilestones() {
       }
     }
 
+    // Generate post-game insight
+    const insight = await insightsHook.generateAndStoreInsight(savedGame, allGames, streakCount);
+    setPendingInsight(insight);
+
     return savedGame;
-  }, [cloudData, checkAndAwardMilestones, getOccurrenceCount, xpProgress, tierAchievements]);
+  }, [cloudData, checkAndAwardMilestones, getOccurrenceCount, xpProgress, tierAchievements, insightsHook]);
 
   const closeReveal = useCallback(() => {
     setShowReveal(false);
