@@ -1156,12 +1156,24 @@ export default function GameDetail() {
             </div>
           </div>
 
-          {/* Career High Celebration */}
+          {/* Career High Celebration (post-save) */}
           {showCareerHighCelebration && newCareerHighs.length > 0 && (
             <CareerHighCelebration
               newHighs={newCareerHighs}
               onDismiss={() => setShowCareerHighCelebration(false)}
             />
+          )}
+
+          {/* Career High Badges (existing game view) */}
+          {!showCareerHighCelebration && newCareerHighs.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {newCareerHighs.map(h => (
+                <Badge key={h.stat} variant="secondary" className="gap-1.5 bg-primary/10 text-primary border-primary/20">
+                  <Trophy className="h-3 w-3" />
+                  Career High: {h.stat} ({h.displayValue})
+                </Badge>
+              ))}
+            </div>
           )}
 
           {/* XP Performance Score */}
