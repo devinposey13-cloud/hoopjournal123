@@ -4,15 +4,18 @@ import { getTierDisplayName, getTierGradient, getTierColorClass } from '@/utils/
 import { formatXp, getLevelTierGradient } from '@/utils/xpCalculations';
 import { LevelBadge } from './LevelBadge';
 import { XpProgressBar } from './XpProgressBar';
+import { InsightCard } from '@/components/insights/InsightCard';
 import { Button } from '@/components/ui/button';
 import { X, TrendingUp, Zap, Star, Trophy, Flame } from 'lucide-react';
 import type { PerformanceResult, XpGainResult, LevelReward } from '@/types/xp';
+import type { PostGameInsight } from '@/utils/postGameInsights';
 
 interface PostGameXpRevealProps {
   performance: PerformanceResult;
   xpResult: XpGainResult;
   onClose: () => void;
   onContinue?: () => void;
+  insight?: PostGameInsight | null;
 }
 
 export function PostGameXpReveal({ 
