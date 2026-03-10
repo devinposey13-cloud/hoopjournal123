@@ -149,8 +149,8 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               textAlign: 'center', marginBottom: 0,
             }}>GAME GRADE</div>
             <div style={{
-              fontSize: 240, fontWeight: 900, color,
-              lineHeight: 0.85, textShadow: glow,
+              fontSize: 200, fontWeight: 900, color,
+              lineHeight: 1.05, textShadow: glow,
               letterSpacing: '-0.03em', textAlign: 'center',
               position: 'relative',
             }}>{grade}</div>
