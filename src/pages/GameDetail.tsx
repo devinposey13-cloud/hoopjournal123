@@ -198,6 +198,14 @@ export default function GameDetail() {
     }
   }, [id, scheduledId, user, authLoading]);
 
+  // Detect if current game holds any career highs
+  useEffect(() => {
+    if (game && allGames.length > 0) {
+      const highs = detectNewCareerHighs(game, allGames);
+      setNewCareerHighs(highs);
+    }
+  }, [game?.id, allGames.length]);
+
   const handleAddGame = async (gameData: Omit<GameStats, 'id'>) => {
     if (!user) return;
     
