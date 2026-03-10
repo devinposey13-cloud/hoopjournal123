@@ -251,6 +251,7 @@ export function LogSection({
         defensiveRebounds: halfData?.total.defensiveRebounds ?? stats.defensiveRebounds,
         gamePhotoUrl: halfData?.gamePhotoUrl,
         teamId: quickCaptureTeamId,
+        scheduledGameId: quickCaptureScheduledGameId,
       };
       await addGame(gameData);
       toast.success('Game saved successfully!');
