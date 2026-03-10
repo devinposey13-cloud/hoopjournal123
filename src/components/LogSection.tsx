@@ -154,6 +154,12 @@ export function LogSection({
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 
+  // Missing games for recovery prompts
+  const missingGames = useMemo(() => getMissingGames(schedule, games), [schedule, games]);
+
+  // Season tracking summary
+  const seasonSummary = useMemo(() => getSeasonTrackingSummary(schedule, games), [schedule, games]);
+
   // Season averages
   const seasonAvgs = useMemo(() => {
     if (games.length === 0) return null;
