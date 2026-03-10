@@ -1148,6 +1148,14 @@ export default function GameDetail() {
             </div>
           </div>
 
+          {/* Career High Celebration */}
+          {showCareerHighCelebration && newCareerHighs.length > 0 && (
+            <CareerHighCelebration
+              newHighs={newCareerHighs}
+              onDismiss={() => setShowCareerHighCelebration(false)}
+            />
+          )}
+
           {/* XP Performance Score */}
           <GamePerformanceCard game={game} className="mb-6 border-0 shadow-none p-0" />
 
