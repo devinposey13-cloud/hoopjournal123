@@ -147,6 +147,7 @@ export function useCloudData() {
         isWin: g.is_win,
         teamId: g.team_id || undefined,
         teamName: (g.player_teams as any)?.name || undefined,
+        scheduledGameId: (g as any).scheduled_game_id || undefined,
       })) || []);
 
       // Fetch scheduled games (filtered by profile and season) with team info
