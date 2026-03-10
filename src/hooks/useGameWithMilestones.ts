@@ -3,6 +3,7 @@ import { useCloudData } from './useCloudData';
 import { useMilestones } from './useMilestones';
 import { useXpProgress } from './useXpProgress';
 import { useTierAchievements } from './useTierAchievements';
+import { usePostGameInsights } from './usePostGameInsights';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { findInvalidMilestones } from '@/utils/milestoneValidator';
@@ -12,6 +13,7 @@ import { isRecoveryEligible, XP_CONFIG, calculateConsistencyStreak, getStreakXpB
 import type { GameStats } from '@/types/basketball';
 import type { NewMilestoneResult } from '@/types/milestone';
 import type { PerformanceResult, XpGainResult, PerformanceTier } from '@/types/xp';
+import type { PostGameInsight } from '@/utils/postGameInsights';
 import { toast } from 'sonner';
 
 interface GameWithId extends GameStats {
