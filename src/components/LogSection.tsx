@@ -181,29 +181,19 @@ export function LogSection({
     }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     // Group by date string
-    const grouped: { date: string; tournament?: string; games: (ScheduledGame & { status: string; linkedGame?: GameStats })[] }[] = [];
+    const grouped: { date: string; tournament?: string; games: (ScheduledGame & { status: GameStatus; statusResult: GameStatusResult; linkedGame?: GameStats })[] }[] = [];
     
     monthScheduled.forEach(sg => {
       const dateKey = format(new Date(sg.date), 'yyyy-MM-dd');
-      const linked = findLinkedGame(sg);
-      const gameDate = new Date(sg.date);
-      
-      let status = 'Scheduled';
-      if (linked) {
-        status = 'Logged';
-      } else if (isToday(gameDate)) {
-        status = 'Game Day';
-      } else if (isBefore(gameDate, today) && !isToday(gameDate)) {
-        status = 'Stats Missing';
-      }
+      const statusResult = getGameStatus(sg, games);
+      const linked = findLinkedLoggedGame(sg, games);
 
       let group = grouped.find(g => g.date === dateKey);
       if (!group) {
         group = { date: dateKey, games: [] };
-        // If all games on this date share a tournament, set it
         grouped.push(group);
       }
-      group.games.push({ ...sg, status, linkedGame: linked });
+      group.games.push({ ...sg, status: statusResult.status, statusResult, linkedGame: linked });
     });
 
     // Set tournament label if all games in a group share it
