@@ -144,7 +144,7 @@ export function QuickStatsRow({ games, seasonStats, xpProgress, schedule }: Quic
             label={stat.label}
             value={stat.value}
             icon={stat.icon}
-            trend={stat.trend}
+            trend={'trend' in stat ? stat.trend : undefined}
             delay={index * 0.05}
             variant={stat.variant}
           />
