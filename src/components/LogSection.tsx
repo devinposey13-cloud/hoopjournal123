@@ -350,7 +350,7 @@ export function LogSection({
                   ) : smartPrompt?.type === 'stats_missing' ? (
                     <>
                       <p className="font-semibold text-sm">Did you just play a game?</p>
-                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — log it while it's fresh</p>
+                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — log it now while it's fresh.</p>
                     </>
                   ) : smartPrompt?.type === 'game_day' ? (
                     <>
