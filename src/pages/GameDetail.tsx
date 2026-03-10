@@ -59,7 +59,10 @@ import { GamePerformanceCard } from '@/components/xp/GamePerformanceCard';
 import { GameReportCard } from '@/components/GameReportCard';
 import { CareerHighCelebration } from '@/components/stats/CareerHighCelebration';
 import { detectNewCareerHighs, type CareerHigh } from '@/utils/statsCalculations';
+import { InsightCard } from '@/components/insights/InsightCard';
 import { useCloudData } from '@/hooks/useCloudData';
+import { usePostGameInsights } from '@/hooks/usePostGameInsights';
+import { generatePostGameInsight } from '@/utils/postGameInsights';
 import { toast } from 'sonner';
 
 export default function GameDetail() {
