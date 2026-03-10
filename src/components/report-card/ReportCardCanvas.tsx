@@ -288,42 +288,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           </div>
         </div>
 
-          {/* ═══ ZONE 5: Achievements + XP ═══ */}
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginTop: 24, gap: 14,
-          }}>
-            {/* Career High Badges */}
-            {careerHighsInGame.length > 0 && (
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {careerHighsInGame.slice(0, 3).map((ch, i) => (
-                  <div key={i} style={{
-                    background: 'linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,165,0,0.06))',
-                    border: '1px solid rgba(255,215,0,0.25)',
-                    borderRadius: 12, padding: '10px 22px',
-                    display: 'flex', alignItems: 'center', gap: 10,
-                  }}>
-                    <span style={{ fontSize: 18 }}>🏆</span>
-                    <span style={{ color: '#fbbf24', fontSize: 15, fontWeight: 800 }}>
-                      Career High: {ch.displayValue} {ch.stat}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
 
-            {/* XP Banner */}
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(255,107,0,0.18), rgba(255,165,0,0.08))',
-              border: '1px solid rgba(255,107,0,0.3)',
-              borderRadius: 50, padding: '12px 44px',
-              color: '#ff8c3a', fontSize: 22, fontWeight: 900,
-              boxShadow: '0 0 40px rgba(255,107,0,0.12)',
-              letterSpacing: '0.02em',
-            }}>⚡ +{xpEarned} XP Earned</div>
-          </div>
-
-        </div>
 
       </div>
     );
