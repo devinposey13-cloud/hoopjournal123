@@ -28,6 +28,8 @@ export function TodayCard({
   onLogGame,
   onOpenCoach,
   onStartLiveCapture,
+  latestUnseenInsight,
+  onViewInsight,
 }: TodayCardProps) {
   const navigate = useNavigate();
 
