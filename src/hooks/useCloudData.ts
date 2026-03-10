@@ -496,7 +496,8 @@ export function useCloudData() {
           ft_attempted: game.ftAttempted,
           is_win: game.isWin,
           game_score: game.gameScore ?? null,
-        })
+          scheduled_game_id: (game as any).scheduledGameId ?? null,
+        } as any)
         .select('*, player_teams(name)')
         .single();
 
