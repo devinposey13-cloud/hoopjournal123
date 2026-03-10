@@ -221,6 +221,18 @@ export function PostGameXpReveal({
             )}
           </AnimatePresence>
 
+          {/* Post-Game Insight */}
+          {insight && (
+            <motion.div
+              initial={{ y: 15, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 1.3 }}
+              className="mt-4"
+            >
+              <InsightCard insight={insight} animate={false} />
+            </motion.div>
+          )}
+
           {/* Continue Button */}
           <motion.div
             className="mt-6"
