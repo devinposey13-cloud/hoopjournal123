@@ -59,6 +59,7 @@ export function useGameWithMilestones() {
   // Tier celebration state
   const [pendingTierCelebration, setPendingTierCelebration] = useState<PendingTierCelebration | null>(null);
   const [showTierCelebration, setShowTierCelebration] = useState(false);
+  const [pendingInsight, setPendingInsight] = useState<PostGameInsight | null>(null);
 
   const addGameWithMilestones = useCallback(async (game: Omit<GameStats, 'id'>) => {
     // Calculate and attach game score before saving
