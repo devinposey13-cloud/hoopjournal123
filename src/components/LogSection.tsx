@@ -10,11 +10,10 @@ import { ImportScheduleDialog } from '@/components/ImportScheduleDialog';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { ScheduleCalendar } from '@/components/ScheduleCalendar';
-import { ScheduleCard } from '@/components/ScheduleCard';
 import { GameStats, ScheduledGame, PlayerTeam } from '@/types/basketball';
 import { getLetterGradeFromScore, calculateGameScore, getGradeColor } from '@/utils/gameGrading';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format, getHours } from 'date-fns';
-import { Radio, Plus, Calendar, MapPin, Clock, ChevronRight, Trophy, Users, X, Zap, ClipboardList } from 'lucide-react';
+import { Radio, Calendar, MapPin, Clock, ChevronRight, ChevronLeft, Trophy, Users, X, Zap, ClipboardList, Home, Plane, AlertCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -34,18 +33,14 @@ interface LogSectionProps {
   teams: PlayerTeam[];
   profile: any;
   isMobile: boolean;
-  // Game actions
   addGame: (game: any) => Promise<any>;
   deleteGame: (id: string) => Promise<any>;
   updateGameTeam: (gameId: string, teamId: string | null) => Promise<any>;
-  // Schedule actions
   addScheduledGame: (game: any) => Promise<any>;
   updateScheduledGame: (id: string, updates: any) => Promise<any>;
   deleteScheduledGame: (id: string) => Promise<any>;
   bulkImportScheduledGames: (games: any[]) => Promise<any>;
-  // Initial sub-tab (optional)
   initialSubTab?: LogSubTab;
-  // Auto-open Add Game dialog (for onboarding)
   autoOpenAddGame?: boolean;
   onAutoOpenAddGameConsumed?: () => void;
 }
@@ -71,18 +66,14 @@ export function LogSection({
   const location = useLocation();
   const [activeSubTab, setActiveSubTab] = useState<LogSubTab>(initialSubTab);
   
-  // Sync URL with tab changes when on /log routes
   const handleTabChange = (value: string) => {
     const newTab = value as LogSubTab;
     setActiveSubTab(newTab);
-    
-    // Only update URL if we're on a /log route
     if (location.pathname.startsWith('/log')) {
       navigate(`/log/${newTab}`, { replace: true });
     }
   };
   
-  // Sync tab state when URL changes
   useEffect(() => {
     if (location.pathname.startsWith('/log')) {
       const pathTab = location.pathname.split('/')[2] as LogSubTab;
@@ -95,29 +86,33 @@ export function LogSection({
   const [gamesTabTeamFilter, setGamesTabTeamFilter] = useState<string>('all');
   const [teamFilter, setTeamFilter] = useState<string>('all');
   const [tournamentFilter, setTournamentFilter] = useState<string>('all');
-  
-  // Quick Live Stats state
   const [showQuickLiveStatsDialog, setShowQuickLiveStatsDialog] = useState(false);
   const [showQuickLiveCapture, setShowQuickLiveCapture] = useState(false);
   const [quickCaptureOpponent, setQuickCaptureOpponent] = useState('');
   const [quickCaptureScheduledGameId, setQuickCaptureScheduledGameId] = useState<string | undefined>();
   const [quickCaptureTeamId, setQuickCaptureTeamId] = useState<string | undefined>();
   const [isSavingQuickCapture, setIsSavingQuickCapture] = useState(false);
-
-  // Smart prompt: show "Did you just play?" banner in evening hours (5pm-11pm)
-  const showSmartPrompt = useMemo(() => {
-    const hour = getHours(new Date());
-    return hour >= 17 && hour <= 23 && games.length > 0;
-  }, [games.length]);
-
   const [dismissedSmartPrompt, setDismissedSmartPrompt] = useState(false);
 
+  // Calendar month state
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+
+  const showSmartPrompt = useMemo(() => {
+    const hour = getHours(new Date());
+    // Also check if a scheduled game passed today without stats
+    const hasMissingTodayGame = schedule.some(sg => {
+      if (!isToday(new Date(sg.date))) return false;
+      return !games.some(g => 
+        g.opponent.toLowerCase() === sg.opponent.toLowerCase() && 
+        isSameDay(new Date(g.date), new Date(sg.date))
+      );
+    });
+    return (hour >= 17 && hour <= 23) || hasMissingTodayGame;
+  }, [games, schedule]);
+
   const today = startOfDay(new Date());
-  
-  // Get unique tags for filter dropdown
   const tournaments = [...new Set(schedule.filter(g => g.tournament).map(g => g.tournament!))].sort();
   
-  // Apply filters for schedule
   const filteredSchedule = schedule.filter(g => {
     const matchesTeam = teamFilter === 'all' || g.teamId === teamFilter || (!g.teamId && teamFilter === 'unassigned');
     const matchesTournament = tournamentFilter === 'all' || g.tournament === tournamentFilter;
@@ -130,11 +125,8 @@ export function LogSection({
   const pastScheduledGames = filteredSchedule.filter(
     (g) => isBefore(new Date(g.date), today) && !isToday(new Date(g.date))
   );
-
-  // Get today's games for Quick Live Stats
   const todayGames = schedule.filter((g) => isToday(new Date(g.date)));
 
-  // Filter games for history tab
   const gamesTabFilteredGames = gamesTabTeamFilter === 'all' 
     ? games 
     : games.filter(g => 
@@ -143,7 +135,6 @@ export function LogSection({
           : g.teamId === gamesTabTeamFilter
       );
 
-  // Helper to find a linked played game for a scheduled game
   const findLinkedGame = (scheduledGame: { opponent: string; date: string }) => {
     const scheduleDate = new Date(scheduledGame.date);
     return games.find((pg) => {
@@ -155,15 +146,76 @@ export function LogSection({
     });
   };
 
-  // Get next upcoming game (sorted by date)
   const nextGame = upcomingGames.length > 0 
     ? [...upcomingGames].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
     : null;
 
-  // Get recent games (last 5)
   const recentGames = [...games]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
+
+  // Season averages
+  const seasonAvgs = useMemo(() => {
+    if (games.length === 0) return null;
+    const total = games.reduce((acc, g) => ({
+      pts: acc.pts + g.points,
+      reb: acc.reb + g.rebounds,
+      ast: acc.ast + g.assists,
+    }), { pts: 0, reb: 0, ast: 0 });
+    const n = games.length;
+    return {
+      ppg: (total.pts / n).toFixed(1),
+      rpg: (total.reb / n).toFixed(1),
+      apg: (total.ast / n).toFixed(1),
+    };
+  }, [games]);
+
+  // Calendar: get games for the selected month grouped by date
+  const calendarGames = useMemo(() => {
+    const monthStart = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+    const monthEnd = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0, 23, 59, 59);
+    
+    const monthScheduled = filteredSchedule.filter(g => {
+      const d = new Date(g.date);
+      return d >= monthStart && d <= monthEnd;
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Group by date string
+    const grouped: { date: string; tournament?: string; games: (ScheduledGame & { status: string; linkedGame?: GameStats })[] }[] = [];
+    
+    monthScheduled.forEach(sg => {
+      const dateKey = format(new Date(sg.date), 'yyyy-MM-dd');
+      const linked = findLinkedGame(sg);
+      const gameDate = new Date(sg.date);
+      
+      let status = 'Scheduled';
+      if (linked) {
+        status = 'Logged';
+      } else if (isToday(gameDate)) {
+        status = 'Game Day';
+      } else if (isBefore(gameDate, today) && !isToday(gameDate)) {
+        status = 'Stats Missing';
+      }
+
+      let group = grouped.find(g => g.date === dateKey);
+      if (!group) {
+        group = { date: dateKey, games: [] };
+        // If all games on this date share a tournament, set it
+        grouped.push(group);
+      }
+      group.games.push({ ...sg, status, linkedGame: linked });
+    });
+
+    // Set tournament label if all games in a group share it
+    grouped.forEach(g => {
+      const tourns = g.games.map(gm => gm.tournament).filter(Boolean);
+      if (tourns.length > 0 && tourns.every(t => t === tourns[0])) {
+        g.tournament = tourns[0];
+      }
+    });
+
+    return grouped;
+  }, [filteredSchedule, games, calendarMonth, today]);
 
   // Quick Live Stats handlers
   const handleQuickLiveStatsClick = () => {
@@ -210,7 +262,6 @@ export function LogSection({
         gamePhotoUrl: halfData?.gamePhotoUrl,
         teamId: quickCaptureTeamId,
       };
-
       await addGame(gameData);
       toast.success('Game saved successfully!');
       setShowQuickLiveCapture(false);
@@ -232,7 +283,6 @@ export function LogSection({
     setQuickCaptureTeamId(undefined);
   };
 
-  // Show Quick Live Capture fullscreen mode
   if (showQuickLiveCapture) {
     return (
       <LiveStatCapture
@@ -244,9 +294,21 @@ export function LogSection({
     );
   }
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Game Day':
+        return <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase">Game Day</Badge>;
+      case 'Logged':
+        return <Badge className="bg-green-500/15 text-green-500 border-green-500/30 text-[10px] font-bold uppercase"><Check className="w-3 h-3 mr-0.5" />Logged</Badge>;
+      case 'Stats Missing':
+        return <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase"><AlertCircle className="w-3 h-3 mr-0.5" />Stats Missing</Badge>;
+      default:
+        return <Badge variant="outline" className="text-[10px] font-bold uppercase text-muted-foreground">Scheduled</Badge>;
+    }
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Quick Live Stats Dialog */}
+    <div className="space-y-5 animate-fade-in">
       <QuickLiveStatsDialog
         open={showQuickLiveStatsDialog}
         onOpenChange={setShowQuickLiveStatsDialog}
@@ -255,350 +317,381 @@ export function LogSection({
         onStartCapture={handleStartQuickCapture}
       />
 
-      {/* ===================== SMART PROMPT ===================== */}
-      {showSmartPrompt && !dismissedSmartPrompt && (
-        <Card className="relative overflow-hidden border-primary/30 bg-gradient-to-r from-primary/10 via-card to-card">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 h-7 w-7"
-            onClick={() => setDismissedSmartPrompt(true)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-2.5 rounded-xl bg-primary/15">
-              <Zap className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-sm">Did you just play a game?</p>
-              <p className="text-xs text-muted-foreground">Log it now while it's fresh</p>
-            </div>
-            <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ===================== PRIMARY CTA - START LIVE GAME ===================== */}
-      <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/8 via-card to-card hover:border-primary/30 transition-all">
-        <CardContent className="p-5">
-          <div className="flex items-start gap-4">
-            <div className="p-3 rounded-xl bg-primary/15 shrink-0">
-              <Radio className="h-6 w-6 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-bold mb-1">Start Live Game</h2>
-              <p className="text-sm text-muted-foreground mb-3">
-                Track stats in real-time during your game
-              </p>
-              <Button
-                onClick={handleQuickLiveStatsClick}
-                size="lg"
-                className="w-full sm:w-auto gradient-primary gap-2 font-semibold shadow-lg hover:shadow-xl transition-shadow"
-              >
-                <Radio className="w-4 h-4" />
-                Start Live Game
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ===================== SECONDARY CTA - QUICK LOG ===================== */}
-      <Card className="overflow-hidden border-border/60 hover:border-border transition-all">
-        <CardContent className="p-5">
-          <div className="flex items-start gap-4">
-            <div className="p-3 rounded-xl bg-muted shrink-0">
-              <ClipboardList className="h-5 w-5 text-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-base font-semibold mb-0.5">Log Your Last Game</h2>
-              <p className="text-sm text-muted-foreground mb-3">
-                Enter stats from a completed game
-              </p>
-              <AddGameDialog 
-                onAddGame={addGame} 
-                isMobile={isMobile}
-                autoOpen={autoOpenAddGame}
-                onAutoOpenConsumed={onAutoOpenAddGameConsumed}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ===================== UPCOMING GAME ===================== */}
-      <section>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Upcoming Game
-        </h2>
-        {nextGame ? (
-          <Card 
-            className="overflow-hidden border-border/60 hover:border-primary/20 transition-all cursor-pointer"
-            onClick={() => navigate(`/game/scheduled/${nextGame.id}`)}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    {isToday(new Date(nextGame.date)) && (
-                      <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/30 text-[10px] font-semibold uppercase">
-                        Today
-                      </Badge>
-                    )}
-                    <span className={cn(
-                      "text-xs font-medium px-2 py-0.5 rounded-full",
-                      nextGame.isHome 
-                        ? "bg-green-500/10 text-green-600 dark:text-green-400" 
-                        : "bg-orange-500/10 text-orange-600 dark:text-orange-400"
-                    )}>
-                      {nextGame.isHome ? 'Home' : 'Away'}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-bold truncate">vs {nextGame.opponent}</h3>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {format(new Date(nextGame.date), 'EEE, MMM d')}
-                    </span>
-                    {nextGame.time && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {nextGame.time}
-                      </span>
-                    )}
-                    {nextGame.location && (
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        <span className="truncate max-w-[140px]">{nextGame.location}</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="border-border/40">
-            <CardContent className="p-5 text-center">
-              <Calendar className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
-              <p className="text-sm text-muted-foreground mb-1">No upcoming games scheduled</p>
-              <p className="text-xs text-muted-foreground mb-3">
-                Add your schedule so Hoop Journal can remind you before tip-off.
-              </p>
-              <AddScheduleDialog 
-                onAddGame={addScheduledGame} 
-                onBulkAddGames={bulkImportScheduledGames} 
-                isMobile={isMobile} 
-              />
-            </CardContent>
-          </Card>
-        )}
-      </section>
-
-      {/* ===================== RECENT GAMES ===================== */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            Recent Games
-          </h2>
-          {games.length > 5 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => handleTabChange('history')}
-              className="text-muted-foreground hover:text-foreground gap-1 text-xs"
-            >
-              View All
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Button>
-          )}
-        </div>
-
-        {recentGames.length === 0 ? (
-          <Card className="border-border/40">
-            <CardContent className="p-6 text-center space-y-3">
-              <Trophy className="h-8 w-8 mx-auto text-muted-foreground/40" />
-              <div>
-                <p className="text-sm font-medium">No games recorded yet</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Start tracking your season by logging your first game.
-                </p>
-              </div>
-              <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-2">
-            {recentGames.map((game) => {
-              const gs = calculateGameScore(game);
-              const grade = getLetterGradeFromScore(gs);
-              const gradeColor = getGradeColor(grade);
-              
-              return (
-                <Card 
-                  key={game.id} 
-                  className="overflow-hidden hover:bg-accent/30 transition-colors cursor-pointer border-border/50"
-                  onClick={() => navigate(`/game/${game.id}`)}
-                >
-                  <CardContent className="p-3.5">
-                    <div className="flex items-center gap-3">
-                      {/* Grade Badge */}
-                      <div 
-                        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-black text-sm"
-                        style={{ 
-                          backgroundColor: `${gradeColor}15`,
-                          color: gradeColor,
-                          border: `1px solid ${gradeColor}30`,
-                        }}
-                      >
-                        {grade}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className={cn(
-                            "w-1.5 h-1.5 rounded-full shrink-0",
-                            game.isWin ? "bg-green-500" : "bg-red-500"
-                          )} />
-                          <span className="font-semibold text-sm truncate">vs {game.opponent}</span>
-                          <span className={cn(
-                            "text-[10px] font-bold px-1.5 py-0.5 rounded",
-                            game.isWin 
-                              ? "bg-green-500/10 text-green-600 dark:text-green-400" 
-                              : "bg-red-500/10 text-red-600 dark:text-red-400"
-                          )}>
-                            {game.isWin ? 'W' : 'L'}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {game.points} PTS • {game.assists} AST • {game.rebounds} REB
-                        </p>
-                      </div>
-                      
-                      <div className="text-right shrink-0">
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(game.date), 'MMM d')}
-                        </p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* ===================== DETAILED TABS (COLLAPSED BY DEFAULT) ===================== */}
-      <Tabs value={activeSubTab} onValueChange={handleTabChange} className="w-full pt-4 border-t border-border">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
+      {/* ===================== TABS ===================== */}
+      <Tabs value={activeSubTab} onValueChange={handleTabChange} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-3 mx-auto">
           <TabsTrigger value="history">All Games</TabsTrigger>
-          <TabsTrigger value="schedule">Full Schedule</TabsTrigger>
+          <TabsTrigger value="schedule">Calendar</TabsTrigger>
           <TabsTrigger value="add">Add Game</TabsTrigger>
         </TabsList>
 
-        {/* History Tab */}
-        <TabsContent value="history" className="mt-6 space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Team Filter */}
-            {teams.length > 0 && (
-              <div className="flex items-center gap-1">
-                <Select value={gamesTabTeamFilter} onValueChange={setGamesTabTeamFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <Users className="w-4 h-4 mr-2 text-muted-foreground" />
-                    <SelectValue placeholder="All Teams" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Teams</SelectItem>
-                    {teams.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                    ))}
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                  </SelectContent>
-                </Select>
-                {gamesTabTeamFilter !== 'all' && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setGamesTabTeamFilter('all')}
-                    className="h-9 w-9"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            )}
-            <p className="text-sm text-muted-foreground ml-auto">
-              {gamesTabFilteredGames.length} games recorded
-            </p>
-          </div>
+        {/* ===================== LOG HOME (ALL GAMES) ===================== */}
+        <TabsContent value="history" className="mt-5 space-y-5">
+          
+          {/* Smart Prompt */}
+          {showSmartPrompt && !dismissedSmartPrompt && (
+            <Card className="relative overflow-hidden border-primary/30 bg-gradient-to-r from-primary/10 via-card to-card">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 h-7 w-7"
+                onClick={() => setDismissedSmartPrompt(true)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="p-2.5 rounded-xl bg-primary/15">
+                  <Zap className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">Did you just play a game?</p>
+                  <p className="text-xs text-muted-foreground">Log it now while it's fresh</p>
+                </div>
+                <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+              </CardContent>
+            </Card>
+          )}
 
-          {gamesTabFilteredGames.length === 0 ? (
-            <div className="stat-card text-center py-12 space-y-6">
-              <div className="space-y-2">
-                <p className="text-muted-foreground text-lg">
-                  {gamesTabTeamFilter !== 'all' 
-                    ? `No games recorded for ${teams.find(t => t.id === gamesTabTeamFilter)?.name || 'Unassigned'}.`
-                    : 'No games recorded yet.'
-                  }
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {gamesTabTeamFilter !== 'all'
-                    ? 'Try selecting a different team or log a new game.'
-                    : 'Start tracking your season by adding your first game!'
-                  }
-                </p>
-              </div>
-              
-              {gamesTabTeamFilter === 'all' && (
-                <>
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <Button
-                      onClick={handleQuickLiveStatsClick}
-                      className="gradient-primary gap-2 w-full sm:w-auto"
-                      size="lg"
-                    >
-                      <Radio className="w-5 h-5" />
-                      Start Live Stats
-                    </Button>
-                    <span className="text-muted-foreground text-sm">or</span>
-                    <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
-                  </div>
-                  
-                  <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                    Use <strong>Live Stats</strong> to track your game in real-time, or <strong>Log Game</strong> to add stats after the game.
+          {/* Primary CTA */}
+          <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/8 via-card to-card hover:border-primary/30 transition-all group">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-xl bg-primary/15 shrink-0 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-shadow">
+                  <Radio className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-bold mb-1">Start Live Game</h2>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Track stats in real-time during your game
                   </p>
-                </>
+                  <Button
+                    onClick={handleQuickLiveStatsClick}
+                    size="lg"
+                    className="w-full sm:w-auto gradient-primary gap-2 font-semibold shadow-lg hover:shadow-xl transition-shadow"
+                  >
+                    <Radio className="w-4 h-4" />
+                    Start Live Game
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Secondary CTA */}
+          <Card className="overflow-hidden border-border/60 hover:border-border transition-all">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-xl bg-muted shrink-0">
+                  <ClipboardList className="h-5 w-5 text-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-base font-semibold mb-0.5">Log Your Last Game</h2>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Enter stats from a completed game
+                  </p>
+                  <AddGameDialog 
+                    onAddGame={addGame} 
+                    isMobile={isMobile}
+                    autoOpen={autoOpenAddGame}
+                    onAutoOpenConsumed={onAutoOpenAddGameConsumed}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Upcoming Game */}
+          <section>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">
+              Upcoming Game
+            </h2>
+            {nextGame ? (
+              <Card 
+                className={cn(
+                  "overflow-hidden hover:border-primary/20 transition-all cursor-pointer",
+                  isToday(new Date(nextGame.date))
+                    ? "border-primary/40 bg-gradient-to-r from-primary/5 via-card to-card" 
+                    : "border-border/60"
+                )}
+                onClick={() => navigate(`/game/scheduled/${nextGame.id}`)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        {isToday(new Date(nextGame.date)) ? (
+                          <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase tracking-wider">
+                            Game Day
+                          </Badge>
+                        ) : null}
+                        <span className={cn(
+                          "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase",
+                          nextGame.isHome 
+                            ? "bg-green-500/10 text-green-500" 
+                            : "bg-blue-500/10 text-blue-500"
+                        )}>
+                          {nextGame.isHome ? 'Home' : 'Away'}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-bold truncate">vs {nextGame.opponent}</h3>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {isToday(new Date(nextGame.date)) ? 'Today' : format(new Date(nextGame.date), 'EEE, MMM d')}
+                        </span>
+                        {nextGame.time && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {nextGame.time}
+                          </span>
+                        )}
+                        {nextGame.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            <span className="truncate max-w-[140px]">{nextGame.location}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {isToday(new Date(nextGame.date)) ? (
+                      <Button
+                        onClick={(e) => { e.stopPropagation(); handleQuickLiveStatsClick(); }}
+                        size="sm"
+                        className="gradient-primary shrink-0 gap-1 text-xs font-semibold"
+                      >
+                        <Radio className="w-3.5 h-3.5" />
+                        Go Live
+                      </Button>
+                    ) : (
+                      <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-border/40">
+                <CardContent className="p-5 text-center">
+                  <Calendar className="h-7 w-7 mx-auto text-muted-foreground/40 mb-2" />
+                  <p className="text-sm text-muted-foreground mb-1">No upcoming games scheduled</p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Add your schedule so Hoop Journal can help you track on game day.
+                  </p>
+                  <AddScheduleDialog 
+                    onAddGame={addScheduledGame} 
+                    onBulkAddGames={bulkImportScheduledGames} 
+                    isMobile={isMobile} 
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </section>
+
+          {/* Mini Season Summary */}
+          {seasonAvgs && (
+            <div className="flex items-center justify-center gap-6 py-3 px-4 rounded-xl bg-card border border-border/50">
+              <div className="text-center">
+                <p className="text-lg font-bold">{seasonAvgs.ppg}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">PPG</p>
+              </div>
+              <div className="w-px h-8 bg-border" />
+              <div className="text-center">
+                <p className="text-lg font-bold">{seasonAvgs.rpg}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">RPG</p>
+              </div>
+              <div className="w-px h-8 bg-border" />
+              <div className="text-center">
+                <p className="text-lg font-bold">{seasonAvgs.apg}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">APG</p>
+              </div>
+              <div className="w-px h-8 bg-border" />
+              <div className="text-center">
+                <p className="text-lg font-bold">{games.length}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">GP</p>
+              </div>
+            </div>
+          )}
+
+          {/* Recent Games */}
+          <section className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Recent Games
+              </h2>
+              {games.length > 5 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => navigate('/log/history')}
+                  className="text-muted-foreground hover:text-foreground gap-1 text-xs h-7 px-2"
+                >
+                  View All
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
               )}
             </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {gamesTabFilteredGames.map((game) => (
-                <GameCard 
-                  key={game.id} 
-                  game={game} 
-                  profile={profile} 
-                  onDelete={deleteGame}
-                  teams={teams}
-                  onTeamChange={updateGameTeam}
-                />
-              ))}
-            </div>
+
+            {recentGames.length === 0 ? (
+              <Card className="border-border/40">
+                <CardContent className="p-6 text-center space-y-3">
+                  <Trophy className="h-8 w-8 mx-auto text-muted-foreground/40" />
+                  <div>
+                    <p className="text-sm font-medium">No games recorded yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Start tracking your season by logging your first game.
+                    </p>
+                  </div>
+                  <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-1.5">
+                {recentGames.map((game) => {
+                  const gs = calculateGameScore(game);
+                  const grade = getLetterGradeFromScore(gs);
+                  const gradeColor = getGradeColor(grade);
+                  
+                  return (
+                    <Card 
+                      key={game.id} 
+                      className="overflow-hidden hover:bg-accent/30 transition-colors cursor-pointer border-border/50"
+                      onClick={() => navigate(`/game/${game.id}`)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 font-black text-xs"
+                            style={{ 
+                              backgroundColor: `${gradeColor}15`,
+                              color: gradeColor,
+                              border: `1px solid ${gradeColor}30`,
+                            }}
+                          >
+                            {grade}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm truncate">vs {game.opponent}</span>
+                              <span className={cn(
+                                "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                                game.isWin 
+                                  ? "bg-green-500/10 text-green-500" 
+                                  : "bg-red-500/10 text-red-500"
+                              )}>
+                                {game.isWin ? 'W' : 'L'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {game.points} PTS • {game.rebounds} REB • {game.assists} AST
+                            </p>
+                          </div>
+                          
+                          <div className="text-right shrink-0">
+                            <p className="text-[11px] text-muted-foreground">
+                              {format(new Date(game.date), 'MMM d')}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          {/* Full Game History (if more than 5 games) */}
+          {games.length > 5 && (
+            <section className="space-y-3 pt-4 border-t border-border/50">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  All Games
+                </h2>
+                {teams.length > 0 && (
+                  <div className="flex items-center gap-1 ml-auto">
+                    <Select value={gamesTabTeamFilter} onValueChange={setGamesTabTeamFilter}>
+                      <SelectTrigger className="w-[140px] h-8 text-xs">
+                        <Users className="w-3 h-3 mr-1.5 text-muted-foreground" />
+                        <SelectValue placeholder="All Teams" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Teams</SelectItem>
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                        ))}
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {gamesTabTeamFilter !== 'all' && (
+                      <Button variant="ghost" size="icon" onClick={() => setGamesTabTeamFilter('all')} className="h-8 w-8">
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">{gamesTabFilteredGames.length} games recorded</p>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {gamesTabFilteredGames.map((game) => (
+                  <GameCard 
+                    key={game.id} 
+                    game={game} 
+                    profile={profile} 
+                    onDelete={deleteGame}
+                    teams={teams}
+                    onTeamChange={updateGameTeam}
+                  />
+                ))}
+              </div>
+            </section>
           )}
         </TabsContent>
 
-        {/* Schedule Tab */}
-        <TabsContent value="schedule" className="mt-6 space-y-6">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Team Filter */}
-            {teams.length > 1 && (
-              <div className="flex items-center gap-1">
+        {/* ===================== CALENDAR TAB ===================== */}
+        <TabsContent value="schedule" className="mt-5 space-y-5">
+          {/* Calendar Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold">Calendar</h2>
+              <p className="text-xs text-muted-foreground">Your game schedule and game days</p>
+            </div>
+            <div className="flex gap-2">
+              <ImportScheduleDialog onImport={bulkImportScheduledGames} isMobile={isMobile} />
+              <AddScheduleDialog onAddGame={addScheduledGame} onBulkAddGames={bulkImportScheduledGames} isMobile={isMobile} />
+            </div>
+          </div>
+
+          {/* Month Selector */}
+          <div className="flex items-center justify-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <h3 className="text-base font-bold min-w-[160px] text-center">
+              {format(calendarMonth, 'MMMM yyyy')}
+            </h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Filters */}
+          {(teams.length > 1 || tournaments.length > 0) && (
+            <div className="flex flex-wrap items-center gap-2">
+              {teams.length > 1 && (
                 <Select value={teamFilter} onValueChange={setTeamFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <Users className="w-4 h-4 mr-2 text-muted-foreground" />
+                  <SelectTrigger className="w-[140px] h-8 text-xs">
+                    <Users className="w-3 h-3 mr-1.5 text-muted-foreground" />
                     <SelectValue placeholder="All Teams" />
                   </SelectTrigger>
                   <SelectContent>
@@ -609,24 +702,11 @@ export function LogSection({
                     <SelectItem value="unassigned">Unassigned</SelectItem>
                   </SelectContent>
                 </Select>
-                {teamFilter !== 'all' && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setTeamFilter('all')}
-                    className="h-9 w-9"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            )}
-            {/* Tag Filter */}
-            {tournaments.length > 0 && (
-              <div className="flex items-center gap-1">
+              )}
+              {tournaments.length > 0 && (
                 <Select value={tournamentFilter} onValueChange={setTournamentFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <Trophy className="w-4 h-4 mr-2 text-muted-foreground" />
+                  <SelectTrigger className="w-[140px] h-8 text-xs">
+                    <Trophy className="w-3 h-3 mr-1.5 text-muted-foreground" />
                     <SelectValue placeholder="All Tags" />
                   </SelectTrigger>
                   <SelectContent>
@@ -636,35 +716,152 @@ export function LogSection({
                     ))}
                   </SelectContent>
                 </Select>
-                {tournamentFilter !== 'all' && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setTournamentFilter('all')}
-                    className="h-9 w-9"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            )}
-            <div className="flex gap-2 ml-auto">
-              <ImportScheduleDialog onImport={bulkImportScheduledGames} isMobile={isMobile} />
-              <AddScheduleDialog onAddGame={addScheduledGame} onBulkAddGames={bulkImportScheduledGames} isMobile={isMobile} />
+              )}
             </div>
-          </div>
+          )}
 
-          <p className="text-sm text-muted-foreground">
-            {upcomingGames.length} upcoming games
-            {teamFilter !== 'all' && ` • ${teams.find(t => t.id === teamFilter)?.name || 'Unassigned'}`}
-            {tournamentFilter !== 'all' && ` • ${tournamentFilter}`}
-          </p>
+          {/* Game Day Timeline */}
+          {calendarGames.length === 0 ? (
+            <Card className="border-border/40">
+              <CardContent className="p-6 text-center space-y-3">
+                <Calendar className="h-8 w-8 mx-auto text-muted-foreground/40" />
+                <div>
+                  <p className="text-sm font-medium">No games on your calendar yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Add upcoming games to build your season schedule.
+                  </p>
+                </div>
+                <AddScheduleDialog onAddGame={addScheduledGame} onBulkAddGames={bulkImportScheduledGames} isMobile={isMobile} />
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {calendarGames.map((group) => {
+                const groupDate = new Date(group.date);
+                const isTodayGroup = isToday(groupDate);
+                
+                return (
+                  <div key={group.date} className="space-y-2">
+                    {/* Date Header */}
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "text-[11px] font-bold uppercase tracking-wider",
+                        isTodayGroup ? "text-primary" : "text-muted-foreground"
+                      )}>
+                        {isTodayGroup ? 'Today' : format(groupDate, 'EEE • MMM d')}
+                      </div>
+                      <div className="flex-1 h-px bg-border/50" />
+                      {group.tournament && (
+                        <Badge variant="secondary" className="text-[10px] gap-1">
+                          <Trophy className="w-3 h-3" />
+                          {group.tournament}
+                        </Badge>
+                      )}
+                    </div>
 
-          {/* Calendar View */}
-          <section>
-            <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-              Calendar View
-            </h2>
+                    {/* Game Cards */}
+                    {group.games.map((game, idx) => (
+                      <Card
+                        key={game.id}
+                        className={cn(
+                          "overflow-hidden transition-all cursor-pointer",
+                          isTodayGroup 
+                            ? "border-primary/30 bg-gradient-to-r from-primary/5 via-card to-card hover:border-primary/40" 
+                            : "border-border/50 hover:border-border",
+                          game.status === 'Stats Missing' && "border-amber-500/20"
+                        )}
+                        onClick={() => {
+                          if (game.linkedGame) {
+                            navigate(`/game/${game.linkedGame.id}`);
+                          } else {
+                            navigate(`/game/scheduled/${game.id}`);
+                          }
+                        }}
+                      >
+                        <CardContent className="p-3.5">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                {group.games.length > 1 && (
+                                  <span className="text-[10px] font-bold text-muted-foreground">Game {idx + 1}</span>
+                                )}
+                                {getStatusBadge(game.status)}
+                                <span className={cn(
+                                  "text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase",
+                                  game.isHome 
+                                    ? "bg-green-500/10 text-green-500" 
+                                    : "bg-blue-500/10 text-blue-500"
+                                )}>
+                                  {game.isHome ? 'Home' : 'Away'}
+                                </span>
+                              </div>
+                              <h3 className="font-bold text-sm truncate">🏀 vs {game.opponent}</h3>
+                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {game.time}
+                                </span>
+                                {game.location && (
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" />
+                                    <span className="truncate max-w-[120px]">{game.location}</span>
+                                  </span>
+                                )}
+                              </div>
+                              {game.linkedGame && (
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <span className={cn(
+                                    "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                                    game.linkedGame.isWin 
+                                      ? "bg-green-500/10 text-green-500" 
+                                      : "bg-red-500/10 text-red-500"
+                                  )}>
+                                    {game.linkedGame.isWin ? 'W' : 'L'}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {game.linkedGame.points} PTS • {game.linkedGame.rebounds} REB • {game.linkedGame.assists} AST
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="shrink-0 flex items-center gap-2">
+                              {game.status === 'Game Day' && (
+                                <Button
+                                  onClick={(e) => { e.stopPropagation(); handleStartQuickCapture(game.opponent, game.id, game.teamId); }}
+                                  size="sm"
+                                  className="gradient-primary gap-1 text-[11px] font-semibold h-8"
+                                >
+                                  <Radio className="w-3 h-3" />
+                                  Go Live
+                                </Button>
+                              )}
+                              {game.status === 'Stats Missing' && (
+                                <Button
+                                  onClick={(e) => { e.stopPropagation(); /* Opens add game flow */ }}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-amber-500 border-amber-500/30 text-[11px] h-8"
+                                >
+                                  Log Game
+                                </Button>
+                              )}
+                              <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Mini Calendar */}
+          <section className="pt-4 border-t border-border/50">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Month View
+            </h3>
             <ScheduleCalendar 
               games={filteredSchedule} 
               playedGames={games} 
@@ -673,118 +870,53 @@ export function LogSection({
               onBulkAddGames={bulkImportScheduledGames}
             />
           </section>
-
-          {/* Upcoming Games */}
-          <section>
-            <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-              Upcoming Games
-            </h2>
-            {upcomingGames.length === 0 ? (
-              <div className="stat-card text-center py-12">
-                <p className="text-muted-foreground">No upcoming games scheduled.</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Add games to your schedule!
-                </p>
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {upcomingGames.map((game) => (
-                  <ScheduleCard
-                    key={game.id}
-                    game={game}
-                    linkedGame={findLinkedGame(game)}
-                    onDelete={deleteScheduledGame}
-                    teams={teams}
-                    onUpdateTeam={async (gameId, teamId) => {
-                      await updateScheduledGame(gameId, { teamId: teamId || undefined });
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Past Games */}
-          {pastScheduledGames.length > 0 && (
-            <section>
-              <h2 className="text-lg font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                Past Scheduled Games
-              </h2>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {pastScheduledGames.map((game) => (
-                  <ScheduleCard
-                    key={game.id}
-                    game={game}
-                    linkedGame={findLinkedGame(game)}
-                    onDelete={deleteScheduledGame}
-                    teams={teams}
-                    onUpdateTeam={async (gameId, teamId) => {
-                      await updateScheduledGame(gameId, { teamId: teamId || undefined });
-                    }}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
         </TabsContent>
 
-        {/* Add Game Tab */}
-        <TabsContent value="add" className="mt-6">
-          <div className="stat-card p-6 space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-xl font-semibold">Add a New Game</h2>
-              <p className="text-muted-foreground">
-                Choose how you want to log your game
-              </p>
+        {/* ===================== ADD GAME TAB ===================== */}
+        <TabsContent value="add" className="mt-5">
+          <div className="space-y-4">
+            <div className="text-center space-y-1">
+              <h2 className="text-lg font-bold">Add a New Game</h2>
+              <p className="text-sm text-muted-foreground">Choose how you want to log your game</p>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
-              {/* Live Stats Option */}
-              <div className="stat-card p-6 space-y-4 text-center border-2 border-primary/20 hover:border-primary/40 transition-colors">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                  <Radio className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">Live Stats</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Track your stats in real-time during the game
-                  </p>
-                </div>
-                <Button
-                  onClick={handleQuickLiveStatsClick}
-                  className="gradient-primary w-full"
-                >
-                  Start Live Tracking
-                </Button>
-              </div>
+            <div className="grid sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
+              <Card className="overflow-hidden border-primary/20 hover:border-primary/30 transition-all">
+                <CardContent className="p-5 text-center space-y-3">
+                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mx-auto">
+                    <Radio className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Live Stats</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Track in real-time during the game</p>
+                  </div>
+                  <Button onClick={handleQuickLiveStatsClick} className="gradient-primary w-full text-sm">
+                    Start Live Tracking
+                  </Button>
+                </CardContent>
+              </Card>
 
-              {/* Manual Entry Option */}
-              <div className="stat-card p-6 space-y-4 text-center border-2 border-secondary hover:border-secondary/80 transition-colors">
-                <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mx-auto">
-                  <Trophy className="w-6 h-6 text-foreground" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">Log Game</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Enter your stats after the game is over
-                  </p>
-                </div>
-                <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
-              </div>
+              <Card className="overflow-hidden border-border/60 hover:border-border transition-all">
+                <CardContent className="p-5 text-center space-y-3">
+                  <div className="w-11 h-11 rounded-xl bg-muted flex items-center justify-center mx-auto">
+                    <ClipboardList className="w-5 h-5 text-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Log Game</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Enter stats after the game</p>
+                  </div>
+                  <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Schedule a Future Game */}
-            <div className="pt-6 border-t border-border">
-              <div className="text-center space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Want to add a game to your schedule instead?
-                </p>
-                <AddScheduleDialog 
-                  onAddGame={addScheduledGame} 
-                  onBulkAddGames={bulkImportScheduledGames} 
-                  isMobile={isMobile} 
-                />
-              </div>
+            <div className="pt-4 border-t border-border/50 text-center space-y-3">
+              <p className="text-xs text-muted-foreground">Want to add a game to your calendar?</p>
+              <AddScheduleDialog 
+                onAddGame={addScheduledGame} 
+                onBulkAddGames={bulkImportScheduledGames} 
+                isMobile={isMobile} 
+              />
             </div>
           </div>
         </TabsContent>
