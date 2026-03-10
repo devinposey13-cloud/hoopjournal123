@@ -147,6 +147,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       { label: 'Basic dashboard stats', included: true },
       { label: 'Unlimited history', included: false },
       { label: 'Advanced analytics', included: false },
+      { label: 'Shareable game report cards', included: false },
       { label: 'Recruiting profile', included: false },
     ],
     limits: {
