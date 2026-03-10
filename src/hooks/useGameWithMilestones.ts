@@ -7,6 +7,7 @@ import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { findInvalidMilestones } from '@/utils/milestoneValidator';
 import { calculatePerformance } from '@/utils/performanceScoring';
+import { calculateGameScore } from '@/utils/gameGrading';
 import type { GameStats } from '@/types/basketball';
 import type { NewMilestoneResult } from '@/types/milestone';
 import type { PerformanceResult, XpGainResult, PerformanceTier } from '@/types/xp';
