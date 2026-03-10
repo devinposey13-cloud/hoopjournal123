@@ -84,7 +84,7 @@ export default function GameDetail() {
     getOccurrenceCount,
   } = useGameWithMilestones();
   const { teams } = usePlayerTeams();
-  const { currentPlan } = usePlan();
+  const { currentPlan, openPaywall } = usePlan();
   const { games: allGames } = useCloudData();
   const insightsHook = usePostGameInsights(allGames);
   const [lastSavedGameId, setLastSavedGameId] = useState<string | null>(null);
