@@ -87,7 +87,7 @@ export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsume
           </TabsContent>
           
           <TabsContent value="manual" className="mt-4">
-            <GameStatsForm onSubmit={handleSubmit} />
+            <GameStatsForm onSubmit={handleSubmit} initialData={initialData} />
           </TabsContent>
         </Tabs>
       </DialogContent>
