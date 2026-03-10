@@ -308,6 +308,7 @@ export default function GameDetail() {
               halftime_score_them: saveData?.halftimeScore?.them ?? null,
               final_score_us: saveData?.finalScore?.us ?? null,
               final_score_them: saveData?.finalScore?.them ?? null,
+              game_score: calculateGameScore(gameData),
             })
             .eq('id', game.id)
             .select()
