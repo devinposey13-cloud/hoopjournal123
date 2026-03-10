@@ -182,6 +182,29 @@ export function TodayCard({
         </div>
       )}
 
+      {/* Unseen Insight Prompt */}
+      {latestUnseenInsight && (
+        <div
+          className="mb-4 p-3 rounded-xl bg-primary/5 border border-primary/15 cursor-pointer hover:bg-primary/10 transition-colors"
+          onClick={() => {
+            if (onViewInsight) onViewInsight(latestUnseenInsight.id);
+            const game = games.find(g => g.id === latestUnseenInsight.gameId);
+            if (game) navigate(`/game/${game.id}`);
+          }}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <Lightbulb className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-sm font-semibold">New Game Insight</span>
+            <Badge variant="outline" className="text-[9px] font-bold border-primary/30 text-primary px-1.5 py-0">
+              New
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground ml-6">
+            {latestUnseenInsight.title} — from your last game
+          </p>
+        </div>
+      )}
+
       {/* Quick Actions */}
       <div className="flex items-center gap-2">
         {isGameDay && onStartLiveCapture ? (
