@@ -304,6 +304,10 @@ export function useGameWithMilestones() {
     showTierCelebration,
     closeTierCelebration,
     achievedTiers: tierAchievements.achievedTiers,
+    // Post-game insights
+    pendingInsight,
+    clearPendingInsight: () => setPendingInsight(null),
+    insightsHook,
   };
 }
 
