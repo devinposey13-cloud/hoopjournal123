@@ -98,18 +98,21 @@ export function LogSection({
   // Calendar month state
   const [calendarMonth, setCalendarMonth] = useState(new Date());
 
-  const showSmartPrompt = useMemo(() => {
-    const hour = getHours(new Date());
-    // Also check if a scheduled game passed today without stats
-    const hasMissingTodayGame = schedule.some(sg => {
-      if (!isToday(new Date(sg.date))) return false;
-      return !games.some(g => 
-        g.opponent.toLowerCase() === sg.opponent.toLowerCase() && 
-        isSameDay(new Date(g.date), new Date(sg.date))
-      );
-    });
-    return (hour >= 17 && hour <= 23) || hasMissingTodayGame;
+  // Smart prompt using the game status engine
+  const smartPrompt = useMemo(() => {
+    return getSmartPrompt(schedule, games);
   }, [games, schedule]);
+
+  const showSmartPrompt = useMemo(() => {
+    if (smartPrompt) return true;
+    const hour = getHours(new Date());
+    return hour >= 17 && hour <= 23;
+  }, [smartPrompt]);
+
+  // Next relevant game for the upcoming game card (uses status engine)
+  const nextRelevantGame = useMemo(() => {
+    return getNextRelevantGame(schedule, games);
+  }, [schedule, games]);
 
   const today = startOfDay(new Date());
   const tournaments = [...new Set(schedule.filter(g => g.tournament).map(g => g.tournament!))].sort();
