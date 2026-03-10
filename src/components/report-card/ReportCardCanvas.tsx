@@ -16,18 +16,14 @@ interface ReportCardCanvasProps {
 
 function getBestImpact(game: GameStats) {
   const weighted = [
-    { stat: 'PTS', label: 'Scoring', value: game.points, weight: game.points },
-    { stat: 'REB', label: 'Rebounding', value: game.rebounds, weight: game.rebounds },
-    { stat: 'AST', label: 'Playmaking', value: game.assists, weight: 1.5 * game.assists },
-    { stat: 'STL', label: 'Steals', value: game.steals, weight: 2 * game.steals },
-    { stat: 'BLK', label: 'Shot Blocking', value: game.blocks, weight: 2 * game.blocks },
+    { stat: 'PTS', value: game.points, weight: game.points },
+    { stat: 'REB', value: game.rebounds, weight: game.rebounds },
+    { stat: 'AST', value: game.assists, weight: 1.5 * game.assists },
+    { stat: 'STL', value: game.steals, weight: 2 * game.steals },
+    { stat: 'BLK', value: game.blocks, weight: 2 * game.blocks },
   ];
   return weighted.sort((a, b) => b.weight - a.weight)[0];
 }
-
-const STAT_ICONS: Record<string, string> = {
-  PTS: '🏀', REB: '📊', AST: '🎯', STL: '🔒', BLK: '🛡️', TOV: '↩️',
-};
 
 export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps>(
   ({ game, playerName, playerTeam, avatarUrl, allGames }, ref) => {
@@ -58,14 +54,13 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
         ref={ref}
         style={{
           width: 1080,
-          height: 1350,
+          height: 1920,
           fontFamily: "'Inter', sans-serif",
-          background: 'linear-gradient(180deg, #0a0f1e 0%, #070b16 35%, #0d1220 70%, #111827 100%)',
+          background: 'linear-gradient(180deg, #0a0f1e 0%, #070b16 30%, #0d1220 65%, #111827 100%)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          padding: '64px 80px 48px',
+          padding: '200px 72px 250px',
           position: 'relative',
           overflow: 'hidden',
           boxSizing: 'border-box',
@@ -74,47 +69,47 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
         {/* Background ambient glow */}
         <div style={{
           position: 'absolute',
-          top: '50%',
+          top: '38%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 700,
-          height: 700,
+          width: 900,
+          height: 900,
           borderRadius: '50%',
-          background: `radial-gradient(circle, ${color}10 0%, transparent 65%)`,
+          background: `radial-gradient(circle, ${color}12 0%, transparent 60%)`,
           pointerEvents: 'none',
         }} />
-        {/* Subtle top light streak */}
+        {/* Top light streak */}
         <div style={{
           position: 'absolute',
           top: 0,
           left: '50%',
           transform: 'translateX(-50%)',
-          width: 800,
+          width: 900,
           height: 3,
           background: `linear-gradient(90deg, transparent, ${color}60, transparent)`,
         }} />
 
-        {/* ── Content wrapper for vertical centering ── */}
+        {/* Content */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           width: '100%',
-          maxWidth: 920,
+          maxWidth: 936,
           flex: 1,
           justifyContent: 'space-between',
         }}>
-          {/* Top section: Player identity + Grade */}
+          {/* ── TOP: Player Identity ── */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
             {/* Avatar */}
             <div style={{
-              width: 128,
-              height: 128,
+              width: 140,
+              height: 140,
               borderRadius: '50%',
               border: `4px solid ${color}`,
               overflow: 'hidden',
-              marginBottom: 12,
-              boxShadow: `0 0 40px ${color}50, 0 0 80px ${color}20`,
+              marginBottom: 16,
+              boxShadow: `0 0 50px ${color}50, 0 0 100px ${color}20`,
               flexShrink: 0,
             }}>
               {avatarUrl ? (
@@ -122,145 +117,140 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               ) : (
                 <div style={{
                   width: '100%', height: '100%', background: '#1e293b',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56,
                 }}>🏀</div>
               )}
             </div>
 
             <div style={{
-              color: '#f8fafc', fontSize: 28, fontWeight: 800,
-              letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2,
-              textAlign: 'center',
+              color: '#f8fafc', fontSize: 40, fontWeight: 800,
+              letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 4,
+              textAlign: 'center', lineHeight: 1.1,
             }}>{playerName}</div>
             <div style={{
-              color: '#64748b', fontSize: 15, fontWeight: 700,
-              letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 20,
+              color: '#64748b', fontSize: 18, fontWeight: 700,
+              letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 24,
               textAlign: 'center',
             }}>{playerTeam}</div>
 
-            {/* Game Grade */}
+            {/* ── GRADE (Hero Element) ── */}
             <div style={{
-              color: '#475569', fontSize: 12, fontWeight: 700,
+              color: '#475569', fontSize: 14, fontWeight: 700,
               letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 0,
               textAlign: 'center',
             }}>GAME GRADE</div>
             <div style={{
-              fontSize: 120, fontWeight: 900, color, lineHeight: 1,
-              marginBottom: 4, textShadow: glow, letterSpacing: '-0.02em',
+              fontSize: 220, fontWeight: 900, color, lineHeight: 0.85,
+              marginBottom: 8, textShadow: glow, letterSpacing: '-0.02em',
               textAlign: 'center',
             }}>{grade}</div>
 
-            {/* Performance Tags */}
+            {/* Tags */}
             {tags.length > 0 && (
-              <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {tags.map((tag, i) => (
+              <div style={{ display: 'flex', gap: 10, marginBottom: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                {tags.slice(0, 3).map((tag, i) => (
                   <div key={i} style={{
                     background: `${color}18`,
                     border: `1px solid ${color}35`,
                     borderRadius: 50,
-                    padding: '5px 16px',
+                    padding: '6px 20px',
                     color: color,
-                    fontSize: 13,
+                    fontSize: 15,
                     fontWeight: 700,
-                    letterSpacing: '0.02em',
                   }}>{tag.emoji} {tag.label}</div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Middle section: Game context + stats */}
+          {/* ── MIDDLE: Context + Stats ── */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-            {/* Game Context */}
+            {/* Opponent + Result */}
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              marginBottom: 4, fontSize: 17, fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 16,
+              marginBottom: 6, fontSize: 22, fontWeight: 700,
               justifyContent: 'center',
             }}>
               <span style={{ color: '#cbd5e1' }}>vs {game.opponent}</span>
               <span style={{
                 color: game.isWin ? '#4ade80' : '#f87171',
-                fontWeight: 800, fontSize: 15, letterSpacing: '0.05em',
+                fontWeight: 800, fontSize: 18, letterSpacing: '0.05em',
                 background: game.isWin ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)',
                 border: `1px solid ${game.isWin ? 'rgba(74,222,128,0.25)' : 'rgba(248,113,113,0.25)'}`,
-                borderRadius: 6, padding: '3px 12px',
+                borderRadius: 8, padding: '4px 16px',
               }}>{game.isWin ? 'WIN' : 'LOSS'}{scoreDisplay ? ` ${scoreDisplay}` : ''}</span>
             </div>
             <div style={{
-              color: '#475569', fontSize: 13, fontWeight: 500, marginBottom: 14,
+              color: '#475569', fontSize: 15, fontWeight: 500, marginBottom: 20,
               textAlign: 'center',
             }}>{format(new Date(game.date), 'MMM d, yyyy')}</div>
 
-            {/* Game Score + Best Impact row */}
+            {/* Game Score + Best Impact */}
             <div style={{
-              display: 'flex', gap: 14, marginBottom: 18, justifyContent: 'center', flexWrap: 'wrap',
+              display: 'flex', gap: 16, marginBottom: 24, justifyContent: 'center', flexWrap: 'wrap',
             }}>
               <div style={{
                 background: 'rgba(30,41,59,0.6)',
                 border: '1px solid rgba(100,116,139,0.15)',
-                borderRadius: 12, padding: '10px 32px',
+                borderRadius: 16, padding: '14px 40px',
                 textAlign: 'center',
               }}>
-                <div style={{ color: '#64748b', fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Game Score</div>
-                <div style={{ color: '#f8fafc', fontSize: 34, fontWeight: 900, lineHeight: 1.1 }}>{gameScore}</div>
+                <div style={{ color: '#64748b', fontSize: 12, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Game Score</div>
+                <div style={{ color: '#f8fafc', fontSize: 44, fontWeight: 900, lineHeight: 1.1 }}>{gameScore}</div>
               </div>
               {bestImpact.value > 0 && (
                 <div style={{
                   background: `linear-gradient(135deg, ${color}12, ${color}06)`,
                   border: `1px solid ${color}25`,
-                  borderRadius: 12, padding: '10px 24px',
+                  borderRadius: 16, padding: '14px 32px',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <div style={{ color: '#64748b', fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Best Impact</div>
-                  <div style={{ color: '#f8fafc', fontSize: 34, fontWeight: 900, lineHeight: 1.1 }}>
-                    {bestImpact.value} <span style={{ fontSize: 16, color: '#94a3b8', fontWeight: 700 }}>{bestImpact.stat}</span>
+                  <div style={{ color: '#64748b', fontSize: 12, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Best Impact</div>
+                  <div style={{ color: '#f8fafc', fontSize: 44, fontWeight: 900, lineHeight: 1.1 }}>
+                    {bestImpact.value} <span style={{ fontSize: 20, color: '#94a3b8', fontWeight: 700 }}>{bestImpact.stat}</span>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Stat Grid 2×3 */}
+            {/* ── Stat Grid 2×3 (Large Tiles) ── */}
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 12, width: '100%', maxWidth: 680, marginBottom: 16,
+              gap: 14, width: '100%', marginBottom: 20,
             }}>
               {stats.map((s) => (
                 <div key={s.label} style={{
                   background: 'rgba(30,41,59,0.7)',
                   border: '1px solid rgba(100,116,139,0.15)',
-                  borderRadius: 14, padding: '18px 12px',
-                  textAlign: 'center', position: 'relative',
+                  borderRadius: 18, padding: '24px 12px 20px',
+                  textAlign: 'center',
                 }}>
                   <div style={{
-                    fontSize: 10, color: '#475569', marginBottom: 2,
-                    position: 'absolute', top: 8, right: 10,
-                  }}>{STAT_ICONS[s.label]}</div>
-                  <div style={{
-                    fontSize: 40, fontWeight: 900, color: '#f8fafc', lineHeight: 1.1,
+                    fontSize: 56, fontWeight: 900, color: '#f8fafc', lineHeight: 1,
                   }}>{s.value}</div>
                   <div style={{
-                    fontSize: 11, fontWeight: 700, color: '#64748b',
-                    letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 2,
+                    fontSize: 14, fontWeight: 700, color: '#64748b',
+                    letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 6,
                   }}>{s.label}</div>
                 </div>
               ))}
             </div>
 
-            {/* Career High Callout */}
+            {/* Career High Badges */}
             {careerHighsInGame.length > 0 && (
               <div style={{
-                display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center',
-                marginBottom: 12,
+                display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center',
+                marginBottom: 16,
               }}>
                 {careerHighsInGame.slice(0, 3).map((ch, i) => (
                   <div key={i} style={{
                     background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08))',
                     border: '1px solid rgba(255,215,0,0.3)',
-                    borderRadius: 8, padding: '5px 14px',
-                    display: 'flex', alignItems: 'center', gap: 6,
+                    borderRadius: 10, padding: '8px 18px',
+                    display: 'flex', alignItems: 'center', gap: 8,
                   }}>
-                    <span style={{ fontSize: 13 }}>🏆</span>
-                    <span style={{ color: '#fbbf24', fontSize: 11, fontWeight: 800, letterSpacing: '0.02em' }}>
+                    <span style={{ fontSize: 16 }}>🏆</span>
+                    <span style={{ color: '#fbbf24', fontSize: 14, fontWeight: 800, letterSpacing: '0.02em' }}>
                       Career High: {ch.displayValue} {ch.stat}
                     </span>
                   </div>
@@ -272,26 +262,27 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             <div style={{
               background: 'linear-gradient(135deg, rgba(255,107,0,0.15), rgba(255,165,0,0.08))',
               border: '1px solid rgba(255,107,0,0.3)',
-              borderRadius: 50, padding: '8px 28px',
-              color: '#ff8c3a', fontSize: 16, fontWeight: 800,
+              borderRadius: 50, padding: '10px 36px',
+              color: '#ff8c3a', fontSize: 20, fontWeight: 800,
+              boxShadow: '0 0 30px rgba(255,107,0,0.15)',
             }}>⚡ +{xpEarned} XP Earned</div>
           </div>
 
-          {/* Footer / Branding */}
+          {/* ── FOOTER: Branding ── */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             width: '100%',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <img src={hoopJournalLogo} alt="" style={{ width: 36, height: 36, borderRadius: 8 }} crossOrigin="anonymous" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <img src={hoopJournalLogo} alt="" style={{ width: 40, height: 40, borderRadius: 8 }} crossOrigin="anonymous" />
               <div>
-                <div style={{ color: '#f8fafc', fontSize: 15, fontWeight: 800 }}>Hoop Journal</div>
-                <div style={{ color: '#475569', fontSize: 10, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
+                <div style={{ color: '#f8fafc', fontSize: 16, fontWeight: 800 }}>Hoop Journal</div>
+                <div style={{ color: '#475569', fontSize: 11, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
               <div style={{ color: '#475569', fontSize: 9, fontWeight: 600, letterSpacing: '0.05em' }}>Scan to track your game</div>
-              <img src={hoopJournalQr} alt="QR Code" style={{ width: 64, height: 64, borderRadius: 6 }} crossOrigin="anonymous" />
+              <img src={hoopJournalQr} alt="QR" style={{ width: 56, height: 56, borderRadius: 6 }} crossOrigin="anonymous" />
             </div>
           </div>
         </div>

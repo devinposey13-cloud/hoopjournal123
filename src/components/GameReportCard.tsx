@@ -18,6 +18,9 @@ interface GameReportCardProps {
   allGames?: GameStats[];
 }
 
+const CANVAS_W = 1080;
+const CANVAS_H = 1920;
+
 export function GameReportCard({ open, onOpenChange, game, playerName, playerTeam, avatarUrl, allGames }: GameReportCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
@@ -27,14 +30,12 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
   const captureCard = useCallback(async (): Promise<Blob | null> => {
     if (!cardRef.current) return null;
 
-    // Clone the canvas element and render it off-screen at full 1080x1350 size
-    // This avoids capturing the CSS-scaled preview which causes distortion on mobile
     const clone = cardRef.current.cloneNode(true) as HTMLElement;
     clone.style.position = 'fixed';
     clone.style.top = '-9999px';
     clone.style.left = '-9999px';
-    clone.style.width = '1080px';
-    clone.style.height = '1350px';
+    clone.style.width = `${CANVAS_W}px`;
+    clone.style.height = `${CANVAS_H}px`;
     clone.style.transform = 'none';
     clone.style.zIndex = '-1';
     document.body.appendChild(clone);
@@ -44,40 +45,37 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
         scale: 1,
         backgroundColor: null,
         useCORS: true,
-        width: 1080,
-        height: 1350,
-        windowWidth: 1080,
-        windowHeight: 1350,
+        width: CANVAS_W,
+        height: CANVAS_H,
+        windowWidth: CANVAS_W,
+        windowHeight: CANVAS_H,
         logging: false,
       });
 
-      // Draw onto a guaranteed 1080x1350 target canvas for consistent output
       const targetCanvas = document.createElement('canvas');
-      targetCanvas.width = 1080;
-      targetCanvas.height = 1350;
+      targetCanvas.width = CANVAS_W;
+      targetCanvas.height = CANVAS_H;
       const ctx = targetCanvas.getContext('2d');
       if (!ctx) return null;
 
-      // Fill background (in case of any transparency gaps)
       ctx.fillStyle = '#070b16';
-      ctx.fillRect(0, 0, 1080, 1350);
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-      // Center the captured content onto the target canvas
       const srcW = rawCanvas.width;
       const srcH = rawCanvas.height;
-      const targetAR = 1080 / 1350;
+      const targetAR = CANVAS_W / CANVAS_H;
       const srcAR = srcW / srcH;
 
       let drawW: number, drawH: number, offsetX: number, offsetY: number;
       if (srcAR > targetAR) {
-        drawW = 1080;
-        drawH = 1080 / srcAR;
+        drawW = CANVAS_W;
+        drawH = CANVAS_W / srcAR;
         offsetX = 0;
-        offsetY = (1350 - drawH) / 2;
+        offsetY = (CANVAS_H - drawH) / 2;
       } else {
-        drawH = 1350;
-        drawW = 1350 * srcAR;
-        offsetX = (1080 - drawW) / 2;
+        drawH = CANVAS_H;
+        drawW = CANVAS_H * srcAR;
+        offsetX = (CANVAS_W - drawW) / 2;
         offsetY = 0;
       }
 
@@ -151,12 +149,11 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
     }
   };
 
-  // Scale factor to fit 1080px canvas into ~440px dialog
-  const previewScale = 440 / 1080;
+  const previewScale = 380 / CANVAS_W;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[480px] p-4 bg-card border-border overflow-y-auto max-h-[95vh]">
+      <DialogContent className="max-w-[440px] p-4 bg-card border-border overflow-y-auto max-h-[95vh]">
         <DialogTitle className="sr-only">Game Report Card</DialogTitle>
 
         {/* Social platform selector */}
@@ -167,8 +164,8 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
 
         {/* Preview container */}
         <div
-          className="w-full overflow-hidden rounded-lg border border-border/30"
-          style={{ aspectRatio: '1080/1350' }}
+          className="w-full overflow-hidden rounded-lg border border-border/30 mx-auto"
+          style={{ width: 380, aspectRatio: `${CANVAS_W}/${CANVAS_H}` }}
         >
           <div style={{ width: '100%', height: '100%', position: 'relative' }}>
             <div style={{
