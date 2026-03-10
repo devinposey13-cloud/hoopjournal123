@@ -95,6 +95,9 @@ export function LogSection({
   const [quickCaptureTeamId, setQuickCaptureTeamId] = useState<string | undefined>();
   const [isSavingQuickCapture, setIsSavingQuickCapture] = useState(false);
 
+  // Calendar month state
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+
   // Smart prompt - only used for game day context in unified card
   const smartPrompt = useMemo(() => {
     return getSmartPrompt(schedule, games);
