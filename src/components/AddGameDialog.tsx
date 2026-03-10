@@ -18,9 +18,17 @@ interface AddGameDialogProps {
   isMobile?: boolean;
   autoOpen?: boolean;
   onAutoOpenConsumed?: () => void;
+  prefill?: {
+    date?: Date;
+    opponent?: string;
+    teamId?: string;
+    scheduledGameId?: string;
+  };
+  /** Custom trigger element. If provided, replaces the default button. */
+  customTrigger?: React.ReactNode;
 }
 
-export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsumed }: AddGameDialogProps) {
+export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsumed, prefill, customTrigger }: AddGameDialogProps) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'manual' | 'ai'>('ai');
 
