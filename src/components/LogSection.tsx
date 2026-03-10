@@ -13,8 +13,9 @@ import { ScheduleCalendar } from '@/components/ScheduleCalendar';
 import { GameStats, ScheduledGame, PlayerTeam } from '@/types/basketball';
 import { getLetterGradeFromScore, calculateGameScore, getGradeColor } from '@/utils/gameGrading';
 import { getGameStatus, getSmartPrompt, getNextRelevantGame, findLinkedLoggedGame, getMissingGames, getSeasonTrackingSummary, isPromptDismissCooldownActive, dismissSmartPrompt, type GameStatus, type GameStatusResult } from '@/utils/gameStatus';
+import { calculateConsistencyStreak } from '@/utils/xpCalculations';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format, getHours } from 'date-fns';
-import { Radio, Calendar, MapPin, Clock, ChevronRight, ChevronLeft, Trophy, Users, X, Zap, ClipboardList, Home, Plane, AlertCircle, Check } from 'lucide-react';
+import { Radio, Calendar, MapPin, Clock, ChevronRight, ChevronLeft, Trophy, Users, X, Zap, ClipboardList, Home, Plane, AlertCircle, Check, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
