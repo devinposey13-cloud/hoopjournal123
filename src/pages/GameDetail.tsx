@@ -93,6 +93,7 @@ export default function GameDetail() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [showDeletePhotoDialog, setShowDeletePhotoDialog] = useState(false);
+  const [showReportCard, setShowReportCard] = useState(false);
 
   const handleRecapChange = useCallback((recap: string | null, includeInPdf: boolean) => {
     setCoachRecap(recap);
