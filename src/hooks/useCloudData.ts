@@ -494,6 +494,7 @@ export function useCloudData() {
           ft_made: game.ftMade,
           ft_attempted: game.ftAttempted,
           is_win: game.isWin,
+          game_score: game.gameScore ?? null,
         })
         .select('*, player_teams(name)')
         .single();

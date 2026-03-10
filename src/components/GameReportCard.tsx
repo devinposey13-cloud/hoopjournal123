@@ -263,6 +263,15 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
                 }}>{game.isWin ? 'WIN' : 'LOSS'}{scoreDisplay ? ` ${scoreDisplay}` : ''}</span>
               </div>
 
+              {/* Game Score */}
+              <div style={{
+                color: '#94a3b8',
+                fontSize: 20,
+                fontWeight: 700,
+                marginBottom: 12,
+                letterSpacing: '0.05em',
+              }}>Game Score: {gameScore}</div>
+
               <div style={{
                 color: '#64748b',
                 fontSize: 16,
