@@ -127,6 +127,10 @@ export default function Index() {
     closeTierCelebration,
     // Tier achievements for badges
     achievedTiers,
+    // Post-game insights
+    pendingInsight,
+    clearPendingInsight,
+    insightsHook,
   } = useGameWithMilestones();
 
   // Check Ring of Honor eligibility
