@@ -6,6 +6,9 @@ export const XP_CONFIG = {
   GROWTH_RATE: 0.08,
   CURVE_FACTOR: 1.5,
   MAX_LEVEL: 50,
+  RECOVERY_BONUS_XP: 15,
+  /** Hours after game date within which recovery XP is eligible */
+  RECOVERY_WINDOW_HOURS: 72,
 } as const;
 
 /**
