@@ -535,28 +535,58 @@ export function LogSection({
             )}
           </section>
 
-          {/* Mini Season Summary */}
-          {seasonAvgs && (
-            <div className="flex items-center justify-center gap-6 py-3 px-4 rounded-xl bg-card border border-border/50">
-              <div className="text-center">
-                <p className="text-lg font-bold">{seasonAvgs.ppg}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">PPG</p>
-              </div>
-              <div className="w-px h-8 bg-border" />
-              <div className="text-center">
-                <p className="text-lg font-bold">{seasonAvgs.rpg}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">RPG</p>
-              </div>
-              <div className="w-px h-8 bg-border" />
-              <div className="text-center">
-                <p className="text-lg font-bold">{seasonAvgs.apg}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">APG</p>
-              </div>
-              <div className="w-px h-8 bg-border" />
-              <div className="text-center">
-                <p className="text-lg font-bold">{games.length}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">GP</p>
-              </div>
+          {/* Season Tracking Summary */}
+          {(seasonAvgs || seasonSummary.totalScheduled > 0) && (
+            <div className="rounded-xl bg-card border border-border/50 overflow-hidden">
+              {/* Stats row */}
+              {seasonAvgs && (
+                <div className="flex items-center justify-center gap-6 py-3 px-4">
+                  <div className="text-center">
+                    <p className="text-lg font-bold">{seasonAvgs.ppg}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">PPG</p>
+                  </div>
+                  <div className="w-px h-8 bg-border" />
+                  <div className="text-center">
+                    <p className="text-lg font-bold">{seasonAvgs.rpg}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">RPG</p>
+                  </div>
+                  <div className="w-px h-8 bg-border" />
+                  <div className="text-center">
+                    <p className="text-lg font-bold">{seasonAvgs.apg}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">APG</p>
+                  </div>
+                  <div className="w-px h-8 bg-border" />
+                  <div className="text-center">
+                    <p className="text-lg font-bold">{games.length}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">GP</p>
+                  </div>
+                </div>
+              )}
+              {/* Season tracking strip */}
+              {seasonSummary.totalScheduled > 0 && (
+                <div className={cn(
+                  "flex items-center justify-between px-4 py-2.5 text-xs",
+                  seasonAvgs ? "border-t border-border/50" : ""
+                )}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground font-medium">Season Tracking</span>
+                    <span className="font-bold text-foreground">
+                      {seasonSummary.logged} / {seasonSummary.totalScheduled} games logged
+                    </span>
+                  </div>
+                  {seasonSummary.missing > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-amber-500 hover:text-amber-400 gap-1 h-7 text-xs px-2"
+                      onClick={() => handleTabChange('schedule')}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      {seasonSummary.missing} missing
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
