@@ -379,6 +379,23 @@ export function LogSection({
                     <Radio className="w-3.5 h-3.5" />
                     {smartPrompt.type === 'live' ? 'Resume Live Game' : 'Start Live Game'}
                   </Button>
+                ) : smartPrompt?.type === 'stats_missing' ? (
+                  <AddGameDialog
+                    onAddGame={addGame}
+                    isMobile={isMobile}
+                    prefill={{
+                      date: new Date(smartPrompt.game.date),
+                      opponent: smartPrompt.game.opponent,
+                      teamId: smartPrompt.game.teamId,
+                      scheduledGameId: smartPrompt.game.id,
+                    }}
+                    customTrigger={
+                      <Button size="sm" className="gradient-primary gap-1 text-xs font-semibold shrink-0">
+                        <ClipboardList className="w-3.5 h-3.5" />
+                        Log Your Game
+                      </Button>
+                    }
+                  />
                 ) : (
                   <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
                 )}
