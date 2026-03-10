@@ -139,20 +139,16 @@ export function LogSection({
           : g.teamId === gamesTabTeamFilter
       );
 
-  const findLinkedGame = (scheduledGame: { opponent: string; date: string }) => {
-    const scheduleDate = new Date(scheduledGame.date);
-    return games.find((pg) => {
-      const playedDate = new Date(pg.date);
-      return (
-        pg.opponent.toLowerCase() === scheduledGame.opponent.toLowerCase() &&
-        isSameDay(scheduleDate, playedDate)
-      );
-    });
+  const findLinkedGame = (scheduledGame: ScheduledGame) => {
+    return findLinkedLoggedGame(scheduledGame, games);
   };
 
-  const nextGame = upcomingGames.length > 0 
-    ? [...upcomingGames].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
-    : null;
+  const nextGame = nextRelevantGame?.game ?? (
+    upcomingGames.length > 0 
+      ? [...upcomingGames].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
+      : null
+  );
+  const nextGameStatus = nextGame ? getGameStatus(nextGame, games) : null;
 
   const recentGames = [...games]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
