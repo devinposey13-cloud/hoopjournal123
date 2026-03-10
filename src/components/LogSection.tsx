@@ -816,14 +816,14 @@ export function LogSection({
                               )}
                             </div>
                             <div className="shrink-0 flex items-center gap-2">
-                              {game.status === 'Game Day' && (
+                              {(game.status === 'game_day' || game.status === 'live') && (
                                 <Button
                                   onClick={(e) => { e.stopPropagation(); handleStartQuickCapture(game.opponent, game.id, game.teamId); }}
                                   size="sm"
                                   className="gradient-primary gap-1 text-[11px] font-semibold h-8"
                                 >
                                   <Radio className="w-3 h-3" />
-                                  Go Live
+                                  {game.status === 'live' ? 'Go Live' : 'Start Live'}
                                 </Button>
                               )}
                               {game.status === 'Stats Missing' && (
