@@ -875,6 +875,7 @@ export default function Index() {
             performance={pendingXpResult.performance}
             xpResult={pendingXpResult.xpResult}
             onClose={closeXpReveal}
+            insight={pendingInsight}
           />
         )}
       </AnimatePresence>
