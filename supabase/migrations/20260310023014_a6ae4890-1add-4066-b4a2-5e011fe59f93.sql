@@ -1,0 +1,1 @@
+ALTER TABLE public.games ADD COLUMN IF NOT EXISTS scheduled_game_id uuid REFERENCES public.scheduled_games(id) ON DELETE SET NULL;

@@ -369,6 +369,7 @@ export type Database = {
           points: number
           profile_id: string | null
           rebounds: number
+          scheduled_game_id: string | null
           season_id: string | null
           steals: number
           team_id: string | null
@@ -401,6 +402,7 @@ export type Database = {
           points?: number
           profile_id?: string | null
           rebounds?: number
+          scheduled_game_id?: string | null
           season_id?: string | null
           steals?: number
           team_id?: string | null
@@ -433,6 +435,7 @@ export type Database = {
           points?: number
           profile_id?: string | null
           rebounds?: number
+          scheduled_game_id?: string | null
           season_id?: string | null
           steals?: number
           team_id?: string | null
@@ -455,6 +458,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_scheduled_game_id_fkey"
+            columns: ["scheduled_game_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_games"
             referencedColumns: ["id"]
           },
           {
