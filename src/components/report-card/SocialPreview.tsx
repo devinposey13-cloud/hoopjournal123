@@ -8,10 +8,10 @@ interface SocialPreviewProps {
   onPlatformChange: (p: Platform) => void;
 }
 
-const PLATFORMS: { id: Platform; label: string; icon: typeof Instagram; aspect: string; desc: string }[] = [
-  { id: 'instagram', label: 'Instagram', icon: Instagram, aspect: '4:5', desc: '1080 × 1350' },
-  { id: 'twitter', label: 'X / Twitter', icon: Twitter, aspect: '4:5', desc: '1080 × 1350' },
-  { id: 'imessage', label: 'iMessage', icon: MessageCircle, aspect: '4:5', desc: '1080 × 1350' },
+const PLATFORMS: { id: Platform; label: string; icon: typeof Instagram; desc: string }[] = [
+  { id: 'instagram', label: 'Story', icon: Instagram, desc: '1080 × 1920' },
+  { id: 'twitter', label: 'X / Twitter', icon: Twitter, desc: '1080 × 1920' },
+  { id: 'imessage', label: 'iMessage', icon: MessageCircle, desc: '1080 × 1920' },
 ];
 
 export function SocialPreview({ platform, onPlatformChange }: SocialPreviewProps) {
