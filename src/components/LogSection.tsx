@@ -371,7 +371,7 @@ export function LogSection({
                     onClick={() => handleStartQuickCapture(smartPrompt.game.opponent, smartPrompt.game.id, smartPrompt.game.teamId)}
                   >
                     <Radio className="w-3.5 h-3.5" />
-                    {smartPrompt.type === 'live' ? 'Resume' : 'Go Live'}
+                    {smartPrompt.type === 'live' ? 'Resume Live Game' : 'Start Live Game'}
                   </Button>
                 ) : (
                   <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
