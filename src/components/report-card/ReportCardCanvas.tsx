@@ -94,17 +94,16 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
         {/* ── Content Safe Zone ── */}
         <div style={{
           position: 'absolute',
-          top: 200, bottom: 250, left: 80, right: 80,
+          top: 180, bottom: 200, left: 80, right: 80,
           display: 'flex', flexDirection: 'column',
           alignItems: 'center',
         }}>
 
-          {/* ═══ ZONE 1: Player Header (~15%) ═══ */}
+          {/* ═══ ZONE 1: Player Header ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: 16,
+            marginBottom: 40,
           }}>
-            {/* Avatar */}
             <div style={{
               width: 160, height: 160, borderRadius: '50%',
               border: `5px solid ${color}`,
@@ -132,12 +131,11 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             }}>{playerTeam}</div>
           </div>
 
-          {/* ═══ ZONE 2: Grade Hero (~25%) ═══ */}
+          {/* ═══ ZONE 2: Grade Hero ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: 8, position: 'relative',
+            marginBottom: 32, position: 'relative',
           }}>
-            {/* Grade glow backdrop */}
             <div style={{
               position: 'absolute', top: '50%', left: '50%',
               transform: 'translate(-50%, -50%)',
@@ -151,13 +149,11 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               textAlign: 'center', marginBottom: 0,
             }}>GAME GRADE</div>
             <div style={{
-              fontSize: 320, fontWeight: 900, color,
+              fontSize: 300, fontWeight: 900, color,
               lineHeight: 0.82, textShadow: glow,
               letterSpacing: '-0.03em', textAlign: 'center',
               position: 'relative',
             }}>{grade}</div>
-
-            {/* Tags row */}
             {tags.length > 0 && (
               <div style={{
                 display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center',
@@ -175,7 +171,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             )}
           </div>
 
-          {/* ═══ ZONE 3: Game Context (separate from grade) ═══ */}
+          {/* ═══ ZONE 3: Game Context ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             marginBottom: 48, gap: 8,
@@ -198,12 +194,11 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             </div>
           </div>
 
-          {/* ═══ ZONE 4: Stat Panel (~40%) ═══ */}
+          {/* ═══ ZONE 4: Stat Panel ═══ */}
           <div style={{
             width: '100%', display: 'flex', flexDirection: 'column',
             alignItems: 'center', flex: 1, justifyContent: 'center',
           }}>
-            {/* Game Score row */}
             <div style={{
               display: 'flex', gap: 20, marginBottom: 28, justifyContent: 'center',
             }}>
@@ -220,14 +215,10 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 </div>
               )}
             </div>
-
-            {/* Separator */}
             <div style={{
               width: '60%', height: 1, marginBottom: 28,
               background: `linear-gradient(90deg, transparent, ${color}30, transparent)`,
             }} />
-
-            {/* Stat Grid */}
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
               gap: 16, width: '100%',
@@ -239,17 +230,63 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                   borderRadius: 20, padding: '28px 8px 22px',
                   textAlign: 'center',
                 }}>
-                  <div style={{
-                    fontSize: 68, fontWeight: 900, color: s.bright, lineHeight: 1,
-                  }}>{st.value}</div>
-                  <div style={{
-                    fontSize: 15, fontWeight: 800, color: s.muted,
-                    letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 8,
-                  }}>{st.label}</div>
+                  <div style={{ fontSize: 68, fontWeight: 900, color: s.bright, lineHeight: 1 }}>{st.value}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: s.muted, letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 8 }}>{st.label}</div>
                 </div>
               ))}
             </div>
           </div>
+
+          {/* ═══ ZONE 5: Achievements + XP ═══ */}
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            marginTop: 24, gap: 14,
+          }}>
+            {careerHighsInGame.length > 0 && (
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                {careerHighsInGame.slice(0, 3).map((ch, i) => (
+                  <div key={i} style={{
+                    background: 'linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,165,0,0.06))',
+                    border: '1px solid rgba(255,215,0,0.25)',
+                    borderRadius: 12, padding: '10px 22px',
+                    display: 'flex', alignItems: 'center', gap: 10,
+                  }}>
+                    <span style={{ fontSize: 18 }}>🏆</span>
+                    <span style={{ color: '#fbbf24', fontSize: 15, fontWeight: 800 }}>
+                      Career High: {ch.displayValue} {ch.stat}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(255,107,0,0.18), rgba(255,165,0,0.08))',
+              border: '1px solid rgba(255,107,0,0.3)',
+              borderRadius: 50, padding: '12px 44px',
+              color: '#ff8c3a', fontSize: 22, fontWeight: 900,
+              boxShadow: '0 0 40px rgba(255,107,0,0.12)',
+              letterSpacing: '0.02em',
+            }}>⚡ +{xpEarned} XP Earned</div>
+          </div>
+
+          {/* ═══ FOOTER: Branding + QR ═══ */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginTop: 32, width: '100%',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <img src={hoopJournalLogo} alt="" style={{ width: 52, height: 52, borderRadius: 12 }} crossOrigin="anonymous" />
+              <div>
+                <div style={{ color: s.bright, fontSize: 20, fontWeight: 800 }}>Hoop Journal</div>
+                <div style={{ color: s.dim, fontSize: 13, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <div style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to track</div>
+              <img src={hoopJournalQr} alt="" style={{ width: 72, height: 72, borderRadius: 8 }} crossOrigin="anonymous" />
+            </div>
+          </div>
+        </div>
 
           {/* ═══ ZONE 5: Achievements + XP ═══ */}
           <div style={{
