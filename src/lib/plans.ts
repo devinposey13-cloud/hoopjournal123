@@ -359,6 +359,12 @@ export const paywallConfigs: Record<PaywallReason, PaywallConfig> = {
     recommendedPlan: 'elite',
     mode: 'fullscreen',
   },
+  report_card: {
+    title: 'Share Game Report Cards.',
+    description: "Create stunning, shareable game report cards for Instagram and more. Upgrade to Elite to unlock.",
+    recommendedPlan: 'elite',
+    mode: 'modal',
+  },
 };
 
 // Mock usage data
