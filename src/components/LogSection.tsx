@@ -697,7 +697,7 @@ export function LogSection({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold">Calendar</h2>
-              <p className="text-xs text-muted-foreground">Your game schedule and game days</p>
+              <p className="text-xs text-muted-foreground">Your game schedule and game days.</p>
             </div>
             <div className="flex gap-2">
               <ImportScheduleDialog onImport={bulkImportScheduledGames} isMobile={isMobile} />
