@@ -611,6 +611,27 @@ export function LogSection({
             </div>
           )}
 
+          {/* Consistency Streak */}
+          {streak.current > 0 && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-orange-500/5 border border-orange-500/15">
+              <Flame className="w-5 h-5 text-orange-500 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">
+                  {streak.current} Game Streak
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Keep logging your games to extend your streak.
+                </p>
+              </div>
+              {streak.best > streak.current && (
+                <div className="text-right shrink-0">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Best</p>
+                  <p className="text-sm font-bold text-orange-500">{streak.best}</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Recent Games */}
           <section className="space-y-2.5">
             <div className="flex items-center justify-between">
