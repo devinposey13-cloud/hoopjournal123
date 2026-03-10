@@ -938,6 +938,16 @@ export default function GameDetail() {
               {!isMobile && "Export PDF"}
               {isMobile && <span className="sr-only">Export PDF</span>}
             </Button>
+            <Button 
+              onClick={() => setShowReportCard(true)}
+              size={isMobile ? "icon" : "default"}
+              title="Share Report Card"
+              className="gradient-primary"
+            >
+              <Share2 className={cn("w-4 h-4", !isMobile && "mr-2")} />
+              {!isMobile && "Report Card"}
+              {isMobile && <span className="sr-only">Report Card</span>}
+            </Button>
           </div>
         </div>
 
