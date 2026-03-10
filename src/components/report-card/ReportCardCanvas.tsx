@@ -134,7 +134,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           {/* ═══ ZONE 2: Grade Hero ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: 32, position: 'relative',
+            marginBottom: 48, position: 'relative',
           }}>
             <div style={{
               position: 'absolute', top: '50%', left: '50%',
@@ -149,8 +149,8 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               textAlign: 'center', marginBottom: 0,
             }}>GAME GRADE</div>
             <div style={{
-              fontSize: 300, fontWeight: 900, color,
-              lineHeight: 0.82, textShadow: glow,
+              fontSize: 240, fontWeight: 900, color,
+              lineHeight: 0.85, textShadow: glow,
               letterSpacing: '-0.03em', textAlign: 'center',
               position: 'relative',
             }}>{grade}</div>
