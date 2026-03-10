@@ -61,6 +61,7 @@ export interface Plan {
     voiceJournaling: boolean;
     aiDevPlan: boolean;
     shareableLink: boolean;
+    reportCard: boolean;
   };
 }
 
@@ -161,6 +162,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       voiceJournaling: false,
       aiDevPlan: false,
       shareableLink: false,
+      reportCard: false,
     },
   },
   starter: {
@@ -193,6 +195,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       voiceJournaling: true,
       aiDevPlan: false,
       shareableLink: false,
+      reportCard: false,
     },
   },
   pro: {
@@ -226,6 +229,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       voiceJournaling: true,
       aiDevPlan: true,
       shareableLink: true,
+      reportCard: false,
     },
   },
   elite: {
@@ -257,6 +261,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       voiceJournaling: true,
       aiDevPlan: true,
       shareableLink: true,
+      reportCard: true,
     },
   },
 };
@@ -298,7 +303,8 @@ export type PaywallReason =
   | 'advanced_analytics'
   | 'export_pdf'
   | 'parent_dashboard'
-  | 'recruiting_profile';
+  | 'recruiting_profile'
+  | 'report_card';
 
 export interface PaywallConfig {
   title: string;
@@ -355,6 +361,12 @@ export const paywallConfigs: Record<PaywallReason, PaywallConfig> = {
     description: "Create a shareable, college-ready profile page with your stats, highlights, and player narrative.",
     recommendedPlan: 'elite',
     mode: 'fullscreen',
+  },
+  report_card: {
+    title: 'Share Game Report Cards.',
+    description: "Create stunning, shareable game report cards for Instagram and more. Upgrade to Elite to unlock.",
+    recommendedPlan: 'elite',
+    mode: 'modal',
   },
 };
 

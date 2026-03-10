@@ -84,7 +84,7 @@ export default function GameDetail() {
     getOccurrenceCount,
   } = useGameWithMilestones();
   const { teams } = usePlayerTeams();
-  const { currentPlan } = usePlan();
+  const { currentPlan, openPaywall } = usePlan();
   const { games: allGames } = useCloudData();
   const insightsHook = usePostGameInsights(allGames);
   const [lastSavedGameId, setLastSavedGameId] = useState<string | null>(null);
@@ -969,7 +969,13 @@ export default function GameDetail() {
               {isMobile && <span className="sr-only">Export PDF</span>}
             </Button>
             <Button 
-              onClick={() => setShowReportCard(true)}
+              onClick={() => {
+                if (!canUseFeature(currentPlan, 'reportCard')) {
+                  openPaywall('report_card');
+                  return;
+                }
+                setShowReportCard(true);
+              }}
               size={isMobile ? "icon" : "default"}
               title="Share Report Card"
               className="gradient-primary"
