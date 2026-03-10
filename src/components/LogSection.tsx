@@ -321,9 +321,14 @@ export function LogSection({
         {/* ===================== LOG HOME (ALL GAMES) ===================== */}
         <TabsContent value="history" className="mt-5 space-y-5">
           
-          {/* Smart Prompt */}
+          {/* Smart Prompt - uses game status engine */}
           {showSmartPrompt && !dismissedSmartPrompt && (
-            <Card className="relative overflow-hidden border-primary/30 bg-gradient-to-r from-primary/10 via-card to-card">
+            <Card className={cn(
+              "relative overflow-hidden border-primary/30",
+              smartPrompt?.type === 'live' 
+                ? "bg-gradient-to-r from-primary/15 via-card to-card" 
+                : "bg-gradient-to-r from-primary/10 via-card to-card"
+            )}>
               <Button
                 variant="ghost"
                 size="icon"
@@ -337,10 +342,40 @@ export function LogSection({
                   <Zap className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-sm">Did you just play a game?</p>
-                  <p className="text-xs text-muted-foreground">Log it now while it's fresh</p>
+                  {smartPrompt?.type === 'live' ? (
+                    <>
+                      <p className="font-semibold text-sm">Resume Live Game</p>
+                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — continue tracking</p>
+                    </>
+                  ) : smartPrompt?.type === 'stats_missing' ? (
+                    <>
+                      <p className="font-semibold text-sm">Did you just play a game?</p>
+                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} — log it while it's fresh</p>
+                    </>
+                  ) : smartPrompt?.type === 'game_day' ? (
+                    <>
+                      <p className="font-semibold text-sm">Game Day!</p>
+                      <p className="text-xs text-muted-foreground">vs {smartPrompt.game.opponent} {smartPrompt.game.time ? `at ${smartPrompt.game.time}` : 'today'}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-semibold text-sm">Did you just play a game?</p>
+                      <p className="text-xs text-muted-foreground">Log it now while it's fresh</p>
+                    </>
+                  )}
                 </div>
-                <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+                {smartPrompt?.type === 'live' || smartPrompt?.type === 'game_day' ? (
+                  <Button 
+                    size="sm" 
+                    className="gradient-primary gap-1 text-xs font-semibold shrink-0"
+                    onClick={() => handleStartQuickCapture(smartPrompt.game.opponent, smartPrompt.game.id, smartPrompt.game.teamId)}
+                  >
+                    <Radio className="w-3.5 h-3.5" />
+                    {smartPrompt.type === 'live' ? 'Resume' : 'Go Live'}
+                  </Button>
+                ) : (
+                  <AddGameDialog onAddGame={addGame} isMobile={isMobile} />
+                )}
               </CardContent>
             </Card>
           )}
