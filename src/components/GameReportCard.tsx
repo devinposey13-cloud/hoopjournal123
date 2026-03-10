@@ -26,16 +26,67 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
 
   const captureCard = useCallback(async (): Promise<Blob | null> => {
     if (!cardRef.current) return null;
-    const canvas = await html2canvas(cardRef.current, {
-      scale: 2,
-      backgroundColor: null,
-      useCORS: true,
-      width: 1080,
-      height: 1350,
-      windowWidth: 1080,
-      windowHeight: 1350,
-    });
-    return new Promise(resolve => canvas.toBlob(blob => resolve(blob), 'image/png'));
+
+    // Clone the canvas element and render it off-screen at full 1080x1350 size
+    // This avoids capturing the CSS-scaled preview which causes distortion on mobile
+    const clone = cardRef.current.cloneNode(true) as HTMLElement;
+    clone.style.position = 'fixed';
+    clone.style.top = '-9999px';
+    clone.style.left = '-9999px';
+    clone.style.width = '1080px';
+    clone.style.height = '1350px';
+    clone.style.transform = 'none';
+    clone.style.zIndex = '-1';
+    document.body.appendChild(clone);
+
+    try {
+      const rawCanvas = await html2canvas(clone, {
+        scale: 1,
+        backgroundColor: null,
+        useCORS: true,
+        width: 1080,
+        height: 1350,
+        windowWidth: 1080,
+        windowHeight: 1350,
+        logging: false,
+      });
+
+      // Draw onto a guaranteed 1080x1350 target canvas for consistent output
+      const targetCanvas = document.createElement('canvas');
+      targetCanvas.width = 1080;
+      targetCanvas.height = 1350;
+      const ctx = targetCanvas.getContext('2d');
+      if (!ctx) return null;
+
+      // Fill background (in case of any transparency gaps)
+      ctx.fillStyle = '#070b16';
+      ctx.fillRect(0, 0, 1080, 1350);
+
+      // Center the captured content onto the target canvas
+      const srcW = rawCanvas.width;
+      const srcH = rawCanvas.height;
+      const targetAR = 1080 / 1350;
+      const srcAR = srcW / srcH;
+
+      let drawW: number, drawH: number, offsetX: number, offsetY: number;
+      if (srcAR > targetAR) {
+        drawW = 1080;
+        drawH = 1080 / srcAR;
+        offsetX = 0;
+        offsetY = (1350 - drawH) / 2;
+      } else {
+        drawH = 1350;
+        drawW = 1350 * srcAR;
+        offsetX = (1080 - drawW) / 2;
+        offsetY = 0;
+      }
+
+      ctx.drawImage(rawCanvas, 0, 0, srcW, srcH, offsetX, offsetY, drawW, drawH);
+
+      return new Promise(resolve => targetCanvas.toBlob(blob => resolve(blob), 'image/png'));
+    } finally {
+      document.body.removeChild(clone);
+    }
   }, []);
 
   const handleDownload = async () => {
