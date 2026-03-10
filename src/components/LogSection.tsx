@@ -609,7 +609,7 @@ export function LogSection({
               )}
             </div>
 
-            {recentGames.length === 0 ? (
+            {recentGames.length === 0 && missingGames.length === 0 ? (
               <Card className="border-border/40">
                 <CardContent className="p-6 text-center space-y-3">
                   <Trophy className="h-8 w-8 mx-auto text-muted-foreground/40" />
@@ -624,6 +624,53 @@ export function LogSection({
               </Card>
             ) : (
               <div className="space-y-1.5">
+                {/* Missing Game Recovery Cards */}
+                {missingGames.slice(0, 3).map(({ game: mg }) => (
+                  <Card
+                    key={`missing-${mg.id}`}
+                    className="overflow-hidden border-amber-500/20 bg-gradient-to-r from-amber-500/5 via-card to-card"
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/10 border border-amber-500/20">
+                          <Clock className="w-4 h-4 text-amber-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm truncate">vs {mg.opponent}</span>
+                            <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase gap-1">
+                              <AlertCircle className="w-3 h-3" />Stats Missing
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {format(new Date(mg.date), 'MMM d')} {mg.time ? `• ${mg.time}` : ''} {mg.location ? `• ${mg.location}` : ''}
+                          </p>
+                        </div>
+                        <AddGameDialog
+                          onAddGame={addGame}
+                          isMobile={isMobile}
+                          prefill={{
+                            date: new Date(mg.date),
+                            opponent: mg.opponent,
+                            teamId: mg.teamId,
+                            scheduledGameId: mg.id,
+                          }}
+                          customTrigger={
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-amber-500 border-amber-500/30 hover:bg-amber-500/10 text-xs font-semibold shrink-0 h-8"
+                            >
+                              Log Game
+                            </Button>
+                          }
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {/* Logged Games */}
                 {recentGames.map((game) => {
                   const gs = calculateGameScore(game);
                   const grade = getLetterGradeFromScore(gs);
