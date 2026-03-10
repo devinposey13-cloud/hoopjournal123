@@ -1272,6 +1272,7 @@ export default function GameDetail() {
         playerName={profile?.name || 'Player'}
         playerTeam={profile?.team || ''}
         avatarUrl={profile?.avatar}
+        allGames={allGames}
       />
     </div>
   );
