@@ -175,25 +175,25 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             )}
           </div>
 
-          {/* ═══ ZONE 3: Game Context ═══ */}
+          {/* ═══ ZONE 3: Game Context (separate from grade) ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: 28,
+            marginBottom: 48, gap: 8,
           }}>
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 16,
-              fontSize: 24, fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 14,
+              fontSize: 22, fontWeight: 700,
             }}>
               <span style={{ color: '#cbd5e1' }}>vs {game.opponent}</span>
               <span style={{
                 color: game.isWin ? '#4ade80' : '#f87171',
-                fontWeight: 800, fontSize: 20,
+                fontWeight: 800, fontSize: 18,
                 background: game.isWin ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
                 border: `1px solid ${game.isWin ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)'}`,
-                borderRadius: 8, padding: '4px 18px',
+                borderRadius: 8, padding: '4px 16px',
               }}>{game.isWin ? 'WIN' : 'LOSS'}{scoreDisplay ? ` ${scoreDisplay}` : ''}</span>
             </div>
-            <div style={{ color: s.dim, fontSize: 16, fontWeight: 500, marginTop: 6 }}>
+            <div style={{ color: s.dim, fontSize: 15, fontWeight: 500 }}>
               {format(new Date(game.date), 'MMM d, yyyy')}
             </div>
           </div>
