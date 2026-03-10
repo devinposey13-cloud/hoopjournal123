@@ -433,25 +433,30 @@ export function LogSection({
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">
               Upcoming Game
             </h2>
-            {nextGame ? (
+            {nextGame ? (() => {
+              const status = nextGameStatus!;
+              const isActionable = status.status === 'game_day' || status.status === 'live' || status.status === 'stats_missing';
+              const linkedLog = findLinkedLoggedGame(nextGame, games);
+              return (
               <Card 
                 className={cn(
                   "overflow-hidden hover:border-primary/20 transition-all cursor-pointer",
-                  isToday(new Date(nextGame.date))
+                  (status.status === 'game_day' || status.status === 'live')
                     ? "border-primary/40 bg-gradient-to-r from-primary/5 via-card to-card" 
+                    : status.status === 'stats_missing'
+                    ? "border-amber-500/20"
                     : "border-border/60"
                 )}
-                onClick={() => navigate(`/game/scheduled/${nextGame.id}`)}
+                onClick={() => {
+                  if (linkedLog) navigate(`/game/${linkedLog.id}`);
+                  else navigate(`/game/scheduled/${nextGame.id}`);
+                }}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
-                        {isToday(new Date(nextGame.date)) ? (
-                          <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase tracking-wider">
-                            Game Day
-                          </Badge>
-                        ) : null}
+                        {getStatusBadge(status.status)}
                         <span className={cn(
                           "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase",
                           nextGame.isHome 
@@ -481,14 +486,23 @@ export function LogSection({
                         )}
                       </div>
                     </div>
-                    {isToday(new Date(nextGame.date)) ? (
+                    {(status.status === 'game_day' || status.status === 'live') ? (
                       <Button
-                        onClick={(e) => { e.stopPropagation(); handleQuickLiveStatsClick(); }}
+                        onClick={(e) => { e.stopPropagation(); handleStartQuickCapture(nextGame.opponent, nextGame.id, nextGame.teamId); }}
                         size="sm"
                         className="gradient-primary shrink-0 gap-1 text-xs font-semibold"
                       >
                         <Radio className="w-3.5 h-3.5" />
-                        Go Live
+                        {status.status === 'live' ? 'Go Live' : 'Start Live'}
+                      </Button>
+                    ) : status.status === 'stats_missing' ? (
+                      <Button
+                        onClick={(e) => { e.stopPropagation(); }}
+                        variant="outline"
+                        size="sm"
+                        className="text-amber-500 border-amber-500/30 shrink-0 text-xs font-semibold"
+                      >
+                        Log Game
                       </Button>
                     ) : (
                       <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
@@ -496,7 +510,8 @@ export function LogSection({
                   </div>
                 </CardContent>
               </Card>
-            ) : (
+              );
+            })() : (
               <Card className="border-border/40">
                 <CardContent className="p-5 text-center">
                   <Calendar className="h-7 w-7 mx-auto text-muted-foreground/40 mb-2" />
