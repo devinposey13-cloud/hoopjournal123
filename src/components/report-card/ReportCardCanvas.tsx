@@ -4,6 +4,7 @@ import type { GameStats } from '@/types/basketball';
 import { getGameGradeData } from '@/utils/gameGrading';
 import { calculateCareerHighs } from '@/utils/statsCalculations';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
+import hoopJournalQr from '@/assets/hoop-journal-qr.png';
 
 interface ReportCardCanvasProps {
   game: GameStats;
@@ -93,17 +94,16 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
         {/* ── Content Safe Zone ── */}
         <div style={{
           position: 'absolute',
-          top: 200, bottom: 250, left: 80, right: 80,
+          top: 180, bottom: 200, left: 80, right: 80,
           display: 'flex', flexDirection: 'column',
           alignItems: 'center',
         }}>
 
-          {/* ═══ ZONE 1: Player Header (~15%) ═══ */}
+          {/* ═══ ZONE 1: Player Header ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: 16,
+            marginBottom: 40,
           }}>
-            {/* Avatar */}
             <div style={{
               width: 160, height: 160, borderRadius: '50%',
               border: `5px solid ${color}`,
@@ -131,12 +131,11 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             }}>{playerTeam}</div>
           </div>
 
-          {/* ═══ ZONE 2: Grade Hero (~25%) ═══ */}
+          {/* ═══ ZONE 2: Grade Hero ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: 8, position: 'relative',
+            marginBottom: 32, position: 'relative',
           }}>
-            {/* Grade glow backdrop */}
             <div style={{
               position: 'absolute', top: '50%', left: '50%',
               transform: 'translate(-50%, -50%)',
@@ -150,13 +149,11 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               textAlign: 'center', marginBottom: 0,
             }}>GAME GRADE</div>
             <div style={{
-              fontSize: 320, fontWeight: 900, color,
+              fontSize: 300, fontWeight: 900, color,
               lineHeight: 0.82, textShadow: glow,
               letterSpacing: '-0.03em', textAlign: 'center',
               position: 'relative',
             }}>{grade}</div>
-
-            {/* Tags row */}
             {tags.length > 0 && (
               <div style={{
                 display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center',
@@ -177,32 +174,31 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           {/* ═══ ZONE 3: Game Context ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: 28,
+            marginBottom: 48, gap: 8,
           }}>
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 16,
-              fontSize: 24, fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 14,
+              fontSize: 22, fontWeight: 700,
             }}>
               <span style={{ color: '#cbd5e1' }}>vs {game.opponent}</span>
               <span style={{
                 color: game.isWin ? '#4ade80' : '#f87171',
-                fontWeight: 800, fontSize: 20,
+                fontWeight: 800, fontSize: 18,
                 background: game.isWin ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
                 border: `1px solid ${game.isWin ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)'}`,
-                borderRadius: 8, padding: '4px 18px',
+                borderRadius: 8, padding: '4px 16px',
               }}>{game.isWin ? 'WIN' : 'LOSS'}{scoreDisplay ? ` ${scoreDisplay}` : ''}</span>
             </div>
-            <div style={{ color: s.dim, fontSize: 16, fontWeight: 500, marginTop: 6 }}>
+            <div style={{ color: s.dim, fontSize: 15, fontWeight: 500 }}>
               {format(new Date(game.date), 'MMM d, yyyy')}
             </div>
           </div>
 
-          {/* ═══ ZONE 4: Stat Panel (~40%) ═══ */}
+          {/* ═══ ZONE 4: Stat Panel ═══ */}
           <div style={{
             width: '100%', display: 'flex', flexDirection: 'column',
             alignItems: 'center', flex: 1, justifyContent: 'center',
           }}>
-            {/* Game Score row */}
             <div style={{
               display: 'flex', gap: 20, marginBottom: 28, justifyContent: 'center',
             }}>
@@ -219,14 +215,10 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 </div>
               )}
             </div>
-
-            {/* Separator */}
             <div style={{
               width: '60%', height: 1, marginBottom: 28,
               background: `linear-gradient(90deg, transparent, ${color}30, transparent)`,
             }} />
-
-            {/* Stat Grid */}
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
               gap: 16, width: '100%',
@@ -238,13 +230,8 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                   borderRadius: 20, padding: '28px 8px 22px',
                   textAlign: 'center',
                 }}>
-                  <div style={{
-                    fontSize: 68, fontWeight: 900, color: s.bright, lineHeight: 1,
-                  }}>{st.value}</div>
-                  <div style={{
-                    fontSize: 15, fontWeight: 800, color: s.muted,
-                    letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 8,
-                  }}>{st.label}</div>
+                  <div style={{ fontSize: 68, fontWeight: 900, color: s.bright, lineHeight: 1 }}>{st.value}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: s.muted, letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 8 }}>{st.label}</div>
                 </div>
               ))}
             </div>
@@ -255,7 +242,6 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             marginTop: 24, gap: 14,
           }}>
-            {/* Career High Badges */}
             {careerHighsInGame.length > 0 && (
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
                 {careerHighsInGame.slice(0, 3).map((ch, i) => (
@@ -273,8 +259,6 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 ))}
               </div>
             )}
-
-            {/* XP Banner */}
             <div style={{
               background: 'linear-gradient(135deg, rgba(255,107,0,0.18), rgba(255,165,0,0.08))',
               border: '1px solid rgba(255,107,0,0.3)',
@@ -285,18 +269,27 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             }}>⚡ +{xpEarned} XP Earned</div>
           </div>
 
-          {/* ═══ FOOTER: Branding ═══ */}
+          {/* ═══ FOOTER: Branding + QR ═══ */}
           <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            gap: 14, marginTop: 28, opacity: 0.7,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginTop: 32, width: '100%',
           }}>
-            <img src={hoopJournalLogo} alt="" style={{ width: 36, height: 36, borderRadius: 8 }} crossOrigin="anonymous" />
-            <div>
-              <div style={{ color: s.bright, fontSize: 15, fontWeight: 800 }}>Hoop Journal</div>
-              <div style={{ color: s.dim, fontSize: 10, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <img src={hoopJournalLogo} alt="" style={{ width: 52, height: 52, borderRadius: 12 }} crossOrigin="anonymous" />
+              <div>
+                <div style={{ color: s.bright, fontSize: 20, fontWeight: 800 }}>Hoop Journal</div>
+                <div style={{ color: s.dim, fontSize: 13, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <div style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to track</div>
+              <img src={hoopJournalQr} alt="" style={{ width: 72, height: 72, borderRadius: 8 }} crossOrigin="anonymous" />
             </div>
           </div>
         </div>
+
+
+
       </div>
     );
   }
