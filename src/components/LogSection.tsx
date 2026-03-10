@@ -979,14 +979,26 @@ export function LogSection({
                                 </Button>
                               )}
                               {game.status === 'stats_missing' && (
-                                <Button
-                                  onClick={(e) => { e.stopPropagation(); }}
-                                  variant="outline"
-                                  size="sm"
-                                  className="text-amber-500 border-amber-500/30 text-[11px] h-8"
-                                >
-                                  Log Game
-                                </Button>
+                                <AddGameDialog
+                                  onAddGame={addGame}
+                                  isMobile={isMobile}
+                                  prefill={{
+                                    date: new Date(game.date),
+                                    opponent: game.opponent,
+                                    teamId: game.teamId,
+                                    scheduledGameId: game.id,
+                                  }}
+                                  customTrigger={
+                                    <Button
+                                      onClick={(e) => { e.stopPropagation(); }}
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-amber-500 border-amber-500/30 text-[11px] h-8"
+                                    >
+                                      Log Game
+                                    </Button>
+                                  }
+                                />
                               )}
                               <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
                             </div>
