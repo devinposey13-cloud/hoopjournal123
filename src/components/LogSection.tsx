@@ -954,7 +954,7 @@ export function LogSection({
             </div>
 
             <div className="pt-4 border-t border-border/50 text-center space-y-3">
-              <p className="text-xs text-muted-foreground">Want to add a game to your calendar?</p>
+              <p className="text-xs text-muted-foreground">Want to add a game to your calendar schedule?</p>
               <AddScheduleDialog 
                 onAddGame={addScheduledGame} 
                 onBulkAddGames={bulkImportScheduledGames} 
