@@ -93,7 +93,7 @@ export function LogSection({
   const [quickCaptureScheduledGameId, setQuickCaptureScheduledGameId] = useState<string | undefined>();
   const [quickCaptureTeamId, setQuickCaptureTeamId] = useState<string | undefined>();
   const [isSavingQuickCapture, setIsSavingQuickCapture] = useState(false);
-  const [dismissedSmartPrompt, setDismissedSmartPrompt] = useState(false);
+  const [dismissedSmartPrompt, setDismissedSmartPrompt] = useState(() => isPromptDismissCooldownActive());
 
   // Calendar month state
   const [calendarMonth, setCalendarMonth] = useState(new Date());
