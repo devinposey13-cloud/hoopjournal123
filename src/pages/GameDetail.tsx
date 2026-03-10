@@ -212,6 +212,14 @@ export default function GameDetail() {
         setShowAddStatsDialog(false);
         setShowLiveCapture(false);
         
+        // Detect new career highs
+        const gamesWithNew = [...allGames.filter(g => g.id !== savedGame.id), savedGame];
+        const highs = detectNewCareerHighs(savedGame, gamesWithNew);
+        if (highs.length > 0) {
+          setNewCareerHighs(highs);
+          setShowCareerHighCelebration(true);
+        }
+        
         // Navigate to the new game detail page (but don't navigate if milestones are showing)
         // The milestone reveal will handle navigation when closed
         if (!showReveal) {
