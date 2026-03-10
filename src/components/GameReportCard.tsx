@@ -24,7 +24,7 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const { grade, color, glow, tags, xpEarned } = getGameGradeData(game);
+  const { grade, color, glow, tags, xpEarned, gameScore } = getGameGradeData(game);
 
   const scoreDisplay = game.finalScoreUs !== undefined && game.finalScoreThem !== undefined
     ? `${game.finalScoreUs} – ${game.finalScoreThem}`
@@ -262,6 +262,15 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
                   fontWeight: 800,
                 }}>{game.isWin ? 'WIN' : 'LOSS'}{scoreDisplay ? ` ${scoreDisplay}` : ''}</span>
               </div>
+
+              {/* Game Score */}
+              <div style={{
+                color: '#94a3b8',
+                fontSize: 20,
+                fontWeight: 700,
+                marginBottom: 12,
+                letterSpacing: '0.05em',
+              }}>Game Score: {gameScore}</div>
 
               <div style={{
                 color: '#64748b',

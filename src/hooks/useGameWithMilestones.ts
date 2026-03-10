@@ -7,6 +7,7 @@ import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { findInvalidMilestones } from '@/utils/milestoneValidator';
 import { calculatePerformance } from '@/utils/performanceScoring';
+import { calculateGameScore } from '@/utils/gameGrading';
 import type { GameStats } from '@/types/basketball';
 import type { NewMilestoneResult } from '@/types/milestone';
 import type { PerformanceResult, XpGainResult, PerformanceTier } from '@/types/xp';
@@ -56,8 +57,9 @@ export function useGameWithMilestones() {
   const [showTierCelebration, setShowTierCelebration] = useState(false);
 
   const addGameWithMilestones = useCallback(async (game: Omit<GameStats, 'id'>) => {
-    // First, save the game using the original addGame
-    const savedGame = await cloudData.addGame(game);
+    // Calculate and attach game score before saving
+    const gameScore = calculateGameScore(game);
+    const savedGame = await cloudData.addGame({ ...game, gameScore });
     
     if (!savedGame) {
       return null;

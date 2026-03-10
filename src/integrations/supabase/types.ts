@@ -359,6 +359,7 @@ export type Database = {
           ft_attempted: number
           ft_made: number
           game_photo_url: string | null
+          game_score: number | null
           halftime_score_them: number | null
           halftime_score_us: number | null
           id: string
@@ -390,6 +391,7 @@ export type Database = {
           ft_attempted?: number
           ft_made?: number
           game_photo_url?: string | null
+          game_score?: number | null
           halftime_score_them?: number | null
           halftime_score_us?: number | null
           id?: string
@@ -421,6 +423,7 @@ export type Database = {
           ft_attempted?: number
           ft_made?: number
           game_photo_url?: string | null
+          game_score?: number | null
           halftime_score_them?: number | null
           halftime_score_us?: number | null
           id?: string

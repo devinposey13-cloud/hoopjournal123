@@ -34,6 +34,7 @@ export interface GameStats {
   halftimeScoreThem?: number;
   finalScoreUs?: number;
   finalScoreThem?: number;
+  gameScore?: number;
 }
 
 export interface HalfStats {

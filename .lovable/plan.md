@@ -1,57 +1,54 @@
 
 
-# Game Score Calculation Engine for Report Cards
+## Analysis: Stripe Webhook Promo Lock-in Flow
 
-## Overview
-Replace the current tier-based grading system with a new Game Score formula that directly determines letter grades. Add a `game_score` column to the `games` table so scores persist for analytics.
+I traced the full flow and found **two issues** that could prevent `promo_locked_in` from being set correctly:
 
-## Database Change
+### Issue 1: `checkout.session.completed` passes the wrong planId to lock-in check
 
-Add `game_score` column to the `games` table:
-```sql
-ALTER TABLE public.games ADD COLUMN game_score NUMERIC(5,1);
+In `create-checkout`, when a promo user selects Elite, the metadata is set as `plan_id: "elite"` (the original plan), but the actual Stripe price used is Starter. When `checkout.session.completed` fires:
+- It sets `subscription_plan: "elite"` in the DB (line 64)
+- It calls `checkAndLockPromo(supabase, userId, "elite")`
+- `checkAndLockPromo` immediately returns because `planId !== "starter"` (line 142)
+
+So the lock-in does NOT happen on checkout completion.
+
+### Issue 2: `customer.subscription.updated` overwrites with "starter"
+
+When Stripe fires `customer.subscription.updated`, the product ID maps to `"starter"` via `PRODUCT_TO_PLAN`. This:
+- Overwrites `subscription_plan` to `"starter"` (correct for billing)
+- Calls `checkAndLockPromo(_, _, "starter")` which DOES trigger the lock-in
+
+**However**, `getEffectivePlan` requires `subscriptionPlan === 'starter'` AND `promoLockedIn === true` to grant Elite access. So the subscription.updated path actually works correctly end-to-end, but relies on event ordering (subscription.updated must fire after checkout.session.completed).
+
+### Issue 3: `checkout.session.completed` sets `subscription_plan: planId` (e.g., "elite")
+
+If checkout.session.completed fires *after* subscription.updated, it would overwrite `subscription_plan` from "starter" back to "elite". Then `getEffectivePlan` would see `subscriptionPlan === 'elite'` which doesn't match the promo condition (`=== 'starter'`), so it falls through to return "elite" directly. This actually works by accident, but is fragile.
+
+### Fix Plan
+
+**In `checkout.session.completed`**: When the user is promo-eligible, set `subscription_plan` to `"starter"` (the actual billing plan) instead of the metadata `planId`, and trigger the lock-in immediately.
+
+Specifically:
+1. After getting `userId` and `planId` from metadata, query `plan_overrides` for promo eligibility
+2. If promo eligible and planId is a paid plan, set `subscription_plan: "starter"` and `promo_locked_in: true` in one upsert
+3. If not promo eligible, keep current behavior (`subscription_plan: planId`)
+
+**In `customer.subscription.updated`**: No changes needed -- it already correctly maps Starter product to "starter" and calls `checkAndLockPromo`.
+
+### Technical Detail
+
+```text
+BEFORE (broken ordering scenario):
+  checkout.session.completed → subscription_plan = "elite", lock-in skipped
+  subscription.updated → subscription_plan = "starter", lock-in triggered
+  ✓ Works only if events arrive in this order
+
+AFTER (robust):
+  checkout.session.completed → detects promo, sets subscription_plan = "starter" + promo_locked_in = true
+  subscription.updated → subscription_plan = "starter", lock-in already done (idempotent)
+  ✓ Works regardless of event ordering
 ```
 
-No RLS changes needed — existing policies cover this column.
-
-## Changes to `src/utils/gameGrading.ts`
-
-Replace the entire grading engine:
-
-- **New `calculateGameScore(game)` function** using the specified formula:
-  `Points + Rebounds + (1.5 × Assists) + (2 × Steals) + (2 × Blocks) - (1.5 × Turnovers)`, rounded to 1 decimal.
-
-- **New grade type**: `'A+' | 'A' | 'A-' | 'B+' | 'B' | 'B-' | 'C+'` (remove D, F)
-
-- **New `getLetterGradeFromScore(score)` function** using the specified thresholds:
-  - ≥30 → A+, 24–29.9 → A, 19–23.9 → A-, 15–18.9 → B+, 12–14.9 → B, 9–11.9 → B-, <9 → C+
-
-- **Updated `getGradeColor()`** with per-grade colors:
-  - A+ → gold, A → orange, A- → light orange, B+ → soft orange, B → neutral gray, B- → light gray, C+ → muted gray
-
-- **Updated `getGameGradeData()`** to use Game Score instead of performance tiers for grading. Still uses `calculatePerformance()` for XP (XP system stays independent).
-
-## Changes to `src/components/GameReportCard.tsx`
-
-- Display the Game Score on the card (below the grade, e.g., "Game Score: 32.5")
-- Update destructured data to include `gameScore` from the updated `getGameGradeData()`
-
-## Changes to `src/pages/GameDetail.tsx`
-
-- When saving a game (insert or update), compute `game_score` using `calculateGameScore()` and include it in the database write
-- Display Game Score in the game detail view alongside the grade
-
-## Changes to `src/hooks/useCloudData.ts` / `src/hooks/useGameWithMilestones.ts`
-
-- When inserting games via `addGame`, also compute and save `game_score`
-
-## Changes to `src/types/basketball.ts`
-
-- Add `gameScore?: number` to `GameStats` interface
-
-## Summary of Flow
-1. User logs game → Game Score calculated from formula → saved to DB
-2. Report Card reads `game_score` → converts to letter grade → displays grade + score
-3. XP system continues using existing `calculatePerformance()` independently
-4. Game Score persists in DB for future analytics/trends
+The change is isolated to ~15 lines in `supabase/functions/stripe-webhook/index.ts` within the `checkout.session.completed` case block.
 

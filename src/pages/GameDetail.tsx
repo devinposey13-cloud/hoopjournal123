@@ -37,6 +37,7 @@ import { SpotifyPlayer } from '@/components/SpotifyPlayer';
 import { SeasonAveragesCard } from '@/components/SeasonAveragesCard';
 import { EditScheduleDialog } from '@/components/EditScheduleDialog';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
+import { calculateGameScore } from '@/utils/gameGrading';
 import { usePlan } from '@/hooks/usePlanState';
 import { canUseFeature } from '@/lib/plans';
 import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users, Check, Share2 } from 'lucide-react';
@@ -307,6 +308,7 @@ export default function GameDetail() {
               halftime_score_them: saveData?.halftimeScore?.them ?? null,
               final_score_us: saveData?.finalScore?.us ?? null,
               final_score_them: saveData?.finalScore?.them ?? null,
+              game_score: calculateGameScore(gameData),
             })
             .eq('id', game.id)
             .select()
@@ -384,6 +386,7 @@ export default function GameDetail() {
               halftime_score_them: saveData?.halftimeScore?.them ?? null,
               final_score_us: saveData?.finalScore?.us ?? null,
               final_score_them: saveData?.finalScore?.them ?? null,
+              game_score: calculateGameScore(gameData),
             })
             .eq('id', game.id)
             .select()
@@ -420,6 +423,7 @@ export default function GameDetail() {
               halftime_score_them: saveData?.halftimeScore?.them ?? null,
               final_score_us: saveData?.finalScore?.us ?? null,
               final_score_them: saveData?.finalScore?.them ?? null,
+              game_score: calculateGameScore(gameData),
             })
             .select()
             .single();
