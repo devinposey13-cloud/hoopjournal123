@@ -826,9 +826,9 @@ export function LogSection({
                                   {game.status === 'live' ? 'Go Live' : 'Start Live'}
                                 </Button>
                               )}
-                              {game.status === 'Stats Missing' && (
+                              {game.status === 'stats_missing' && (
                                 <Button
-                                  onClick={(e) => { e.stopPropagation(); /* Opens add game flow */ }}
+                                  onClick={(e) => { e.stopPropagation(); }}
                                   variant="outline"
                                   size="sm"
                                   className="text-amber-500 border-amber-500/30 text-[11px] h-8"
