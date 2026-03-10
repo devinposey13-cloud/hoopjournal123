@@ -339,7 +339,7 @@ export function LogSection({
                 variant="ghost"
                 size="icon"
                 className="absolute top-2 right-2 h-7 w-7"
-                onClick={() => setDismissedSmartPrompt(true)}
+                onClick={() => { setDismissedSmartPrompt(true); dismissSmartPrompt(); }}
               >
                 <X className="h-4 w-4" />
               </Button>
