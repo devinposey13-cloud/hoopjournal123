@@ -91,12 +91,14 @@ export function calculateXpGain(
   xpGained: number,
   allRewards: LevelReward[],
   unlockedRewardIds: string[],
-  recoveryBonus: number = 0
+  recoveryBonus: number = 0,
+  streakBonus: number = 0,
+  streakCount: number = 0
 ): XpGainResult {
   const previousXp = currentProgress?.current_xp ?? 0;
   const previousLevel = currentProgress?.current_level ?? 1;
   
-  const totalXpGained = xpGained + recoveryBonus;
+  const totalXpGained = xpGained + recoveryBonus + streakBonus;
   const newXp = previousXp + totalXpGained;
   const newLevel = Math.min(XP_CONFIG.MAX_LEVEL, getLevelFromXp(newXp));
   
@@ -128,6 +130,8 @@ export function calculateXpGain(
     xpProgressInLevel,
     newRewards,
     recoveryBonus,
+    streakBonus,
+    streakCount,
   };
 }
 
