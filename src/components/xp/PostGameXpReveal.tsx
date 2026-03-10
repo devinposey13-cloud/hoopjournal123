@@ -5,7 +5,7 @@ import { formatXp, getLevelTierGradient } from '@/utils/xpCalculations';
 import { LevelBadge } from './LevelBadge';
 import { XpProgressBar } from './XpProgressBar';
 import { Button } from '@/components/ui/button';
-import { X, TrendingUp, Zap, Star, Trophy } from 'lucide-react';
+import { X, TrendingUp, Zap, Star, Trophy, Flame } from 'lucide-react';
 import type { PerformanceResult, XpGainResult, LevelReward } from '@/types/xp';
 
 interface PostGameXpRevealProps {
@@ -118,6 +118,24 @@ export function PostGameXpReveal({
               >
                 Nice recovery. Your season record stays complete.
               </motion.p>
+            )}
+
+            {/* Streak Bonus */}
+            {xpResult.streakBonus > 0 && (
+              <motion.div
+                className="flex items-center justify-between mb-2 px-3 py-2 rounded-lg bg-orange-500/10 border border-orange-500/20"
+                initial={{ x: -10, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.68 }}
+              >
+                <div className="flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-orange-500" />
+                  <span className="text-sm font-medium text-orange-500">
+                    {xpResult.streakCount} Game Streak
+                  </span>
+                </div>
+                <span className="text-sm font-bold text-orange-500">+{xpResult.streakBonus} XP</span>
+              </motion.div>
             )}
 
             {/* Bonuses */}

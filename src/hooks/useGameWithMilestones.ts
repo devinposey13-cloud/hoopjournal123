@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { findInvalidMilestones } from '@/utils/milestoneValidator';
 import { calculatePerformance } from '@/utils/performanceScoring';
 import { calculateGameScore } from '@/utils/gameGrading';
-import { isRecoveryEligible, XP_CONFIG } from '@/utils/xpCalculations';
+import { isRecoveryEligible, XP_CONFIG, calculateConsistencyStreak, getStreakXpBonus } from '@/utils/xpCalculations';
 import type { GameStats } from '@/types/basketball';
 import type { NewMilestoneResult } from '@/types/milestone';
 import type { PerformanceResult, XpGainResult, PerformanceTier } from '@/types/xp';
@@ -105,7 +105,17 @@ export function useGameWithMilestones() {
       ? XP_CONFIG.RECOVERY_BONUS_XP
       : 0;
     
-    const xpResult = await xpProgress.addXp(performance.xpEarned, performance.finalScore, recoveryBonus);
+    // Calculate consistency streak (including the new game)
+    const { current: streakCount } = calculateConsistencyStreak(allGames, cloudData.schedule);
+    const streakBonus = getStreakXpBonus(streakCount);
+    
+    const xpResult = await xpProgress.addXp(
+      performance.xpEarned,
+      performance.finalScore,
+      recoveryBonus,
+      streakBonus,
+      streakCount
+    );
     
     // Check for first-time tier achievement
     const isNewTier = !tierAchievements.hasTierBeenAchieved(performance.tier);

@@ -1,13 +1,15 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Target, Percent, Zap, Trophy, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { GameStats, SeasonStats } from '@/types/basketball';
+import type { GameStats, SeasonStats, ScheduledGame } from '@/types/basketball';
 import type { XpProgress } from '@/types/xp';
+import { calculateConsistencyStreak } from '@/utils/xpCalculations';
 
 interface QuickStatsRowProps {
   games: GameStats[];
   seasonStats: SeasonStats;
   xpProgress?: XpProgress | null;
+  schedule?: ScheduledGame[];
 }
 
 interface QuickStatCardProps {
@@ -85,13 +87,14 @@ function calculateEfficiency(games: GameStats[]): number {
   return Math.round((total / games.length) * 10) / 10;
 }
 
-export function QuickStatsRow({ games, seasonStats, xpProgress }: QuickStatsRowProps) {
+export function QuickStatsRow({ games, seasonStats, xpProgress, schedule }: QuickStatsRowProps) {
   const sortedGames = [...games].sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
   
   const last5 = calculateLast5Trend(sortedGames);
   const efficiency = calculateEfficiency(games);
+  const streak = calculateConsistencyStreak(games, schedule ?? []);
   
   const stats = [
     {
@@ -119,11 +122,16 @@ export function QuickStatsRow({ games, seasonStats, xpProgress }: QuickStatsRowP
       variant: 'warning' as const,
     },
     {
-      label: 'Last 5',
-      value: `${last5.wins}W`,
+      label: 'Streak',
+      value: streak.current > 0 ? `🔥${streak.current}` : '0',
       icon: <Flame className="h-4 w-4" />,
-      trend: last5.trend,
-      variant: last5.wins >= 3 ? 'success' as const : 'default' as const,
+      variant: streak.current >= 3 ? 'success' as const : 'default' as const,
+    },
+    {
+      label: 'Best Streak',
+      value: streak.best,
+      icon: <Flame className="h-4 w-4" />,
+      variant: streak.best >= 5 ? 'accent' as const : 'default' as const,
     },
   ];
 
@@ -136,7 +144,7 @@ export function QuickStatsRow({ games, seasonStats, xpProgress }: QuickStatsRowP
             label={stat.label}
             value={stat.value}
             icon={stat.icon}
-            trend={stat.trend}
+            trend={'trend' in stat ? (stat as { trend?: 'up' | 'down' | 'neutral' }).trend : undefined}
             delay={index * 0.05}
             variant={stat.variant}
           />

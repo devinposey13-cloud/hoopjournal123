@@ -77,6 +77,8 @@ export interface XpGainResult {
   xpProgressInLevel: number;
   newRewards: LevelReward[];
   recoveryBonus: number;
+  streakBonus: number;
+  streakCount: number;
 }
 
 export interface QuarterInfo {

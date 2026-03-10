@@ -13,8 +13,9 @@ import { ScheduleCalendar } from '@/components/ScheduleCalendar';
 import { GameStats, ScheduledGame, PlayerTeam } from '@/types/basketball';
 import { getLetterGradeFromScore, calculateGameScore, getGradeColor } from '@/utils/gameGrading';
 import { getGameStatus, getSmartPrompt, getNextRelevantGame, findLinkedLoggedGame, getMissingGames, getSeasonTrackingSummary, isPromptDismissCooldownActive, dismissSmartPrompt, type GameStatus, type GameStatusResult } from '@/utils/gameStatus';
+import { calculateConsistencyStreak } from '@/utils/xpCalculations';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format, getHours } from 'date-fns';
-import { Radio, Calendar, MapPin, Clock, ChevronRight, ChevronLeft, Trophy, Users, X, Zap, ClipboardList, Home, Plane, AlertCircle, Check } from 'lucide-react';
+import { Radio, Calendar, MapPin, Clock, ChevronRight, ChevronLeft, Trophy, Users, X, Zap, ClipboardList, Home, Plane, AlertCircle, Check, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -159,6 +160,9 @@ export function LogSection({
 
   // Season tracking summary
   const seasonSummary = useMemo(() => getSeasonTrackingSummary(schedule, games), [schedule, games]);
+
+  // Consistency streak
+  const streak = useMemo(() => calculateConsistencyStreak(games, schedule), [games, schedule]);
 
   // Season averages
   const seasonAvgs = useMemo(() => {
@@ -602,6 +606,27 @@ export function LogSection({
                       {seasonSummary.missing} missing
                     </Button>
                   )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Consistency Streak */}
+          {streak.current > 0 && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-orange-500/5 border border-orange-500/15">
+              <Flame className="w-5 h-5 text-orange-500 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">
+                  {streak.current} Game Streak
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Keep logging your games to extend your streak.
+                </p>
+              </div>
+              {streak.best > streak.current && (
+                <div className="text-right shrink-0">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Best</p>
+                  <p className="text-sm font-bold text-orange-500">{streak.best}</p>
                 </div>
               )}
             </div>

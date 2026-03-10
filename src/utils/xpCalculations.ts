@@ -1,4 +1,6 @@
 import type { LevelReward, XpGainResult, XpProgress } from '@/types/xp';
+import type { GameStats, ScheduledGame } from '@/types/basketball';
+import { isStatsMissing, findLinkedLoggedGame } from '@/utils/gameStatus';
 
 // XP curve configuration
 export const XP_CONFIG = {
@@ -9,6 +11,14 @@ export const XP_CONFIG = {
   RECOVERY_BONUS_XP: 15,
   /** Hours after game date within which recovery XP is eligible */
   RECOVERY_WINDOW_HOURS: 72,
+  /** Streak XP bonus tiers: [gamesRequired, xpBonus] */
+  STREAK_BONUSES: [
+    [20, 75],
+    [10, 40],
+    [5, 20],
+    [3, 10],
+    [1, 5],
+  ] as readonly [number, number][],
 } as const;
 
 /**
@@ -81,12 +91,14 @@ export function calculateXpGain(
   xpGained: number,
   allRewards: LevelReward[],
   unlockedRewardIds: string[],
-  recoveryBonus: number = 0
+  recoveryBonus: number = 0,
+  streakBonus: number = 0,
+  streakCount: number = 0
 ): XpGainResult {
   const previousXp = currentProgress?.current_xp ?? 0;
   const previousLevel = currentProgress?.current_level ?? 1;
   
-  const totalXpGained = xpGained + recoveryBonus;
+  const totalXpGained = xpGained + recoveryBonus + streakBonus;
   const newXp = previousXp + totalXpGained;
   const newLevel = Math.min(XP_CONFIG.MAX_LEVEL, getLevelFromXp(newXp));
   
@@ -118,6 +130,8 @@ export function calculateXpGain(
     xpProgressInLevel,
     newRewards,
     recoveryBonus,
+    streakBonus,
+    streakCount,
   };
 }
 
@@ -181,4 +195,88 @@ export function getGamesToMaxLevel(averageXpPerGame: number, currentXp: number):
   const totalXpNeeded = getTotalXpForLevel(XP_CONFIG.MAX_LEVEL);
   const xpRemaining = Math.max(0, totalXpNeeded - currentXp);
   return Math.ceil(xpRemaining / averageXpPerGame);
+}
+
+// ── Consistency Streak ────────────────────────────────────────────────────
+
+/**
+ * Calculate the current consistency streak from logged games and schedule.
+ * A streak counts consecutive scheduled games that were logged within the recovery window.
+ * Unscheduled logged games also continue the streak.
+ * Returns { current, best }.
+ */
+export function calculateConsistencyStreak(
+  loggedGames: GameStats[],
+  scheduledGames: ScheduledGame[]
+): { current: number; best: number } {
+  if (loggedGames.length === 0) return { current: 0, best: 0 };
+
+  // Sort all scheduled games by date ascending
+  const sortedSchedule = [...scheduledGames].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  const now = new Date();
+  let current = 0;
+  let best = 0;
+  let streakBroken = false;
+
+  // Walk scheduled games from most recent to oldest to find current streak
+  const pastScheduled = sortedSchedule
+    .filter(sg => new Date(sg.date) < now)
+    .reverse(); // most recent first
+
+  for (const sg of pastScheduled) {
+    const linked = findLinkedLoggedGame(sg, loggedGames);
+    const missing = isStatsMissing(sg, linked, now);
+
+    if (linked) {
+      current++;
+    } else if (missing) {
+      // Streak broken at this game
+      streakBroken = true;
+      break;
+    }
+    // If neither linked nor missing (e.g. still in grace period), skip
+  }
+
+  // Also count unscheduled logged games that extend backward from the streak
+  // (games logged without a schedule entry still count)
+  const scheduledIds = new Set(loggedGames.filter(g => g.scheduledGameId).map(g => g.scheduledGameId));
+  const unscheduledGames = loggedGames.filter(g => !g.scheduledGameId);
+
+  // Calculate best streak by walking all past scheduled games forward
+  let runningStreak = 0;
+  for (const sg of sortedSchedule) {
+    if (new Date(sg.date) >= now) break;
+    const linked = findLinkedLoggedGame(sg, loggedGames);
+    if (linked) {
+      runningStreak++;
+      best = Math.max(best, runningStreak);
+    } else if (isStatsMissing(sg, linked, now)) {
+      runningStreak = 0;
+    }
+  }
+
+  // Include current in best calculation
+  best = Math.max(best, current);
+
+  // If no scheduled games, count consecutive logged games as streak
+  if (pastScheduled.length === 0 && loggedGames.length > 0) {
+    current = loggedGames.length;
+    best = loggedGames.length;
+  }
+
+  return { current, best };
+}
+
+/**
+ * Get the streak XP bonus for a given streak count.
+ * Returns the highest qualifying tier bonus.
+ */
+export function getStreakXpBonus(streakCount: number): number {
+  for (const [threshold, bonus] of XP_CONFIG.STREAK_BONUSES) {
+    if (streakCount >= threshold) return bonus;
+  }
+  return 0;
 }
