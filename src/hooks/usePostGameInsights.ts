@@ -91,12 +91,12 @@ export function usePostGameInsights(games: GameStats[]) {
         profile_id: activeProfile?.id || null,
         season_id: null,
         key_takeaways: [
-          {
+          JSON.stringify({
             type: insight.type,
             title: insight.title,
             body: insight.body,
             statCallout: insight.statCallout,
-          },
+          }),
         ],
         feeling: 'unseen', // Use feeling column as seen/unseen flag
       })
