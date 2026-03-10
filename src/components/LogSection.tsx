@@ -414,8 +414,8 @@ export function LogSection({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-base font-semibold mb-0.5">Log Your Last Game</h2>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Enter stats from a completed game
+                   <p className="text-sm text-muted-foreground mb-3">
+                     Enter stats from a completed game.</p>
                   </p>
                   <AddGameDialog 
                     onAddGame={addGame} 
