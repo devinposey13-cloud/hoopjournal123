@@ -92,6 +92,34 @@ export function PostGameXpReveal({
               </motion.span>
             </div>
 
+            {/* Recovery Bonus */}
+            {xpResult.recoveryBonus > 0 && (
+              <motion.div
+                className="flex items-center justify-between mb-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20"
+                initial={{ x: -10, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.65 }}
+              >
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium text-primary">Recovery Bonus</span>
+                </div>
+                <span className="text-sm font-bold text-primary">+{xpResult.recoveryBonus} XP</span>
+              </motion.div>
+            )}
+
+            {/* Recovery message */}
+            {xpResult.recoveryBonus > 0 && (
+              <motion.p
+                className="text-xs text-muted-foreground mb-2 italic"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.75 }}
+              >
+                Nice recovery. Your season record stays complete.
+              </motion.p>
+            )}
+
             {/* Bonuses */}
             {performance.bonuses.length > 0 && (
               <div className="space-y-1">
