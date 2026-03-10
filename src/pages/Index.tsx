@@ -127,6 +127,10 @@ export default function Index() {
     closeTierCelebration,
     // Tier achievements for badges
     achievedTiers,
+    // Post-game insights
+    pendingInsight,
+    clearPendingInsight,
+    insightsHook,
   } = useGameWithMilestones();
 
   // Check Ring of Honor eligibility
@@ -621,6 +625,8 @@ export default function Index() {
                       onLogGame={() => setActiveTab('games')}
                       onOpenCoach={() => setActiveTab('coach')}
                       onStartLiveCapture={todayGames.length > 0 ? handleQuickLiveStatsClick : undefined}
+                      latestUnseenInsight={insightsHook.latestUnseen}
+                      onViewInsight={(id) => insightsHook.markInsightSeen(id)}
                     />
                   </AnimatedSection>
 
@@ -871,6 +877,7 @@ export default function Index() {
             performance={pendingXpResult.performance}
             xpResult={pendingXpResult.xpResult}
             onClose={closeXpReveal}
+            insight={pendingInsight}
           />
         )}
       </AnimatePresence>

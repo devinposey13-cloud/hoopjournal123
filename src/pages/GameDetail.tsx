@@ -59,7 +59,10 @@ import { GamePerformanceCard } from '@/components/xp/GamePerformanceCard';
 import { GameReportCard } from '@/components/GameReportCard';
 import { CareerHighCelebration } from '@/components/stats/CareerHighCelebration';
 import { detectNewCareerHighs, type CareerHigh } from '@/utils/statsCalculations';
+import { InsightCard } from '@/components/insights/InsightCard';
 import { useCloudData } from '@/hooks/useCloudData';
+import { usePostGameInsights } from '@/hooks/usePostGameInsights';
+import { generatePostGameInsight } from '@/utils/postGameInsights';
 import { toast } from 'sonner';
 
 export default function GameDetail() {
@@ -83,6 +86,7 @@ export default function GameDetail() {
   const { teams } = usePlayerTeams();
   const { currentPlan } = usePlan();
   const { games: allGames } = useCloudData();
+  const insightsHook = usePostGameInsights(allGames);
   const [lastSavedGameId, setLastSavedGameId] = useState<string | null>(null);
   const [game, setGame] = useState<GameStats | null>(null);
   const [scheduledGame, setScheduledGame] = useState<ScheduledGame | null>(null);
@@ -1178,6 +1182,25 @@ export default function GameDetail() {
 
           {/* XP Performance Score */}
           <GamePerformanceCard game={game} className="mb-6 border-0 shadow-none p-0" />
+
+          {/* Post-Game Insight */}
+          {(() => {
+            const storedInsight = insightsHook.getInsightForGame(game.id);
+            const insight = storedInsight
+              ? { type: storedInsight.type, title: storedInsight.title, body: storedInsight.body, statCallout: storedInsight.statCallout || undefined, icon: '' }
+              : (allGames.length > 0 ? generatePostGameInsight(game, allGames) : null);
+            if (!insight) return null;
+            return (
+              <div className="mb-6">
+                <InsightCard
+                  insight={insight as any}
+                  animate={false}
+                  isNew={storedInsight ? !storedInsight.isSeen : false}
+                  onView={() => storedInsight && !storedInsight.isSeen && insightsHook.markInsightSeen(storedInsight.id)}
+                />
+              </div>
+            );
+          })()}
 
           {/* Milestones Earned in This Game */}
           {earnedMilestones.filter(m => m.gameId === game.id).length > 0 && (

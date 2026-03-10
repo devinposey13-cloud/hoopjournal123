@@ -1,11 +1,12 @@
 import { format, isToday, isTomorrow, differenceInHours } from 'date-fns';
-import { Calendar, Radio, MessageSquare, Flame, ChevronRight, MapPin, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, Radio, MessageSquare, Flame, ChevronRight, MapPin, Clock, AlertCircle, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScheduledGame, GameStats } from '@/types/basketball';
 import { getMissingGames } from '@/utils/gameStatus';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import type { StoredInsight } from '@/hooks/usePostGameInsights';
 
 interface TodayCardProps {
   schedule: ScheduledGame[];
@@ -15,6 +16,8 @@ interface TodayCardProps {
   onLogGame: () => void;
   onOpenCoach: () => void;
   onStartLiveCapture?: () => void;
+  latestUnseenInsight?: StoredInsight | null;
+  onViewInsight?: (id: string) => void;
 }
 
 export function TodayCard({
@@ -25,6 +28,8 @@ export function TodayCard({
   onLogGame,
   onOpenCoach,
   onStartLiveCapture,
+  latestUnseenInsight,
+  onViewInsight,
 }: TodayCardProps) {
   const navigate = useNavigate();
 
@@ -173,6 +178,29 @@ export function TodayCard({
           <p className="text-muted-foreground font-medium">No upcoming games scheduled</p>
           <p className="text-sm text-muted-foreground/70 mt-1">
             Add your next game to keep your season up to date.
+          </p>
+        </div>
+      )}
+
+      {/* Unseen Insight Prompt */}
+      {latestUnseenInsight && (
+        <div
+          className="mb-4 p-3 rounded-xl bg-primary/5 border border-primary/15 cursor-pointer hover:bg-primary/10 transition-colors"
+          onClick={() => {
+            if (onViewInsight) onViewInsight(latestUnseenInsight.id);
+            const game = games.find(g => g.id === latestUnseenInsight.gameId);
+            if (game) navigate(`/game/${game.id}`);
+          }}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <Lightbulb className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-sm font-semibold">New Game Insight</span>
+            <Badge variant="outline" className="text-[9px] font-bold border-primary/30 text-primary px-1.5 py-0">
+              New
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground ml-6">
+            {latestUnseenInsight.title} — from your last game
           </p>
         </div>
       )}

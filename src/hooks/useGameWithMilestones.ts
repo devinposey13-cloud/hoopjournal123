@@ -3,6 +3,7 @@ import { useCloudData } from './useCloudData';
 import { useMilestones } from './useMilestones';
 import { useXpProgress } from './useXpProgress';
 import { useTierAchievements } from './useTierAchievements';
+import { usePostGameInsights } from './usePostGameInsights';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { findInvalidMilestones } from '@/utils/milestoneValidator';
@@ -12,6 +13,7 @@ import { isRecoveryEligible, XP_CONFIG, calculateConsistencyStreak, getStreakXpB
 import type { GameStats } from '@/types/basketball';
 import type { NewMilestoneResult } from '@/types/milestone';
 import type { PerformanceResult, XpGainResult, PerformanceTier } from '@/types/xp';
+import type { PostGameInsight } from '@/utils/postGameInsights';
 import { toast } from 'sonner';
 
 interface GameWithId extends GameStats {
@@ -41,6 +43,7 @@ export function useGameWithMilestones() {
   
   const xpProgress = useXpProgress();
   const tierAchievements = useTierAchievements();
+  const insightsHook = usePostGameInsights(cloudData.games);
   
   const [pendingMilestones, setPendingMilestones] = useState<NewMilestoneResult[]>([]);
   const [showReveal, setShowReveal] = useState(false);
@@ -56,6 +59,7 @@ export function useGameWithMilestones() {
   // Tier celebration state
   const [pendingTierCelebration, setPendingTierCelebration] = useState<PendingTierCelebration | null>(null);
   const [showTierCelebration, setShowTierCelebration] = useState(false);
+  const [pendingInsight, setPendingInsight] = useState<PostGameInsight | null>(null);
 
   const addGameWithMilestones = useCallback(async (game: Omit<GameStats, 'id'>) => {
     // Calculate and attach game score before saving
@@ -139,8 +143,12 @@ export function useGameWithMilestones() {
       }
     }
 
+    // Generate post-game insight
+    const insight = await insightsHook.generateAndStoreInsight(savedGame, allGames, streakCount);
+    setPendingInsight(insight);
+
     return savedGame;
-  }, [cloudData, checkAndAwardMilestones, getOccurrenceCount, xpProgress, tierAchievements]);
+  }, [cloudData, checkAndAwardMilestones, getOccurrenceCount, xpProgress, tierAchievements, insightsHook]);
 
   const closeReveal = useCallback(() => {
     setShowReveal(false);
@@ -296,6 +304,10 @@ export function useGameWithMilestones() {
     showTierCelebration,
     closeTierCelebration,
     achievedTiers: tierAchievements.achievedTiers,
+    // Post-game insights
+    pendingInsight,
+    clearPendingInsight: () => setPendingInsight(null),
+    insightsHook,
   };
 }
 
