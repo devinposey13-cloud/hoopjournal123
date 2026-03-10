@@ -104,6 +104,14 @@ export function LogSection({
   const [quickCaptureTeamId, setQuickCaptureTeamId] = useState<string | undefined>();
   const [isSavingQuickCapture, setIsSavingQuickCapture] = useState(false);
 
+  // Smart prompt: show "Did you just play?" banner in evening hours (5pm-11pm)
+  const showSmartPrompt = useMemo(() => {
+    const hour = getHours(new Date());
+    return hour >= 17 && hour <= 23 && games.length > 0;
+  }, [games.length]);
+
+  const [dismissedSmartPrompt, setDismissedSmartPrompt] = useState(false);
+
   const today = startOfDay(new Date());
   
   // Get unique tags for filter dropdown
@@ -235,14 +243,6 @@ export function LogSection({
       />
     );
   }
-
-  // Smart prompt: show "Did you just play?" banner in evening hours (5pm-11pm)
-  const showSmartPrompt = useMemo(() => {
-    const hour = getHours(new Date());
-    return hour >= 17 && hour <= 23 && games.length > 0;
-  }, [games.length]);
-
-  const [dismissedSmartPrompt, setDismissedSmartPrompt] = useState(false);
 
   return (
     <div className="space-y-6 animate-fade-in">
