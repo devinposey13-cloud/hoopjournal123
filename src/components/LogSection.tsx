@@ -378,14 +378,8 @@ export function LogSection({
                 </Button>
               </div>
 
-              {/* Divider */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-border/60" />
-                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">or</span>
-                <div className="flex-1 h-px bg-border/60" />
-              </div>
-
               {/* Secondary: Log Game */}
+              <div className="h-px bg-border/40" />
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">Just finished a game?</p>
                 <AddGameDialog 
