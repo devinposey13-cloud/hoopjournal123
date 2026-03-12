@@ -95,18 +95,19 @@ export function AuthForm() {
     // Best-effort SW cache clear (non-blocking on failure)
     try { await clearServiceWorkerCaches(); } catch (_) {}
     
-    // For native apps, use custom URL scheme as the final redirect destination
-    // For custom domains, redirect to the Lovable app origin
-    const callbackOrigin = isNativeApp() ? LOVABLE_APP_ORIGIN : window.location.origin;
-    // For native: the callback on lovable.app will redirect to hoopjournal:// scheme
+    const native = isNativeApp();
+    const callbackOrigin = native ? LOVABLE_APP_ORIGIN : window.location.origin;
     const redirectUri = `${callbackOrigin}/auth/callback`;
     const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}`;
     
-    console.log(`[OAuth] Custom domain redirect to broker: ${brokerUrl}`);
+    console.log(`[OAuth] ===== ${provider.toUpperCase()} OAUTH DEBUG =====`);
+    console.log(`[OAuth] isNativeApp(): ${native}`);
+    console.log(`[OAuth] isCustomDomain: ${isCustomDomain}`);
+    console.log(`[OAuth] callbackOrigin: ${callbackOrigin}`);
     console.log(`[OAuth] redirect_uri: ${redirectUri}`);
-    console.log(`[OAuth] isNativeApp: ${isNativeApp()}`);
+    console.log(`[OAuth] brokerUrl: ${brokerUrl}`);
+    console.log(`[OAuth] Code path: ${native ? 'NATIVE (system browser)' : 'WEB (window.location redirect)'}`);
     
-    // For native apps, open in system browser to keep WebView intact
     await openOAuthInSystemBrowser(brokerUrl);
   };
 
