@@ -28,6 +28,7 @@ export default function Upgrade() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { createCheckout } = useSubscription();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage } = useRevenueCat();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
 
   const upgradePlans = planOrder.filter(
