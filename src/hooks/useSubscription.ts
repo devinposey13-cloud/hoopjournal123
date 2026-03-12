@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { type PlanId, type BillingCycle, STRIPE_PLAN_IDS } from '@/lib/plans';
+import { isNativeApp } from '@/lib/platform';
 
 export interface SubscriptionState {
   isSubscribed: boolean;
