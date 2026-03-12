@@ -72,6 +72,12 @@ export function useSubscription() {
   const createCheckout = async (planId: PlanId, billingCycle: BillingCycle = 'monthly', source?: string) => {
     if (!user) throw new Error('Must be logged in to subscribe');
 
+    // On native apps, purchases are handled via RevenueCat (useRevenueCat hook)
+    // This function only handles Stripe web checkout
+    if (isNativeApp()) {
+      throw new Error('Use RevenueCat for native purchases');
+    }
+
     const { data, error } = await supabase.functions.invoke('create-checkout', {
       body: { planId, billingCycle, source },
     });
