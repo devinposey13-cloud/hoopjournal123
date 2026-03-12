@@ -38,6 +38,7 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [isLoading, setIsLoading] = useState(false);
   const { createCheckout } = useSubscription();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage } = useRevenueCat();
 
   if (!config) return null;
 
