@@ -19,32 +19,29 @@ export const NATIVE_URL_SCHEME = 'hoopjournal';
 
 /**
  * Open OAuth in the system browser (not the WebView).
- * This keeps the Capacitor WebView on the local bundle while
- * the OAuth flow happens in Safari/Chrome.
  */
 export async function openOAuthInSystemBrowser(brokerUrl: string): Promise<void> {
   if (!isNativeApp()) {
-    // Fallback: standard redirect for web
     window.location.href = brokerUrl;
     return;
   }
 
   try {
-    // Dynamically import Capacitor Browser plugin
-    const { Browser } = await import('@capacitor/browser');
+    // Dynamic import to avoid build errors when Capacitor plugins aren't installed
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const browserModule = await (import as any)('@capacitor/browser');
+    const Browser = browserModule.Browser;
     
     console.log('[NativeOAuth] Opening system browser for OAuth...');
     await Browser.open({ url: brokerUrl, presentationStyle: 'popover' });
   } catch (e) {
-    console.warn('[NativeOAuth] @capacitor/browser not available, falling back to window.location', e);
+    console.warn('[NativeOAuth] @capacitor/browser not available, falling back to redirect', e);
     window.location.href = brokerUrl;
   }
 }
 
 /**
  * Set up listener for the app being opened via custom URL scheme.
- * Called once on app boot to handle OAuth callbacks.
- * 
  * URL format: hoopjournal://auth/callback#access_token=...&refresh_token=...
  */
 export async function setupNativeOAuthListener(
@@ -54,12 +51,13 @@ export async function setupNativeOAuthListener(
   if (!isNativeApp()) return null;
 
   try {
-    const { App } = await import('@capacitor/app');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const appModule = await (import as any)('@capacitor/app');
+    const App = appModule.App;
     
-    const listener = await App.addListener('appUrlOpen', async (event) => {
+    const listener = await App.addListener('appUrlOpen', async (event: { url: string }) => {
       console.log('[NativeOAuth] App opened with URL:', event.url);
       
-      // Parse the URL - could be: hoopjournal://auth/callback#access_token=...
       try {
         const url = new URL(event.url);
         
@@ -82,8 +80,9 @@ export async function setupNativeOAuthListener(
             
             // Close the system browser
             try {
-              const { Browser } = await import('@capacitor/browser');
-              await Browser.close();
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const browserMod = await (import as any)('@capacitor/browser');
+              await browserMod.Browser.close();
             } catch (_) {}
           }
         }
