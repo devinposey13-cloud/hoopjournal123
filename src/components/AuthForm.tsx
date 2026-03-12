@@ -59,6 +59,14 @@ export function AuthForm() {
   const [appleLoading, setAppleLoading] = useState(false);
   const { signIn, signUp } = useAuth();
 
+  // Debug logging for native OAuth diagnosis
+  const nativeDetected = isNativeApp();
+  console.log('[AuthForm] ===== RENDER DEBUG =====');
+  console.log('[AuthForm] isNativeApp():', nativeDetected);
+  console.log('[AuthForm] window.Capacitor:', window.Capacitor);
+  console.log('[AuthForm] hostname:', window.location.hostname);
+  console.log('[AuthForm] origin:', window.location.origin);
+
   // Clear service worker caches before OAuth to prevent redirect interception
   const clearServiceWorkerCaches = async () => {
     if ('caches' in window) {
