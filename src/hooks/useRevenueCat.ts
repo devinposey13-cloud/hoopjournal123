@@ -75,8 +75,8 @@ export function useRevenueCat(): UseRevenueCatReturn {
 
         // Fetch offerings
         setIsLoading(true);
-        const { offerings: rcOfferings } = await Purchases.getOfferings();
-        const current = rcOfferings?.current;
+        const rcOfferings = await Purchases.getOfferings();
+        const current = (rcOfferings as any)?.current;
         if (current?.availablePackages) {
           const mapped: RCPackage[] = current.availablePackages
             .filter((pkg: any) => RC_PRODUCT_TO_PLAN[pkg.product.identifier])
