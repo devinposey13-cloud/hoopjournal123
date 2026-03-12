@@ -1,87 +1,54 @@
 
 
-## RevenueCat Integration for iOS In-App Purchases
+## Analysis: Stripe Webhook Promo Lock-in Flow
 
-Since you've already linked Stripe to RevenueCat, RevenueCat will act as the unified entitlement layer for mobile purchases while Stripe continues handling web payments. Both systems will sync subscriptions back to your `plan_overrides` table.
+I traced the full flow and found **two issues** that could prevent `promo_locked_in` from being set correctly:
 
-### Architecture
+### Issue 1: `checkout.session.completed` passes the wrong planId to lock-in check
+
+In `create-checkout`, when a promo user selects Elite, the metadata is set as `plan_id: "elite"` (the original plan), but the actual Stripe price used is Starter. When `checkout.session.completed` fires:
+- It sets `subscription_plan: "elite"` in the DB (line 64)
+- It calls `checkAndLockPromo(supabase, userId, "elite")`
+- `checkAndLockPromo` immediately returns because `planId !== "starter"` (line 142)
+
+So the lock-in does NOT happen on checkout completion.
+
+### Issue 2: `customer.subscription.updated` overwrites with "starter"
+
+When Stripe fires `customer.subscription.updated`, the product ID maps to `"starter"` via `PRODUCT_TO_PLAN`. This:
+- Overwrites `subscription_plan` to `"starter"` (correct for billing)
+- Calls `checkAndLockPromo(_, _, "starter")` which DOES trigger the lock-in
+
+**However**, `getEffectivePlan` requires `subscriptionPlan === 'starter'` AND `promoLockedIn === true` to grant Elite access. So the subscription.updated path actually works correctly end-to-end, but relies on event ordering (subscription.updated must fire after checkout.session.completed).
+
+### Issue 3: `checkout.session.completed` sets `subscription_plan: planId` (e.g., "elite")
+
+If checkout.session.completed fires *after* subscription.updated, it would overwrite `subscription_plan` from "starter" back to "elite". Then `getEffectivePlan` would see `subscriptionPlan === 'elite'` which doesn't match the promo condition (`=== 'starter'`), so it falls through to return "elite" directly. This actually works by accident, but is fragile.
+
+### Fix Plan
+
+**In `checkout.session.completed`**: When the user is promo-eligible, set `subscription_plan` to `"starter"` (the actual billing plan) instead of the metadata `planId`, and trigger the lock-in immediately.
+
+Specifically:
+1. After getting `userId` and `planId` from metadata, query `plan_overrides` for promo eligibility
+2. If promo eligible and planId is a paid plan, set `subscription_plan: "starter"` and `promo_locked_in: true` in one upsert
+3. If not promo eligible, keep current behavior (`subscription_plan: planId`)
+
+**In `customer.subscription.updated`**: No changes needed -- it already correctly maps Starter product to "starter" and calls `checkAndLockPromo`.
+
+### Technical Detail
 
 ```text
-┌─────────────┐     ┌─────────────┐
-│  Web (PWA)  │     │  iOS (Cap)  │
-│   Stripe    │     │ RevenueCat  │
-│  Checkout   │     │  Paywall    │
-└──────┬──────┘     └──────┬──────┘
-       │                   │
-       ▼                   ▼
-  stripe-webhook    revenuecat-webhook
-  (edge function)   (new edge function)
-       │                   │
-       └───────┬───────────┘
-               ▼
-        plan_overrides table
-               │
-               ▼
-        usePlanState hook
-      (single source of truth)
+BEFORE (broken ordering scenario):
+  checkout.session.completed → subscription_plan = "elite", lock-in skipped
+  subscription.updated → subscription_plan = "starter", lock-in triggered
+  ✓ Works only if events arrive in this order
+
+AFTER (robust):
+  checkout.session.completed → detects promo, sets subscription_plan = "starter" + promo_locked_in = true
+  subscription.updated → subscription_plan = "starter", lock-in already done (idempotent)
+  ✓ Works regardless of event ordering
 ```
 
-### Implementation Steps
-
-**1. Platform Detection Utility**
-- Create `src/lib/platform.ts` with a helper (`isNativeApp()`) that checks if the app is running inside Capacitor (via `window.Capacitor`). This drives whether to show Stripe checkout or RevenueCat purchase flows.
-
-**2. RevenueCat Client Hook (`useRevenueCat`)**
-- Create `src/hooks/useRevenueCat.ts` that:
-  - Initializes the RevenueCat Purchases SDK on native platforms only (using `@revenuecat/purchases-capacitor`)
-  - Logs in the authenticated user (using their user ID) so RevenueCat links purchases to your backend user
-  - Exposes `purchasePackage()`, `restorePurchases()`, and `getOfferings()` methods
-  - Maps RevenueCat entitlements to your `PlanId` type
-
-**3. RevenueCat Webhook Edge Function**
-- Create `supabase/functions/revenuecat-webhook/index.ts` that:
-  - Receives RevenueCat server-to-server webhook events (INITIAL_PURCHASE, RENEWAL, CANCELLATION, EXPIRATION)
-  - Validates the webhook auth header against a stored secret
-  - Maps RevenueCat product IDs to your `PlanId` values
-  - Upserts `plan_overrides.subscription_plan` — same as the Stripe webhook does today
-  - This keeps both payment sources writing to the same table
-
-**4. Update Subscription Flow (Conditional Routing)**
-- Modify `useSubscription.createCheckout()`: if `isNativeApp()`, call `useRevenueCat.purchasePackage()` instead of invoking the `create-checkout` edge function
-- Update `Upgrade.tsx`, `Pricing.tsx`, and `UpgradeDrawer.tsx`: on native, show RevenueCat offerings/prices instead of Stripe prices, and trigger native IAP purchase flow
-- On native, hide "Manage Subscription" (Stripe portal) and instead link to iOS subscription settings
-
-**5. Entitlement Sync**
-- The `check-subscription` edge function continues to work for web (Stripe)
-- For native, RevenueCat webhooks keep `plan_overrides` in sync server-side
-- `usePlanState` already reads from `plan_overrides` — no changes needed there
-
-**6. Secrets & Configuration**
-- Store `REVENUECAT_WEBHOOK_AUTH_KEY` as a backend secret (for webhook validation)
-- Store `REVENUECAT_API_KEY` (iOS public key) in the codebase since it's a publishable key
-- Add `@revenuecat/purchases-capacitor` as a dependency
-
-### What Stays the Same
-- `plan_overrides` table schema (no changes needed)
-- `usePlanState` hook (reads from same table regardless of payment source)
-- `getEffectivePlan()` logic (grandfathering, promo, admin overrides all unchanged)
-- Web payment flow (Stripe checkout, Stripe webhooks, customer portal)
-
-### RevenueCat Product ID Mapping
-You'll need to create products in RevenueCat that map to your existing tiers. The webhook edge function will contain a mapping like:
-```typescript
-const RC_PRODUCT_TO_PLAN: Record<string, PlanId> = {
-  "hj_starter_monthly": "starter",
-  "hj_starter_yearly": "starter",
-  "hj_pro_monthly": "pro",
-  "hj_pro_yearly": "pro",
-  "hj_elite_monthly": "elite",
-  "hj_elite_yearly": "elite",
-};
-```
-
-### Pre-requisites Before Implementation
-1. You need Capacitor set up in the project (not yet added)
-2. RevenueCat product IDs created in your RevenueCat dashboard
-3. Your RevenueCat iOS API key and webhook auth key ready
+The change is isolated to ~15 lines in `supabase/functions/stripe-webhook/index.ts` within the `checkout.session.completed` case block.
 

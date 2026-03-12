@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { type PlanId, type BillingCycle, STRIPE_PLAN_IDS } from '@/lib/plans';
+import { isNativeApp } from '@/lib/platform';
 
 export interface SubscriptionState {
   isSubscribed: boolean;
@@ -70,6 +71,12 @@ export function useSubscription() {
 
   const createCheckout = async (planId: PlanId, billingCycle: BillingCycle = 'monthly', source?: string) => {
     if (!user) throw new Error('Must be logged in to subscribe');
+
+    // On native apps, purchases are handled via RevenueCat (useRevenueCat hook)
+    // This function only handles Stripe web checkout
+    if (isNativeApp()) {
+      throw new Error('Use RevenueCat for native purchases');
+    }
 
     const { data, error } = await supabase.functions.invoke('create-checkout', {
       body: { planId, billingCycle, source },

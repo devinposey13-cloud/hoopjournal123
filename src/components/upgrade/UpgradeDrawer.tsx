@@ -15,6 +15,8 @@ import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
 import { type PlanId, type BillingCycle, planCatalog, getPlanPrice, track } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { isNativeApp } from '@/lib/platform';
 import { toast } from 'sonner';
 
 export interface UpgradeDrawerConfig {
@@ -36,6 +38,7 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [isLoading, setIsLoading] = useState(false);
   const { createCheckout } = useSubscription();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage } = useRevenueCat();
 
   if (!config) return null;
 
@@ -43,14 +46,31 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
   const price = getPlanPrice(config.recommendedPlan, cycle);
 
   const handleUpgrade = async () => {
-    track('upgrade_clicked', { planId: config.recommendedPlan, cycle });
+    track('upgrade_clicked', { planId: config.recommendedPlan, cycle, native: isNativeApp() });
     setIsLoading(true);
     try {
-      await createCheckout(config.recommendedPlan, cycle);
-      toast.success('Redirecting to checkout...');
-      onUpgrade(config.recommendedPlan);
+      if (isNativeApp() && rcAvailable) {
+        const suffix = cycle === 'yearly' ? 'year' : 'month';
+        const rcPkg = rcOfferings.find(
+          (o) => o.planId === config.recommendedPlan && o.period.toLowerCase().includes(suffix)
+        );
+        if (rcPkg) {
+          await purchasePackage(rcPkg.identifier);
+          toast.success('Purchase successful! 🎉');
+          onUpgrade(config.recommendedPlan);
+        } else {
+          toast.error('Package not available');
+        }
+      } else {
+        await createCheckout(config.recommendedPlan, cycle);
+        toast.success('Redirecting to checkout...');
+        onUpgrade(config.recommendedPlan);
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to start checkout');
+      const msg = err instanceof Error ? err.message : 'Failed to start checkout';
+      if (!msg.includes('cancelled') && !msg.includes('canceled')) {
+        toast.error(msg);
+      }
     } finally {
       setIsLoading(false);
     }

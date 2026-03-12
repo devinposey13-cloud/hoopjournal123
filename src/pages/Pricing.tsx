@@ -12,6 +12,8 @@ import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, track } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePlan } from '@/hooks/usePlanState';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { isNativeApp } from '@/lib/platform';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -21,6 +23,7 @@ export default function Pricing() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { createCheckout } = useSubscription();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage } = useRevenueCat();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [promoApplied, setPromoApplied] = useState(false);
 
@@ -64,13 +67,30 @@ export default function Pricing() {
       toast.info(`You're already on the ${planCatalog[planId].name} plan!`);
       return;
     }
-    track('upgrade_clicked', { planId, cycle });
+    track('upgrade_clicked', { planId, cycle, native: isNativeApp() });
     setLoadingPlan(planId);
     try {
-      await createCheckout(planId, cycle);
-      toast.success('Redirecting to checkout...');
+      if (isNativeApp() && rcAvailable) {
+        // Find the matching RevenueCat package
+        const suffix = cycle === 'yearly' ? 'yearly' : 'monthly';
+        const rcPkg = rcOfferings.find(
+          (o) => o.planId === planId && o.period.toLowerCase().includes(suffix === 'yearly' ? 'year' : 'month')
+        );
+        if (rcPkg) {
+          await purchasePackage(rcPkg.identifier);
+          toast.success('Purchase successful! 🎉');
+        } else {
+          toast.error('Package not available');
+        }
+      } else {
+        await createCheckout(planId, cycle);
+        toast.success('Redirecting to checkout...');
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to start checkout');
+      const msg = err instanceof Error ? err.message : 'Failed to start checkout';
+      if (!msg.includes('cancelled') && !msg.includes('canceled')) {
+        toast.error(msg);
+      }
     } finally {
       setLoadingPlan(null);
     }
