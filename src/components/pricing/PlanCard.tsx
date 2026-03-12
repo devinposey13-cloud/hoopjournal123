@@ -61,16 +61,29 @@ export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied, nat
           <p className="text-sm text-muted-foreground">{plan.tagline}</p>
           <div className="mt-4">
             <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-extrabold tracking-tight">
-                ${price === 0 ? '0' : price}
-              </span>
-              {price > 0 && (
-                <span className="text-muted-foreground text-sm">
-                  /{cycle === 'monthly' ? 'mo' : 'yr'}
-                </span>
-              )}
-              {price === 0 && (
-                <span className="text-muted-foreground text-sm">/forever</span>
+              {nativePriceString ? (
+                <>
+                  <span className="text-4xl font-extrabold tracking-tight">
+                    {nativePriceString}
+                  </span>
+                  <span className="text-muted-foreground text-sm">
+                    /{cycle === 'monthly' ? 'mo' : 'yr'}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-4xl font-extrabold tracking-tight">
+                    ${price === 0 ? '0' : price}
+                  </span>
+                  {price > 0 && (
+                    <span className="text-muted-foreground text-sm">
+                      /{cycle === 'monthly' ? 'mo' : 'yr'}
+                    </span>
+                  )}
+                  {price === 0 && (
+                    <span className="text-muted-foreground text-sm">/forever</span>
+                  )}
+                </>
               )}
             </div>
             {cycle === 'yearly' && savings > 0 && (
