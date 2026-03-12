@@ -87,16 +87,19 @@ export function AuthForm() {
     // Best-effort SW cache clear (non-blocking on failure)
     try { await clearServiceWorkerCaches(); } catch (_) {}
     
-    // For native apps AND custom domains, redirect through the Lovable broker
-    // Native apps use the Lovable origin since capacitor://localhost can't receive OAuth callbacks
+    // For native apps, use custom URL scheme as the final redirect destination
+    // For custom domains, redirect to the Lovable app origin
     const callbackOrigin = isNativeApp() ? LOVABLE_APP_ORIGIN : window.location.origin;
+    // For native: the callback on lovable.app will redirect to hoopjournal:// scheme
     const redirectUri = `${callbackOrigin}/auth/callback`;
     const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}`;
     
     console.log(`[OAuth] Custom domain redirect to broker: ${brokerUrl}`);
     console.log(`[OAuth] redirect_uri: ${redirectUri}`);
     console.log(`[OAuth] isNativeApp: ${isNativeApp()}`);
-    window.location.href = brokerUrl;
+    
+    // For native apps, open in system browser to keep WebView intact
+    await openOAuthInSystemBrowser(brokerUrl);
   };
 
   const handleGoogleSignIn = async () => {
