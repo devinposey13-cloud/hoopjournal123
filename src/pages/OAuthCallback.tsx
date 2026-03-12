@@ -3,14 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
+// URL scheme for redirecting back to native Capacitor app
+const NATIVE_URL_SCHEME = 'hoopjournal';
+
 /**
  * Dedicated OAuth callback route that handles token handoff.
- * Isolates token parsing from the heavy main app boot to prevent
- * "back to login" race conditions on mobile.
+ * 
+ * Two scenarios:
+ * 1. Web/PWA: Tokens arrive in hash, set session, redirect to /
+ * 2. Native app: This page runs in the system browser (Safari).
+ *    After extracting tokens, redirect to hoopjournal://auth/callback 
+ *    so the native app can pick them up via appUrlOpen listener.
  */
 export default function OAuthCallback() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const [redirectingToApp, setRedirectingToApp] = useState(false);
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -18,8 +26,8 @@ export default function OAuthCallback() {
       const search = window.location.search;
       
       console.log('[OAuthCallback] Loaded. Hash present:', !!hash, 'Search present:', !!search);
+      console.log('[OAuthCallback] Full URL:', window.location.href);
 
-      // Parse tokens from hash (format: #access_token=...&refresh_token=...&...)
       const hashParams = new URLSearchParams(hash.replace('#', ''));
       const queryParams = new URLSearchParams(search);
 
@@ -36,9 +44,41 @@ export default function OAuthCallback() {
         return;
       }
 
-      // If tokens are present, set the session
       if (accessToken && refreshToken) {
-        console.log('[OAuthCallback] Tokens found, calling setSession...');
+        console.log('[OAuthCallback] Tokens found');
+        
+        // Check if this callback was opened in a system browser by a native app
+        // If on the lovable.app domain and user-agent suggests mobile, redirect to app
+        const isMobileUA = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isOnLovableApp = window.location.hostname.includes('lovable.app');
+        
+        if (isMobileUA && isOnLovableApp) {
+          // Redirect tokens to the native app via custom URL scheme
+          console.log('[OAuthCallback] Mobile browser on lovable.app - redirecting to native app');
+          setRedirectingToApp(true);
+          
+          const deepLink = `${NATIVE_URL_SCHEME}://auth/callback?access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`;
+          window.location.href = deepLink;
+          
+          // Fallback: if deep link doesn't work (app not installed), set session here
+          setTimeout(async () => {
+            console.log('[OAuthCallback] Deep link fallback - setting session on web');
+            try {
+              await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+              setRedirectingToApp(false);
+              navigate('/', { replace: true });
+            } catch (e: unknown) {
+              const msg = e instanceof Error ? e.message : 'Unknown error';
+              setError(msg);
+            }
+          }, 2000);
+          return;
+        }
+        
+        // Standard web flow: set session and redirect
         try {
           const { data, error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
@@ -53,24 +93,20 @@ export default function OAuthCallback() {
           }
 
           console.log('[OAuthCallback] Session set successfully. User:', data.session?.user?.id);
-          
-          // Clean URL and redirect to home
           window.history.replaceState({}, '', '/auth/callback');
           navigate('/', { replace: true });
           return;
-        } catch (e: any) {
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : 'Failed to complete sign in';
           console.error('[OAuthCallback] Unexpected error:', e);
-          setError(e.message || 'Failed to complete sign in');
+          setError(msg);
           setTimeout(() => navigate('/', { replace: true }), 3000);
           return;
         }
       }
 
-      // No tokens and no error - might be a stale navigation.
-      // Let Supabase's detectSessionInUrl handle it if tokens are in the hash
-      // but weren't parsed above. Wait briefly then redirect.
+      // No tokens and no error
       console.log('[OAuthCallback] No tokens found, checking existing session...');
-      
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         console.log('[OAuthCallback] Existing session found, redirecting home');
@@ -91,6 +127,12 @@ export default function OAuthCallback() {
             <p className="text-destructive font-medium">Sign in failed</p>
             <p className="text-muted-foreground text-sm">{error}</p>
             <p className="text-muted-foreground text-xs">Redirecting...</p>
+          </>
+        ) : redirectingToApp ? (
+          <>
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+            <p className="text-muted-foreground">Opening Hoop Journal...</p>
+            <p className="text-muted-foreground text-xs">If the app doesn't open, please go back and try again.</p>
           </>
         ) : (
           <>

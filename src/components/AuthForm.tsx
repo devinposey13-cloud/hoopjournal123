@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
 import { isNativeApp } from '@/lib/platform';
+import { openOAuthInSystemBrowser, NATIVE_URL_SCHEME } from '@/lib/nativeOAuth';
 import {
   logOAuthInit,
   logOAuthError,
@@ -86,16 +87,19 @@ export function AuthForm() {
     // Best-effort SW cache clear (non-blocking on failure)
     try { await clearServiceWorkerCaches(); } catch (_) {}
     
-    // For native apps, redirect back to the Lovable app origin callback
-    // which will then set the session via deep-link or universal link
+    // For native apps, use custom URL scheme as the final redirect destination
+    // For custom domains, redirect to the Lovable app origin
     const callbackOrigin = isNativeApp() ? LOVABLE_APP_ORIGIN : window.location.origin;
+    // For native: the callback on lovable.app will redirect to hoopjournal:// scheme
     const redirectUri = `${callbackOrigin}/auth/callback`;
     const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}`;
     
     console.log(`[OAuth] Custom domain redirect to broker: ${brokerUrl}`);
     console.log(`[OAuth] redirect_uri: ${redirectUri}`);
     console.log(`[OAuth] isNativeApp: ${isNativeApp()}`);
-    window.location.href = brokerUrl;
+    
+    // For native apps, open in system browser to keep WebView intact
+    await openOAuthInSystemBrowser(brokerUrl);
   };
 
   const handleGoogleSignIn = async () => {
