@@ -16,6 +16,8 @@ import {
 } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePlan } from '@/hooks/usePlanState';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { isNativeApp } from '@/lib/platform';
 import { toast } from 'sonner';
 
 export default function Upgrade() {
