@@ -110,8 +110,13 @@ export function AuthForm() {
     
     try {
       if (isCustomDomain) {
-        await handleCustomDomainOAuth('google');
-        return; // Page will navigate away
+        try {
+          await handleCustomDomainOAuth('google');
+        } catch {
+          // On native, system browser failed — error toast already shown
+          setGoogleLoading(false);
+        }
+        return;
       }
 
       // Clear SW caches to prevent OAuth redirect interception on mobile
@@ -142,8 +147,12 @@ export function AuthForm() {
     
     try {
       if (isCustomDomain) {
-        await handleCustomDomainOAuth('apple');
-        return; // Page will navigate away
+        try {
+          await handleCustomDomainOAuth('apple');
+        } catch {
+          setAppleLoading(false);
+        }
+        return;
       }
 
       // Clear SW caches to prevent OAuth redirect interception on mobile
