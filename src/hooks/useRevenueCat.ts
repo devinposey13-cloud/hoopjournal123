@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import type { PlanId } from '@/lib/plans';
 
 // RevenueCat publishable iOS API key — safe to embed in client code
-const REVENUECAT_IOS_API_KEY = 'appl_REPLACE_WITH_YOUR_KEY';
+const REVENUECAT_IOS_API_KEY = 'appl_trLLQaYmhqUNbauTXJrRmKaqlKj';
 
 // Map RevenueCat product identifiers → internal plan IDs
 export const RC_PRODUCT_TO_PLAN: Record<string, PlanId> = {
