@@ -53,6 +53,21 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
   const { progress: xpProgress } = useXpProgress();
   const ringOfHonorEligibility = useRingOfHonorEligibility(xpProgress?.current_level || 1);
   const [showRingOfHonorModal, setShowRingOfHonorModal] = useState(false);
+  const { restorePurchases } = useRevenueCat();
+  const [isRestoringPurchases, setIsRestoringPurchases] = useState(false);
+  const showNativeRestore = isNativeApp();
+
+  const handleRestorePurchases = async () => {
+    setIsRestoringPurchases(true);
+    try {
+      await restorePurchases();
+      toast.success('Purchases restored!');
+    } catch {
+      toast.error('Failed to restore purchases');
+    } finally {
+      setIsRestoringPurchases(false);
+    }
+  };
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsOfService, setShowTermsOfService] = useState(false);
 
