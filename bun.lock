@@ -38,6 +38,7 @@
         "@react-three/drei": "^9.122.0",
         "@react-three/fiber": "^8.18.0",
         "@react-three/postprocessing": "^2.19.1",
+        "@revenuecat/purchases-capacitor": "^12.2.4",
         "@supabase/supabase-js": "^2.91.1",
         "@tanstack/react-query": "^5.83.0",
         "canvas-confetti": "^1.9.4",
@@ -100,6 +101,8 @@
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
 
     "@babel/runtime": ["@babel/runtime@7.28.6", "", {}, "sha512-05WQkdpL9COIMz4LjTxGpPNCdlpyimKppYNoJ5Di5EUObifl8t4tuLuUBBZEpoLYOmfvIWrsp9fCl0HoPRVTdA=="],
+
+    "@capacitor/core": ["@capacitor/core@8.2.0", "", { "dependencies": { "tslib": "^2.1.0" } }, "sha512-oKaoNeNtH2iIZMDFVrb1atoyRECDGHcfLMunJ5KWN8DtvpVBeeA4c41e20NTuhMxw1cSYbpq2PV2hb+/9CJxlQ=="],
 
     "@dimforge/rapier3d-compat": ["@dimforge/rapier3d-compat@0.12.0", "", {}, "sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow=="],
 
@@ -352,6 +355,10 @@
     "@react-three/postprocessing": ["@react-three/postprocessing@2.19.1", "", { "dependencies": { "buffer": "^6.0.3", "maath": "^0.6.0", "n8ao": "^1.6.6", "postprocessing": "^6.32.1", "three-stdlib": "^2.23.4" }, "peerDependencies": { "@react-three/fiber": "^8.0", "react": "^18.0", "three": ">= 0.138.0" } }, "sha512-7P25LOSToH/I6b3UipNK17IIFlX4FDUmWcaomfwu82+CzhXTOz8Fcc1ZXEZ7vFA/5Fr/2peNlXgXZJvoa+aCdA=="],
 
     "@remix-run/router": ["@remix-run/router@1.23.0", "", {}, "sha512-O3rHJzAQKamUz1fvE0Qaw0xSFqsA/yafi2iqeE0pvdFtCO1viYx8QL6f3Ln/aCCTLxs68SLf0KPM9eSeM8yBnA=="],
+
+    "@revenuecat/purchases-capacitor": ["@revenuecat/purchases-capacitor@12.2.4", "", { "dependencies": { "@revenuecat/purchases-typescript-internal-esm": "17.47.0" }, "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-U0EZd13kRmUoM8hMmI6yQmHOl+f4MmJTbx13SRgoC4zlL+Rvp/04HI8ZBEz6+1PMow724V+jZiS04gHuE/AW1w=="],
+
+    "@revenuecat/purchases-typescript-internal-esm": ["@revenuecat/purchases-typescript-internal-esm@17.47.0", "", {}, "sha512-dch8pR3TvLHGgC7KuUfAUqO0xzfJTgrixCC3srIZz6Ubo5/L/AidrLHRGuWrPQ7jdsst7bdBWBYk1Ofjax4pLA=="],
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-beta.27", "", {}, "sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA=="],
 
