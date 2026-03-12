@@ -12,6 +12,8 @@ interface PlanCardProps {
   currentPlan?: PlanId;
   onSelect: (planId: PlanId) => void;
   promoApplied?: boolean;
+  /** When provided (e.g. from RevenueCat), displayed instead of the computed price */
+  nativePriceString?: string;
 }
 
 export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied }: PlanCardProps) {
