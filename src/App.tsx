@@ -28,6 +28,8 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import OAuthCallback from "./pages/OAuthCallback";
 import ParentDashboard from "./pages/ParentDashboard";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 const queryClient = new QueryClient();
 
