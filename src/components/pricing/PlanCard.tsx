@@ -16,7 +16,7 @@ interface PlanCardProps {
   nativePriceString?: string;
 }
 
-export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied }: PlanCardProps) {
+export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied, nativePriceString }: PlanCardProps) {
   const originalPrice = getPlanPrice(plan.id, cycle);
   const price = (promoApplied && plan.id !== 'free') ? getPlanPrice('starter', cycle) : originalPrice;
   const savings = getYearlySavingsPercent(plan.id);
