@@ -103,7 +103,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
     if (!purchases) throw new Error('RevenueCat not available');
     const { Purchases } = await import('@revenuecat/purchases-capacitor');
 
-    const { offerings: rcOfferings } = await Purchases.getOfferings();
+    const rcOfferings = await Purchases.getOfferings();
     const pkg = rcOfferings?.current?.availablePackages?.find(
       (p: any) => p.identifier === packageId
     );
