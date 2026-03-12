@@ -147,8 +147,12 @@ export function AuthForm() {
     
     try {
       if (isCustomDomain) {
-        await handleCustomDomainOAuth('apple');
-        return; // Page will navigate away
+        try {
+          await handleCustomDomainOAuth('apple');
+        } catch {
+          setAppleLoading(false);
+        }
+        return;
       }
 
       // Clear SW caches to prevent OAuth redirect interception on mobile
