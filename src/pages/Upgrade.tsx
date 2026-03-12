@@ -36,13 +36,29 @@ export default function Upgrade() {
   );
 
   const handleSelect = async (planId: PlanId) => {
-    track('upgrade_clicked', { planId, cycle });
+    track('upgrade_clicked', { planId, cycle, native: isNativeApp() });
     setLoadingPlan(planId);
     try {
-      await createCheckout(planId, cycle);
-      toast.success('Redirecting to checkout...');
+      if (isNativeApp() && rcAvailable) {
+        const suffix = cycle === 'yearly' ? 'year' : 'month';
+        const rcPkg = rcOfferings.find(
+          (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)
+        );
+        if (rcPkg) {
+          await purchasePackage(rcPkg.identifier);
+          toast.success('Purchase successful! 🎉');
+        } else {
+          toast.error('Package not available');
+        }
+      } else {
+        await createCheckout(planId, cycle);
+        toast.success('Redirecting to checkout...');
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to start checkout');
+      const msg = err instanceof Error ? err.message : 'Failed to start checkout';
+      if (!msg.includes('cancelled') && !msg.includes('canceled')) {
+        toast.error(msg);
+      }
     } finally {
       setLoadingPlan(null);
     }
