@@ -87,6 +87,8 @@ const App = () => (
                   <Route path="/game/scheduled/:scheduledId" element={<GameDetail />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/parent/:token" element={<ParentDashboard />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/:username" element={<PublicProfile />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
