@@ -12,6 +12,8 @@ import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, track } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePlan } from '@/hooks/usePlanState';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { isNativeApp } from '@/lib/platform';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
