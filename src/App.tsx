@@ -11,6 +11,8 @@ import { PlanContext, usePlanState } from "@/hooks/usePlanState";
 import { FloatingHomeButton } from "@/components/FloatingHomeButton";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { checkUrlForOAuthError, formatErrorWithCode } from "@/utils/oauthErrors";
+import { setupNativeOAuthListener } from "@/lib/nativeOAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Index from "./pages/Index";
 import GameDetail from "./pages/GameDetail";
@@ -38,11 +40,44 @@ function OAuthErrorHandler() {
   useEffect(() => {
     const oauthError = checkUrlForOAuthError();
     if (oauthError) {
-      // Delay toast slightly to ensure Sonner is mounted
       setTimeout(() => {
         toast.error(formatErrorWithCode(oauthError));
       }, 100);
     }
+  }, []);
+  
+  return null;
+}
+
+// Listen for native OAuth deep link callbacks (Capacitor)
+function NativeOAuthHandler() {
+  useEffect(() => {
+    let cleanup: (() => void) | null = null;
+    
+    setupNativeOAuthListener(
+      async (accessToken, refreshToken) => {
+        console.log('[NativeOAuth] Received tokens, setting session...');
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error) {
+          console.error('[NativeOAuth] setSession error:', error.message);
+          toast.error('Sign-in failed: ' + error.message);
+        } else {
+          console.log('[NativeOAuth] Session set successfully');
+          toast.success('Signed in successfully!');
+        }
+      },
+      (error) => {
+        console.error('[NativeOAuth] Error:', error);
+        toast.error('Sign-in failed: ' + error);
+      }
+    ).then((c) => {
+      cleanup = c;
+    });
+    
+    return () => cleanup?.();
   }, []);
   
   return null;
