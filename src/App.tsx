@@ -100,6 +100,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <OAuthErrorHandler />
+              <NativeOAuthHandler />
               <BrowserRouter>
                 <FloatingHomeButton />
                 <Routes>
