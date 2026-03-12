@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, Lock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Lock, RotateCcw, Loader2 } from 'lucide-react';
 import { PlanCard } from '@/components/pricing/PlanCard';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import {
@@ -28,18 +28,28 @@ export default function Upgrade() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage } = useRevenueCat();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, restorePurchases } = useRevenueCat();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const native = isNativeApp() && rcAvailable;
 
   const upgradePlans = planOrder.filter(
     (id) => id !== 'free' && planOrder.indexOf(id) > planOrder.indexOf(currentPlan)
   );
 
+  const getNativePriceString = (planId: PlanId): string | undefined => {
+    if (!native) return undefined;
+    const suffix = cycle === 'yearly' ? 'year' : 'month';
+    return rcOfferings.find(
+      (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)
+    )?.priceString;
+  };
+
   const handleSelect = async (planId: PlanId) => {
     track('upgrade_clicked', { planId, cycle, native: isNativeApp() });
     setLoadingPlan(planId);
     try {
-      if (isNativeApp() && rcAvailable) {
+      if (native) {
         const suffix = cycle === 'yearly' ? 'year' : 'month';
         const rcPkg = rcOfferings.find(
           (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)
@@ -61,6 +71,18 @@ export default function Upgrade() {
       }
     } finally {
       setLoadingPlan(null);
+    }
+  };
+
+  const handleRestore = async () => {
+    setIsRestoring(true);
+    try {
+      await restorePurchases();
+      toast.success('Purchases restored!');
+    } catch {
+      toast.error('Failed to restore purchases');
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -111,12 +133,24 @@ export default function Upgrade() {
                 cycle={cycle}
                 currentPlan={currentPlan}
                 onSelect={handleSelect}
+                nativePriceString={getNativePriceString(id)}
               />
             </motion.div>
           ))}
         </div>
 
-        <div className="text-center">
+        <div className="text-center space-y-3">
+          {native && (
+            <Button
+              variant="ghost"
+              onClick={handleRestore}
+              disabled={isRestoring}
+              className="text-muted-foreground text-xs"
+            >
+              {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+              Restore Purchases
+            </Button>
+          )}
           <Button variant="ghost" onClick={() => navigate(-1)} className="text-muted-foreground">
             Not now
           </Button>

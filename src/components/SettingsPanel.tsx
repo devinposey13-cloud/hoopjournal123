@@ -23,6 +23,9 @@ import { useXpProgress } from '@/hooks/useXpProgress';
 import { useRingOfHonorEligibility } from '@/hooks/useRingOfHonorEligibility';
 import { RingOfHonorOptInModal } from '@/components/xp/RingOfHonorOptInModal';
 import { ParentDashboardSettings } from '@/components/settings/ParentDashboardSettings';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { isNativeApp } from '@/lib/platform';
+import { RotateCcw } from 'lucide-react';
 
 interface SettingsPanelProps {
   profile: PlayerProfile;
