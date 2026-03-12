@@ -23,6 +23,9 @@ import { useXpProgress } from '@/hooks/useXpProgress';
 import { useRingOfHonorEligibility } from '@/hooks/useRingOfHonorEligibility';
 import { RingOfHonorOptInModal } from '@/components/xp/RingOfHonorOptInModal';
 import { ParentDashboardSettings } from '@/components/settings/ParentDashboardSettings';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { isNativeApp } from '@/lib/platform';
+import { RotateCcw } from 'lucide-react';
 
 interface SettingsPanelProps {
   profile: PlayerProfile;
@@ -50,6 +53,21 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
   const { progress: xpProgress } = useXpProgress();
   const ringOfHonorEligibility = useRingOfHonorEligibility(xpProgress?.current_level || 1);
   const [showRingOfHonorModal, setShowRingOfHonorModal] = useState(false);
+  const { restorePurchases } = useRevenueCat();
+  const [isRestoringPurchases, setIsRestoringPurchases] = useState(false);
+  const showNativeRestore = isNativeApp();
+
+  const handleRestorePurchases = async () => {
+    setIsRestoringPurchases(true);
+    try {
+      await restorePurchases();
+      toast.success('Purchases restored!');
+    } catch {
+      toast.error('Failed to restore purchases');
+    } finally {
+      setIsRestoringPurchases(false);
+    }
+  };
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsOfService, setShowTermsOfService] = useState(false);
 
@@ -449,6 +467,21 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
               </>
             )}
           </div>
+
+          {/* Restore Purchases — iOS only */}
+          {showNativeRestore && (
+            <div className="mt-3 flex justify-center">
+              <Button
+                variant="ghost"
+                className="text-muted-foreground text-xs"
+                onClick={handleRestorePurchases}
+                disabled={isRestoringPurchases}
+              >
+                {isRestoringPurchases ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+                Restore Purchases
+              </Button>
+            </div>
+          )}
 
           {/* Parent Dashboard Section */}
           <ParentDashboardSettings />

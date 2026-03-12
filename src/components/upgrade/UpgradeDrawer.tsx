@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
+import { Check, ArrowRight, Sparkles, Loader2, RotateCcw } from 'lucide-react';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
 import { type PlanId, type BillingCycle, planCatalog, getPlanPrice, track } from '@/lib/plans';
@@ -37,30 +37,34 @@ interface UpgradeDrawerProps {
 export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawerProps) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage } = useRevenueCat();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, restorePurchases } = useRevenueCat();
+  const native = isNativeApp() && rcAvailable;
 
   if (!config) return null;
 
   const plan = planCatalog[config.recommendedPlan];
   const price = getPlanPrice(config.recommendedPlan, cycle);
 
+  // Find matching RC package for native
+  const suffix = cycle === 'yearly' ? 'year' : 'month';
+  const rcPkg = native
+    ? rcOfferings.find((o) => o.planId === config.recommendedPlan && o.period.toLowerCase().includes(suffix))
+    : null;
+  const displayPrice = rcPkg ? rcPkg.priceString : `$${price}`;
+  const periodLabel = cycle === 'monthly' ? 'mo' : 'yr';
+
   const handleUpgrade = async () => {
     track('upgrade_clicked', { planId: config.recommendedPlan, cycle, native: isNativeApp() });
     setIsLoading(true);
     try {
-      if (isNativeApp() && rcAvailable) {
-        const suffix = cycle === 'yearly' ? 'year' : 'month';
-        const rcPkg = rcOfferings.find(
-          (o) => o.planId === config.recommendedPlan && o.period.toLowerCase().includes(suffix)
-        );
-        if (rcPkg) {
-          await purchasePackage(rcPkg.identifier);
-          toast.success('Purchase successful! 🎉');
-          onUpgrade(config.recommendedPlan);
-        } else {
-          toast.error('Package not available');
-        }
+      if (native && rcPkg) {
+        await purchasePackage(rcPkg.identifier);
+        toast.success('Purchase successful! 🎉');
+        onUpgrade(config.recommendedPlan);
+      } else if (native) {
+        toast.error('Package not available');
       } else {
         await createCheckout(config.recommendedPlan, cycle);
         toast.success('Redirecting to checkout...');
@@ -73,6 +77,18 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    setIsRestoring(true);
+    try {
+      await restorePurchases();
+      toast.success('Purchases restored!');
+    } catch {
+      toast.error('Failed to restore purchases');
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -106,9 +122,9 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
                   <div className="text-xs text-muted-foreground">{plan.tagline}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-extrabold text-foreground">${price}</div>
+                  <div className="text-2xl font-extrabold text-foreground">{displayPrice}</div>
                   <div className="text-[10px] text-muted-foreground">
-                    /{cycle === 'monthly' ? 'mo' : 'yr'}
+                    /{periodLabel}
                   </div>
                 </div>
               </div>
@@ -131,8 +147,8 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
               </div>
             )}
 
-            {/* Promo Code */}
-            <PromoCodeInput />
+            {/* Promo Code — only on web (not applicable for IAP) */}
+            {!native && <PromoCodeInput />}
           </div>
 
           <DrawerFooter className="pt-2">
@@ -147,6 +163,19 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
               Upgrade to {plan.name}
               {!isLoading && <ArrowRight className="w-4 h-4 ml-2" />}
             </Button>
+
+            {native && (
+              <Button
+                variant="ghost"
+                className="text-muted-foreground text-xs"
+                onClick={handleRestore}
+                disabled={isRestoring}
+              >
+                {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+                Restore Purchases
+              </Button>
+            )}
+
             <DrawerClose asChild>
               <Button variant="ghost" className="text-muted-foreground">
                 Not now

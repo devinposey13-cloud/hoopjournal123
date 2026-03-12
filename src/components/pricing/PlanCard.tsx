@@ -12,9 +12,11 @@ interface PlanCardProps {
   currentPlan?: PlanId;
   onSelect: (planId: PlanId) => void;
   promoApplied?: boolean;
+  /** When provided (e.g. from RevenueCat), displayed instead of the computed price */
+  nativePriceString?: string;
 }
 
-export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied }: PlanCardProps) {
+export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied, nativePriceString }: PlanCardProps) {
   const originalPrice = getPlanPrice(plan.id, cycle);
   const price = (promoApplied && plan.id !== 'free') ? getPlanPrice('starter', cycle) : originalPrice;
   const savings = getYearlySavingsPercent(plan.id);
@@ -59,16 +61,29 @@ export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied }: P
           <p className="text-sm text-muted-foreground">{plan.tagline}</p>
           <div className="mt-4">
             <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-extrabold tracking-tight">
-                ${price === 0 ? '0' : price}
-              </span>
-              {price > 0 && (
-                <span className="text-muted-foreground text-sm">
-                  /{cycle === 'monthly' ? 'mo' : 'yr'}
-                </span>
-              )}
-              {price === 0 && (
-                <span className="text-muted-foreground text-sm">/forever</span>
+              {nativePriceString ? (
+                <>
+                  <span className="text-4xl font-extrabold tracking-tight">
+                    {nativePriceString}
+                  </span>
+                  <span className="text-muted-foreground text-sm">
+                    /{cycle === 'monthly' ? 'mo' : 'yr'}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-4xl font-extrabold tracking-tight">
+                    ${price === 0 ? '0' : price}
+                  </span>
+                  {price > 0 && (
+                    <span className="text-muted-foreground text-sm">
+                      /{cycle === 'monthly' ? 'mo' : 'yr'}
+                    </span>
+                  )}
+                  {price === 0 && (
+                    <span className="text-muted-foreground text-sm">/forever</span>
+                  )}
+                </>
               )}
             </div>
             {cycle === 'yearly' && savings > 0 && (
