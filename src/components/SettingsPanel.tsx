@@ -468,6 +468,21 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
             )}
           </div>
 
+          {/* Restore Purchases — iOS only */}
+          {showNativeRestore && (
+            <div className="mt-3 flex justify-center">
+              <Button
+                variant="ghost"
+                className="text-muted-foreground text-xs"
+                onClick={handleRestorePurchases}
+                disabled={isRestoringPurchases}
+              >
+                {isRestoringPurchases ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+                Restore Purchases
+              </Button>
+            </div>
+          )}
+
           {/* Parent Dashboard Section */}
           <ParentDashboardSettings />
 
