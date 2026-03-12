@@ -11,6 +11,7 @@ import { lovable } from '@/integrations/lovable';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
+import { isNativeApp } from '@/lib/platform';
 import {
   logOAuthInit,
   logOAuthError,
