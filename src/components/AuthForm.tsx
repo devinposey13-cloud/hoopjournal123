@@ -86,12 +86,11 @@ export function AuthForm() {
     // Best-effort SW cache clear (non-blocking on failure)
     try { await clearServiceWorkerCaches(); } catch (_) {}
     
-    // For native apps, redirect back to the Lovable app origin callback
-    // with a native flag so the callback page knows to redirect back to the app
-    const callbackOrigin = LOVABLE_APP_ORIGIN;
-    const nativeParam = isNativeApp() ? '&native=true' : '';
-    const redirectUri = `${isCustomDomain ? callbackOrigin : window.location.origin}/auth/callback`;
-    const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri + '?from_native=true')}${nativeParam}`;
+    // For native apps AND custom domains, redirect through the Lovable broker
+    // Native apps use the Lovable origin since capacitor://localhost can't receive OAuth callbacks
+    const callbackOrigin = isNativeApp() ? LOVABLE_APP_ORIGIN : window.location.origin;
+    const redirectUri = `${callbackOrigin}/auth/callback`;
+    const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}`;
     
     console.log(`[OAuth] Custom domain redirect to broker: ${brokerUrl}`);
     console.log(`[OAuth] redirect_uri: ${redirectUri}`);
