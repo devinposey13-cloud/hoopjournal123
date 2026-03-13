@@ -69,9 +69,13 @@ export function EmptyDashboardWelcome({
   const [hasPlayedIntro, setHasPlayedIntro] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showWebcam, setShowWebcam] = useState(false);
+
+  // Randomize coach gender for onboarding (before user has saved a preference)
+  const [randomGender] = useState<'male' | 'female'>(() => Math.random() < 0.5 ? 'male' : 'female');
+  const effectiveCoachGender = coachVoiceGender || randomGender;
   
   // Coach voice for intro
-  const { playVoice, playingIndex, isLoadingAudio } = useCoachVoice(coachVoiceGender);
+  const { playVoice, playingIndex, isLoadingAudio } = useCoachVoice(effectiveCoachGender);
 
   const INTRO_MESSAGE = `Hey ${playerName}! First game hasn't been logged yet — but every season starts somewhere. Let me know when you're ready.`;
 
@@ -283,7 +287,7 @@ export function EmptyDashboardWelcome({
               transition={{ type: 'spring', delay: 0.2 }}
               className={`w-20 h-20 rounded-full overflow-hidden mx-auto mb-6 ${playingIndex === -1 ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
             >
-              <img src={getCoachAvatarUrl(coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
+              <img src={getCoachAvatarUrl(effectiveCoachGender)} alt="Coach AI" className="w-full h-full object-cover" />
             </motion.div>
 
             {/* Coach AI Header */}
