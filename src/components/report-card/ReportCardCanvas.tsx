@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import type { GameStats } from '@/types/basketball';
 import { getGameGradeData } from '@/utils/gameGrading';
 import { calculateCareerHighs } from '@/utils/statsCalculations';
-import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
+import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import hoopJournalQr from '@/assets/hoop-journal-qr.png';
 import courtLines from '@/assets/basketball-court-lines.jpg';
 
