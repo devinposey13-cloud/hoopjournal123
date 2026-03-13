@@ -131,7 +131,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
         {/* ── Content Safe Zone ── */}
         <div style={{
           position: 'absolute',
-          top: isPost ? 60 : SAFE.top, bottom: isPost ? 60 : SAFE.bottom, left: SAFE.left, right: SAFE.right,
+          top: isPost ? 40 : SAFE.top, bottom: isPost ? 40 : SAFE.bottom, left: SAFE.left, right: SAFE.right,
           display: 'flex', flexDirection: 'column',
           alignItems: 'center',
         }}>
@@ -166,8 +166,8 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             {/* Right: Grade + Tags */}
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
-              position: 'relative', marginTop: isPost ? 24 : 40,
-              padding: '80px 60px',
+              position: 'relative', marginTop: isPost ? 12 : 40,
+              padding: isPost ? '60px 50px' : '80px 60px',
             }}>
               <div style={{
                 position: 'absolute', top: '50%', left: '50%',
@@ -322,7 +322,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           {/* ═══ ZONE 5: Achievements + XP ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginTop: isPost ? 16 : 24, gap: 14,
+            marginTop: isPost ? 10 : 24, gap: isPost ? 8 : 14,
           }}>
             {careerHighsInGame.length > 0 && (
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -344,7 +344,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             <div style={{
               background: 'linear-gradient(135deg, rgba(255,107,0,0.18), rgba(255,165,0,0.08))',
               border: '1px solid rgba(255,107,0,0.3)',
-              borderRadius: 50, padding: '12px 44px',
+              borderRadius: 50, padding: isPost ? '8px 32px' : '12px 44px',
               color: '#ff8c3a', fontSize: 22 * sf, fontWeight: 900,
               boxShadow: '0 0 40px rgba(255,107,0,0.12)',
               letterSpacing: '0.02em',
@@ -354,8 +354,9 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           {/* ═══ FOOTER: Branding + QR ═══ */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            marginTop: isPost ? 14 : 32, width: '100%',
-            padding: isPost ? '12px 0' : '0',
+            marginTop: isPost ? 'auto' : 32, width: '100%',
+            padding: isPost ? '8px 0 0' : '0',
+            flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: isPost ? 12 : 16 }}>
               <img src={hoopJournalLogo} alt="" style={{ width: isPost ? 56 : 82, height: isPost ? 56 : 82, borderRadius: isPost ? 12 : 16 }} crossOrigin="anonymous" />
