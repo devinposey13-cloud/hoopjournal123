@@ -1,11 +1,11 @@
 import { useRef, useState, useCallback, useMemo } from 'react';
 import html2canvas from 'html2canvas';
-import { Share2, Copy, Check, HelpCircle } from 'lucide-react';
+import { Share2, Copy, Check, HelpCircle, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import type { GameStats } from '@/types/basketball';
-import { ReportCardCanvas } from '@/components/report-card/ReportCardCanvas';
+import { ReportCardCanvas, type ExportFormat } from '@/components/report-card/ReportCardCanvas';
 import { SocialPreview } from '@/components/report-card/SocialPreview';
 
 interface GameReportCardProps {
@@ -18,8 +18,10 @@ interface GameReportCardProps {
   allGames?: GameStats[];
 }
 
-const CANVAS_W = 1080;
-const CANVAS_H = 1920;
+const FORMATS = {
+  story: { w: 1080, h: 1920 },
+  post: { w: 1080, h: 1350 },
+} as const;
 
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
@@ -29,7 +31,11 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [platform, setPlatform] = useState<'instagram' | 'twitter' | 'imessage'>('instagram');
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('story');
+  const [showSafeZones, setShowSafeZones] = useState(false);
   const [showIOSHelp, setShowIOSHelp] = useState(false);
+
+  const { w: CANVAS_W, h: CANVAS_H } = FORMATS[exportFormat];
 
   const fileName = useMemo(() =>
     `hoop-journal-game-card-vs-${game.opponent.replace(/\s+/g, '-').toLowerCase()}.png`,
@@ -66,7 +72,7 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
       console.error('[ReportCard] Export failed:', err);
       return null;
     }
-  }, []);
+  }, [CANVAS_W, CANVAS_H]);
 
   const handleSaveShare = async () => {
     setExporting(true);
@@ -75,7 +81,6 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
       if (!blob) throw new Error('Failed to generate image');
       const file = new File([blob], fileName, { type: 'image/png' });
 
-      // Prefer native share sheet (works great on iOS — user can tap "Save Image")
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         toast('🏀 Game card ready!', {
           description: isIOS()
@@ -91,7 +96,6 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
         return;
       }
 
-      // Fallback: browser download
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -132,9 +136,13 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
     }
   };
 
+  // Preview scale to fit in dialog
+  const previewMaxW = 340;
+  const previewScale = previewMaxW / CANVAS_W;
+
   return (
     <>
-      {/* Hidden full-size canvas for export — must be outside Dialog portal and visible to html2canvas */}
+      {/* Hidden full-size canvas for export */}
       {open && (
         <div
           aria-hidden="true"
@@ -156,6 +164,8 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
             playerTeam={playerTeam}
             avatarUrl={avatarUrl}
             allGames={allGames}
+            exportFormat={exportFormat}
+            showSafeZones={false}
           />
         </div>
       )}
@@ -165,21 +175,52 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
           <DialogTitle className="sr-only">Game Report Card</DialogTitle>
 
           {/* Header */}
-          <div className="px-4 pt-4 pb-2 shrink-0">
+          <div className="px-4 pt-4 pb-2 shrink-0 space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest text-center mb-2">Share Game Card</p>
             <SocialPreview platform={platform} onPlatformChange={setPlatform} />
+
+            {/* Export Format & Safe Zone Toggle */}
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <div className="flex gap-1">
+                {(['story', 'post'] as const).map(fmt => (
+                  <button
+                    key={fmt}
+                    onClick={() => setExportFormat(fmt)}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                      exportFormat === fmt
+                        ? 'bg-primary/20 text-primary border border-primary/40'
+                        : 'bg-secondary/50 text-muted-foreground border border-border/50 hover:bg-secondary'
+                    }`}
+                  >
+                    {fmt === 'story' ? 'Story 9:16' : 'Post 4:5'}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowSafeZones(v => !v)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                  showSafeZones
+                    ? 'bg-destructive/15 text-destructive border border-destructive/30'
+                    : 'bg-secondary/50 text-muted-foreground border border-border/50 hover:bg-secondary'
+                }`}
+                title="Preview Instagram safe zones"
+              >
+                {showSafeZones ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                Safe Zones
+              </button>
+            </div>
           </div>
 
-          {/* Preview container (scaled for display) */}
+          {/* Preview container */}
           <div className="flex-1 min-h-0 overflow-y-auto px-4">
             <div
               className="w-full overflow-hidden rounded-lg border border-border/30 mx-auto mb-4"
-              style={{ maxWidth: 340, aspectRatio: `${CANVAS_W}/${CANVAS_H}` }}
+              style={{ maxWidth: previewMaxW, aspectRatio: `${CANVAS_W}/${CANVAS_H}` }}
             >
               <div style={{ width: '100%', height: '100%', position: 'relative' }}>
                 <div style={{
                   transformOrigin: 'top left',
-                  transform: `scale(${340 / CANVAS_W})`,
+                  transform: `scale(${previewScale})`,
                   position: 'absolute',
                   top: 0,
                   left: 0,
@@ -191,6 +232,8 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
                     playerTeam={playerTeam}
                     avatarUrl={avatarUrl}
                     allGames={allGames}
+                    exportFormat={exportFormat}
+                    showSafeZones={showSafeZones}
                   />
                 </div>
               </div>
