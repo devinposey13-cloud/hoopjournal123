@@ -8,7 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProfileProvider } from "@/components/profile/ProfileProvider";
 import { PlanContext, usePlanState } from "@/hooks/usePlanState";
-import { FloatingHomeButton } from "@/components/FloatingHomeButton";
+
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { checkUrlForOAuthError, formatErrorWithCode } from "@/utils/oauthErrors";
 import { setupNativeOAuthListener } from "@/lib/nativeOAuth";
