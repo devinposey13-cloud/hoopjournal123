@@ -131,7 +131,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
         {/* ── Content Safe Zone ── */}
         <div style={{
           position: 'absolute',
-          top: SAFE.top, bottom: SAFE.bottom, left: SAFE.left, right: SAFE.right,
+          top: isPost ? 60 : SAFE.top, bottom: isPost ? 60 : SAFE.bottom, left: SAFE.left, right: SAFE.right,
           display: 'flex', flexDirection: 'column',
           alignItems: 'center',
         }}>
