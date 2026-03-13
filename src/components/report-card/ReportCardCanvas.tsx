@@ -354,8 +354,9 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           {/* ═══ FOOTER: Branding + QR ═══ */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            marginTop: isPost ? 14 : 32, width: '100%',
-            padding: isPost ? '12px 0' : '0',
+            marginTop: isPost ? 'auto' : 32, width: '100%',
+            padding: isPost ? '8px 0 0' : '0',
+            flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: isPost ? 12 : 16 }}>
               <img src={hoopJournalLogo} alt="" style={{ width: isPost ? 56 : 82, height: isPost ? 56 : 82, borderRadius: isPost ? 12 : 16 }} crossOrigin="anonymous" />
