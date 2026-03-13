@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { LayoutDashboard, ClipboardPlus, MessageCircle, MoreHorizontal, TrendingUp } from 'lucide-react';
 import { MoreMenu } from './MoreMenu';
 import { Season } from '@/types/basketball';
-import navLogo from '@/assets/nav-logo.png';
+
 
 export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile';
 
