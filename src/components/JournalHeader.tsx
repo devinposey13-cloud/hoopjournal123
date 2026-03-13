@@ -31,7 +31,6 @@ export function JournalHeader({ playerName, className }: JournalHeaderProps) {
         style={{ fontFamily: "'Teko', sans-serif", fontWeight: 400 }}>
         {playerName ? `${playerName}'s Journey` : 'My Basketball Journey'}
       </p>
-      </p>
     </div>);
 
 }
