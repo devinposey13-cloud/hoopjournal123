@@ -10,8 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, Home, Plane, ChevronRight as ViewIcon, Plus, Pencil, Trophy, Users } from 'lucide-react';
 import { QuickAddScheduleDialog } from './QuickAddScheduleDialog';
 import { EditScheduleDialog } from './EditScheduleDialog';
-import { AIScheduleImportDialog } from './AIScheduleImportDialog';
-import { Sparkles } from 'lucide-react';
+import { ImportScheduleDialog } from './ImportScheduleDialog';
+
 
 interface ScheduleCalendarProps {
   games: ScheduledGame[];
@@ -280,15 +280,9 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame, onAddG
           </div>
         </div>
         {onBulkAddGames && (
-          <AIScheduleImportDialog
+          <ImportScheduleDialog
             onImport={onBulkAddGames}
             existingGames={games}
-            trigger={
-              <Button variant="ghost" size="sm" className="gap-1.5 text-xs">
-                <Sparkles className="w-3.5 h-3.5" />
-                AI Import
-              </Button>
-            }
           />
         )}
       </div>
