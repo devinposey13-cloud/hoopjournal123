@@ -1,33 +1,48 @@
-## RevenueCat Integration — IMPLEMENTED
 
-### What was built
 
-1. **Platform Detection** (`src/lib/platform.ts`) — `isNativeApp()`, `getPlatform()`, `isIOS()` helpers
-2. **RevenueCat Hook** (`src/hooks/useRevenueCat.ts`) — SDK init, purchase, restore, offerings
-3. **RevenueCat Webhook** (`supabase/functions/revenuecat-webhook/index.ts`) — syncs purchases to `plan_overrides`
-4. **Conditional Routing** — `useSubscription`, `Pricing.tsx`, `Upgrade.tsx`, `UpgradeDrawer.tsx` all route to RevenueCat on native
+## Adding the Reversed Google Client ID URL Scheme for Despia
 
-### Next steps (user action required)
+### The Problem
+The `@codetrix-studio/capacitor-google-auth` plugin needs a URL scheme registered so Google's native SDK can redirect back to your app after sign-in. In Xcode you'd add it under Info → URL Types, but since you're using Despia, we need a different approach.
 
-1. **Replace RevenueCat API key** in `src/hooks/useRevenueCat.ts` line 12 — replace `appl_REPLACE_WITH_YOUR_KEY` with your iOS public API key from RevenueCat dashboard
-2. **Create RevenueCat products** matching these IDs: `hj_starter_monthly`, `hj_starter_yearly`, `hj_pro_monthly`, `hj_pro_yearly`, `hj_elite_monthly`, `hj_elite_yearly`
-3. **Configure RevenueCat webhook** pointing to: `https://jwoupnumuotmwpwrkmob.supabase.co/functions/v1/revenuecat-webhook` with Authorization Bearer header matching the secret you just saved
-4. **Set up Capacitor** for native iOS builds (not yet added to the project)
+### Your Reversed Client ID
+Based on your client ID `900798356514-at6uk29gq1roamu4gasqh839qq75u6ct.apps.googleusercontent.com`, the reversed version is:
 
----
+```text
+com.googleusercontent.apps.900798356514-at6uk29gq1roamu4gasqh839qq75u6ct
+```
 
-## Native Google Sign-In — IMPLEMENTED
+### How to Add It (Two Options)
 
-### What was built
+**Option A — Add an `ios/App/App/Info.plist` to the repo (recommended)**
 
-1. **Plugin** — `@codetrix-studio/capacitor-google-auth` installed
-2. **Native helper** (`src/lib/nativeGoogleAuth.ts`) — `initNativeGoogleAuth()` + `nativeGoogleSignIn()` using `signInWithIdToken`
-3. **AuthForm.tsx** — branches on `isNativeApp()`: native uses SDK, web keeps existing `lovable.auth.signInWithOAuth`
-4. **App.tsx** — initializes the Google Auth plugin on native startup
+Create the file `ios/App/App/Info.plist` with the URL scheme entry. Despia reads the `ios/` folder during build. This is the most reliable method.
 
-### User action required
+The key section to add:
+```xml
+<key>CFBundleURLTypes</key>
+<array>
+  <dict>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <string>com.googleusercontent.apps.900798356514-at6uk29gq1roamu4gasqh839qq75u6ct</string>
+      <string>hoopjournal</string>
+    </array>
+  </dict>
+</array>
+```
 
-1. **Replace the Client ID** in `src/lib/nativeGoogleAuth.ts` line 10 — replace `REPLACE_WITH_YOUR_IOS_CLIENT_ID.apps.googleusercontent.com` with your iOS OAuth Client ID from [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-2. **Create an iOS OAuth Client ID** — type: iOS application, bundle ID: `app.lovable.2cd79f530f3e4e88858df49e60e86e08`
-3. **Add reversed client ID** as a URL scheme in Xcode (e.g. `com.googleusercontent.apps.XXXX`)
-4. Run `npm install` → `npx cap sync` → rebuild in Xcode → TestFlight
+This registers both the Google reversed client ID and your existing `hoopjournal://` deep link scheme.
+
+**Option B — Despia's UI**
+
+If Despia has a "Custom Info.plist entries" or "URL Schemes" field in its iOS build settings, you can paste the reversed client ID there directly. Check under your app's iOS configuration in the Despia dashboard.
+
+### Plan
+
+1. Create `ios/App/App/Info.plist` with the full required plist content including both URL schemes (`com.googleusercontent.apps.900798356514-...` and `hoopjournal`)
+2. This file will be picked up by `npx cap sync` and by Despia during the iOS build
+
+### Important Note
+If Despia generates its own `Info.plist` and overwrites yours, Option B (Despia's UI settings) would be the way to go. Most Capacitor build services merge entries from the project's `ios/` folder, but it depends on Despia's specific behavior.
+
