@@ -91,8 +91,11 @@ export function BottomNavigation({
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                <tab.icon className={cn('w-5 h-5', isActive && 'stroke-[2.5px]')} />
-                <span className="text-xs font-medium">{tab.label}</span>
+                {tab.customImage ? (
+                  <img src={tab.customImage} alt={tab.label} className={cn('w-6 h-6 object-contain', isActive ? 'opacity-100' : 'opacity-60')} />
+                ) : (
+                  <tab.icon className={cn('w-5 h-5', isActive && 'stroke-[2.5px]')} />
+                )}
               </button>
             );
           })}
