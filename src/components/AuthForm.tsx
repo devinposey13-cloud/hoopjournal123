@@ -118,11 +118,19 @@ export function AuthForm() {
     logOAuthInit('google', redirectUri);
     
     try {
+      // Native iOS/Android: use native Google Sign-In SDK to avoid disallowed_useragent
+      if (isNativeApp()) {
+        const { nativeGoogleSignIn } = await import('@/lib/nativeGoogleAuth');
+        await nativeGoogleSignIn();
+        logOAuthSuccess('google');
+        setGoogleLoading(false);
+        return;
+      }
+
       if (isCustomDomain) {
         try {
           await handleCustomDomainOAuth('google');
         } catch {
-          // On native, system browser failed — error toast already shown
           setGoogleLoading(false);
         }
         return;
