@@ -344,7 +344,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             <div style={{
               background: 'linear-gradient(135deg, rgba(255,107,0,0.18), rgba(255,165,0,0.08))',
               border: '1px solid rgba(255,107,0,0.3)',
-              borderRadius: 50, padding: '12px 44px',
+              borderRadius: 50, padding: isPost ? '8px 32px' : '12px 44px',
               color: '#ff8c3a', fontSize: 22 * sf, fontWeight: 900,
               boxShadow: '0 0 40px rgba(255,107,0,0.12)',
               letterSpacing: '0.02em',
