@@ -168,14 +168,16 @@ export default function Index() {
 
   // Auto-open live stats when navigating from onboarding finish
   useEffect(() => {
-    const state = location.state as { openLiveStats?: boolean } | null;
+    const state = location.state as { openLiveStats?: boolean; tab?: Tab } | null;
     if (state?.openLiveStats) {
-      // Clear the state so it doesn't re-trigger
       navigate('/', { replace: true, state: {} });
-      // Small delay to let the page render first
       setTimeout(() => {
         setShowQuickLiveStatsDialog(true);
       }, 300);
+    }
+    if (state?.tab) {
+      setActiveTab(state.tab);
+      navigate('/', { replace: true, state: {} });
     }
   }, [location.state, navigate]);
 

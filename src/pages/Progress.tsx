@@ -39,12 +39,13 @@ export default function Progress() {
   const handleTabChange = (tab: Tab) => {
     if (tab === 'stats') {
       navigate('/progress/overview');
-    } else if (tab === 'games') {
+    } else if (tab === 'games' || tab === 'log') {
       navigate('/log/history');
     } else if (tab === 'dashboard') {
       navigate('/');
     } else {
-      navigate('/');
+      // For coach, settings, etc. navigate to Index with tab state
+      navigate('/', { state: { tab } });
     }
   };
 
