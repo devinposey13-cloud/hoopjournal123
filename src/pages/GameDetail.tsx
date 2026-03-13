@@ -927,7 +927,7 @@ export default function GameDetail() {
               ref={photoInputRef}
               type="file"
               accept="image/jpeg,image/png,image/gif,image/webp,image/heic"
-              capture="environment"
+              
               onChange={handleGamePhotoCapture}
               className="hidden"
             />
