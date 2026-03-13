@@ -14,10 +14,9 @@ export function JournalHeader({ playerName, className }: JournalHeaderProps) {
       </div>
       
       <h1
-        className="text-4xl md:text-5xl mb-2 relative text-foreground lg:text-5xl"
-        style={{ fontFamily: "'Dancing Script', cursive" }}>TRACK YOUR GAME. IMPROVE EVERYDAY.
-
-
+        className="text-5xl md:text-6xl lg:text-7xl mb-2 relative text-foreground uppercase tracking-wide"
+        style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}>
+        TRACK YOUR GAME.<br/>IMPROVE EVERY DAY.
       </h1>
       
       {/* Decorative divider with basketball accents */}
@@ -28,9 +27,8 @@ export function JournalHeader({ playerName, className }: JournalHeaderProps) {
       </div>
       
       <p
-        className="text-lg md:text-xl text-muted-foreground"
-        style={{ fontFamily: "'Dancing Script', cursive" }}>
-        
+        className="text-xl md:text-2xl text-muted-foreground uppercase tracking-widest"
+        style={{ fontFamily: "'Teko', sans-serif", fontWeight: 400 }}>
         {playerName ? `${playerName}'s Journey` : 'My Basketball Journey'}
       </p>
     </div>);
