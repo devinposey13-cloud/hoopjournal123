@@ -219,8 +219,9 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
           Quick Actions
         </p>
-        <ScrollArea className="w-full">
-          <div className="flex gap-3 pb-2">
+        <div className="flex justify-center">
+        <ScrollArea className="w-auto">
+          <div className="flex gap-3 pb-2 justify-center">
             {actionCards.map((action, index) => (
               <motion.button
                 key={action.id}
