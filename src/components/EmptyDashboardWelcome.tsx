@@ -280,14 +280,56 @@ export function EmptyDashboardWelcome({
             </motion.div>
           )}
           <CardContent className="pt-8 pb-6 px-6 text-center">
-            {/* Coach AI Avatar */}
+            {/* Coach AI Avatar - Focal Point */}
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', delay: 0.2 }}
-              className={`w-20 h-20 rounded-full overflow-hidden mx-auto mb-6 ${playingIndex === -1 ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+              className="relative w-32 h-32 mx-auto mb-6"
             >
-              <img src={getCoachAvatarUrl(effectiveCoachGender)} alt="Coach AI" className="w-full h-full object-cover" />
+              {/* Pulsating glow rings */}
+              <motion.div
+                className="absolute inset-0 rounded-full bg-primary/20"
+                animate={{
+                  scale: [1, 1.35, 1],
+                  opacity: [0.4, 0, 0.4],
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              />
+              <motion.div
+                className="absolute inset-0 rounded-full bg-primary/15"
+                animate={{
+                  scale: [1, 1.55, 1],
+                  opacity: [0.3, 0, 0.3],
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: 0.4,
+                }}
+              />
+              <motion.div
+                className="absolute inset-0 rounded-full bg-primary/10"
+                animate={{
+                  scale: [1, 1.75, 1],
+                  opacity: [0.2, 0, 0.2],
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: 0.8,
+                }}
+              />
+              {/* Avatar circle */}
+              <div className={`relative w-32 h-32 rounded-full overflow-hidden shadow-[0_0_30px_8px_hsl(var(--primary)/0.3)] ${playingIndex === -1 ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'ring-2 ring-primary/40'}`}>
+                <img src={getCoachAvatarUrl(effectiveCoachGender)} alt="Coach AI" className="w-full h-full object-cover" />
+              </div>
             </motion.div>
 
             {/* Coach AI Header */}
