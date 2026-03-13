@@ -269,7 +269,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
         >
           <Suspense fallback={<ChatSkeleton />}>
             {activeSection === 'chat' && (
-              <div className="max-w-2xl">
+              <div className="max-w-2xl mx-auto">
                 <CoachChat 
                   games={games} 
                   seasonStats={seasonStats} 
