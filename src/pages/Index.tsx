@@ -390,12 +390,16 @@ export default function Index() {
         teamId: quickCaptureTeamId,
       };
 
-      await addGame(gameData);
+      const savedGame = await addGame(gameData);
       toast.success('Game saved successfully!');
       setShowQuickLiveCapture(false);
       setQuickCaptureOpponent('');
       setQuickCaptureScheduledGameId(undefined);
       setQuickCaptureTeamId(undefined);
+      // Navigate to the post-game report
+      if (savedGame?.id) {
+        navigate(`/game/${savedGame.id}`);
+      }
     } catch (error) {
       console.error('Error saving game:', error);
       toast.error('Failed to save game');
