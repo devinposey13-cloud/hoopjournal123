@@ -81,15 +81,15 @@ export function SeasonAveragesCard({ stats, compact = false }: SeasonAveragesCar
       
       <div className="grid grid-cols-3 gap-3 pt-3 border-t border-border">
         <div className="text-center">
-          <div className="text-lg font-semibold">{stats.fgPercentage}%</div>
+          <div className="text-lg font-semibold"><AnimatedCounter value={stats.fgPercentage} decimals={0} suffix="%" /></div>
           <div className="text-xs text-muted-foreground">FG%</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-semibold">{stats.threePtPercentage}%</div>
+          <div className="text-lg font-semibold"><AnimatedCounter value={stats.threePtPercentage} decimals={0} suffix="%" /></div>
           <div className="text-xs text-muted-foreground">3P%</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-semibold">{stats.ftPercentage}%</div>
+          <div className="text-lg font-semibold"><AnimatedCounter value={stats.ftPercentage} decimals={0} suffix="%" /></div>
           <div className="text-xs text-muted-foreground">FT%</div>
         </div>
       </div>
