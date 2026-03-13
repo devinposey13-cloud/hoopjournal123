@@ -132,11 +132,23 @@ export default function OAuthCallback() {
             <p className="text-muted-foreground text-sm">{error}</p>
             <p className="text-muted-foreground text-xs">Redirecting...</p>
           </>
+        ) : showReturnButton ? (
+          <>
+            <p className="text-foreground font-medium">Sign in complete!</p>
+            <p className="text-muted-foreground text-sm mb-4">Tap the button below to return to Hoop Journal.</p>
+            <a
+              href={deepLinkUrl || 'hoopjournal://'}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              Return to App
+            </a>
+            <p className="text-muted-foreground text-xs mt-3">If the button doesn't work, open Hoop Journal manually — you're already signed in.</p>
+          </>
         ) : redirectingToApp ? (
           <>
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
             <p className="text-muted-foreground">Opening Hoop Journal...</p>
-            <p className="text-muted-foreground text-xs">If the app doesn't open, please go back and try again.</p>
+            <p className="text-muted-foreground text-xs">If the app doesn't open, please wait...</p>
           </>
         ) : (
           <>
