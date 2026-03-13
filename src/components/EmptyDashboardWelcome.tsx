@@ -767,6 +767,13 @@ export function EmptyDashboardWelcome({
           </motion.div>
         </DialogContent>
       </Dialog>
+
+      {/* Webcam Capture Dialog */}
+      <WebcamCaptureDialog
+        open={showWebcam}
+        onOpenChange={setShowWebcam}
+        onCapture={handleWebcamCapture}
+      />
     </motion.div>
   );
 }
