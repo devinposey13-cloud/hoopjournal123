@@ -97,7 +97,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
           backgroundImage: `url(${courtLines})`,
           backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
-          opacity: 0.04, pointerEvents: 'none',
+          opacity: 0.025, pointerEvents: 'none',
           filter: 'invert(1)',
         }} />
         {/* ── Background Effects ── */}
