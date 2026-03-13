@@ -694,6 +694,7 @@ export default function Index() {
                       clips={clips}
                       onViewGame={(gameId) => navigate(`/game/${gameId}`)}
                       onViewAllGames={() => setActiveTab('games')}
+                      onDeleteGame={deleteGame}
                     />
                   </AnimatedSection>
 

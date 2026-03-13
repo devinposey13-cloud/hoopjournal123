@@ -1,13 +1,15 @@
 import { format, formatDistanceToNow } from 'date-fns';
-import { Trophy, Video, Star, TrendingUp, ChevronRight } from 'lucide-react';
+import { Trophy, Video, Star, TrendingUp, ChevronRight, Trash2 } from 'lucide-react';
 import { GameStats, VideoClip } from '@/types/basketball';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface RecentActivityProps {
   games: GameStats[];
   clips?: VideoClip[];
   onViewGame?: (gameId: string) => void;
   onViewAllGames?: () => void;
+  onDeleteGame?: (gameId: string) => void;
 }
 
 interface ActivityItem {
@@ -21,7 +23,7 @@ interface ActivityItem {
   onClick?: () => void;
 }
 
-export function RecentActivity({ games, clips = [], onViewGame, onViewAllGames }: RecentActivityProps) {
+export function RecentActivity({ games, clips = [], onViewGame, onViewAllGames, onDeleteGame }: RecentActivityProps) {
   // Build activity feed from games
   const activities: ActivityItem[] = games.slice(0, 5).map(game => ({
     id: game.id,
@@ -83,7 +85,7 @@ export function RecentActivity({ games, clips = [], onViewGame, onViewAllGames }
             <div
               key={activity.id}
               className={cn(
-                "flex items-center gap-3 p-3 rounded-lg",
+                "flex items-center gap-3 p-3 rounded-lg group",
                 "bg-card/50 border border-border/50",
                 "hover:bg-card/80 transition-colors",
                 activity.onClick && "cursor-pointer"
@@ -107,8 +109,23 @@ export function RecentActivity({ games, clips = [], onViewGame, onViewAllGames }
                 <p className="text-xs text-muted-foreground truncate">{activity.subtitle}</p>
               </div>
               
-              <div className="text-xs text-muted-foreground flex-shrink-0">
-                {timeAgo}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <span className="text-xs text-muted-foreground">
+                  {timeAgo}
+                </span>
+                {activity.type === 'game' && onDeleteGame && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteGame(activity.id);
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                )}
               </div>
             </div>
           );
