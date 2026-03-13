@@ -58,7 +58,15 @@ function QuickStatCard({ label, value, icon, trend, trendValue, delay = 0, varia
           </div>
         )}
       </div>
-      <p className="text-xl font-bold text-foreground">{value}</p>
+      <p className="text-xl font-bold text-foreground">
+        {typeof value === 'number' ? (
+          <AnimatedCounter value={value} decimals={Number.isInteger(value) ? 0 : 1} delay={delay} />
+        ) : typeof value === 'string' && value.endsWith('%') ? (
+          <><AnimatedCounter value={parseFloat(value)} decimals={0} delay={delay} suffix="%" /></>
+        ) : (
+          value
+        )}
+      </p>
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
     </motion.div>
   );

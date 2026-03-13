@@ -109,7 +109,7 @@ function StatBubble({ label, value }: { label: string; value: number }) {
 function PercentBubble({ label, value }: { label: string; value: number }) {
   return (
     <div className="bg-background/50 rounded-lg py-1.5 px-1">
-      <div className="text-sm font-semibold text-foreground">{value}%</div>
+      <div className="text-sm font-semibold text-foreground"><AnimatedCounter value={value} decimals={0} suffix="%" /></div>
       <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</div>
     </div>
   );
