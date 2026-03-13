@@ -291,8 +291,8 @@ export function EmptyDashboardWelcome({
                 </Button>
               </div>
               <h3 
-                className="text-2xl text-foreground"
-                style={{ fontFamily: "'Dancing Script', cursive" }}
+                className="text-3xl text-foreground uppercase tracking-wide"
+                style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}
               >
                 Hey {playerName}!
               </h3>
@@ -677,8 +677,8 @@ export function EmptyDashboardWelcome({
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.6 }}
         transition={{ delay: 0.8 }}
-        className="text-sm text-muted-foreground mt-6 text-center"
-        style={{ fontFamily: "'Dancing Script', cursive" }}
+        className="text-base text-muted-foreground mt-6 text-center uppercase tracking-wide"
+        style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}
       >
         "Every expert was once a beginner."
       </motion.p>

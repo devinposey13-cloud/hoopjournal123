@@ -43,8 +43,8 @@ export function CompletionCard({ playerName, onStartGame, onPregameTalk, onExplo
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.5 }}
-        className="text-2xl md:text-3xl mb-2 text-foreground"
-        style={{ fontFamily: "'Dancing Script', cursive" }}
+        className="text-3xl md:text-4xl mb-2 text-foreground uppercase tracking-wide"
+        style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}
       >
         You're ready to start your season
       </motion.h2>

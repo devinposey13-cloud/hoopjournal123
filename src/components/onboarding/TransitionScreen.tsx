@@ -65,8 +65,8 @@ export function TransitionScreen({ playerName, onComplete }: TransitionScreenPro
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.5 }}
-        className="text-2xl md:text-3xl text-center mb-2 text-foreground"
-        style={{ fontFamily: "'Dancing Script', cursive" }}
+        className="text-3xl md:text-4xl text-center mb-2 text-foreground uppercase tracking-wide"
+        style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}
       >
         Profile created, {playerName}.
       </motion.h2>

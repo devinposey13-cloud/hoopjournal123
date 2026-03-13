@@ -25,8 +25,8 @@ export function FamilyCard({ value, onNext }: FamilyCardProps) {
       className="flex flex-col items-center text-center px-6"
     >
       <h2 
-        className="text-3xl md:text-4xl mb-4 text-foreground"
-        style={{ fontFamily: "'Dancing Script', cursive" }}
+        className="text-4xl md:text-5xl mb-4 text-foreground uppercase tracking-wide"
+        style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}
       >
         Share this journey with family?
       </h2>
