@@ -13,10 +13,11 @@ export function JournalHeader({ playerName, className }: JournalHeaderProps) {
         <span className="text-6xl md:text-7xl">🏀</span>
       </div>
       
-      <h1 
-        className="text-4xl md:text-5xl lg:text-6xl mb-2 relative text-foreground font-extrabold uppercase tracking-tight"
-      >
-        Start Your Hoop Journal
+      <h1
+        className="text-4xl md:text-5xl mb-2 relative text-foreground lg:text-5xl"
+        style={{ fontFamily: "'Dancing Script', cursive" }}>TRACK YOUR GAME. IMPROVE EVERYDAY.
+
+
       </h1>
       
       {/* Decorative divider with basketball accents */}
@@ -26,11 +27,12 @@ export function JournalHeader({ playerName, className }: JournalHeaderProps) {
         <div className="w-8 h-0.5 bg-primary/30" />
       </div>
       
-      <p 
-        className="text-lg md:text-xl text-muted-foreground font-semibold tracking-wide"
-      >
+      <p
+        className="text-lg md:text-xl text-muted-foreground"
+        style={{ fontFamily: "'Dancing Script', cursive" }}>
+        
         {playerName ? `${playerName}'s Journey` : 'My Basketball Journey'}
       </p>
-    </div>
-  );
+    </div>);
+
 }
