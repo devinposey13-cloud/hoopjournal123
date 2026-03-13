@@ -257,24 +257,20 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               justifyContent: 'center',
             }}>
               {[
-                { label: 'FG%', made: game.fgMade, att: game.fgAttempted },
-                { label: '3PT%', made: game.threePtMade, att: game.threePtAttempted },
-                { label: 'FT%', made: game.ftMade, att: game.ftAttempted },
-              ].map((sh) => {
-                const pct = sh.att > 0 ? Math.round((sh.made / sh.att) * 100) : 0;
-                return (
-                  <div key={sh.label} style={{
-                    flex: 1, background: 'rgba(15,23,42,0.5)',
-                    border: '1px solid rgba(100,116,139,0.1)',
-                    borderRadius: 12, padding: '14px 12px',
-                    textAlign: 'center',
-                  }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: s.sub, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 2 }}>{sh.label}</div>
-                    <div style={{ fontSize: 36, fontWeight: 900, color: s.bright, lineHeight: 1 }}>{pct}%</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: s.dim, marginTop: 4 }}>{sh.made}/{sh.att}</div>
-                  </div>
-                );
-              })}
+                { label: 'FG', made: game.fgMade, att: game.fgAttempted },
+                { label: '3PT', made: game.threePtMade, att: game.threePtAttempted },
+                { label: 'FT', made: game.ftMade, att: game.ftAttempted },
+              ].map((sh) => (
+                <div key={sh.label} style={{
+                  flex: 1, background: 'rgba(15,23,42,0.5)',
+                  border: '1px solid rgba(100,116,139,0.1)',
+                  borderRadius: 12, padding: '14px 12px',
+                  textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: s.sub, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 2 }}>{sh.label}</div>
+                  <div style={{ fontSize: 36, fontWeight: 900, color: s.bright, lineHeight: 1 }}>{sh.made}/{sh.att}</div>
+                </div>
+              ))}
             </div>
           </div>
 
