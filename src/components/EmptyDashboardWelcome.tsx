@@ -29,6 +29,7 @@ interface EmptyDashboardWelcomeProps {
   avatarUrl?: string;
   hasSkippedAvatar?: boolean;
   isFirstTimeAfterOnboarding?: boolean;
+  coachVoiceGender?: 'male' | 'female';
   onLogFirstGame: () => void;
   onPregameTalk: () => void;
   onUploadPhoto: () => void;
