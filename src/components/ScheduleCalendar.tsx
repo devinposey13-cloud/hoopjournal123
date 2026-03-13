@@ -11,7 +11,7 @@ import { ChevronLeft, ChevronRight, Home, Plane, ChevronRight as ViewIcon, Plus,
 import { QuickAddScheduleDialog } from './QuickAddScheduleDialog';
 import { EditScheduleDialog } from './EditScheduleDialog';
 import { ImportScheduleDialog } from './ImportScheduleDialog';
-import { Sparkles } from 'lucide-react';
+
 
 interface ScheduleCalendarProps {
   games: ScheduledGame[];
