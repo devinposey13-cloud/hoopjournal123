@@ -12,6 +12,8 @@ import { GoalsCard } from './onboarding/GoalsCard';
 import { PricingPreviewCard } from './onboarding/PricingPreviewCard';
 import { track, type PlanId, type BillingCycle } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { isNativeApp } from '@/lib/platform';
 import { toast } from 'sonner';
 
 export interface OnboardingData {
