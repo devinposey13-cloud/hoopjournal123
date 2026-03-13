@@ -18,24 +18,24 @@ import {
   logOAuthError,
   logOAuthSuccess,
   parseOAuthError,
-  formatErrorWithCode,
-} from '@/utils/oauthErrors';
+  formatErrorWithCode } from
+'@/utils/oauthErrors';
 
 // Normalize phone number to E.164 format (+1XXXXXXXXXX)
 const normalizePhoneNumber = (phone: string): string => {
   // Remove all non-digit characters
   const digits = phone.replace(/\D/g, '');
-  
+
   // If it starts with 1 and has 11 digits, add +
   if (digits.length === 11 && digits.startsWith('1')) {
     return `+${digits}`;
   }
-  
+
   // If it has 10 digits, assume US and add +1
   if (digits.length === 10) {
     return `+1${digits}`;
   }
-  
+
   // Return as-is with + prefix if it doesn't match expected formats
   return digits.startsWith('+') ? digits : `+${digits}`;
 };
@@ -43,7 +43,7 @@ const normalizePhoneNumber = (phone: string): string => {
 // Validate phone number format
 const isValidPhoneNumber = (phone: string): boolean => {
   const digits = phone.replace(/\D/g, '');
-  return digits.length === 10 || (digits.length === 11 && digits.startsWith('1'));
+  return digits.length === 10 || digits.length === 11 && digits.startsWith('1');
 };
 
 export function AuthForm() {
@@ -72,7 +72,7 @@ export function AuthForm() {
     if ('caches' in window) {
       try {
         const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        await Promise.all(cacheNames.map((name) => caches.delete(name)));
         console.log('[OAuth] Cleared all service worker caches');
       } catch (e) {
         console.warn('[OAuth] Failed to clear caches:', e);
@@ -83,23 +83,23 @@ export function AuthForm() {
   // Detect if running on a custom domain (not lovable infrastructure)
   // Also treat native Capacitor apps as "custom domain" since their origin
   // (capacitor://localhost) can't receive OAuth redirects
-  const isCustomDomain = 
-    isNativeApp() ||
-    (!window.location.hostname.includes('lovable.app') && 
-    !window.location.hostname.includes('lovableproject.com') &&
-    window.location.hostname !== 'localhost');
+  const isCustomDomain =
+  isNativeApp() ||
+  !window.location.hostname.includes('lovable.app') &&
+  !window.location.hostname.includes('lovableproject.com') &&
+  window.location.hostname !== 'localhost';
 
   const LOVABLE_APP_ORIGIN = 'https://hoopjournal123.lovable.app';
 
   const handleCustomDomainOAuth = async (provider: 'google' | 'apple') => {
     // Best-effort SW cache clear (non-blocking on failure)
-    try { await clearServiceWorkerCaches(); } catch (_) {}
-    
+    try {await clearServiceWorkerCaches();} catch (_) {}
+
     const native = isNativeApp();
     const callbackOrigin = native ? LOVABLE_APP_ORIGIN : window.location.origin;
     const redirectUri = `${callbackOrigin}/auth/callback`;
     const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}`;
-    
+
     console.log(`[OAuth] ===== ${provider.toUpperCase()} OAUTH DEBUG =====`);
     console.log(`[OAuth] isNativeApp(): ${native}`);
     console.log(`[OAuth] isCustomDomain: ${isCustomDomain}`);
@@ -107,16 +107,16 @@ export function AuthForm() {
     console.log(`[OAuth] redirect_uri: ${redirectUri}`);
     console.log(`[OAuth] brokerUrl: ${brokerUrl}`);
     console.log(`[OAuth] Code path: ${native ? 'NATIVE (system browser)' : 'WEB (window.location redirect)'}`);
-    
+
     await openOAuthInSystemBrowser(brokerUrl);
   };
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     const redirectUri = isNativeApp() ? LOVABLE_APP_ORIGIN : window.location.origin;
-    
+
     logOAuthInit('google', redirectUri);
-    
+
     try {
       // Native iOS/Android: use native Google Sign-In SDK to avoid disallowed_useragent
       if (isNativeApp()) {
@@ -138,15 +138,15 @@ export function AuthForm() {
 
       // Clear SW caches to prevent OAuth redirect interception on mobile
       await clearServiceWorkerCaches();
-      
+
       const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${redirectUri}/auth/callback`,
+        redirect_uri: `${redirectUri}/auth/callback`
       });
-      
+
       if (error) {
         throw error;
       }
-      
+
       logOAuthSuccess('google');
     } catch (error: unknown) {
       const parsedError = parseOAuthError(error);
@@ -159,9 +159,9 @@ export function AuthForm() {
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
     const redirectUri = isNativeApp() ? LOVABLE_APP_ORIGIN : window.location.origin;
-    
+
     logOAuthInit('apple', redirectUri);
-    
+
     try {
       if (isCustomDomain) {
         try {
@@ -174,15 +174,15 @@ export function AuthForm() {
 
       // Clear SW caches to prevent OAuth redirect interception on mobile
       await clearServiceWorkerCaches();
-      
+
       const { error } = await lovable.auth.signInWithOAuth("apple", {
-        redirect_uri: `${redirectUri}/auth/callback`,
+        redirect_uri: `${redirectUri}/auth/callback`
       });
-      
+
       if (error) {
         throw error;
       }
-      
+
       logOAuthSuccess('apple');
     } catch (error: unknown) {
       const parsedError = parseOAuthError(error);
@@ -195,7 +195,7 @@ export function AuthForm() {
   const validateUsername = (value: string) => {
     const cleaned = value.toLowerCase().replace(/[^a-z0-9]/g, '');
     setUsername(cleaned);
-    
+
     if (cleaned.length < 3) {
       setUsernameError('Username must be at least 3 characters');
     } else if (cleaned.length > 20) {
@@ -206,11 +206,11 @@ export function AuthForm() {
   };
 
   const checkUsernameAvailable = async (usernameToCheck: string): Promise<boolean> => {
-    const { data } = await (supabase as any)
-      .from('player_settings')
-      .select('username')
-      .eq('username', usernameToCheck)
-      .maybeSingle();
+    const { data } = await (supabase as any).
+    from('player_settings').
+    select('username').
+    eq('username', usernameToCheck).
+    maybeSingle();
     return !data;
   };
 
@@ -235,7 +235,7 @@ export function AuthForm() {
         if (username.length < 3) {
           throw new Error('Username must be at least 3 characters');
         }
-        
+
         // Check if username is available
         const isAvailable = await checkUsernameAvailable(username);
         if (!isAvailable) {
@@ -244,7 +244,7 @@ export function AuthForm() {
 
         const { error, data } = await signUp({ identifier, password, method: authMethod });
         if (error) throw error;
-        
+
         // Create player settings with username and phone if applicable
         // Note: is_approved defaults to false, requiring admin approval
         if (data.user) {
@@ -257,32 +257,32 @@ export function AuthForm() {
             number: 0,
             height: "5'8\"",
             grade: '1st Grade',
-            is_approved: false, // Require admin approval
+            is_approved: false // Require admin approval
           };
-          
+
           // Store phone number in player_settings if using phone auth
           if (authMethod === 'phone') {
             settingsData.phone = normalizePhoneNumber(phone);
           }
 
-          const { error: settingsError } = await supabase
-            .from('player_settings')
-            .insert(settingsData);
-          
+          const { error: settingsError } = await supabase.
+          from('player_settings').
+          insert(settingsData);
+
           if (settingsError) {
             console.error('Error creating profile:', settingsError);
           }
 
           // Create approval request for admin visibility
-          const { error: approvalError } = await supabase
-            .from('account_approval_requests')
-            .insert({
-              user_id: data.user.id,
-              email: authMethod === 'email' ? identifier : null,
-              username: username.toLowerCase(),
-              status: 'pending',
-            });
-          
+          const { error: approvalError } = await supabase.
+          from('account_approval_requests').
+          insert({
+            user_id: data.user.id,
+            email: authMethod === 'email' ? identifier : null,
+            username: username.toLowerCase(),
+            status: 'pending'
+          });
+
           if (approvalError) {
             console.error('Error creating approval request:', approvalError);
           }
@@ -292,15 +292,15 @@ export function AuthForm() {
             await supabase.functions.invoke('notify-admin-signup', {
               body: {
                 username: username.toLowerCase(),
-                email: authMethod === 'email' ? identifier : null,
-              },
+                email: authMethod === 'email' ? identifier : null
+              }
             });
           } catch (notifyError) {
             // Don't block signup if notification fails
             console.error('Error sending admin notification:', notifyError);
           }
         }
-        
+
         toast.success('Account created! Awaiting admin approval.');
       }
     } catch (error: any) {
@@ -319,11 +319,11 @@ export function AuthForm() {
             <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-4 shadow-glow">
               <img src={hoopJournalLogo} alt="Hoop Journal" className="w-full h-full object-cover" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Hoop Journal</h1>
-            <p 
-              className="text-muted-foreground mt-1"
-              style={{ fontFamily: "'Dancing Script', cursive" }}
-            >
+            <h1 className="font-bold text-foreground text-4xl">Hoop Journal</h1>
+            <p
+              className="text-muted-foreground mt-1 text-xl"
+              style={{ fontFamily: "'Dancing Script', cursive" }}>
+              
               {isLogin ? 'Track Your Game. Improve Every Day.' : 'Create your account'}
             </p>
           </div>
@@ -345,8 +345,8 @@ export function AuthForm() {
               </TabsList>
             </Tabs>
 
-            {!isLogin && (
-              <div className="space-y-2">
+            {!isLogin &&
+            <div className="space-y-2">
                 <Label htmlFor="username">
                   Username
                   <span className="text-muted-foreground text-xs ml-1">(your public profile URL)</span>
@@ -354,55 +354,55 @@ export function AuthForm() {
                 <div className="relative">
                   <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    id="username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => validateUsername(e.target.value)}
-                    placeholder="username"
-                    className="pl-9"
-                    required={!isLogin}
-                    maxLength={20}
-                  />
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => validateUsername(e.target.value)}
+                  placeholder="username"
+                  className="pl-9"
+                  required={!isLogin}
+                  maxLength={20} />
+                
                 </div>
-                {usernameError && (
-                  <p className="text-xs text-destructive">{usernameError}</p>
-                )}
-                {username.length >= 3 && !usernameError && (
-                  <p className="text-xs text-muted-foreground">
+                {usernameError &&
+              <p className="text-xs text-destructive">{usernameError}</p>
+              }
+                {username.length >= 3 && !usernameError &&
+              <p className="text-xs text-muted-foreground">
                     Your profile: hoopjournal.me/{username}
                   </p>
-                )}
+              }
               </div>
-            )}
+            }
 
-            {authMethod === 'email' ? (
-              <div className="space-y-2">
+            {authMethod === 'email' ?
+            <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required={authMethod === 'email'}
-                />
-              </div>
-            ) : (
-              <div className="space-y-2">
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required={authMethod === 'email'} />
+              
+              </div> :
+
+            <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="(555) 123-4567"
-                  required={authMethod === 'phone'}
-                />
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(555) 123-4567"
+                required={authMethod === 'phone'} />
+              
                 <p className="text-xs text-muted-foreground">
                   Enter your 10-digit US phone number
                 </p>
               </div>
-            )}
+            }
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -413,22 +413,22 @@ export function AuthForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                minLength={6}
-              />
+                minLength={6} />
+              
             </div>
 
             <Button
               type="submit"
               disabled={loading}
-              className="w-full gradient-primary font-semibold"
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : isLogin ? (
-                <LogIn className="w-4 h-4 mr-2" />
-              ) : (
-                <UserPlus className="w-4 h-4 mr-2" />
-              )}
+              className="w-full gradient-primary font-semibold">
+              
+              {loading ?
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
+              isLogin ?
+              <LogIn className="w-4 h-4 mr-2" /> :
+
+              <UserPlus className="w-4 h-4 mr-2" />
+              }
               {isLogin ? 'Sign In' : 'Create Account'}
             </Button>
           </form>
@@ -448,30 +448,30 @@ export function AuthForm() {
               variant="outline"
               onClick={handleGoogleSignIn}
               disabled={googleLoading}
-              className="w-full"
-            >
-              {googleLoading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+              className="w-full">
+              
+              {googleLoading ?
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
+
+              <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                   <path
-                    fill="currentColor"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
+                  fill="currentColor"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                
                   <path
-                    fill="currentColor"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
+                  fill="currentColor"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                
                   <path
-                    fill="currentColor"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
+                  fill="currentColor"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                
                   <path
-                    fill="currentColor"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
+                  fill="currentColor"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                
                 </svg>
-              )}
+              }
               Continue with Google
             </Button>
 
@@ -480,49 +480,49 @@ export function AuthForm() {
               variant="outline"
               onClick={handleAppleSignIn}
               disabled={appleLoading}
-              className="w-full"
-            >
-              {appleLoading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+              className="w-full">
+              
+              {appleLoading ?
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
+
+              <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
                 </svg>
-              )}
+              }
               Continue with Apple
             </Button>
           </div>
 
           {/* Forgot Password - only show on login */}
-          {isLogin && (
-            <div className="mt-4 text-center">
+          {isLogin &&
+          <div className="mt-4 text-center">
               <ForgotPasswordDialog
-                trigger={
-                  <button
-                    type="button"
-                    className="text-sm text-primary hover:text-primary/80 transition-colors"
-                  >
+              trigger={
+              <button
+                type="button"
+                className="text-sm text-primary hover:text-primary/80 transition-colors">
+                
                     Forgot your password?
                   </button>
-                }
-              />
+              } />
+            
             </div>
-          )}
+          }
 
           {/* Toggle */}
           <div className="mt-4 text-center">
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              {isLogin
-                ? "Don't have an account? Sign up"
-                : 'Already have an account? Sign in'}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors">
+              
+              {isLogin ?
+              "Don't have an account? Sign up" :
+              'Already have an account? Sign in'}
             </button>
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
