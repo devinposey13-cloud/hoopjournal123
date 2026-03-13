@@ -291,8 +291,8 @@ export function EmptyDashboardWelcome({
                 </Button>
               </div>
               <h3 
-                className="text-2xl text-foreground"
-                style={{ fontFamily: "'Dancing Script', cursive" }}
+                className="text-3xl text-foreground uppercase tracking-wide"
+                style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}
               >
                 Hey {playerName}!
               </h3>
