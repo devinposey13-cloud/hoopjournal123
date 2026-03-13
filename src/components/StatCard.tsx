@@ -1,5 +1,6 @@
 import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 
 interface StatCardProps {
   label: string;
@@ -30,7 +31,11 @@ export function StatCard({ label, value, icon: Icon, trend, suffix, className }:
           </p>
           <div className="flex items-baseline gap-1">
             <span className="text-2xl font-bold text-foreground transition-transform duration-300">
-              {value}
+              {typeof value === 'number' ? (
+                <AnimatedCounter value={value} decimals={Number.isInteger(value) ? 0 : 1} />
+              ) : (
+                value
+              )}
             </span>
             {suffix && (
               <span className="text-sm text-muted-foreground">{suffix}</span>

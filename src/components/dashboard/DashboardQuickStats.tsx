@@ -1,6 +1,7 @@
 import { TrendingUp, TrendingDown, Minus, Target, Percent, Flame, Star } from 'lucide-react';
 import { GameStats, SeasonStats } from '@/types/basketball';
 import { cn } from '@/lib/utils';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 
 interface DashboardQuickStatsProps {
   games: GameStats[];
@@ -53,7 +54,15 @@ function QuickStatCard({ label, value, icon: Icon, trend, accent }: QuickStatCar
         )} />
         {trend && <TrendIcon trend={trend} />}
       </div>
-      <p className="text-xl font-bold tabular-nums">{value}</p>
+      <p className="text-xl font-bold tabular-nums">
+        {typeof value === 'number' ? (
+          <AnimatedCounter value={value} decimals={Number.isInteger(value) ? 0 : 1} />
+        ) : typeof value === 'string' && value.endsWith('%') ? (
+          <AnimatedCounter value={parseFloat(value)} decimals={0} suffix="%" />
+        ) : (
+          value
+        )}
+      </p>
       <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );
