@@ -655,14 +655,24 @@ export function EmptyDashboardWelcome({
                       <Sparkles className="w-4 h-4 mr-2" />
                       Generate AI Avatar
                     </Button>
-                    <Button
-                      onClick={() => fileInputRef.current?.click()}
-                      variant="ghost"
-                      className="w-full h-10 text-muted-foreground"
-                    >
-                      <Camera className="w-4 h-4 mr-2" />
-                      Change photo
-                    </Button>
+                    <div className="flex gap-2 w-full">
+                      <Button
+                        onClick={() => setShowWebcam(true)}
+                        variant="outline"
+                        className="flex-1 h-10 text-muted-foreground"
+                      >
+                        <Camera className="w-4 h-4 mr-1" />
+                        Take Photo
+                      </Button>
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        variant="outline"
+                        className="flex-1 h-10 text-muted-foreground"
+                      >
+                        <ImageIcon className="w-4 h-4 mr-1" />
+                        Upload
+                      </Button>
+                    </div>
                   </>
                 ) : (
                   <>
