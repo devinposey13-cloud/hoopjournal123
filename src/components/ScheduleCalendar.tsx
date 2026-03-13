@@ -267,23 +267,29 @@ export function ScheduleCalendar({ games, playedGames = [], onSelectGame, onAddG
         </div>
       )}
       
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-6 pt-4 border-t border-border mt-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
-          <span>Home</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-          <span>Away</span>
-        </div>
-        {onAddGame && (
+      {/* Legend & AI Import */}
+      <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
+        <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-              <Plus className="w-3 h-3 text-primary-foreground" />
-            </div>
-            <span>Hover to add</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+            <span>Home</span>
           </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+            <span>Away</span>
+          </div>
+        </div>
+        {onBulkAddGames && (
+          <AIScheduleImportDialog
+            onImport={onBulkAddGames}
+            existingGames={games}
+            trigger={
+              <Button variant="ghost" size="sm" className="gap-1.5 text-xs">
+                <Sparkles className="w-3.5 h-3.5" />
+                AI Import
+              </Button>
+            }
+          />
         )}
       </div>
 
