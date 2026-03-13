@@ -786,10 +786,10 @@ export async function exportGameBoxScorePdf(
     doc.text(splitText, 14, 40);
   }
 
-  // Save the PDF
+  // Save or share the PDF
   const fileName = `${profile.team.replace(/\s+/g, '_')}_vs_${game.opponent.replace(/\s+/g, '_')}_${format(
     new Date(game.date),
     'yyyy-MM-dd'
   )}_BoxScore.pdf`;
-  doc.save(fileName);
+  await saveOrSharePdf(doc, fileName);
 }
