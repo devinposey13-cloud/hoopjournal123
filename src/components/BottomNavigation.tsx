@@ -23,7 +23,7 @@ interface BottomNavigationProps {
 const primaryTabs = [
   { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard, route: '/' },
   { id: 'log' as Tab, label: 'Log', icon: ClipboardPlus, route: '/log/history' },
-  { id: 'progress' as Tab, label: 'Progress', icon: TrendingUp, route: '/progress/overview' },
+  { id: 'progress' as Tab, label: 'Progress', icon: null, route: '/progress/overview', customImage: navLogo },
   { id: 'coach' as Tab, label: 'Coach', icon: MessageCircle },
 ];
 
