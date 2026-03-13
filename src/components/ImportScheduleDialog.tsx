@@ -305,7 +305,7 @@ export function ImportScheduleDialog({ onImport, isMobile, existingGames = [] }:
           {isMobile && <span className="sr-only">Import Schedule</span>}
         </Button>
       </DialogTrigger>
-      <DialogContent className={cn("sm:max-w-lg", isMobileDevice && "max-h-[90vh]")}>
+      <DialogContent className={cn("sm:max-w-lg overflow-hidden flex flex-col", isMobileDevice && "max-h-[90vh]")}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
