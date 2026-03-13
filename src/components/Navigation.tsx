@@ -265,8 +265,10 @@ export function Navigation({
             </DropdownMenu>
           </div>
 
-          {/* Empty div for layout balance (season selector moved to More menu) */}
-          <div className="w-10" />
+          </div>
+
+          {/* Spacer for balance */}
+          <div className="w-48" />
         </div>
       </div>
 
