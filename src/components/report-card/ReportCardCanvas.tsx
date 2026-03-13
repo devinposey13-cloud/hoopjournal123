@@ -191,9 +191,9 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 14,
-              fontSize: 22, fontWeight: 700,
+              fontSize: 36, fontWeight: 700,
             }}>
-              <span style={{ color: '#cbd5e1' }}>vs {game.opponent}</span>
+              <span style={{ color: '#cbd5e1', fontSize: 42, fontWeight: 900, letterSpacing: '0.04em', textTransform: 'uppercase' }}>vs {game.opponent}</span>
               <span style={{
                 color: game.isWin ? '#4ade80' : '#f87171',
                 fontWeight: 800, fontSize: 18,
