@@ -448,8 +448,8 @@ export function CoachChat({ games, seasonStats, profile, prefillPrompt, onPrefil
       <ScrollArea className="flex-1 py-4" ref={scrollRef}>
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-4">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Sparkles className="w-8 h-8 text-primary" />
+            <div className="w-16 h-16 rounded-full overflow-hidden mb-4">
+              <img src={getCoachAvatarUrl(profile.coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
             </div>
             <h4 className="font-semibold mb-2">Ask Coach AI</h4>
             <p className="text-sm text-muted-foreground mb-6 max-w-sm">
