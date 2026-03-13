@@ -322,7 +322,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           {/* ═══ ZONE 5: Achievements + XP ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginTop: isPost ? 16 : 24, gap: 14,
+            marginTop: isPost ? 10 : 24, gap: isPost ? 8 : 14,
           }}>
             {careerHighsInGame.length > 0 && (
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
