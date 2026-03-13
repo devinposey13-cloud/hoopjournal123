@@ -16,8 +16,8 @@ const REVENUECAT_IOS_API_KEY = 'appl_trLLQaYmhqUNbauTXJrRmKaqlKj';
 
 // Map RevenueCat product identifiers → internal plan IDs
 export const RC_PRODUCT_TO_PLAN: Record<string, PlanId> = {
-  hj_starter_monthly: 'starter',
-  hj_starter_yearly: 'starter',
+  hj_starter_monthly: 'pro',
+  hj_starter_yearly: 'pro',
   hj_pro_monthly: 'pro',
   hj_pro_yearly: 'pro',
   hj_elite_monthly: 'elite',
