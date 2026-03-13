@@ -100,7 +100,7 @@ export function SeasonAveragesCard({ stats, compact = false }: SeasonAveragesCar
 function StatBubble({ label, value }: { label: string; value: number }) {
   return (
     <div className="bg-background/50 rounded-lg py-2 px-1">
-      <div className="text-lg font-bold text-foreground">{value}</div>
+      <div className="text-lg font-bold text-foreground"><AnimatedCounter value={value} decimals={1} /></div>
       <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</div>
     </div>
   );
