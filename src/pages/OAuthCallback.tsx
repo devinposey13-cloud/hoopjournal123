@@ -60,21 +60,23 @@ export default function OAuthCallback() {
           const deepLink = `${NATIVE_URL_SCHEME}://auth/callback?access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`;
           window.location.href = deepLink;
           
-          // Fallback: if deep link doesn't work (app not installed), set session here
+          // Fallback: if deep link doesn't work, show a manual button
           setTimeout(async () => {
-            console.log('[OAuthCallback] Deep link fallback - setting session on web');
+            console.log('[OAuthCallback] Deep link may have failed - showing manual return button');
+            // Pre-set the session on web so the button works
             try {
               await supabase.auth.setSession({
                 access_token: accessToken,
                 refresh_token: refreshToken,
               });
-              setRedirectingToApp(false);
-              navigate('/', { replace: true });
+              console.log('[OAuthCallback] Session set on web as fallback');
             } catch (e: unknown) {
-              const msg = e instanceof Error ? e.message : 'Unknown error';
-              setError(msg);
+              console.error('[OAuthCallback] Fallback session error:', e);
             }
-          }, 2000);
+            setRedirectingToApp(false);
+            setShowReturnButton(true);
+            setDeepLinkUrl(deepLink);
+          }, 2500);
           return;
         }
         
