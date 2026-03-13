@@ -1,13 +1,15 @@
 import { format, formatDistanceToNow } from 'date-fns';
-import { Trophy, Video, Star, TrendingUp, ChevronRight } from 'lucide-react';
+import { Trophy, Video, Star, TrendingUp, ChevronRight, Trash2 } from 'lucide-react';
 import { GameStats, VideoClip } from '@/types/basketball';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface RecentActivityProps {
   games: GameStats[];
   clips?: VideoClip[];
   onViewGame?: (gameId: string) => void;
   onViewAllGames?: () => void;
+  onDeleteGame?: (gameId: string) => void;
 }
 
 interface ActivityItem {
