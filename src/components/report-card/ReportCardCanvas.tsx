@@ -5,6 +5,7 @@ import { getGameGradeData } from '@/utils/gameGrading';
 import { calculateCareerHighs } from '@/utils/statsCalculations';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 import hoopJournalQr from '@/assets/hoop-journal-qr.png';
+import courtLines from '@/assets/basketball-court-lines.jpg';
 
 export type ExportFormat = 'story' | 'post';
 
