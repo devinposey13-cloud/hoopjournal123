@@ -763,6 +763,7 @@ export function LogSection({
               <p className="text-xs text-muted-foreground">Your game schedule and game days.</p>
             </div>
             <div className="flex gap-2">
+              <AIScheduleImportDialog onImport={bulkImportScheduledGames} existingGames={schedule} />
               <ImportScheduleDialog onImport={bulkImportScheduledGames} isMobile={isMobile} />
               <AddScheduleDialog onAddGame={addScheduledGame} onBulkAddGames={bulkImportScheduledGames} isMobile={isMobile} />
             </div>

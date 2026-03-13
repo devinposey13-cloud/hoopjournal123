@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, Home, Plane, ChevronRight as ViewIcon, Plus, Pencil, Trophy, Users } from 'lucide-react';
 import { QuickAddScheduleDialog } from './QuickAddScheduleDialog';
 import { EditScheduleDialog } from './EditScheduleDialog';
+import { AIScheduleImportDialog } from './AIScheduleImportDialog';
+import { Sparkles } from 'lucide-react';
 
 interface ScheduleCalendarProps {
   games: ScheduledGame[];
