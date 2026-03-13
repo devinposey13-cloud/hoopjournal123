@@ -321,7 +321,7 @@ export function AuthForm() {
             </div>
             <h1 className="font-bold text-foreground text-4xl">Hoop Journal</h1>
             <p
-              className="text-muted-foreground mt-1 text-xl"
+              className="text-muted-foreground mt-1 text-xl font-serif"
               style={{ fontFamily: "'Dancing Script', cursive" }}>
               
               {isLogin ? 'Track Your Game. Improve Every Day.' : 'Create your account'}
