@@ -276,12 +276,12 @@ export async function exportSeasonStatsPdf(
     });
   }
 
-  // Save the PDF
+  // Save or share the PDF
   const fileName = `${profile.name.replace(/\s+/g, '_')}_Season_Stats_${format(
     new Date(),
     'yyyy-MM-dd'
   )}.pdf`;
-  doc.save(fileName);
+  await saveOrSharePdf(doc, fileName);
 }
 
 interface EarnedMilestoneForPdf {
