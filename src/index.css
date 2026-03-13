@@ -253,3 +253,14 @@
     display: none;
   }
 }
+
+/* Global background watermark logo */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: url('/hoop-journal-logo.png') center center / 60% no-repeat;
+  opacity: 0.04;
+}
