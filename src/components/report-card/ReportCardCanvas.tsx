@@ -233,18 +233,18 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               background: `linear-gradient(90deg, transparent, ${color}30, transparent)`,
             }} />
             <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 16, width: '100%',
+              display: 'flex', flexDirection: 'column',
+              gap: 12, width: '100%',
             }}>
               {stats.map((st) => (
                 <div key={st.label} style={{
                   background: 'rgba(15,23,42,0.8)',
                   border: '1px solid rgba(100,116,139,0.12)',
-                  borderRadius: 20, padding: '28px 8px 22px',
-                  textAlign: 'center',
+                  borderRadius: 16, padding: '16px 32px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 }}>
-                  <div style={{ fontSize: 68, fontWeight: 900, color: s.bright, lineHeight: 1 }}>{st.value}</div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: s.muted, letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 8 }}>{st.label}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: s.muted, letterSpacing: '0.25em', textTransform: 'uppercase' }}>{st.label}</div>
+                  <div style={{ fontSize: 52, fontWeight: 900, color: s.bright, lineHeight: 1 }}>{st.value}</div>
                 </div>
               ))}
             </div>
