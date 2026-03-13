@@ -7,7 +7,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 // Replace this with your actual iOS OAuth Client ID from Google Cloud Console
-export const GOOGLE_IOS_CLIENT_ID = 'REPLACE_WITH_YOUR_IOS_CLIENT_ID.apps.googleusercontent.com';
+export const GOOGLE_IOS_CLIENT_ID = '900798356514-at6uk29gq1roamu4gasqh839qq75u6ct.apps.googleusercontent.com';
 
 /** Initialize the Google Auth plugin. Call once on app startup when native. */
 export async function initNativeGoogleAuth(): Promise<void> {
