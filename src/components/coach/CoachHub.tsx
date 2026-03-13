@@ -255,6 +255,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
+        </div>
       </div>
 
       {/* Main Content Area */}
