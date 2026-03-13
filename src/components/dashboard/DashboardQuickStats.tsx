@@ -1,6 +1,7 @@
 import { TrendingUp, TrendingDown, Minus, Target, Percent, Flame, Star } from 'lucide-react';
 import { GameStats, SeasonStats } from '@/types/basketball';
 import { cn } from '@/lib/utils';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 
 interface DashboardQuickStatsProps {
   games: GameStats[];
