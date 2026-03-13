@@ -19,6 +19,8 @@ export default function OAuthCallback() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [redirectingToApp, setRedirectingToApp] = useState(false);
+  const [showReturnButton, setShowReturnButton] = useState(false);
+  const [deepLinkUrl, setDeepLinkUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -60,21 +62,23 @@ export default function OAuthCallback() {
           const deepLink = `${NATIVE_URL_SCHEME}://auth/callback?access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`;
           window.location.href = deepLink;
           
-          // Fallback: if deep link doesn't work (app not installed), set session here
+          // Fallback: if deep link doesn't work, show a manual button
           setTimeout(async () => {
-            console.log('[OAuthCallback] Deep link fallback - setting session on web');
+            console.log('[OAuthCallback] Deep link may have failed - showing manual return button');
+            // Pre-set the session on web so the button works
             try {
               await supabase.auth.setSession({
                 access_token: accessToken,
                 refresh_token: refreshToken,
               });
-              setRedirectingToApp(false);
-              navigate('/', { replace: true });
+              console.log('[OAuthCallback] Session set on web as fallback');
             } catch (e: unknown) {
-              const msg = e instanceof Error ? e.message : 'Unknown error';
-              setError(msg);
+              console.error('[OAuthCallback] Fallback session error:', e);
             }
-          }, 2000);
+            setRedirectingToApp(false);
+            setShowReturnButton(true);
+            setDeepLinkUrl(deepLink);
+          }, 2500);
           return;
         }
         
@@ -128,11 +132,23 @@ export default function OAuthCallback() {
             <p className="text-muted-foreground text-sm">{error}</p>
             <p className="text-muted-foreground text-xs">Redirecting...</p>
           </>
+        ) : showReturnButton ? (
+          <>
+            <p className="text-foreground font-medium">Sign in complete!</p>
+            <p className="text-muted-foreground text-sm mb-4">Tap the button below to return to Hoop Journal.</p>
+            <a
+              href={deepLinkUrl || 'hoopjournal://'}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              Return to App
+            </a>
+            <p className="text-muted-foreground text-xs mt-3">If the button doesn't work, open Hoop Journal manually — you're already signed in.</p>
+          </>
         ) : redirectingToApp ? (
           <>
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
             <p className="text-muted-foreground">Opening Hoop Journal...</p>
-            <p className="text-muted-foreground text-xs">If the app doesn't open, please go back and try again.</p>
+            <p className="text-muted-foreground text-xs">If the app doesn't open, please wait...</p>
           </>
         ) : (
           <>
