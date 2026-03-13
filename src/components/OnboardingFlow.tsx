@@ -39,6 +39,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [direction, setDirection] = useState(0);
   const navigate = useNavigate();
   const { createCheckout } = useSubscription();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage } = useRevenueCat();
   const [data, setData] = useState<OnboardingData>({
     name: '',
     courtRole: '',
