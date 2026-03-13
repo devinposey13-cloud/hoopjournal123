@@ -69,9 +69,13 @@ export function EmptyDashboardWelcome({
   const [hasPlayedIntro, setHasPlayedIntro] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showWebcam, setShowWebcam] = useState(false);
+
+  // Randomize coach gender for onboarding (before user has saved a preference)
+  const [randomGender] = useState<'male' | 'female'>(() => Math.random() < 0.5 ? 'male' : 'female');
+  const effectiveCoachGender = coachVoiceGender || randomGender;
   
   // Coach voice for intro
-  const { playVoice, playingIndex, isLoadingAudio } = useCoachVoice(coachVoiceGender);
+  const { playVoice, playingIndex, isLoadingAudio } = useCoachVoice(effectiveCoachGender);
 
   const INTRO_MESSAGE = `Hey ${playerName}! First game hasn't been logged yet — but every season starts somewhere. Let me know when you're ready.`;
 
