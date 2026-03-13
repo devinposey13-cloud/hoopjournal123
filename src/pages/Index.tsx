@@ -523,13 +523,7 @@ export default function Index() {
             {games.length === 0 ? (
               <div className="journal-page rounded-2xl overflow-hidden">
                 <div className="px-6 md:px-10 py-8">
-                  {/* Mobile: Show app logo, Desktop: Show Dear Basketball header */}
-                  <div className="md:hidden flex justify-center mb-6 animate-fade-in">
-                    <img src="/hoop-journal-logo.png" alt="Hoop Journal" className="h-20 w-auto" />
-                  </div>
-                  <div className="hidden md:block">
-                    <JournalHeader playerName={profile.name} className="mb-6 animate-fade-in" />
-                  </div>
+                  <JournalHeader playerName={profile.name} className="mb-6 animate-fade-in" />
                   
                   <EmptyDashboardWelcome
                     playerName={profile.name || 'Player'}
