@@ -27,10 +27,10 @@ export function JournalHeader({ playerName, className }: JournalHeaderProps) {
       </div>
       
       <p
-        className="text-lg md:text-xl text-muted-foreground"
-        style={{ fontFamily: "'Dancing Script', cursive" }}>
-        
+        className="text-xl md:text-2xl text-muted-foreground uppercase tracking-widest"
+        style={{ fontFamily: "'Teko', sans-serif", fontWeight: 400 }}>
         {playerName ? `${playerName}'s Journey` : 'My Basketball Journey'}
+      </p>
       </p>
     </div>);
 
