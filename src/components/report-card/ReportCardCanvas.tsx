@@ -94,87 +94,100 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
         {/* ── Content Safe Zone ── */}
         <div style={{
           position: 'absolute',
-          top: 180, bottom: 200, left: 80, right: 80,
+          top: 140, bottom: 160, left: 70, right: 70,
           display: 'flex', flexDirection: 'column',
           alignItems: 'center',
         }}>
 
-          {/* ═══ ZONE 1: Player Header ═══ */}
+          {/* ═══ ZONE 1+2: Avatar + Grade Side-by-Side ═══ */}
           <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: 40,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '100%', marginBottom: 32, gap: 48,
           }}>
+            {/* Left: Avatar */}
             <div style={{
-              width: 160, height: 160, borderRadius: '50%',
-              border: `5px solid ${color}`,
-              overflow: 'hidden', marginBottom: 20,
-              boxShadow: `0 0 60px ${color}40, 0 0 120px ${color}15`,
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              flexShrink: 0,
             }}>
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
-              ) : (
+              <div style={{
+                width: 280, height: 280, borderRadius: '50%',
+                border: `6px solid ${color}`,
+                overflow: 'hidden',
+                boxShadow: `0 0 80px ${color}40, 0 0 160px ${color}15`,
+              }}>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
+                ) : (
+                  <div style={{
+                    width: '100%', height: '100%', background: '#1e293b',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 100,
+                  }}>🏀</div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Grade + Tags */}
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              position: 'relative',
+            }}>
+              <div style={{
+                position: 'absolute', top: '50%', left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 360, height: 360, borderRadius: '50%',
+                background: `radial-gradient(circle, ${color}15 0%, transparent 60%)`,
+                pointerEvents: 'none',
+              }} />
+              <div style={{
+                color: s.dim, fontSize: 16, fontWeight: 800,
+                letterSpacing: '0.4em', textTransform: 'uppercase',
+                textAlign: 'center', marginBottom: 0,
+              }}>GAME GRADE</div>
+              <div style={{
+                fontSize: 180, fontWeight: 900, color,
+                lineHeight: 1, textShadow: glow,
+                letterSpacing: '-0.03em', textAlign: 'center',
+                position: 'relative',
+              }}>{grade}</div>
+              {tags.length > 0 && (
                 <div style={{
-                  width: '100%', height: '100%', background: '#1e293b',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64,
-                }}>🏀</div>
+                  display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center',
+                  marginTop: 4,
+                }}>
+                  {tags.slice(0, 3).map((tag, i) => (
+                    <div key={i} style={{
+                      background: `${color}15`,
+                      border: `1px solid ${color}30`,
+                      borderRadius: 50, padding: '6px 22px',
+                      color, fontSize: 16, fontWeight: 700,
+                    }}>{tag.emoji} {tag.label}</div>
+                  ))}
+                </div>
               )}
             </div>
+          </div>
+
+          {/* Player Name + Team */}
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            marginBottom: 28,
+          }}>
             <div style={{
-              color: s.bright, fontSize: 44, fontWeight: 900,
+              color: s.bright, fontSize: 48, fontWeight: 900,
               letterSpacing: '0.08em', textTransform: 'uppercase',
               textAlign: 'center', lineHeight: 1,
             }}>{playerName}</div>
             <div style={{
               color: s.muted, fontSize: 18, fontWeight: 700,
-              letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 8,
+              letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 10,
               textAlign: 'center',
             }}>{playerTeam}</div>
-          </div>
-
-          {/* ═══ ZONE 2: Grade Hero ═══ */}
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: 48, position: 'relative',
-          }}>
-            <div style={{
-              position: 'absolute', top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 400, height: 400, borderRadius: '50%',
-              background: `radial-gradient(circle, ${color}15 0%, transparent 60%)`,
-              pointerEvents: 'none',
-            }} />
-            <div style={{
-              color: s.dim, fontSize: 16, fontWeight: 800,
-              letterSpacing: '0.4em', textTransform: 'uppercase',
-              textAlign: 'center', marginBottom: 0,
-            }}>GAME GRADE</div>
-            <div style={{
-              fontSize: 200, fontWeight: 900, color,
-              lineHeight: 1.05, textShadow: glow,
-              letterSpacing: '-0.03em', textAlign: 'center',
-              position: 'relative',
-            }}>{grade}</div>
-            {tags.length > 0 && (
-              <div style={{
-                display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center',
-                marginTop: 4,
-              }}>
-                {tags.slice(0, 3).map((tag, i) => (
-                  <div key={i} style={{
-                    background: `${color}15`,
-                    border: `1px solid ${color}30`,
-                    borderRadius: 50, padding: '6px 22px',
-                    color, fontSize: 16, fontWeight: 700,
-                  }}>{tag.emoji} {tag.label}</div>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* ═══ ZONE 3: Game Context ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: 48, gap: 8,
+            marginBottom: 28, gap: 6,
           }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 14,
