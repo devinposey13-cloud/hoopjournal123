@@ -290,6 +290,22 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
             </div>
           </div>
 
+          {/* Sound Effects Toggle */}
+          <div className="flex items-center justify-between mt-4">
+            <div>
+              <Label htmlFor="sound-effects-setting" className="text-sm font-medium">Sound Effects</Label>
+              <p className="text-xs text-muted-foreground">Play sounds during Live Stat Capture</p>
+            </div>
+            <Switch
+              id="sound-effects-setting"
+              checked={(() => { try { return localStorage.getItem('hj-sound-effects') === 'true'; } catch { return false; } })()}
+              onCheckedChange={(checked) => {
+                localStorage.setItem('hj-sound-effects', String(checked));
+                setFormData({ ...formData }); // trigger re-render
+              }}
+            />
+          </div>
+
           {/* Subscription Section */}
           <Separator className="my-6" />
           

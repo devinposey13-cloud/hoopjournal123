@@ -959,18 +959,6 @@ export function LiveStatCapture({
           </div>
         )}
 
-        {/* Sound Effects Toggle - Inline */}
-        <div className="flex items-center justify-center gap-3">
-          <Label htmlFor="sound-effects" className="text-[10px] text-muted-foreground">
-            Sound Effects
-          </Label>
-          <Switch
-            id="sound-effects"
-            checked={soundEffectsEnabled}
-            onCheckedChange={setSoundEffectsEnabled}
-            className="scale-75"
-          />
-        </div>
 
         {/* Game Result Selection - Compact */}
         <div className="flex items-center gap-2">
