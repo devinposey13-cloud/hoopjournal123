@@ -110,17 +110,17 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               flexShrink: 0,
             }}>
               <div style={{
-                width: 280, height: 280, borderRadius: '50%',
-                border: `6px solid ${color}`,
+                width: 360, height: 360, borderRadius: '50%',
+                border: `7px solid ${color}`,
                 overflow: 'hidden',
-                boxShadow: `0 0 80px ${color}40, 0 0 160px ${color}15`,
+                boxShadow: `0 0 100px ${color}40, 0 0 200px ${color}15`,
               }}>
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                 ) : (
                   <div style={{
                     width: '100%', height: '100%', background: '#1e293b',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 100,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 120,
                   }}>🏀</div>
                 )}
               </div>
@@ -134,17 +134,17 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               <div style={{
                 position: 'absolute', top: '50%', left: '50%',
                 transform: 'translate(-50%, -50%)',
-                width: 360, height: 360, borderRadius: '50%',
+                width: 440, height: 440, borderRadius: '50%',
                 background: `radial-gradient(circle, ${color}15 0%, transparent 60%)`,
                 pointerEvents: 'none',
               }} />
               <div style={{
-                color: s.dim, fontSize: 16, fontWeight: 800,
+                color: s.dim, fontSize: 18, fontWeight: 800,
                 letterSpacing: '0.4em', textTransform: 'uppercase',
                 textAlign: 'center', marginBottom: 0,
               }}>GAME GRADE</div>
               <div style={{
-                fontSize: 180, fontWeight: 900, color,
+                fontSize: 240, fontWeight: 900, color,
                 lineHeight: 1, textShadow: glow,
                 letterSpacing: '-0.03em', textAlign: 'center',
                 position: 'relative',
