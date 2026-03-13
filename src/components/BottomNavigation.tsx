@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ClipboardPlus, MessageCircle, MoreHorizontal } from 'lucide-react';
+import { LayoutDashboard, ClipboardPlus, MessageCircle, MoreHorizontal, TrendingUp } from 'lucide-react';
 import { MoreMenu } from './MoreMenu';
 import { Season } from '@/types/basketball';
-import navLogo from '@/assets/nav-logo.png';
+
 
 export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile';
 
@@ -23,7 +23,7 @@ interface BottomNavigationProps {
 const primaryTabs = [
   { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard, route: '/' },
   { id: 'log' as Tab, label: 'Log', icon: ClipboardPlus, route: '/log/history' },
-  { id: 'progress' as Tab, label: 'Progress', icon: null, route: '/progress/overview', customImage: navLogo },
+  { id: 'progress' as Tab, label: 'Progress', icon: TrendingUp, route: '/progress/overview' },
   { id: 'coach' as Tab, label: 'Coach', icon: MessageCircle },
 ];
 
@@ -91,11 +91,7 @@ export function BottomNavigation({
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                {tab.customImage ? (
-                  <img src={tab.customImage} alt={tab.label} className={cn('w-6 h-6 object-contain', isActive ? 'opacity-100' : 'opacity-60')} />
-                ) : (
-                  <tab.icon className={cn('w-5 h-5', isActive && 'stroke-[2.5px]')} />
-                )}
+                <tab.icon className={cn('w-5 h-5', isActive && 'stroke-[2.5px]')} />
               </button>
             );
           })}
