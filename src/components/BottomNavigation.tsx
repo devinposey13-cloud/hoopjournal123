@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ClipboardPlus, MessageCircle, MoreHorizontal } from 'lucide-react';
+import { LayoutDashboard, ClipboardPlus, MessageCircle, MoreHorizontal, TrendingUp } from 'lucide-react';
 import { MoreMenu } from './MoreMenu';
 import { Season } from '@/types/basketball';
 import navLogo from '@/assets/nav-logo.png';
