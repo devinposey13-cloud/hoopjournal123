@@ -27,8 +27,8 @@ export function RoleCard({ value, onNext }: RoleCardProps) {
         How do you see yourself
       </h2>
       <h2 
-        className="text-3xl md:text-4xl mb-8 text-foreground"
-        style={{ fontFamily: "'Dancing Script', cursive" }}
+        className="text-4xl md:text-5xl mb-8 text-foreground uppercase tracking-wide"
+        style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}
       >
         on the court?
       </h2>
