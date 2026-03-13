@@ -47,6 +47,7 @@ export function EmptyDashboardWelcome({
   avatarUrl,
   hasSkippedAvatar,
   isFirstTimeAfterOnboarding,
+  coachVoiceGender,
   onLogFirstGame, 
   onPregameTalk,
   onUploadPhoto,
