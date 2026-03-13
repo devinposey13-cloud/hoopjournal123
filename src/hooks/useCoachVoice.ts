@@ -11,15 +11,20 @@ interface UseCoachVoiceReturn {
   stopVoice: () => void;
 }
 
-export function useCoachVoice(): UseCoachVoiceReturn {
+export function useCoachVoice(externalVoiceGender?: 'male' | 'female'): UseCoachVoiceReturn {
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
-  const [userVoiceGender, setUserVoiceGender] = useState<'male' | 'female'>('male');
+  const [fetchedVoiceGender, setFetchedVoiceGender] = useState<'male' | 'female'>('male');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
 
-  // Fetch user's voice preference on mount
+  // Use external prop if provided, otherwise fall back to fetched value
+  const userVoiceGender = externalVoiceGender || fetchedVoiceGender;
+
+  // Fetch user's voice preference on mount (fallback when no external prop)
   useEffect(() => {
+    if (externalVoiceGender) return; // Skip fetch if externally provided
+    
     const fetchVoicePreference = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -32,7 +37,7 @@ export function useCoachVoice(): UseCoachVoiceReturn {
           .maybeSingle();
 
         if (data?.coach_voice_gender) {
-          setUserVoiceGender(data.coach_voice_gender as 'male' | 'female');
+          setFetchedVoiceGender(data.coach_voice_gender as 'male' | 'female');
         }
       } catch (error) {
         console.error('Error fetching voice preference:', error);
@@ -40,7 +45,7 @@ export function useCoachVoice(): UseCoachVoiceReturn {
     };
 
     fetchVoicePreference();
-  }, []);
+  }, [externalVoiceGender]);
 
   // Cleanup on unmount
   useEffect(() => {
