@@ -127,6 +127,20 @@ export function EmptyDashboardWelcome({
     }
   };
 
+  const handleWebcamCapture = async (file: File) => {
+    if (onAvatarUploaded) {
+      setAvatarState('uploading');
+      try {
+        const newUrl = await onAvatarUploaded(file);
+        if (newUrl && onAvatarGenerated) {
+          onAvatarGenerated(newUrl);
+        }
+      } finally {
+        setAvatarState('idle');
+      }
+    }
+  };
+
   const handleDeleteAvatar = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!onAvatarDeleted) return;
