@@ -63,7 +63,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
         style={{
           width: 1080,
           height: 1920,
-          fontFamily: "'Inter', 'SF Pro Display', sans-serif",
+          fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           background: 'linear-gradient(180deg, #070b16 0%, #0a0f1e 25%, #0d1424 50%, #0a0f1e 75%, #070b16 100%)',
           position: 'relative',
           overflow: 'hidden',
