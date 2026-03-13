@@ -401,9 +401,8 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="free">Free</SelectItem>
-                      <SelectItem value="starter">Starter ($8/mo)</SelectItem>
-                      <SelectItem value="pro">Pro ($19/mo)</SelectItem>
-                      <SelectItem value="elite">Elite ($49/mo)</SelectItem>
+                      <SelectItem value="pro">Pro ($7.99/mo)</SelectItem>
+                      <SelectItem value="elite">Elite ($17.99/mo)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
