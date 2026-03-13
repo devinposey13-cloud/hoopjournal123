@@ -19,6 +19,8 @@ export default function OAuthCallback() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [redirectingToApp, setRedirectingToApp] = useState(false);
+  const [showReturnButton, setShowReturnButton] = useState(false);
+  const [deepLinkUrl, setDeepLinkUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const handleCallback = async () => {
