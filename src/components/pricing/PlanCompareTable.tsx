@@ -3,8 +3,8 @@ import { compareFeatures } from '@/lib/plans';
 import { cn } from '@/lib/utils';
 
 export function PlanCompareTable() {
-  const plans = ['Free', 'Starter', 'Pro', 'Elite'] as const;
-  const keys = ['free', 'starter', 'pro', 'elite'] as const;
+  const plans = ['Free', 'Pro', 'Elite'] as const;
+  const keys = ['free', 'pro', 'elite'] as const;
 
   const renderCell = (val: string | boolean) => {
     if (val === true) return <Check className="w-4 h-4 text-primary mx-auto" />;

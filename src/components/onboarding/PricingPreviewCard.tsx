@@ -24,14 +24,13 @@ interface PricingPreviewCardProps {
 }
 
 const PLAN_HIGHLIGHTS: Record<PlanId, string[]> = {
-  free: ['Game logging (30 days)', 'Basic XP & Leveling', '2 AI Recaps/mo'],
-  starter: ['Unlimited history', 'Full XP leveling', '4 AI Recaps/mo', 'Goals & streaks'],
-  pro: ['Unlimited AI recaps', 'Advanced analytics', 'AI dev plan'],
-  elite: ['Recruiting profile', 'PDF reports', 'Parent dashboard'],
+  free: ['Create player profile', 'Log games & basic stats', 'Limited AI Coach'],
+  pro: ['Unlimited game logs', 'Full AI Coach insights', 'Performance analytics', 'Exportable report cards'],
+  elite: ['Advanced AI breakdowns', 'Shot charts & comparisons', 'Development insights', 'Elite badge'],
 };
 
 const PLAN_PROMO_BADGE: Partial<Record<PlanId, string>> = {
-  starter: 'Eligible for Elite (with event code)',
+  pro: 'Eligible for Elite (with event code)',
   elite: 'Unlockable via event code',
 };
 
@@ -54,7 +53,7 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
       if (error) throw error;
       if (data?.valid || data?.success) {
         setPromoApplied(true);
-        toast.success('Code applied! Subscribe to Starter to lock in Elite access.');
+        toast.success('Code applied! Subscribe to Pro to lock in Elite access.');
         track('promo_code_applied', { code: promoCode.trim(), source: 'onboarding' });
       } else {
         toast.error(data?.message || 'Invalid code. Please try again.');
@@ -97,7 +96,7 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
         Choose your plan
       </h2>
       <p className="text-muted-foreground mb-3 text-sm">
-        Start free. Upgrade when you're ready. No credit card required for Free.
+        Start free. Upgrade when you're ready.
       </p>
 
       {/* AAU Promo Banner + Event Code Input */}
@@ -112,7 +111,7 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
           <span className="font-bold text-sm text-foreground">AAU EVENT SPECIAL</span>
         </div>
         <p className="text-xs text-muted-foreground mb-2">
-          Enter the event code to unlock <strong className="text-foreground">ELITE features</strong> for the <strong className="text-foreground">STARTER price</strong>.
+          Enter the event code to unlock <strong className="text-foreground">ELITE features</strong> for the <strong className="text-foreground">PRO price</strong>.
         </p>
         <div className="flex gap-2 max-w-xs mx-auto">
           <Input
@@ -133,11 +132,11 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
         </div>
         {promoApplied && (
           <p className="text-[10px] text-primary mt-1.5 font-medium">
-            ✓ Code applied! Subscribe to Starter to lock in Elite access.
+            ✓ Code applied! Subscribe to Pro to lock in Elite access.
           </p>
         )}
         <p className="text-[10px] text-muted-foreground mt-1">
-          Valid for event attendees. Must complete Starter subscription.
+          Valid for event attendees. Must complete Pro subscription.
         </p>
       </motion.div>
 
@@ -146,13 +145,12 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
         <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />
       </div>
 
-      {/* Plan cards - 2x2 grid */}
-      <div className="grid grid-cols-2 gap-2.5 w-full max-w-lg mb-3">
+      {/* Plan cards - 3 columns */}
+      <div className="grid grid-cols-3 gap-2.5 w-full max-w-lg mb-3">
         {planOrder.map((id, i) => {
           const plan = planCatalog[id];
           const originalPrice = getPlanPrice(id, cycle);
-          // When promo is applied, all paid plans show Starter price
-          const price = (promoApplied && id !== 'free') ? getPlanPrice('starter', cycle) : originalPrice;
+          const price = (promoApplied && id !== 'free') ? getPlanPrice('pro', cycle) : originalPrice;
           const savings = getYearlySavingsPercent(id);
           const isSelected = selectedPlan === id;
           const promoBadge = PLAN_PROMO_BADGE[id];
@@ -199,7 +197,7 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
                       </Badge>
                     )}
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">{plan.tagline}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 mb-2 line-clamp-2">{plan.tagline}</p>
                   <ul className="space-y-1">
                     {PLAN_HIGHLIGHTS[id].map((f) => (
                       <li key={f} className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
