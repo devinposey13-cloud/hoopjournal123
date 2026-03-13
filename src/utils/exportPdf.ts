@@ -4,6 +4,29 @@ import { SeasonStats, PlayerProfile, GameStats, HalfStats } from '@/types/basket
 import { MilestoneDefinition, MilestoneRarity } from '@/types/milestone';
 import { format } from 'date-fns';
 
+// Detect mobile for share sheet
+function isMobileDevice(): boolean {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+    (window.innerWidth <= 768 && 'ontouchstart' in window);
+}
+
+// Save or share PDF depending on platform
+async function saveOrSharePdf(doc: jsPDF, fileName: string): Promise<void> {
+  const blob = doc.output('blob');
+  const file = new File([blob], fileName, { type: 'application/pdf' });
+
+  if (isMobileDevice() && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: fileName });
+      return;
+    } catch (e: any) {
+      // User cancelled share — still fall through to save
+      if (e?.name === 'AbortError') return;
+    }
+  }
+  doc.save(fileName);
+}
+
 // Logo as base64 - will be loaded dynamically
 let logoBase64Cache: string | null = null;
 
