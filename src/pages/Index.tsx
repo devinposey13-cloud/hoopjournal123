@@ -584,7 +584,7 @@ export default function Index() {
                       {/* Dear Basketball - Reflection Entry Point to Coach AI - Moved below card on mobile */}
                       <button
                         onClick={() => {
-                          setCoachPrefillPrompt("Dear Basketball — today I want to reflect on how I played, what I felt during the game, and what I want to improve next time.");
+                          setCoachPrefillPrompt("Today I want to reflect on how I played, what I felt during the game, and what I want to improve next time.");
                           setActiveTab('coach');
                         }}
                         className="hidden sm:flex absolute top-3 right-3 items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
