@@ -50,7 +50,7 @@ export function PromoCodeInput({ onApplied }: { onApplied?: () => void }) {
       <div className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm">
         <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
         <span className="text-green-600 dark:text-green-400 font-medium">
-          Event code applied! Subscribe to Starter to lock in Elite access.
+          Event code applied! Subscribe to Pro to lock in Elite access.
         </span>
       </div>
     );

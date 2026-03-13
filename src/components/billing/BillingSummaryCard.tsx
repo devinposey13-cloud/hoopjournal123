@@ -60,7 +60,7 @@ export function BillingSummaryCard({
                 )}
                 {accessBadge.type === 'promo_locked' && (
                   <p className="text-xs text-muted-foreground">
-                    Elite access locked in while your Starter subscription is active.
+                    Elite access locked in while your Pro subscription is active.
                   </p>
                 )}
               </div>
@@ -109,7 +109,7 @@ export function BillingSummaryCard({
             <div className="flex flex-wrap gap-2 pt-2">
               {currentPlan === 'free' && !isSubscribed ? (
                 <Button onClick={() => navigate('/pricing')} className="gradient-primary">
-                  Upgrade
+                  Upgrade to Pro
                 </Button>
               ) : isSubscribed ? (
                 <>

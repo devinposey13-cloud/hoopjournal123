@@ -435,7 +435,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                   {accessBadge?.type === 'grandfathered'
                     ? 'You have lifetime Elite access as an early supporter. Thank you! 🏀'
                     : accessBadge?.type === 'promo_locked'
-                      ? 'Elite access locked in while your Starter subscription is active. 🏀'
+                      ? 'Elite access locked in while your Pro subscription is active. 🏀'
                       : 'Your access has been granted by an administrator.'}
                 </div>
 

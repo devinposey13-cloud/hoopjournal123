@@ -49,9 +49,11 @@ export function useSubscription() {
       const { data, error } = await supabase.functions.invoke('check-subscription');
       if (error) throw error;
 
+      const rawPlanType = (data.plan_type as string) || null;
+      const mappedPlanType = rawPlanType === 'starter' ? 'pro' : rawPlanType;
       setState({
         isSubscribed: data.subscribed || false,
-        planType: (data.plan_type as PlanId) || null,
+        planType: (mappedPlanType as PlanId) || null,
         subscriptionEnd: data.subscription_end || null,
         subscriptionStatus: data.subscription_status || null,
         billingCycle: data.billing_cycle || null,

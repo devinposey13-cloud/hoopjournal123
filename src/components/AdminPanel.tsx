@@ -1145,7 +1145,7 @@ export function AdminPanel() {
 
           {/* Plan distribution summary (by effective plan) */}
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-            {(['free', 'starter', 'pro', 'elite'] as const).map(plan => {
+            {(['free', 'pro', 'elite'] as const).map(plan => {
               const count = users.filter(u => {
                 const o = planOverrides.get(u.user_id);
                 const access: UserAccessInfo = {
@@ -1261,7 +1261,6 @@ export function AdminPanel() {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="none">No Override</SelectItem>
-                                <SelectItem value="starter">Starter</SelectItem>
                                 <SelectItem value="pro">Pro</SelectItem>
                                 <SelectItem value="elite">Elite</SelectItem>
                               </SelectContent>

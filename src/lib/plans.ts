@@ -1,6 +1,6 @@
 // Plan data model, feature gating, and paywall logic
 
-export type PlanId = 'free' | 'starter' | 'pro' | 'elite';
+export type PlanId = 'free' | 'pro' | 'elite';
 export type BillingCycle = 'monthly' | 'yearly';
 
 // Pricing launch date — users created before this are grandfathered
@@ -8,10 +8,6 @@ export const PRICING_LAUNCH_DATE = '2026-03-01';
 
 // Stripe price & product IDs
 export const STRIPE_PLAN_IDS = {
-  starter: {
-    monthly: { price_id: 'price_1T4OgtRmEndXycaGheeNenUl', product_id: 'prod_U2TenmJYJtafl8' },
-    yearly: { price_id: 'price_1T4Oh8RmEndXycaGDCWstZbx', product_id: 'prod_U2Te369rDpYwBQ' },
-  },
   pro: {
     monthly: { price_id: 'price_1T4OhTRmEndXycaGihIBzJ4z', product_id: 'prod_U2TeAY16X7k2Ri' },
     yearly: { price_id: 'price_1T4OhiRmEndXycaGTCZ1brsJ', product_id: 'prod_U2TfBflXbqKewl' },
@@ -24,8 +20,6 @@ export const STRIPE_PLAN_IDS = {
 
 // Reverse lookup: product_id -> PlanId
 export const PRODUCT_TO_PLAN: Record<string, PlanId> = {
-  'prod_U2TenmJYJtafl8': 'starter',
-  'prod_U2Te369rDpYwBQ': 'starter',
   'prod_U2TeAY16X7k2Ri': 'pro',
   'prod_U2TfBflXbqKewl': 'pro',
   'prod_U2TfBcoxhUepHK': 'elite',
@@ -46,6 +40,7 @@ export interface Plan {
   yearlyPrice: number;
   badge?: string;
   highlighted?: boolean;
+  helperText?: string;
   cta: string;
   features: PlanFeature[];
   limits: {
@@ -87,11 +82,11 @@ export interface UserAccessInfo {
 export function getEffectivePlan(user: UserAccessInfo): PlanId {
   if (user.isGrandfathered) return 'elite';
   if (user.adminOverridePlan) return user.adminOverridePlan;
-  // AAU promo lock-in: Elite access while on active Starter subscription
+  // AAU promo lock-in: Elite access while on active Pro subscription
   if (
     user.promoLockedIn &&
     user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
-    user.subscriptionPlan === 'starter' &&
+    (user.subscriptionPlan === 'pro') &&
     user.subscriptionStatus === 'active'
   ) {
     return 'elite';
@@ -106,7 +101,7 @@ export function hasSpecialAccess(user: UserAccessInfo): boolean {
   if (
     user.promoLockedIn &&
     user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
-    user.subscriptionPlan === 'starter' &&
+    (user.subscriptionPlan === 'pro') &&
     user.subscriptionStatus === 'active'
   ) return true;
   return false;
@@ -124,7 +119,7 @@ export function getAccessBadge(user: UserAccessInfo): AccessBadge {
   if (
     user.promoLockedIn &&
     user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
-    user.subscriptionPlan === 'starter' &&
+    (user.subscriptionPlan === 'pro') &&
     user.subscriptionStatus === 'active'
   ) {
     return { type: 'promo_locked', label: 'AAU Founding Member — Elite Access Locked In' };
@@ -136,19 +131,19 @@ export const planCatalog: Record<PlanId, Plan> = {
   free: {
     id: 'free',
     name: 'Free',
-    tagline: 'Start your journey.',
+    tagline: 'Start your Hoop Journal and begin tracking your game.',
     monthlyPrice: 0,
     yearlyPrice: 0,
     cta: 'Start Free',
     features: [
-      { label: 'Game logging (last 30 days)', included: true },
-      { label: 'Basic XP & Leveling (cap at Lv 10)', included: true },
-      { label: '2 AI Recaps per month', included: true },
-      { label: 'Basic dashboard stats', included: true },
-      { label: 'Unlimited history', included: false },
+      { label: 'Create player profile', included: true },
+      { label: 'Log games', included: true },
+      { label: 'Basic stat tracking', included: true },
+      { label: 'XP progression', included: true },
+      { label: 'Limited report card generation', included: true },
+      { label: 'Limited AI Coach prompts', included: true },
       { label: 'Advanced analytics', included: false },
-      { label: 'Shareable game report cards', included: false },
-      { label: 'Recruiting profile', included: false },
+      { label: 'Full report cards & sharing', included: false },
     ],
     limits: {
       aiRecapsPerMonth: 2,
@@ -166,57 +161,25 @@ export const planCatalog: Record<PlanId, Plan> = {
       reportCard: false,
     },
   },
-  starter: {
-    id: 'starter',
-    name: 'Starter',
-    tagline: 'Build habits. Track progress.',
-    monthlyPrice: 8,
-    yearlyPrice: 79,
-    badge: 'Best for casual + consistent',
-    cta: 'Go Starter',
-    features: [
-      { label: 'Unlimited history', included: true },
-      { label: 'Full XP leveling (no cap)', included: true },
-      { label: '4 AI Recaps per month', included: true },
-      { label: '1 Pregame Talk per week', included: true },
-      { label: 'Goals & streaks', included: true },
-      { label: 'Voice journaling (basic)', included: true },
-      { label: 'Advanced analytics', included: false },
-    ],
-    limits: {
-      aiRecapsPerMonth: 4,
-      pregameTalksPerMonth: 4,
-      historyDays: null,
-      maxLevel: null,
-      seasonReports: false,
-      exportPdf: false,
-      parentDashboard: false,
-      recruitingProfile: false,
-      advancedAnalytics: false,
-      voiceJournaling: true,
-      aiDevPlan: false,
-      shareableLink: false,
-      reportCard: false,
-    },
-  },
   pro: {
     id: 'pro',
     name: 'Pro',
-    tagline: 'Train smarter. Improve faster.',
-    monthlyPrice: 19,
-    yearlyPrice: 179,
+    tagline: 'Unlock your full game with advanced tracking and performance insights.',
+    monthlyPrice: 7.99,
+    yearlyPrice: 79.99,
     badge: 'Most Popular',
     highlighted: true,
     cta: 'Go Pro',
     features: [
-      { label: 'Unlimited AI recaps & pregame talks', included: true },
-      { label: 'Advanced analytics & trends', included: true },
-      { label: 'Quarterly Season XP resets', included: true },
-      { label: 'AI development plan (monthly)', included: true },
-      { label: 'Shareable player summary link', included: true },
-      { label: 'Season awards', included: true },
-      { label: 'Shareable game report cards', included: false },
-      { label: 'Recruiting profile', included: false },
+      { label: 'Everything in Free', included: true },
+      { label: 'Unlimited game logs', included: true },
+      { label: 'Full report card generation', included: true },
+      { label: 'Performance trends & analytics', included: true },
+      { label: 'Career stats tracking', included: true },
+      { label: 'XP progression & leveling system', included: true },
+      { label: 'Exportable report cards & share graphics', included: true },
+      { label: 'Full AI Coach insights', included: true },
+      { label: 'Season analytics dashboard', included: true },
     ],
     limits: {
       aiRecapsPerMonth: Infinity,
@@ -224,32 +187,34 @@ export const planCatalog: Record<PlanId, Plan> = {
       historyDays: null,
       maxLevel: null,
       seasonReports: true,
-      exportPdf: false,
+      exportPdf: true,
       parentDashboard: false,
       recruitingProfile: false,
       advancedAnalytics: true,
       voiceJournaling: true,
-      aiDevPlan: true,
+      aiDevPlan: false,
       shareableLink: true,
-      reportCard: false,
+      reportCard: true,
     },
   },
   elite: {
     id: 'elite',
     name: 'Elite',
-    tagline: 'Recruiting-ready. Next level.',
-    monthlyPrice: 49,
-    yearlyPrice: 449,
-    badge: 'Recruiting / exposure',
+    tagline: 'Train like an elite player with advanced insights and development tools.',
+    monthlyPrice: 17.99,
+    yearlyPrice: 179.99,
+    badge: 'Best for AAU & Varsity',
+    helperText: 'Best for AAU and varsity players.',
     cta: 'Go Elite',
     features: [
       { label: 'Everything in Pro', included: true },
-      { label: 'Shareable game report cards', included: true },
-      { label: 'Recruiting profile page + link', included: true },
-      { label: 'Exportable PDF season report', included: true },
-      { label: 'Parent dashboard view', included: true },
-      { label: '"College-ready" player narrative', included: true },
-      { label: 'Priority support', included: true },
+      { label: 'Advanced AI Coach breakdowns', included: true },
+      { label: 'Player development insights', included: true },
+      { label: 'Shot charts', included: true },
+      { label: 'Skill progress tracking', included: true },
+      { label: 'Performance comparisons', included: true },
+      { label: 'Early access to new features', included: true },
+      { label: 'Elite badge on player profile', included: true },
     ],
     limits: {
       aiRecapsPerMonth: Infinity,
@@ -269,9 +234,9 @@ export const planCatalog: Record<PlanId, Plan> = {
   },
 };
 
-export const planOrder: PlanId[] = ['free', 'starter', 'pro', 'elite'];
+export const planOrder: PlanId[] = ['free', 'pro', 'elite'];
 
-const planRank: Record<PlanId, number> = { free: 0, starter: 1, pro: 2, elite: 3 };
+const planRank: Record<PlanId, number> = { free: 0, pro: 1, elite: 2 };
 
 export function canUseFeature(currentPlan: PlanId, featureKey: keyof Plan['limits']): boolean {
   const limits = planCatalog[currentPlan].limits;
@@ -318,21 +283,21 @@ export interface PaywallConfig {
 
 export const paywallConfigs: Record<PaywallReason, PaywallConfig> = {
   ai_recap_limit: {
-    title: 'Unlock more Coach AI.',
-    description: "You've used all your AI recaps this month. Upgrade to get more insights from every game.",
-    recommendedPlan: 'starter',
+    title: 'Unlock full AI Coach.',
+    description: "You've used all your AI prompts this month. Upgrade to Pro for unlimited insights from every game.",
+    recommendedPlan: 'pro',
     mode: 'modal',
   },
   history_limit: {
     title: 'See your full journey.',
-    description: "Your Free plan shows the last 30 days. Upgrade to view your entire game history and track long-term growth.",
-    recommendedPlan: 'starter',
+    description: "Your Free plan shows the last 30 days. Upgrade to Pro to view your entire game history and track long-term growth.",
+    recommendedPlan: 'pro',
     mode: 'modal',
   },
   level_cap: {
     title: "You've outgrown Free.",
-    description: "You've hit Level 10 — the max on Free. Upgrade to keep leveling up and unlock new rewards.",
-    recommendedPlan: 'starter',
+    description: "You've hit Level 10 — the max on Free. Upgrade to Pro to keep leveling up and unlock new rewards.",
+    recommendedPlan: 'pro',
     mode: 'modal',
   },
   season_report: {
@@ -342,7 +307,7 @@ export const paywallConfigs: Record<PaywallReason, PaywallConfig> = {
     mode: 'fullscreen',
   },
   advanced_analytics: {
-    title: 'Advanced Analytics.',
+    title: 'Unlock full performance insights with Pro.',
     description: "Dive deeper into your stats with trends, splits, and AI-powered insights.",
     recommendedPlan: 'pro',
     mode: 'fullscreen',
@@ -350,7 +315,7 @@ export const paywallConfigs: Record<PaywallReason, PaywallConfig> = {
   export_pdf: {
     title: 'Export Your Season.',
     description: "Download a professional PDF report of your season — perfect for recruiting and college applications.",
-    recommendedPlan: 'elite',
+    recommendedPlan: 'pro',
     mode: 'fullscreen',
   },
   parent_dashboard: {
@@ -367,8 +332,8 @@ export const paywallConfigs: Record<PaywallReason, PaywallConfig> = {
   },
   report_card: {
     title: 'Share Game Report Cards.',
-    description: "Create stunning, shareable game report cards for Instagram and more. Upgrade to Elite to unlock.",
-    recommendedPlan: 'elite',
+    description: "Create stunning, shareable game report cards for Instagram and more. Upgrade to Pro to unlock.",
+    recommendedPlan: 'pro',
     mode: 'modal',
   },
 };
@@ -395,27 +360,28 @@ export function track(event: string, data?: Record<string, unknown>) {
 export interface CompareFeature {
   label: string;
   free: string | boolean;
-  starter: string | boolean;
   pro: string | boolean;
   elite: string | boolean;
 }
 
 export const compareFeatures: CompareFeature[] = [
-  { label: 'Game logging', free: '30 days', starter: 'Unlimited', pro: 'Unlimited', elite: 'Unlimited' },
-  { label: 'XP & Leveling', free: 'Cap at Lv 10', starter: 'Unlimited', pro: 'Unlimited', elite: 'Unlimited' },
-  { label: 'AI Recaps', free: '2/month', starter: '4/month', pro: 'Unlimited', elite: 'Unlimited' },
-  { label: 'Pregame Talks', free: false, starter: '1/week', pro: 'Unlimited', elite: 'Unlimited' },
-  { label: 'Goals & Streaks', free: false, starter: true, pro: true, elite: true },
-  { label: 'Voice Journaling', free: false, starter: 'Basic', pro: true, elite: true },
-  { label: 'Advanced Analytics', free: false, starter: false, pro: true, elite: true },
-  { label: 'Season XP Resets', free: false, starter: false, pro: true, elite: true },
-  { label: 'AI Dev Plan', free: false, starter: false, pro: 'Monthly', elite: 'Monthly' },
-  { label: 'Shareable Link', free: false, starter: false, pro: true, elite: true },
-  { label: 'Season Reports', free: false, starter: false, pro: true, elite: true },
-  { label: 'Export PDF', free: false, starter: false, pro: false, elite: true },
-  { label: 'Recruiting Profile', free: false, starter: false, pro: false, elite: true },
-  { label: 'Parent Dashboard', free: false, starter: false, pro: false, elite: true },
-  { label: 'Player Narrative', free: false, starter: false, pro: false, elite: true },
+  { label: 'Player profile', free: true, pro: true, elite: true },
+  { label: 'Game logging', free: '30 days', pro: 'Unlimited', elite: 'Unlimited' },
+  { label: 'Basic stat tracking', free: true, pro: true, elite: true },
+  { label: 'XP & Leveling', free: 'Cap at Lv 10', pro: 'Unlimited', elite: 'Unlimited' },
+  { label: 'AI Coach prompts', free: '2/month', pro: 'Unlimited', elite: 'Unlimited' },
+  { label: 'Report card generation', free: 'Limited', pro: 'Full', elite: 'Full' },
+  { label: 'Report card sharing', free: false, pro: true, elite: true },
+  { label: 'Performance trends & analytics', free: false, pro: true, elite: true },
+  { label: 'Career stats', free: false, pro: true, elite: true },
+  { label: 'Season analytics dashboard', free: false, pro: true, elite: true },
+  { label: 'Exportable report cards', free: false, pro: true, elite: true },
+  { label: 'Advanced AI Coach breakdowns', free: false, pro: false, elite: true },
+  { label: 'Player development insights', free: false, pro: false, elite: true },
+  { label: 'Shot charts', free: false, pro: false, elite: true },
+  { label: 'Performance comparisons', free: false, pro: false, elite: true },
+  { label: 'Early access to new features', free: false, pro: false, elite: true },
+  { label: 'Elite badge', free: false, pro: false, elite: true },
 ];
 
 // FAQ data
@@ -430,10 +396,10 @@ export const faqItems = [
   },
   {
     question: 'What happens to my data if I downgrade?',
-    answer: "Your data stays yours — always. If you downgrade, you'll keep everything you've logged. Some features may become limited (like AI recaps), but your game history and stats are never deleted.",
+    answer: "Your data stays yours — always. If you downgrade, you'll keep everything you've logged. Some features may become limited (like AI insights), but your game history and stats are never deleted.",
   },
   {
-    question: 'Does Elite help with recruiting?',
-    answer: "Yes! Elite includes a recruiting profile page with a shareable link, a \"college-ready\" player narrative summary, and exportable PDF reports. It's designed to give coaches everything they need at a glance.",
+    question: 'What makes Elite different from Pro?',
+    answer: "Elite is built for serious players — AAU and varsity level. You get advanced AI Coach breakdowns, player development insights, shot charts, performance comparisons, and early access to new features. Plus an Elite badge on your profile.",
   },
 ];

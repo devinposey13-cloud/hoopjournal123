@@ -18,7 +18,7 @@ interface PlanCardProps {
 
 export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied, nativePriceString }: PlanCardProps) {
   const originalPrice = getPlanPrice(plan.id, cycle);
-  const price = (promoApplied && plan.id !== 'free') ? getPlanPrice('starter', cycle) : originalPrice;
+  const price = (promoApplied && plan.id !== 'free') ? getPlanPrice('pro', cycle) : originalPrice;
   const savings = getYearlySavingsPercent(plan.id);
   const isCurrent = currentPlan === plan.id;
   const isHighlighted = plan.highlighted;
@@ -59,6 +59,9 @@ export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied, nat
             )}
           </div>
           <p className="text-sm text-muted-foreground">{plan.tagline}</p>
+          {plan.helperText && (
+            <p className="text-xs text-muted-foreground/70 mt-1 italic">{plan.helperText}</p>
+          )}
           <div className="mt-4">
             <div className="flex items-baseline gap-1">
               {nativePriceString ? (
