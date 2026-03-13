@@ -134,17 +134,17 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               <div style={{
                 position: 'absolute', top: '50%', left: '50%',
                 transform: 'translate(-50%, -50%)',
-                width: 360, height: 360, borderRadius: '50%',
+                width: 440, height: 440, borderRadius: '50%',
                 background: `radial-gradient(circle, ${color}15 0%, transparent 60%)`,
                 pointerEvents: 'none',
               }} />
               <div style={{
-                color: s.dim, fontSize: 16, fontWeight: 800,
+                color: s.dim, fontSize: 18, fontWeight: 800,
                 letterSpacing: '0.4em', textTransform: 'uppercase',
                 textAlign: 'center', marginBottom: 0,
               }}>GAME GRADE</div>
               <div style={{
-                fontSize: 180, fontWeight: 900, color,
+                fontSize: 240, fontWeight: 900, color,
                 lineHeight: 1, textShadow: glow,
                 letterSpacing: '-0.03em', textAlign: 'center',
                 position: 'relative',
