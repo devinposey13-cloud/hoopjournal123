@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Bot, User, Loader2, Sparkles, Video, X, Volume2, VolumeX, Mic, MicOff, Brain } from 'lucide-react';
+import { getCoachAvatarUrl } from '@/utils/coachAvatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
