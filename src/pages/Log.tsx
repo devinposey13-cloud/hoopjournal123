@@ -42,15 +42,15 @@ export default function Log() {
 
   // Handle tab change from navigation
   const handleTabChange = (tab: Tab) => {
-    if (tab === 'games') {
+    if (tab === 'games' || tab === 'log') {
       navigate('/log/history');
     } else if (tab === 'stats') {
-      navigate('/');
+      navigate('/progress/overview');
     } else if (tab === 'dashboard') {
       navigate('/');
     } else {
-      // For other tabs, navigate to dashboard and let it handle the tab
-      navigate('/');
+      // For coach, settings, etc. navigate to Index with tab state
+      navigate('/', { state: { tab } });
     }
   };
 
