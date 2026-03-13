@@ -584,25 +584,25 @@ export default function Index() {
                       {/* Dear Basketball - Reflection Entry Point to Coach AI - Moved below card on mobile */}
                       <button
                         onClick={() => {
-                          setCoachPrefillPrompt("Dear Basketball — today I want to reflect on how I played, what I felt during the game, and what I want to improve next time.");
+                          setCoachPrefillPrompt("Today I want to reflect on how I played, what I felt during the game, and what I want to improve next time.");
                           setActiveTab('coach');
                         }}
                         className="hidden sm:flex absolute top-3 right-3 items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
                         title="Reflect on your game with Coach AI"
                       >
                         <span>✏️</span>
-                        <span className="font-medium" style={{ fontFamily: "'Dancing Script', cursive" }}>Dear Basketball</span>
+                        <span className="font-bold uppercase tracking-wide text-sm">Start Your Hoop Journal</span>
                       </button>
                       {/* Mobile: Show below card */}
                       <button
                         onClick={() => {
-                          setCoachPrefillPrompt("Dear Basketball — today I want to reflect on how I played, what I felt during the game, and what I want to improve next time.");
+                          setCoachPrefillPrompt("Today I want to reflect on how I played, what I felt during the game, and what I want to improve next time.");
                           setActiveTab('coach');
                         }}
                         className="sm:hidden mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border/50 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                       >
                         <span>✏️</span>
-                        <span className="font-medium" style={{ fontFamily: "'Dancing Script', cursive" }}>Dear Basketball</span>
+                        <span className="font-bold uppercase tracking-wide text-sm">Start Your Hoop Journal</span>
                       </button>
                     </div>
                   </AnimatedSection>
