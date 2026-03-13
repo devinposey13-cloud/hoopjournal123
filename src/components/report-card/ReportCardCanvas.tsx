@@ -318,10 +318,10 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             marginTop: 32, width: '100%',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <img src={hoopJournalLogo} alt="" style={{ width: 52, height: 52, borderRadius: 12 }} crossOrigin="anonymous" />
+              <img src={hoopJournalLogo} alt="" style={{ width: 68, height: 68, borderRadius: 16 }} crossOrigin="anonymous" />
               <div>
-                <div style={{ color: s.bright, fontSize: 20, fontWeight: 800 }}>Hoop Journal</div>
-                <div style={{ color: s.dim, fontSize: 13, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
+                <div style={{ color: s.bright, fontSize: 26, fontWeight: 800 }}>Hoop Journal</div>
+                <div style={{ color: s.dim, fontSize: 17, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
