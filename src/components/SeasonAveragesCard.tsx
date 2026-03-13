@@ -1,5 +1,6 @@
 import { SeasonStats } from '@/types/basketball';
 import { TrendingUp, Target, Users, Activity } from 'lucide-react';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 
 interface SeasonAveragesCardProps {
   stats: SeasonStats;
