@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Target, Percent, Zap, Trophy, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
+import { cn } from '@/lib/utils';
 import type { GameStats, SeasonStats, ScheduledGame } from '@/types/basketball';
 import type { XpProgress } from '@/types/xp';
 import { calculateConsistencyStreak } from '@/utils/xpCalculations';
