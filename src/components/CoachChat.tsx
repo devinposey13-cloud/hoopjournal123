@@ -482,16 +482,16 @@ export function CoachChat({ games, seasonStats, profile, prefillPrompt, onPrefil
               >
                 <div
                   className={cn(
-                    'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
+                    'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden',
                     message.role === 'user'
                       ? 'bg-primary text-primary-foreground'
-                      : 'gradient-primary'
+                      : ''
                   )}
                 >
                   {message.role === 'user' ? (
                     <User className="w-4 h-4" />
                   ) : (
-                    <Bot className="w-4 h-4 text-primary-foreground" />
+                    <img src={getCoachAvatarUrl(profile.coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
                   )}
                 </div>
                 <div

@@ -181,8 +181,10 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
     <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
       {/* Header */}
       <div className="text-center">
+        <div className="w-16 h-16 rounded-full overflow-hidden mx-auto mb-2">
+          <img src={getCoachAvatarUrl(profile.coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
+        </div>
         <h1 className="text-xl font-bold flex items-center justify-center gap-2">
-          <Bot className="h-5 w-5 text-primary" />
           Coach AI
         </h1>
         <p className="text-sm text-muted-foreground">
