@@ -109,7 +109,7 @@ export function BillingSummaryCard({
             <div className="flex flex-wrap gap-2 pt-2">
               {currentPlan === 'free' && !isSubscribed ? (
                 <Button onClick={() => navigate('/pricing')} className="gradient-primary">
-                  Upgrade
+                  Upgrade to Pro
                 </Button>
               ) : isSubscribed ? (
                 <>

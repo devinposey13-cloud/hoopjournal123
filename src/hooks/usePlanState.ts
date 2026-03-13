@@ -76,8 +76,11 @@ export function usePlanState(): PlanState {
             data.is_grandfathered = true;
           }
 
+          const rawPlan = (data.subscription_plan as string) || 'free';
+          // Map legacy 'starter' plan to 'pro'
+          const mappedPlan: PlanId = rawPlan === 'starter' ? 'pro' : (rawPlan as PlanId);
           setAccessInfo({
-            subscriptionPlan: (data.subscription_plan as PlanId) || 'free',
+            subscriptionPlan: mappedPlan,
             isGrandfathered: data.is_grandfathered || false,
             adminOverridePlan: (data.admin_override_plan as PlanId) || null,
             promoAccessUntil: data.promo_access_until || null,
