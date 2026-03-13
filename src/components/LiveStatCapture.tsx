@@ -615,7 +615,10 @@ export function LiveStatCapture({
   const handleSaveClick = () => {
     // Pre-fill with existing scores or player's points
     if (!finalScore) {
-      setFinalScoreInput({ us: totalStats.points.toString(), them: '' });
+      setFinalScoreInput({ 
+        us: halftimeScore ? halftimeScore.us.toString() : totalStats.points.toString(), 
+        them: halftimeScore ? halftimeScore.them.toString() : '' 
+      });
     } else {
       setFinalScoreInput({ us: finalScore.us.toString(), them: finalScore.them.toString() });
     }
