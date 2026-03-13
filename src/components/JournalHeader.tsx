@@ -14,10 +14,9 @@ export function JournalHeader({ playerName, className }: JournalHeaderProps) {
       </div>
       
       <h1 
-        className="text-4xl md:text-5xl lg:text-6xl mb-2 relative text-foreground"
-        style={{ fontFamily: "'Dancing Script', cursive" }}
+        className="text-4xl md:text-5xl lg:text-6xl mb-2 relative text-foreground font-extrabold uppercase tracking-tight"
       >
-        Dear Basketball,
+        Start Your Hoop Journal
       </h1>
       
       {/* Decorative divider with basketball accents */}
