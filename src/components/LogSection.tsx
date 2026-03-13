@@ -7,6 +7,7 @@ import { GameCard } from '@/components/GameCard';
 import { AddGameDialog } from '@/components/AddGameDialog';
 import { AddScheduleDialog } from '@/components/AddScheduleDialog';
 import { ImportScheduleDialog } from '@/components/ImportScheduleDialog';
+import { AIScheduleImportDialog } from '@/components/AIScheduleImportDialog';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { ScheduleCalendar } from '@/components/ScheduleCalendar';
@@ -762,6 +763,7 @@ export function LogSection({
               <p className="text-xs text-muted-foreground">Your game schedule and game days.</p>
             </div>
             <div className="flex gap-2">
+              <AIScheduleImportDialog onImport={bulkImportScheduledGames} existingGames={schedule} />
               <ImportScheduleDialog onImport={bulkImportScheduledGames} isMobile={isMobile} />
               <AddScheduleDialog onAddGame={addScheduledGame} onBulkAddGames={bulkImportScheduledGames} isMobile={isMobile} />
             </div>

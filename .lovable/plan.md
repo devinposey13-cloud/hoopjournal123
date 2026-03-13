@@ -1,53 +1,33 @@
+## RevenueCat Integration — IMPLEMENTED
 
+### What was built
 
-# AI Schedule Import - Implementation Plan
+1. **Platform Detection** (`src/lib/platform.ts`) — `isNativeApp()`, `getPlatform()`, `isIOS()` helpers
+2. **RevenueCat Hook** (`src/hooks/useRevenueCat.ts`) — SDK init, purchase, restore, offerings
+3. **RevenueCat Webhook** (`supabase/functions/revenuecat-webhook/index.ts`) — syncs purchases to `plan_overrides`
+4. **Conditional Routing** — `useSubscription`, `Pricing.tsx`, `Upgrade.tsx`, `UpgradeDrawer.tsx` all route to RevenueCat on native
 
-## Overview
-Add a new feature allowing users to upload a screenshot/image of a basketball schedule, have AI (Gemini vision) parse the games, review them in an editable list, check for duplicates, and bulk import into their calendar.
+### Next steps (user action required)
 
-## Architecture
+1. **Replace RevenueCat API key** in `src/hooks/useRevenueCat.ts` line 12 — replace `appl_REPLACE_WITH_YOUR_KEY` with your iOS public API key from RevenueCat dashboard
+2. **Create RevenueCat products** matching these IDs: `hj_starter_monthly`, `hj_starter_yearly`, `hj_pro_monthly`, `hj_pro_yearly`, `hj_elite_monthly`, `hj_elite_yearly`
+3. **Configure RevenueCat webhook** pointing to: `https://jwoupnumuotmwpwrkmob.supabase.co/functions/v1/revenuecat-webhook` with Authorization Bearer header matching the secret you just saved
+4. **Set up Capacitor** for native iOS builds (not yet added to the project)
 
-### 1. Edge Function: `parse-schedule-image`
-- Accepts a base64-encoded image
-- Sends it to Lovable AI Gateway using `google/gemini-2.5-flash` (multimodal, cost-effective for image parsing)
-- Uses tool calling to extract structured array of games with fields: `opponent`, `date`, `time`, `location`, `event_name`, `home_or_away`, `confidence` (high/medium/low)
-- Returns parsed games array with confidence scores
-- Handles 429/402 errors properly
-- Add config entry with `verify_jwt = false`
+---
 
-### 2. Component: `AIScheduleImportDialog`
-A multi-step dialog component (similar pattern to existing `ImportScheduleDialog`):
+## Native Google Sign-In — IMPLEMENTED
 
-**Step 1 - Upload**: Image upload via file input (camera + gallery on mobile, drag-drop on desktop). Accepts JPG/PNG/HEIC. Shows "Scanning schedule..." loading state with spinner.
+### What was built
 
-**Step 2 - Review**: Editable list of parsed games. Each row shows date, time, opponent, location, event name, home/away badge, and confidence badge (green "High Confidence" / amber "Needs Review"). Users can edit fields inline, delete rows, or add games manually. Low-confidence rows highlighted with amber border.
+1. **Plugin** — `@codetrix-studio/capacitor-google-auth` installed
+2. **Native helper** (`src/lib/nativeGoogleAuth.ts`) — `initNativeGoogleAuth()` + `nativeGoogleSignIn()` using `signInWithIdToken`
+3. **AuthForm.tsx** — branches on `isNativeApp()`: native uses SDK, web keeps existing `lovable.auth.signInWithOAuth`
+4. **App.tsx** — initializes the Google Auth plugin on native startup
 
-**Step 3 - Duplicate Check**: Before confirming, cross-reference parsed games against existing `schedule` data (same opponent + same date). Show warning with options: Skip duplicates, Replace existing, Import anyway.
+### User action required
 
-**Step 4 - Confirm & Success**: Calls existing `bulkImportScheduledGames` to create entries. Shows success screen with count and navigation buttons to calendar/upcoming games.
-
-**Fallback**: If AI returns no games or errors, show "We couldn't fully read this schedule" with retry/manual options. If image is low quality, show appropriate message.
-
-### 3. Entry Points
-- **Schedule tab** in LogSection (line ~765): Add `AIScheduleImportDialog` button next to existing `ImportScheduleDialog`
-- **Calendar page**: Add button in `ScheduleCalendar` header area
-
-### 4. Files to Create/Edit
-
-| File | Action |
-|------|--------|
-| `supabase/functions/parse-schedule-image/index.ts` | Create - Edge function for AI vision parsing |
-| `supabase/config.toml` | Edit - Add `[functions.parse-schedule-image]` entry |
-| `src/components/AIScheduleImportDialog.tsx` | Create - Multi-step dialog component |
-| `src/components/LogSection.tsx` | Edit - Add AIScheduleImportDialog next to existing import button |
-| `src/components/ScheduleCalendar.tsx` | Edit - Add AIScheduleImportDialog button |
-
-### 5. Key Technical Details
-
-- Image converted to base64 on client, sent to edge function (max ~20MB)
-- Uses existing `bulkImportScheduledGames` from `useCloudData` for the actual import - no DB changes needed
-- Duplicate detection done client-side by comparing against existing `schedule` array
-- Confidence scoring: high = all required fields present, medium = missing optional fields, low = missing opponent or date
-- Date normalization: assumes current season year if year is missing
-- The dialog reuses existing UI components (Dialog, ScrollArea, Badge, Input, Button, Card)
-
+1. **Replace the Client ID** in `src/lib/nativeGoogleAuth.ts` line 10 — replace `REPLACE_WITH_YOUR_IOS_CLIENT_ID.apps.googleusercontent.com` with your iOS OAuth Client ID from [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. **Create an iOS OAuth Client ID** — type: iOS application, bundle ID: `app.lovable.2cd79f530f3e4e88858df49e60e86e08`
+3. **Add reversed client ID** as a URL scheme in Xcode (e.g. `com.googleusercontent.apps.XXXX`)
+4. Run `npm install` → `npx cap sync` → rebuild in Xcode → TestFlight
