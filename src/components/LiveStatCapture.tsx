@@ -171,7 +171,7 @@ export function LiveStatCapture({
       setHistory(savedData.history);
       setGamePhoto(savedData.gamePhoto);
       setIsWin(savedData.isWin);
-      setSoundEffectsEnabled(savedData.soundEffectsEnabled);
+      
       if (savedData.halftimeScore) {
         setHalftimeScore(savedData.halftimeScore);
       }
