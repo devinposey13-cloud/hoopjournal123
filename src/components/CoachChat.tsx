@@ -163,7 +163,7 @@ export function CoachChat({ games, seasonStats, profile, prefillPrompt, onPrefil
   }, [prefillPrompt, onPrefillConsumed, input]);
   
   // Voice playback hook
-  const { playingIndex, isLoadingAudio, playVoice, stopVoice } = useCoachVoice();
+  const { playingIndex, isLoadingAudio, playVoice, stopVoice } = useCoachVoice(profile.coachVoiceGender);
   
   // Voice input hook
   const { isRecording, isTranscribing, audioData, startRecording, stopRecording, cancelRecording } = useVoiceInput();

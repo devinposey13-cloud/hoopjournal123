@@ -71,7 +71,7 @@ export function EmptyDashboardWelcome({
   const [showWebcam, setShowWebcam] = useState(false);
   
   // Coach voice for intro
-  const { playVoice, playingIndex, isLoadingAudio } = useCoachVoice();
+  const { playVoice, playingIndex, isLoadingAudio } = useCoachVoice(coachVoiceGender);
 
   const INTRO_MESSAGE = `Hey ${playerName}! First game hasn't been logged yet — but every season starts somewhere. Let me know when you're ready.`;
 
