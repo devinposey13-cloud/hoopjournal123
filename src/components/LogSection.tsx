@@ -7,6 +7,7 @@ import { GameCard } from '@/components/GameCard';
 import { AddGameDialog } from '@/components/AddGameDialog';
 import { AddScheduleDialog } from '@/components/AddScheduleDialog';
 import { ImportScheduleDialog } from '@/components/ImportScheduleDialog';
+import { AIScheduleImportDialog } from '@/components/AIScheduleImportDialog';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { ScheduleCalendar } from '@/components/ScheduleCalendar';
