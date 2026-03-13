@@ -187,7 +187,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           {/* ═══ ZONE 3: Game Context ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: 48, gap: 8,
+            marginBottom: 28, gap: 6,
           }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 14,
