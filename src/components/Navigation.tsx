@@ -133,9 +133,9 @@ export function Navigation({
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
+        <div className="flex items-center h-16">
+          {/* Logo - fixed width for balance */}
+          <div className="flex items-center gap-3 w-48">
             <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center">
               <img src={hoopJournalLogo} alt="Hoop Journal" className="w-full h-full object-cover" />
             </div>
@@ -144,7 +144,8 @@ export function Navigation({
             </span>
           </div>
 
-          {/* Navigation Tabs */}
+          {/* Navigation Tabs - centered */}
+          <div className="flex-1 flex justify-center">
           <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-lg">
             {primaryTabs.map((tab) => {
               const isActive = displayActiveTab === tab.id;
@@ -264,8 +265,10 @@ export function Navigation({
             </DropdownMenu>
           </div>
 
-          {/* Empty div for layout balance (season selector moved to More menu) */}
-          <div className="w-10" />
+          </div>
+
+          {/* Spacer for balance */}
+          <div className="w-48" />
         </div>
       </div>
 
