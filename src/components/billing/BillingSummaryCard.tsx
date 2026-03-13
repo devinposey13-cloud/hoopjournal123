@@ -60,7 +60,7 @@ export function BillingSummaryCard({
                 )}
                 {accessBadge.type === 'promo_locked' && (
                   <p className="text-xs text-muted-foreground">
-                    Elite access locked in while your Starter subscription is active.
+                    Elite access locked in while your Pro subscription is active.
                   </p>
                 )}
               </div>

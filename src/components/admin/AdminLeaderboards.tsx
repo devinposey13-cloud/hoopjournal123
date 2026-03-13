@@ -38,7 +38,6 @@ const METRIC_OPTIONS = [
 const PLAN_OPTIONS = [
   { value: 'all', label: 'All Plans' },
   { value: 'free', label: 'Free' },
-  { value: 'starter', label: 'Starter' },
   { value: 'pro', label: 'Pro' },
   { value: 'elite', label: 'Elite' },
 ];
