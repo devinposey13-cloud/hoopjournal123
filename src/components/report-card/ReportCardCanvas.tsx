@@ -110,17 +110,17 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               flexShrink: 0,
             }}>
               <div style={{
-                width: 280, height: 280, borderRadius: '50%',
-                border: `6px solid ${color}`,
+                width: 360, height: 360, borderRadius: '50%',
+                border: `7px solid ${color}`,
                 overflow: 'hidden',
-                boxShadow: `0 0 80px ${color}40, 0 0 160px ${color}15`,
+                boxShadow: `0 0 100px ${color}40, 0 0 200px ${color}15`,
               }}>
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                 ) : (
                   <div style={{
                     width: '100%', height: '100%', background: '#1e293b',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 100,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 120,
                   }}>🏀</div>
                 )}
               </div>
