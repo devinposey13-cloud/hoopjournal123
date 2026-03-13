@@ -136,7 +136,9 @@ export function LiveStatCapture({
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
   const [isWin, setIsWin] = useState<boolean | null>(null);
-  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(false);
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(() => {
+    try { return localStorage.getItem('hj-sound-effects') === 'true'; } catch { return false; }
+  });
   const [hasRestoredFromAutosave, setHasRestoredFromAutosave] = useState(false);
   const [showHalftimeDialog, setShowHalftimeDialog] = useState(false);
   const [halftimeScore, setHalftimeScore] = useState<TeamScore | null>(null);
