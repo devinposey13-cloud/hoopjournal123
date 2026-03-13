@@ -23,7 +23,7 @@ interface ActivityItem {
   onClick?: () => void;
 }
 
-export function RecentActivity({ games, clips = [], onViewGame, onViewAllGames }: RecentActivityProps) {
+export function RecentActivity({ games, clips = [], onViewGame, onViewAllGames, onDeleteGame }: RecentActivityProps) {
   // Build activity feed from games
   const activities: ActivityItem[] = games.slice(0, 5).map(game => ({
     id: game.id,
