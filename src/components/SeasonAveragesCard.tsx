@@ -58,23 +58,23 @@ export function SeasonAveragesCard({ stats, compact = false }: SeasonAveragesCar
       
       <div className="grid grid-cols-5 gap-3 mb-4">
         <div className="text-center">
-          <div className="text-2xl font-bold text-primary">{stats.avgPoints}</div>
+          <div className="text-2xl font-bold text-primary"><AnimatedCounter value={stats.avgPoints} decimals={1} /></div>
           <div className="text-xs text-muted-foreground uppercase">PPG</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold">{stats.avgRebounds}</div>
+          <div className="text-2xl font-bold"><AnimatedCounter value={stats.avgRebounds} decimals={1} /></div>
           <div className="text-xs text-muted-foreground uppercase">RPG</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold">{stats.avgAssists}</div>
+          <div className="text-2xl font-bold"><AnimatedCounter value={stats.avgAssists} decimals={1} /></div>
           <div className="text-xs text-muted-foreground uppercase">APG</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold">{stats.avgSteals}</div>
+          <div className="text-2xl font-bold"><AnimatedCounter value={stats.avgSteals} decimals={1} /></div>
           <div className="text-xs text-muted-foreground uppercase">SPG</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold">{stats.avgBlocks}</div>
+          <div className="text-2xl font-bold"><AnimatedCounter value={stats.avgBlocks} decimals={1} /></div>
           <div className="text-xs text-muted-foreground uppercase">BPG</div>
         </div>
       </div>
