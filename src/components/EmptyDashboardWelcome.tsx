@@ -65,6 +65,7 @@ export function EmptyDashboardWelcome({
   const [showAvatarPreview, setShowAvatarPreview] = useState(false);
   const [hasPlayedIntro, setHasPlayedIntro] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showWebcam, setShowWebcam] = useState(false);
   
   // Coach voice for intro
   const { playVoice, playingIndex, isLoadingAudio } = useCoachVoice();
