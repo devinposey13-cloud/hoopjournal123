@@ -6,12 +6,16 @@ import { calculateCareerHighs } from '@/utils/statsCalculations';
 import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
 import hoopJournalQr from '@/assets/hoop-journal-qr.png';
 
+export type ExportFormat = 'story' | 'post';
+
 interface ReportCardCanvasProps {
   game: GameStats;
   playerName: string;
   playerTeam: string;
   avatarUrl?: string;
   allGames?: GameStats[];
+  exportFormat?: ExportFormat;
+  showSafeZones?: boolean;
 }
 
 function getBestImpact(game: GameStats) {
@@ -25,10 +29,25 @@ function getBestImpact(game: GameStats) {
   return weighted.sort((a, b) => b.weight - a.weight)[0];
 }
 
+const FORMATS = {
+  story: { w: 1080, h: 1920 },
+  post: { w: 1080, h: 1350 },
+} as const;
+
+// Instagram safe zones
+const SAFE = {
+  top: 180,
+  bottom: 250,
+  left: 80,
+  right: 80,
+} as const;
+
 export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps>(
-  ({ game, playerName, playerTeam, avatarUrl, allGames }, ref) => {
+  ({ game, playerName, playerTeam, avatarUrl, allGames, exportFormat = 'story', showSafeZones = false }, ref) => {
     const { grade, color, glow, tags, xpEarned, gameScore } = getGameGradeData(game);
     const bestImpact = getBestImpact(game);
+    const { w: CANVAS_W, h: CANVAS_H } = FORMATS[exportFormat];
+    const isPost = exportFormat === 'post';
 
     const careerHighsInGame = useMemo(() => {
       if (!allGames || allGames.length === 0) return [];
@@ -49,7 +68,6 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
       { label: 'TOV', value: game.turnovers },
     ];
 
-    // Shared text style helper
     const s = {
       muted: '#64748b' as const,
       dim: '#475569' as const,
@@ -57,12 +75,15 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
       sub: '#94a3b8' as const,
     };
 
+    // Scale factors for Instagram readability (post is more compact)
+    const sf = isPost ? 0.82 : 1;
+
     return (
       <div
         ref={ref}
         style={{
-          width: 1080,
-          height: 1920,
+          width: CANVAS_W,
+          height: CANVAS_H,
           fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           background: 'linear-gradient(180deg, #070b16 0%, #0a0f1e 25%, #0d1424 50%, #0a0f1e 75%, #070b16 100%)',
           position: 'relative',
@@ -81,20 +102,36 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           position: 'absolute', top: 0, left: 0, right: 0, height: 4,
           background: `linear-gradient(90deg, transparent 10%, ${color}50 50%, transparent 90%)`,
         }} />
-        {/* Subtle vertical lines for sports graphic feel */}
         <div style={{
-          position: 'absolute', top: 0, bottom: 0, left: 80, width: 1,
+          position: 'absolute', top: 0, bottom: 0, left: SAFE.left, width: 1,
           background: 'linear-gradient(180deg, transparent, rgba(100,116,139,0.08) 30%, rgba(100,116,139,0.08) 70%, transparent)',
         }} />
         <div style={{
-          position: 'absolute', top: 0, bottom: 0, right: 80, width: 1,
+          position: 'absolute', top: 0, bottom: 0, right: SAFE.right, width: 1,
           background: 'linear-gradient(180deg, transparent, rgba(100,116,139,0.08) 30%, rgba(100,116,139,0.08) 70%, transparent)',
         }} />
+
+        {/* ── Instagram Safe Zone Overlay (debug/preview only) ── */}
+        {showSafeZones && (
+          <>
+            {/* Top */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: SAFE.top, background: 'rgba(255,0,0,0.12)', borderBottom: '2px dashed rgba(255,0,0,0.4)', pointerEvents: 'none', zIndex: 100 }} />
+            {/* Bottom */}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: SAFE.bottom, background: 'rgba(255,0,0,0.12)', borderTop: '2px dashed rgba(255,0,0,0.4)', pointerEvents: 'none', zIndex: 100 }} />
+            {/* Left */}
+            <div style={{ position: 'absolute', top: SAFE.top, bottom: SAFE.bottom, left: 0, width: SAFE.left, background: 'rgba(255,0,0,0.08)', borderRight: '2px dashed rgba(255,0,0,0.3)', pointerEvents: 'none', zIndex: 100 }} />
+            {/* Right */}
+            <div style={{ position: 'absolute', top: SAFE.top, bottom: SAFE.bottom, right: 0, width: SAFE.right, background: 'rgba(255,0,0,0.08)', borderLeft: '2px dashed rgba(255,0,0,0.3)', pointerEvents: 'none', zIndex: 100 }} />
+            {/* Labels */}
+            <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', color: 'rgba(255,80,80,0.7)', fontSize: 14, fontWeight: 700, zIndex: 101, pointerEvents: 'none' }}>IG Story UI Zone</div>
+            <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', color: 'rgba(255,80,80,0.7)', fontSize: 14, fontWeight: 700, zIndex: 101, pointerEvents: 'none' }}>IG Message/Input Zone</div>
+          </>
+        )}
 
         {/* ── Content Safe Zone ── */}
         <div style={{
           position: 'absolute',
-          top: 140, bottom: 160, left: 70, right: 70,
+          top: SAFE.top, bottom: SAFE.bottom, left: SAFE.left, right: SAFE.right,
           display: 'flex', flexDirection: 'column',
           alignItems: 'center',
         }}>
@@ -102,7 +139,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           {/* ═══ ZONE 1+2: Avatar + Grade Side-by-Side ═══ */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: '100%', marginBottom: 32, gap: 48,
+            width: '100%', marginBottom: isPost ? 20 : 32, gap: isPost ? 36 : 48,
           }}>
             {/* Left: Avatar */}
             <div style={{
@@ -110,7 +147,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               flexShrink: 0,
             }}>
               <div style={{
-                width: 360, height: 360, borderRadius: '50%',
+                width: 360 * sf, height: 360 * sf, borderRadius: '50%',
                 border: `7px solid ${color}`,
                 overflow: 'hidden',
                 boxShadow: `0 0 100px ${color}40, 0 0 200px ${color}15`,
@@ -120,7 +157,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 ) : (
                   <div style={{
                     width: '100%', height: '100%', background: '#1e293b',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 120,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 120 * sf,
                   }}>🏀</div>
                 )}
               </div>
@@ -129,22 +166,23 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             {/* Right: Grade + Tags */}
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
-              position: 'relative', marginTop: 40,
+              position: 'relative', marginTop: isPost ? 24 : 40,
+              padding: '80px 60px',
             }}>
               <div style={{
                 position: 'absolute', top: '50%', left: '50%',
                 transform: 'translate(-50%, -50%)',
-                width: 440, height: 440, borderRadius: '50%',
+                width: 440 * sf, height: 440 * sf, borderRadius: '50%',
                 background: `radial-gradient(circle, ${color}15 0%, transparent 60%)`,
                 pointerEvents: 'none',
               }} />
               <div style={{
-                color: s.dim, fontSize: 18, fontWeight: 800,
+                color: s.dim, fontSize: 18 * sf, fontWeight: 800,
                 letterSpacing: '0.4em', textTransform: 'uppercase',
                 textAlign: 'center', marginBottom: 0,
               }}>HOOP JOURNAL GAME GRADE</div>
               <div style={{
-                fontSize: 250, fontWeight: 900, color,
+                fontSize: 250 * sf, fontWeight: 900, color,
                 lineHeight: 1, textShadow: glow,
                 letterSpacing: '-0.03em', textAlign: 'center',
                 position: 'relative',
@@ -159,7 +197,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                       background: `${color}15`,
                       border: `1px solid ${color}30`,
                       borderRadius: 50, padding: '6px 22px',
-                      color, fontSize: 16, fontWeight: 700,
+                      color, fontSize: 16 * sf, fontWeight: 700,
                     }}>{tag.emoji} {tag.label}</div>
                   ))}
                 </div>
@@ -167,18 +205,18 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             </div>
           </div>
 
-          {/* Player Name + Team */}
+          {/* Player Name + Team — 15% larger text */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: 28,
+            marginBottom: isPost ? 18 : 28,
           }}>
             <div style={{
-              color: s.bright, fontSize: 48, fontWeight: 900,
+              color: s.bright, fontSize: 55 * sf, fontWeight: 900,
               letterSpacing: '0.08em', textTransform: 'uppercase',
               textAlign: 'center', lineHeight: 1,
             }}>{playerName}</div>
             <div style={{
-              color: s.muted, fontSize: 18, fontWeight: 700,
+              color: s.muted, fontSize: 21 * sf, fontWeight: 700,
               letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 10,
               textAlign: 'center',
             }}>{playerTeam}</div>
@@ -187,29 +225,29 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           {/* ═══ ZONE 3: Game Context ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: 28, gap: 6,
+            marginBottom: isPost ? 18 : 28, gap: 6,
           }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 14,
-              fontSize: 36, fontWeight: 700,
+              fontSize: 36 * sf, fontWeight: 700,
             }}>
-              <span style={{ color: '#cbd5e1', fontSize: 42, fontWeight: 900, letterSpacing: '0.04em', textTransform: 'uppercase' }}>vs {game.opponent}</span>
+              <span style={{ color: '#cbd5e1', fontSize: 42 * sf, fontWeight: 900, letterSpacing: '0.04em', textTransform: 'uppercase' }}>vs {game.opponent}</span>
               <span style={{
                 color: game.isWin ? '#4ade80' : '#f87171',
-                fontWeight: 800, fontSize: 18,
+                fontWeight: 800, fontSize: 18 * sf,
                 background: game.isWin ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
                 border: `1px solid ${game.isWin ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)'}`,
                 borderRadius: 8, padding: '4px 16px',
               }}>{game.isWin ? 'WIN' : 'LOSS'}{scoreDisplay ? ` ${scoreDisplay}` : ''}</span>
             </div>
-            <div style={{ color: s.dim, fontSize: 15, fontWeight: 500 }}>
+            <div style={{ color: s.dim, fontSize: 15 * sf, fontWeight: 500 }}>
               {format(new Date(game.date), 'MMM d, yyyy')}
             </div>
           </div>
 
           {/* Micro divider */}
           <div style={{
-            width: '40%', height: 1, marginBottom: 20,
+            width: '40%', height: 1, marginBottom: isPost ? 14 : 20,
             background: `linear-gradient(90deg, transparent, ${color}25, transparent)`,
           }} />
 
@@ -219,47 +257,48 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             alignItems: 'center', flex: 1, justifyContent: 'center',
           }}>
             <div style={{
-              display: 'flex', gap: 20, marginBottom: 28, justifyContent: 'center',
+              display: 'flex', gap: 24, marginBottom: isPost ? 18 : 28, justifyContent: 'center',
             }}>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ color: s.dim, fontSize: 12, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>GAME SCORE</div>
-                <div style={{ color: s.bright, fontSize: 52, fontWeight: 900, lineHeight: 1 }}>{gameScore}</div>
+                <div style={{ color: s.dim, fontSize: 13 * sf, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>GAME SCORE</div>
+                <div style={{ color: s.bright, fontSize: 58 * sf, fontWeight: 900, lineHeight: 1 }}>{gameScore}</div>
               </div>
               {bestImpact.value > 0 && (
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ color: s.dim, fontSize: 12, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>BEST IMPACT</div>
-                  <div style={{ color: s.bright, fontSize: 52, fontWeight: 900, lineHeight: 1 }}>
-                    {bestImpact.value} <span style={{ fontSize: 22, color: s.sub, fontWeight: 700 }}>{bestImpact.stat}</span>
+                  <div style={{ color: s.dim, fontSize: 13 * sf, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>BEST IMPACT</div>
+                  <div style={{ color: s.bright, fontSize: 58 * sf, fontWeight: 900, lineHeight: 1 }}>
+                    {bestImpact.value} <span style={{ fontSize: 24 * sf, color: s.sub, fontWeight: 700 }}>{bestImpact.stat}</span>
                   </div>
                 </div>
               )}
             </div>
             <div style={{
-              width: '60%', height: 1, marginBottom: 28,
+              width: '60%', height: 1, marginBottom: isPost ? 18 : 28,
               background: `linear-gradient(90deg, transparent, ${color}30, transparent)`,
             }} />
+            {/* Stat grid — labels +10%, numbers +12% */}
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 16, width: '100%',
+              gap: 24, width: '100%',
             }}>
               {stats.map((st) => (
                 <div key={st.label} style={{
                   background: 'rgba(15,23,42,0.8)',
                   border: '1px solid rgba(100,116,139,0.12)',
                   borderLeft: `4px solid ${color}`,
-                  borderRadius: 16, padding: '20px 16px 18px',
+                  borderRadius: 16, padding: `${20 * sf}px ${20 * sf}px ${18 * sf}px`,
                   textAlign: 'left',
                   position: 'relative',
                 }}>
-                  <div style={{ fontSize: 23, fontWeight: 800, color, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4 }}>{st.label}</div>
-                  <div style={{ fontSize: 60, fontWeight: 900, color: s.bright, lineHeight: 1 }}>{st.value}</div>
+                  <div style={{ fontSize: 25 * sf, fontWeight: 800, color, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4, whiteSpace: 'nowrap' }}>{st.label}</div>
+                  <div style={{ fontSize: 67 * sf, fontWeight: 900, color: s.bright, lineHeight: 1, whiteSpace: 'nowrap' }}>{st.value}</div>
                 </div>
               ))}
             </div>
 
-            {/* Shooting Percentages Row */}
+            {/* Shooting Row */}
             <div style={{
-              display: 'flex', gap: 16, width: '100%', marginTop: 16,
+              display: 'flex', gap: 24, width: '100%', marginTop: isPost ? 12 : 16,
               justifyContent: 'center',
             }}>
               {[
@@ -270,11 +309,11 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 <div key={sh.label} style={{
                   flex: 1, background: 'rgba(15,23,42,0.5)',
                   border: '1px solid rgba(100,116,139,0.1)',
-                  borderRadius: 12, padding: '14px 12px',
+                  borderRadius: 12, padding: `${14 * sf}px ${12 * sf}px`,
                   textAlign: 'center',
                 }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: s.sub, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 2 }}>{sh.label}</div>
-                  <div style={{ fontSize: 36, fontWeight: 900, color: s.bright, lineHeight: 1 }}>{sh.made}/{sh.att}</div>
+                  <div style={{ fontSize: 18 * sf, fontWeight: 800, color: s.sub, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 2, whiteSpace: 'nowrap' }}>{sh.label}</div>
+                  <div style={{ fontSize: 40 * sf, fontWeight: 900, color: s.bright, lineHeight: 1, whiteSpace: 'nowrap' }}>{sh.made}/{sh.att}</div>
                 </div>
               ))}
             </div>
@@ -283,7 +322,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           {/* ═══ ZONE 5: Achievements + XP ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginTop: 24, gap: 14,
+            marginTop: isPost ? 16 : 24, gap: 14,
           }}>
             {careerHighsInGame.length > 0 && (
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -306,33 +345,32 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               background: 'linear-gradient(135deg, rgba(255,107,0,0.18), rgba(255,165,0,0.08))',
               border: '1px solid rgba(255,107,0,0.3)',
               borderRadius: 50, padding: '12px 44px',
-              color: '#ff8c3a', fontSize: 22, fontWeight: 900,
+              color: '#ff8c3a', fontSize: 22 * sf, fontWeight: 900,
               boxShadow: '0 0 40px rgba(255,107,0,0.12)',
               letterSpacing: '0.02em',
             }}>⚡ +{xpEarned} XP Earned</div>
           </div>
 
-          {/* ═══ FOOTER: Branding + QR ═══ */}
+          {/* ═══ FOOTER: Branding + QR — logo 20% larger, QR min 160px ═══ */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            marginTop: 32, width: '100%',
+            marginTop: isPost ? 20 : 32, width: '100%',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <img src={hoopJournalLogo} alt="" style={{ width: 68, height: 68, borderRadius: 16 }} crossOrigin="anonymous" />
+              <img src={hoopJournalLogo} alt="" style={{ width: 82, height: 82, borderRadius: 16 }} crossOrigin="anonymous" />
               <div>
-                <div style={{ color: s.bright, fontSize: 26, fontWeight: 800 }}>Hoop Journal</div>
-                <div style={{ color: s.dim, fontSize: 17, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
+                <div style={{ color: s.bright, fontSize: 28 * sf, fontWeight: 800 }}>Hoop Journal</div>
+                <div style={{ color: s.dim, fontSize: 18 * sf, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <div style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to track</div>
-              <img src={hoopJournalQr} alt="" style={{ width: 72, height: 72, borderRadius: 8 }} crossOrigin="anonymous" />
+              <div style={{ padding: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 10 }}>
+                <img src={hoopJournalQr} alt="" style={{ width: 160, height: 160, borderRadius: 6 }} crossOrigin="anonymous" />
+              </div>
             </div>
           </div>
         </div>
-
-
-
       </div>
     );
   }
