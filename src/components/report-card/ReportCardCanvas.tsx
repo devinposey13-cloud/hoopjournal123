@@ -351,22 +351,23 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             }}>⚡ +{xpEarned} XP Earned</div>
           </div>
 
-          {/* ═══ FOOTER: Branding + QR — logo 20% larger, QR min 160px ═══ */}
+          {/* ═══ FOOTER: Branding + QR ═══ */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            marginTop: isPost ? 20 : 32, width: '100%',
+            marginTop: isPost ? 14 : 32, width: '100%',
+            padding: isPost ? '12px 0' : '0',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <img src={hoopJournalLogo} alt="" style={{ width: 82, height: 82, borderRadius: 16 }} crossOrigin="anonymous" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: isPost ? 12 : 16 }}>
+              <img src={hoopJournalLogo} alt="" style={{ width: isPost ? 56 : 82, height: isPost ? 56 : 82, borderRadius: isPost ? 12 : 16 }} crossOrigin="anonymous" />
               <div>
-                <div style={{ color: s.bright, fontSize: 28 * sf, fontWeight: 800 }}>Hoop Journal</div>
-                <div style={{ color: s.dim, fontSize: 18 * sf, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
+                <div style={{ color: s.bright, fontSize: isPost ? 20 : 28, fontWeight: 800 }}>Hoop Journal</div>
+                <div style={{ color: s.dim, fontSize: isPost ? 13 : 18, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <div style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to track</div>
-              <div style={{ padding: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 10 }}>
-                <img src={hoopJournalQr} alt="" style={{ width: 160, height: 160, borderRadius: 6 }} crossOrigin="anonymous" />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <div style={{ color: s.dim, fontSize: isPost ? 8 : 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to track</div>
+              <div style={{ padding: isPost ? 4 : 6, background: 'rgba(255,255,255,0.06)', borderRadius: isPost ? 8 : 10 }}>
+                <img src={hoopJournalQr} alt="" style={{ width: isPost ? 100 : 160, height: isPost ? 100 : 160, borderRadius: 6 }} crossOrigin="anonymous" />
               </div>
             </div>
           </div>
