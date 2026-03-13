@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Mic, Camera, User, Sparkles, Loader2, Check, X, RefreshCw, Trash2, Volume2 } from 'lucide-react';
+import { Plus, Mic, Camera, User, Sparkles, Loader2, Check, X, RefreshCw, Trash2, Volume2, ImageIcon } from 'lucide-react';
+import { WebcamCaptureDialog } from '@/components/WebcamCaptureDialog';
 import { useCoachVoice } from '@/hooks/useCoachVoice';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
