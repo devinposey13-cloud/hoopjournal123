@@ -278,9 +278,9 @@ export function EmptyDashboardWelcome({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', delay: 0.2 }}
-              className={`w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6 ${playingIndex === -1 ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+              className={`w-20 h-20 rounded-full overflow-hidden mx-auto mb-6 ${playingIndex === -1 ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
             >
-              <span className="text-4xl">🏀</span>
+              <img src="/coach-avatar.png" alt="Coach AI" className="w-full h-full object-cover" />
             </motion.div>
 
             {/* Coach AI Header */}
