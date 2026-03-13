@@ -142,7 +142,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 color: s.dim, fontSize: 18, fontWeight: 800,
                 letterSpacing: '0.4em', textTransform: 'uppercase',
                 textAlign: 'center', marginBottom: 0,
-              }}>GAME GRADE</div>
+              }}>HOOP JOURNAL GAME GRADE</div>
               <div style={{
                 fontSize: 250, fontWeight: 900, color,
                 lineHeight: 1, textShadow: glow,
