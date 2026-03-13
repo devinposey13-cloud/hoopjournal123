@@ -166,8 +166,8 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             {/* Right: Grade + Tags */}
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
-              position: 'relative', marginTop: isPost ? 24 : 40,
-              padding: '80px 60px',
+              position: 'relative', marginTop: isPost ? 12 : 40,
+              padding: isPost ? '60px 50px' : '80px 60px',
             }}>
               <div style={{
                 position: 'absolute', top: '50%', left: '50%',
