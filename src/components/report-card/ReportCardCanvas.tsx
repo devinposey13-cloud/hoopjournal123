@@ -245,7 +245,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                   textAlign: 'left',
                   position: 'relative',
                 }}>
-                  <div style={{ fontSize: 20, fontWeight: 800, color, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4 }}>{st.label}</div>
+                  <div style={{ fontSize: 23, fontWeight: 800, color, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4 }}>{st.label}</div>
                   <div style={{ fontSize: 60, fontWeight: 900, color: s.bright, lineHeight: 1 }}>{st.value}</div>
                 </div>
               ))}
