@@ -1,38 +1,33 @@
+## RevenueCat Integration — IMPLEMENTED
 
+### What was built
 
-## Where PDF Exports Go on Mobile
+1. **Platform Detection** (`src/lib/platform.ts`) — `isNativeApp()`, `getPlatform()`, `isIOS()` helpers
+2. **RevenueCat Hook** (`src/hooks/useRevenueCat.ts`) — SDK init, purchase, restore, offerings
+3. **RevenueCat Webhook** (`supabase/functions/revenuecat-webhook/index.ts`) — syncs purchases to `plan_overrides`
+4. **Conditional Routing** — `useSubscription`, `Pricing.tsx`, `Upgrade.tsx`, `UpgradeDrawer.tsx` all route to RevenueCat on native
 
-**Current behavior:** The `exportPdf.ts` utility uses `jsPDF`'s `doc.save(fileName)` method, which triggers a standard browser file download. On mobile:
+### Next steps (user action required)
 
-- **iOS Safari**: Downloads go to the **Files app** → "Downloads" folder (or iCloud Drive). They do NOT appear in the Photos app because PDFs are documents, not images.
-- **Android**: Downloads go to the device's **Downloads** folder, accessible via the Files app.
-
-PDFs will never appear in the photo gallery on any platform — galleries only show images and videos.
-
-## Options to Improve Mobile Experience
-
-### Option A: Use Native Share Sheet (Recommended)
-Instead of triggering a raw download, convert the PDF blob and use `navigator.share()` with a File object. This opens the native share sheet where users can:
-- **Save to Files** (iOS/Android)
-- **Share via iMessage, WhatsApp**, etc.
-- **Print** directly
-- **Copy to other apps**
-
-This is the same pattern already used successfully for the Game Report Card image export.
-
-### Implementation
-1. **Modify `exportSeasonStatsPdf` and `exportGameBoxScorePdf`** in `src/utils/exportPdf.ts`:
-   - Instead of `doc.save(fileName)`, call `doc.output('blob')` to get a Blob
-   - On mobile (detect via user agent or viewport), use `navigator.share({ files: [new File([blob], fileName, { type: 'application/pdf' })] })`
-   - Fall back to `doc.save()` on desktop or if share API is unavailable
-
-2. **Add a toast notification** on iOS explaining where the file went (similar to Game Report Card pattern):
-   - "PDF ready! Tap 'Save to Files' to keep it."
-
-### Option B: No Code Change — Just Inform Users
-Add a small toast after export on mobile: "PDF saved to Downloads folder in your Files app."
+1. **Replace RevenueCat API key** in `src/hooks/useRevenueCat.ts` line 12 — replace `appl_REPLACE_WITH_YOUR_KEY` with your iOS public API key from RevenueCat dashboard
+2. **Create RevenueCat products** matching these IDs: `hj_starter_monthly`, `hj_starter_yearly`, `hj_pro_monthly`, `hj_pro_yearly`, `hj_elite_monthly`, `hj_elite_yearly`
+3. **Configure RevenueCat webhook** pointing to: `https://jwoupnumuotmwpwrkmob.supabase.co/functions/v1/revenuecat-webhook` with Authorization Bearer header matching the secret you just saved
+4. **Set up Capacitor** for native iOS builds (not yet added to the project)
 
 ---
 
-**Recommended approach**: Option A (share sheet) — it's more intuitive on mobile and follows the existing pattern used for game report card exports.
+## Native Google Sign-In — IMPLEMENTED
 
+### What was built
+
+1. **Plugin** — `@codetrix-studio/capacitor-google-auth` installed
+2. **Native helper** (`src/lib/nativeGoogleAuth.ts`) — `initNativeGoogleAuth()` + `nativeGoogleSignIn()` using `signInWithIdToken`
+3. **AuthForm.tsx** — branches on `isNativeApp()`: native uses SDK, web keeps existing `lovable.auth.signInWithOAuth`
+4. **App.tsx** — initializes the Google Auth plugin on native startup
+
+### User action required
+
+1. **Replace the Client ID** in `src/lib/nativeGoogleAuth.ts` line 10 — replace `REPLACE_WITH_YOUR_IOS_CLIENT_ID.apps.googleusercontent.com` with your iOS OAuth Client ID from [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. **Create an iOS OAuth Client ID** — type: iOS application, bundle ID: `app.lovable.2cd79f530f3e4e88858df49e60e86e08`
+3. **Add reversed client ID** as a URL scheme in Xcode (e.g. `com.googleusercontent.apps.XXXX`)
+4. Run `npm install` → `npx cap sync` → rebuild in Xcode → TestFlight
