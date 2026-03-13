@@ -177,10 +177,10 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold flex items-center gap-2">
+      <div className="text-center">
+        <h1 className="text-xl font-bold flex items-center justify-center gap-2">
           <Bot className="h-5 w-5 text-primary" />
           Coach AI
         </h1>
@@ -219,8 +219,9 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
           Quick Actions
         </p>
-        <ScrollArea className="w-full">
-          <div className="flex gap-3 pb-2">
+        <div className="flex justify-center">
+        <ScrollArea className="w-auto">
+          <div className="flex gap-3 pb-2 justify-center">
             {actionCards.map((action, index) => (
               <motion.button
                 key={action.id}
@@ -254,6 +255,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -267,7 +269,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
         >
           <Suspense fallback={<ChatSkeleton />}>
             {activeSection === 'chat' && (
-              <div className="max-w-2xl">
+              <div className="max-w-2xl mx-auto">
                 <CoachChat 
                   games={games} 
                   seasonStats={seasonStats} 
