@@ -36,8 +36,8 @@ const FORMATS = {
 
 // Instagram safe zones
 const SAFE = {
-  top: 180,
-  bottom: 250,
+  top: 100,
+  bottom: 320,
   left: 80,
   right: 80,
 } as const;
