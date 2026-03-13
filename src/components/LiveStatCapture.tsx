@@ -136,7 +136,9 @@ export function LiveStatCapture({
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
   const [isWin, setIsWin] = useState<boolean | null>(null);
-  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(false);
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(() => {
+    try { return localStorage.getItem('hj-sound-effects') === 'true'; } catch { return false; }
+  });
   const [hasRestoredFromAutosave, setHasRestoredFromAutosave] = useState(false);
   const [showHalftimeDialog, setShowHalftimeDialog] = useState(false);
   const [halftimeScore, setHalftimeScore] = useState<TeamScore | null>(null);
@@ -169,7 +171,7 @@ export function LiveStatCapture({
       setHistory(savedData.history);
       setGamePhoto(savedData.gamePhoto);
       setIsWin(savedData.isWin);
-      setSoundEffectsEnabled(savedData.soundEffectsEnabled);
+      
       if (savedData.halftimeScore) {
         setHalftimeScore(savedData.halftimeScore);
       }
@@ -957,18 +959,6 @@ export function LiveStatCapture({
           </div>
         )}
 
-        {/* Sound Effects Toggle - Inline */}
-        <div className="flex items-center justify-center gap-3">
-          <Label htmlFor="sound-effects" className="text-[10px] text-muted-foreground">
-            Sound Effects
-          </Label>
-          <Switch
-            id="sound-effects"
-            checked={soundEffectsEnabled}
-            onCheckedChange={setSoundEffectsEnabled}
-            className="scale-75"
-          />
-        </div>
 
         {/* Game Result Selection - Compact */}
         <div className="flex items-center gap-2">
