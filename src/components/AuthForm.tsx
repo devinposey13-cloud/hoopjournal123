@@ -324,7 +324,7 @@ export function AuthForm() {
               className="text-muted-foreground mt-1"
               style={{ fontFamily: "'Dancing Script', cursive" }}
             >
-              {isLogin ? 'Dear Basketball,' : 'Create your account'}
+              {isLogin ? 'Track Your Game. Improve Every Day.' : 'Create your account'}
             </p>
           </div>
 
