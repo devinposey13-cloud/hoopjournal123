@@ -111,7 +111,7 @@ const App = () => (
               <OAuthErrorHandler />
               <NativeOAuthHandler />
               <BrowserRouter>
-                <FloatingHomeButton />
+                
                 <Routes>
                   <Route path="/auth/callback" element={<OAuthCallback />} />
                   <Route path="/" element={<Index />} />
