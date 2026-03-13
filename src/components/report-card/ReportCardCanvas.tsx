@@ -207,6 +207,12 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             </div>
           </div>
 
+          {/* Micro divider */}
+          <div style={{
+            width: '40%', height: 1, marginBottom: 20,
+            background: `linear-gradient(90deg, transparent, ${color}25, transparent)`,
+          }} />
+
           {/* ═══ ZONE 4: Stat Panel ═══ */}
           <div style={{
             width: '100%', display: 'flex', flexDirection: 'column',
