@@ -1,5 +1,6 @@
 import React, { useState, lazy, Suspense, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getCoachAvatarUrl } from '@/utils/coachAvatar';
 import { 
   Bot, 
   MessageCircle, 
