@@ -676,13 +676,23 @@ export function EmptyDashboardWelcome({
                   </>
                 ) : (
                   <>
-                    <Button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full h-12 gradient-primary"
-                    >
-                      <Camera className="w-4 h-4 mr-2" />
-                      Upload a photo
-                    </Button>
+                    <div className="flex gap-2 w-full">
+                      <Button
+                        onClick={() => setShowWebcam(true)}
+                        className="flex-1 h-12 gradient-primary"
+                      >
+                        <Camera className="w-4 h-4 mr-1" />
+                        Take Photo
+                      </Button>
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        variant="outline"
+                        className="flex-1 h-12"
+                      >
+                        <ImageIcon className="w-4 h-4 mr-1" />
+                        Upload
+                      </Button>
+                    </div>
                     <Button
                       onClick={() => setShowSkipConfirm(true)}
                       variant="ghost"
