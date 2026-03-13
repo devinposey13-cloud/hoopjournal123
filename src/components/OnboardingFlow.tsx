@@ -12,6 +12,8 @@ import { GoalsCard } from './onboarding/GoalsCard';
 import { PricingPreviewCard } from './onboarding/PricingPreviewCard';
 import { track, type PlanId, type BillingCycle } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { isNativeApp } from '@/lib/platform';
 import { toast } from 'sonner';
 
 export interface OnboardingData {
@@ -37,6 +39,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [direction, setDirection] = useState(0);
   const navigate = useNavigate();
   const { createCheckout } = useSubscription();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage } = useRevenueCat();
   const [data, setData] = useState<OnboardingData>({
     name: '',
     courtRole: '',
@@ -89,12 +92,31 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     console.log('[Onboarding] Starting checkout for paid plan:', { planId, billingCycle });
 
     try {
+      if (isNativeApp() && rcAvailable) {
+        const suffix = billingCycle === 'yearly' ? 'year' : 'month';
+        const rcPkg = rcOfferings.find(
+          (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)
+        );
+        if (rcPkg) {
+          await purchasePackage(rcPkg.identifier);
+          toast.success('Purchase successful! 🎉');
+          navigate('/onboarding/finish');
+          onComplete(data, 'explore_dashboard');
+          return;
+        } else {
+          toast.error('Package not available');
+          return;
+        }
+      }
+
       await createCheckout(planId, billingCycle, 'onboarding');
-      // On mobile, createCheckout redirects in same tab, so this toast may not be seen
       toast.info('Redirecting to checkout...');
     } catch (err) {
       console.error('[Onboarding] Checkout failed:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to start checkout. Try again.');
+      const msg = err instanceof Error ? err.message : 'Failed to start checkout. Try again.';
+      if (!msg.includes('cancelled') && !msg.includes('canceled')) {
+        toast.error(msg);
+      }
     }
   };
 
