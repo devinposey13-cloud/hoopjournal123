@@ -49,8 +49,17 @@ function OAuthErrorHandler() {
   return null;
 }
 
-// Listen for native OAuth deep link callbacks (Capacitor)
+// Initialize native Google Auth + listen for native OAuth deep link callbacks (Capacitor)
 function NativeOAuthHandler() {
+  useEffect(() => {
+    // Initialize native Google Sign-In SDK on native platforms
+    if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+      import('@/lib/nativeGoogleAuth').then(({ initNativeGoogleAuth }) => {
+        initNativeGoogleAuth();
+      });
+    }
+  }, []);
+
   useEffect(() => {
     let cleanup: (() => void) | null = null;
     
