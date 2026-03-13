@@ -14,10 +14,15 @@ export function JournalHeader({ playerName, className }: JournalHeaderProps) {
       </div>
       
       <h1
-        className="text-5xl md:text-6xl lg:text-7xl mb-2 relative text-foreground uppercase tracking-wide"
-        style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}>
-        TRACK YOUR GAME.<br/>IMPROVE EVERY DAY.
+        className="text-6xl md:text-7xl lg:text-8xl mb-1 relative text-foreground uppercase tracking-wide"
+        style={{ fontFamily: "'Teko', sans-serif", fontWeight: 700 }}>
+        HOOP JOURNAL
       </h1>
+      <p
+        className="text-3xl md:text-4xl lg:text-5xl mb-2 relative text-muted-foreground uppercase tracking-wide"
+        style={{ fontFamily: "'Teko', sans-serif", fontWeight: 500 }}>
+        TRACK YOUR GAME. IMPROVE EVERY DAY.
+      </p>
       
       {/* Decorative divider with basketball accents */}
       <div className="flex items-center justify-center gap-3 my-4">
