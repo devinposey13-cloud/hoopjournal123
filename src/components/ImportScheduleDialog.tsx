@@ -305,7 +305,7 @@ export function ImportScheduleDialog({ onImport, isMobile, existingGames = [] }:
           {isMobile && <span className="sr-only">Import Schedule</span>}
         </Button>
       </DialogTrigger>
-      <DialogContent className={cn("sm:max-w-lg", isMobileDevice && "max-h-[90vh]")}>
+      <DialogContent className={cn("sm:max-w-lg overflow-hidden flex flex-col", isMobileDevice && "max-h-[90vh]")}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
@@ -412,8 +412,8 @@ export function ImportScheduleDialog({ onImport, isMobile, existingGames = [] }:
             )}
 
             {aiStep === 'review' && (
-              <div className="space-y-3">
-                <ScrollArea className={cn("pr-3", isMobileDevice ? "max-h-[45vh]" : "max-h-[350px]")}>
+              <div className="space-y-3 min-h-0 flex flex-col">
+                <ScrollArea className="pr-3 h-[350px] flex-shrink min-h-0">
                   <div className="space-y-3">
                     {aiParsedGames.map((game, i) => (
                       <div
