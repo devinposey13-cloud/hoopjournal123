@@ -92,6 +92,14 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           boxSizing: 'border-box',
         }}
       >
+        {/* ── Court Lines Background ── */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundImage: `url(${courtLines})`,
+          backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
+          opacity: 0.04, pointerEvents: 'none',
+          filter: 'invert(1)',
+        }} />
         {/* ── Background Effects ── */}
         <div style={{
           position: 'absolute', top: '22%', left: '50%', transform: 'translate(-50%, -50%)',
