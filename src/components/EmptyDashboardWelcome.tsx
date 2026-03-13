@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Mic, Camera, User, Sparkles, Loader2, Check, X, RefreshCw, Trash2, Volume2, ImageIcon } from 'lucide-react';
+import { getCoachAvatarUrl } from '@/utils/coachAvatar';
 import { WebcamCaptureDialog } from '@/components/WebcamCaptureDialog';
 import { useCoachVoice } from '@/hooks/useCoachVoice';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -28,6 +29,7 @@ interface EmptyDashboardWelcomeProps {
   avatarUrl?: string;
   hasSkippedAvatar?: boolean;
   isFirstTimeAfterOnboarding?: boolean;
+  coachVoiceGender?: 'male' | 'female';
   onLogFirstGame: () => void;
   onPregameTalk: () => void;
   onUploadPhoto: () => void;
@@ -45,6 +47,7 @@ export function EmptyDashboardWelcome({
   avatarUrl,
   hasSkippedAvatar,
   isFirstTimeAfterOnboarding,
+  coachVoiceGender,
   onLogFirstGame, 
   onPregameTalk,
   onUploadPhoto,
@@ -280,7 +283,7 @@ export function EmptyDashboardWelcome({
               transition={{ type: 'spring', delay: 0.2 }}
               className={`w-20 h-20 rounded-full overflow-hidden mx-auto mb-6 ${playingIndex === -1 ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
             >
-              <img src="/coach-avatar.png" alt="Coach AI" className="w-full h-full object-cover" />
+              <img src={getCoachAvatarUrl(coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
             </motion.div>
 
             {/* Coach AI Header */}

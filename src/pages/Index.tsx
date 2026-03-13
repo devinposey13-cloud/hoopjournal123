@@ -530,6 +530,7 @@ export default function Index() {
                     avatarUrl={profile.avatar}
                     hasSkippedAvatar={Boolean(profile.avatarSkippedAt)}
                     isFirstTimeAfterOnboarding={justCompletedOnboarding}
+                    coachVoiceGender={profile.coachVoiceGender}
                     onLogFirstGame={() => {
                       // Trigger add game dialog - navigate to games tab
                       setActiveTab('games');

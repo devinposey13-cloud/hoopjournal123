@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Bot, User, Loader2, Sparkles, Video, X, Volume2, VolumeX, Mic, MicOff, Brain } from 'lucide-react';
+import { getCoachAvatarUrl } from '@/utils/coachAvatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -421,8 +422,8 @@ export function CoachChat({ games, seasonStats, profile, prefillPrompt, onPrefil
         {/* Header with Tabs */}
         <div className="flex items-center justify-between pb-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
-              <Bot className="w-5 h-5 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+              <img src={getCoachAvatarUrl(profile.coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
             </div>
             <div>
               <h3 className="font-semibold">Coach AI</h3>
@@ -447,8 +448,8 @@ export function CoachChat({ games, seasonStats, profile, prefillPrompt, onPrefil
       <ScrollArea className="flex-1 py-4" ref={scrollRef}>
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-4">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Sparkles className="w-8 h-8 text-primary" />
+            <div className="w-16 h-16 rounded-full overflow-hidden mb-4">
+              <img src={getCoachAvatarUrl(profile.coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
             </div>
             <h4 className="font-semibold mb-2">Ask Coach AI</h4>
             <p className="text-sm text-muted-foreground mb-6 max-w-sm">
@@ -481,16 +482,16 @@ export function CoachChat({ games, seasonStats, profile, prefillPrompt, onPrefil
               >
                 <div
                   className={cn(
-                    'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
+                    'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden',
                     message.role === 'user'
                       ? 'bg-primary text-primary-foreground'
-                      : 'gradient-primary'
+                      : ''
                   )}
                 >
                   {message.role === 'user' ? (
                     <User className="w-4 h-4" />
                   ) : (
-                    <Bot className="w-4 h-4 text-primary-foreground" />
+                    <img src={getCoachAvatarUrl(profile.coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
                   )}
                 </div>
                 <div
