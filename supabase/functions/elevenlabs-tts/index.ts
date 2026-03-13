@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 // Voice IDs for Coach AI
-const MALE_VOICE_ID = 'IbsAkxpPgsmCNfObGf6G'; // Marcus - deep, warm African American male voice
+const MALE_VOICE_ID = 'nJvj5shg2xu1GKGxqfkE'; // Hakeem - African American narrator voice
 const FEMALE_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // Sarah - warm, encouraging female voice
 
 serve(async (req) => {
