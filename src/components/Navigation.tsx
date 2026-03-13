@@ -144,7 +144,8 @@ export function Navigation({
             </span>
           </div>
 
-          {/* Navigation Tabs */}
+          {/* Navigation Tabs - centered */}
+          <div className="flex-1 flex justify-center">
           <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-lg">
             {primaryTabs.map((tab) => {
               const isActive = displayActiveTab === tab.id;
