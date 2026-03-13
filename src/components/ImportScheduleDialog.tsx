@@ -412,8 +412,8 @@ export function ImportScheduleDialog({ onImport, isMobile, existingGames = [] }:
             )}
 
             {aiStep === 'review' && (
-              <div className="space-y-3">
-                <ScrollArea className={cn("pr-3", isMobileDevice ? "max-h-[45vh]" : "max-h-[350px]")}>
+              <div className="space-y-3 min-h-0 flex flex-col">
+                <ScrollArea className="pr-3 h-[350px] flex-shrink min-h-0">
                   <div className="space-y-3">
                     {aiParsedGames.map((game, i) => (
                       <div
