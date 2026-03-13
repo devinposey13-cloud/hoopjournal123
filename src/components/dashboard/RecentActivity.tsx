@@ -85,7 +85,7 @@ export function RecentActivity({ games, clips = [], onViewGame, onViewAllGames, 
             <div
               key={activity.id}
               className={cn(
-                "flex items-center gap-3 p-3 rounded-lg",
+                "flex items-center gap-3 p-3 rounded-lg group",
                 "bg-card/50 border border-border/50",
                 "hover:bg-card/80 transition-colors",
                 activity.onClick && "cursor-pointer"
