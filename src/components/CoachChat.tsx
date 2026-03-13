@@ -422,8 +422,8 @@ export function CoachChat({ games, seasonStats, profile, prefillPrompt, onPrefil
         {/* Header with Tabs */}
         <div className="flex items-center justify-between pb-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
-              <Bot className="w-5 h-5 text-primary-foreground" />
+            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+              <img src={getCoachAvatarUrl(profile.coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
             </div>
             <div>
               <h3 className="font-semibold">Coach AI</h3>
