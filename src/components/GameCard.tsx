@@ -161,7 +161,7 @@ export function GameCard({ game, profile, onDelete, teams, onTeamChange }: GameC
               <FileDown className="w-4 h-4" />
             </Button>
           )}
-          {onDelete && !isMobile && (
+          {onDelete && (
             <Button
               variant="ghost"
               size="icon"

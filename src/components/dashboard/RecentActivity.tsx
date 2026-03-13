@@ -109,8 +109,23 @@ export function RecentActivity({ games, clips = [], onViewGame, onViewAllGames, 
                 <p className="text-xs text-muted-foreground truncate">{activity.subtitle}</p>
               </div>
               
-              <div className="text-xs text-muted-foreground flex-shrink-0">
-                {timeAgo}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <span className="text-xs text-muted-foreground">
+                  {timeAgo}
+                </span>
+                {activity.type === 'game' && onDeleteGame && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteGame(activity.id);
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                )}
               </div>
             </div>
           );
