@@ -287,7 +287,7 @@ export function EmptyDashboardWelcome({
               transition={{ type: 'spring', delay: 0.2 }}
               className={`w-20 h-20 rounded-full overflow-hidden mx-auto mb-6 ${playingIndex === -1 ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
             >
-              <img src={getCoachAvatarUrl(coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
+              <img src={getCoachAvatarUrl(effectiveCoachGender)} alt="Coach AI" className="w-full h-full object-cover" />
             </motion.div>
 
             {/* Coach AI Header */}
