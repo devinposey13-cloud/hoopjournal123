@@ -201,7 +201,7 @@ export function PlayerCard({
           {/* Quick Stats Row */}
           {hasStats && (
             <TooltipProvider delayDuration={300}>
-              <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-border/50 overflow-x-auto scrollbar-hide">
+              <div className="flex items-center justify-between gap-3 sm:gap-4 mt-4 pt-5 pb-1 border-t border-border/50 overflow-x-auto scrollbar-hide">
                 {lastGame && (
                   <QuickStat
                     label="Last Game"
