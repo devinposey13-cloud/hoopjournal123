@@ -34,7 +34,7 @@ interface QuickStatProps {
 
 function QuickStat({ label, value, icon: Icon, accent, tooltip }: QuickStatProps) {
   const content = (
-    <div className="flex flex-col items-center min-w-[48px] cursor-default">
+    <div className="flex flex-col items-center min-w-[52px] px-1.5 cursor-default">
       <Icon className={cn("w-3.5 h-3.5 mb-0.5", accent ? "text-primary" : "text-muted-foreground")} />
       <p className={cn("text-sm font-bold tabular-nums", accent && "text-primary")}>{value}</p>
       <p className="text-[10px] text-muted-foreground leading-tight">{label}</p>
