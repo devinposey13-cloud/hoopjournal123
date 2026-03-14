@@ -172,9 +172,9 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
   const FocusIcon = todaysFocus.icon;
 
   const actionCards = [
-    { id: 'chat', label: 'Coach Chat', icon: MessageCircle, description: 'Ask for feedback' },
-    { id: 'knowledge', label: 'BB Knowledge', icon: BookOpen, description: 'Learn the game' },
-    { id: 'compare', label: 'Player Compare', icon: Users, description: 'Compare to pros' },
+    { id: 'chat', label: 'Coach Chat', icon: MessageCircle, description: 'Ask for personalized feedback on your game.' },
+    { id: 'knowledge', label: 'BB Knowledge', icon: BookOpen, description: 'Learn basketball strategy and concepts.' },
+    { id: 'compare', label: 'Player Compare', icon: Users, description: 'Compare your stats with top players.' },
   ];
 
   return (
