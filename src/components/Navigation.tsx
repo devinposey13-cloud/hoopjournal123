@@ -193,77 +193,128 @@ export function Navigation({
               </DropdownMenuTrigger>
               <DropdownMenuContent 
                 align="end" 
-                className="w-64 bg-popover border border-border shadow-lg z-50"
+                className="w-72 bg-popover border border-border shadow-lg z-50"
               >
-                {/* Profile Selector - Only show if multiple profiles exist */}
-                {hasMultipleProfiles && (
-                  <>
-                    <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-3 py-1.5">
-                      Active Player
-                    </DropdownMenuLabel>
-                    <div className="px-3 py-2">
-                      <ProfileSelector onAddProfile={handleAddProfile} compact />
-                    </div>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
+                {/* Player Identity Header */}
+                <div className="flex items-center gap-3 px-3 py-3">
+                  <Avatar className="w-10 h-10 border-2 border-border">
+                    <AvatarImage src={activeProfile?.avatar_url || undefined} alt={displayName} />
+                    <AvatarFallback className="bg-muted text-muted-foreground text-sm font-bold">
+                      {displayName.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-foreground truncate">{displayName}</p>
+                    {profileSubtitle && (
+                      <p className="text-xs text-muted-foreground">{profileSubtitle}</p>
+                    )}
+                  </div>
+                  {hasMultipleProfiles && (
+                    <ProfileSelector onAddProfile={handleAddProfile} compact />
+                  )}
+                </div>
 
-                {/* Menu Items */}
-                <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-3 py-1.5">
-                  Features
+                <DropdownMenuSeparator />
+
+                {/* PLAYER Section */}
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold px-3 py-1">
+                  Player
                 </DropdownMenuLabel>
-                {moreTabsList.map((tab) => {
-                  const isActive = activeTab === tab.id;
-                  const showBadge = tab.id === 'admin' && adminNotificationCount > 0;
-                  return (
+                <DropdownMenuItem
+                  onClick={() => handleMoreItemClick({ id: 'profile' as Tab, label: 'Profile', icon: UserCircle, route: '/profile' })}
+                  className={cn('flex items-center gap-3 px-3 py-2.5 cursor-pointer', activeTab === 'profile' && 'bg-primary/10 text-primary')}
+                >
+                  <UserCircle className="w-4 h-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleAddProfile}
+                  className="flex items-center gap-3 px-3 py-2.5 cursor-pointer"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Add Player</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                {/* APP Section */}
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold px-3 py-1">
+                  App
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={() => handleMoreItemClick({ id: 'settings' as Tab, label: 'Settings', icon: Settings })}
+                  className={cn('flex items-center gap-3 px-3 py-2.5 cursor-pointer', activeTab === 'settings' && 'bg-primary/10 text-primary')}
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleMoreItemClick({ id: 'minigames' as Tab, label: 'Play', icon: Gamepad2 })}
+                  className={cn('flex items-center gap-3 px-3 py-2.5 cursor-pointer', activeTab === 'minigames' && 'bg-primary/10 text-primary')}
+                >
+                  <Gamepad2 className="w-4 h-4" />
+                  <span>Play</span>
+                </DropdownMenuItem>
+                <div className="flex items-center gap-3 px-3 py-2.5">
+                  <CalendarRange className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm flex-1">Season</span>
+                  <SeasonSelector
+                    seasons={seasons}
+                    activeSeason={activeSeason}
+                    onSeasonChange={onSeasonChange}
+                    onCreateSeason={onCreateSeason}
+                    onDeleteSeason={onDeleteSeason}
+                  />
+                </div>
+
+                {/* ADMIN Section (conditional) */}
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold px-3 py-1">
+                      Admin
+                    </DropdownMenuLabel>
                     <DropdownMenuItem
-                      key={tab.id}
-                      onClick={() => handleMoreItemClick(tab)}
-                      className={cn(
-                        'flex items-center gap-3 px-3 py-2.5 cursor-pointer',
-                        isActive && 'bg-primary/10 text-primary'
-                      )}
+                      onClick={() => handleMoreItemClick({ id: 'admin' as Tab, label: 'Admin Console', icon: Shield })}
+                      className={cn('flex items-center gap-3 px-3 py-2.5 cursor-pointer', activeTab === 'admin' && 'bg-primary/10 text-primary')}
                     >
-                      <tab.icon className="w-4 h-4" />
-                      <span className="flex-1">{tab.label}</span>
-                      {showBadge && (
+                      <Shield className="w-4 h-4" />
+                      <span className="flex-1">Admin Console</span>
+                      {adminNotificationCount > 0 && (
                         <Badge variant="destructive" className="h-5 min-w-5 flex items-center justify-center px-1 text-xs">
                           {adminNotificationCount > 99 ? '99+' : adminNotificationCount}
                         </Badge>
                       )}
                     </DropdownMenuItem>
-                  );
-                })}
+                  </>
+                )}
 
-                {/* Add Player */}
-                <DropdownMenuItem
-                  onClick={handleAddProfile}
-                  className="flex items-center gap-3 px-3 py-2.5 cursor-pointer text-primary"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span className="flex-1">Add Player</span>
-                </DropdownMenuItem>
-
-                {/* Season Selector Section */}
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-3 py-1.5">
-                  Season
+
+                {/* SUPPORT Section */}
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold px-3 py-1">
+                  Support
                 </DropdownMenuLabel>
-                <div className="px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <CalendarRange className="w-4 h-4 text-muted-foreground" />
-                    <SeasonSelector
-                      seasons={seasons}
-                      activeSeason={activeSeason}
-                      onSeasonChange={onSeasonChange}
-                      onCreateSeason={onCreateSeason}
-                      onDeleteSeason={onDeleteSeason}
-                    />
-                  </div>
+                <DropdownMenuItem
+                  onClick={() => {
+                    window.open('mailto:support@hoopjournal.me', '_blank');
+                    setMoreMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 px-3 py-2.5 cursor-pointer"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  <span>Help Center</span>
+                </DropdownMenuItem>
+                <div className="px-1 [&_button]:w-full [&_button]:justify-start [&_button]:gap-3 [&_button]:px-2 [&_button]:py-2.5 [&_button]:h-auto [&_button]:rounded-sm [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-foreground [&_button]:hover:bg-accent [&_button]:font-normal [&_button]:text-sm">
+                  <FeedbackDialog />
                 </div>
 
-                {/* Sign Out */}
                 <DropdownMenuSeparator />
+
+                {/* ACCOUNT Section */}
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold px-3 py-1">
+                  Account
+                </DropdownMenuLabel>
                 <DropdownMenuItem
                   onClick={handleSignOut}
                   className="flex items-center gap-3 px-3 py-2.5 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
