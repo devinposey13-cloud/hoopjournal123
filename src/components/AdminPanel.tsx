@@ -933,7 +933,10 @@ export function AdminPanel() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Unread Feedback</CardDescription>
+            <CardDescription className="flex items-center gap-1.5">
+              Unread Feedback
+              <MetricHint tip="User-submitted feedback messages from Settings that haven't been reviewed by an admin." />
+            </CardDescription>
             <CardTitle className="text-3xl text-primary">{unreadFeedback}</CardTitle>
           </CardHeader>
         </Card>
