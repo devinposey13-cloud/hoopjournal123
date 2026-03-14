@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Gamepad2, LogOut, Settings, Shield, UserCircle, Users } from 'lucide-react';
+import {
+  LogOut, Settings, Shield, UserCircle, UserPlus, Calendar,
+  HelpCircle, MessageSquare, Gamepad2,
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveProfile } from '@/hooks/useActiveProfile';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
   SheetContent,
@@ -15,6 +20,7 @@ import {
 import { SeasonSelector } from './SeasonSelector';
 import { ProfileSelector } from './profile/ProfileSelector';
 import { AddProfileDialog } from './profile/AddProfileDialog';
+import { FeedbackDialog } from './FeedbackDialog';
 import { Season } from '@/types/basketball';
 
 export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile';
@@ -34,12 +40,46 @@ interface MoreMenuProps {
   onProfileCreated?: (profileId: string) => void;
 }
 
-// Menu items - Profile added
-const menuItems = [
-  { id: 'profile' as Tab, label: 'Profile', icon: UserCircle, route: '/profile' },
-  { id: 'minigames' as Tab, label: 'Play', icon: Gamepad2 },
-  { id: 'settings' as Tab, label: 'Settings', icon: Settings },
-];
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-1 pt-1 pb-0.5">
+      {children}
+    </p>
+  );
+}
+
+interface MenuRowProps {
+  icon: React.ElementType;
+  label: string;
+  onClick: () => void;
+  isActive?: boolean;
+  badge?: number;
+  variant?: 'default' | 'destructive';
+}
+
+function MenuRow({ icon: Icon, label, onClick, isActive, badge, variant = 'default' }: MenuRowProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+        variant === 'destructive'
+          ? 'text-destructive hover:bg-destructive/10'
+          : isActive
+            ? 'bg-primary/10 text-primary'
+            : 'text-foreground hover:bg-secondary/70'
+      )}
+    >
+      <Icon className="w-5 h-5 flex-shrink-0" />
+      <span className="flex-1 text-left">{label}</span>
+      {badge != null && badge > 0 && (
+        <Badge variant="destructive" className="h-5 min-w-5 flex items-center justify-center px-1.5 text-xs">
+          {badge > 99 ? '99+' : badge}
+        </Badge>
+      )}
+    </button>
+  );
+}
 
 export function MoreMenu({
   open,
@@ -57,24 +97,20 @@ export function MoreMenu({
 }: MoreMenuProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { hasMultipleProfiles } = useActiveProfile();
+  const { activeProfile, hasMultipleProfiles } = useActiveProfile();
   const [showAddProfileDialog, setShowAddProfileDialog] = useState(false);
-  
-  const allItems = isAdmin
-    ? [...menuItems, { id: 'admin' as Tab, label: 'Admin', icon: Shield }]
-    : menuItems;
 
   const handleSignOut = async () => {
     await signOut();
     onOpenChange(false);
   };
 
-  const handleItemClick = (item: typeof menuItems[0]) => {
-    if ('route' in item && item.route) {
-      navigate(item.route);
+  const go = (tab: Tab, route?: string) => {
+    if (route) {
+      navigate(route);
       onOpenChange(false);
     } else {
-      onSelect(item.id);
+      onSelect(tab);
     }
   };
 
@@ -88,71 +124,79 @@ export function MoreMenu({
     onProfileCreated?.(profileId);
   };
 
+  // Derive display values from active profile
+  const displayName = activeProfile?.display_name || activeProfile?.name || 'Player';
+  const positionShort = activeProfile?.position
+    ? activeProfile.position.replace('Point Guard', 'PG').replace('Shooting Guard', 'SG').replace('Combo Guard', 'CG').replace('Small Forward', 'SF').replace('Power Forward', 'PF').replace('Center', 'C')
+    : '';
+  const jerseyNumber = activeProfile?.number != null ? `#${activeProfile.number}` : '';
+  const subtitle = [positionShort, jerseyNumber].filter(Boolean).join(' · ');
+
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh]">
-          <SheetHeader className="pb-4">
-            <SheetTitle className="text-center">More</SheetTitle>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+          <SheetHeader className="sr-only">
+            <SheetTitle>More</SheetTitle>
           </SheetHeader>
 
-          {/* Profile Selector - Only show if multiple profiles exist */}
-          {hasMultipleProfiles && (
-            <div className="border-b border-border pb-4 mb-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                  <Users className="h-4 w-4" />
-                  Active Player
-                </span>
-                <ProfileSelector onAddProfile={handleAddProfile} compact />
-              </div>
+          {/* ── Player Identity Header ── */}
+          <div className="flex items-center gap-3 pb-4">
+            <Avatar className="w-12 h-12 border-2 border-border">
+              <AvatarImage src={activeProfile?.avatar_url || undefined} alt={displayName} />
+              <AvatarFallback className="bg-muted text-muted-foreground text-lg font-bold">
+                {displayName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-foreground truncate">{displayName}</p>
+              {subtitle && (
+                <p className="text-xs text-muted-foreground">{subtitle}</p>
+              )}
             </div>
-          )}
-
-          <div className="grid grid-cols-3 gap-3 pb-6">
-            {allItems.map((item) => {
-              const isActive = activeTab === item.id;
-              const showBadge = item.id === 'admin' && adminNotificationCount > 0;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleItemClick(item)}
-                  className={cn(
-                    'flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-colors relative',
-                    isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'bg-secondary/50 text-foreground hover:bg-secondary'
-                  )}
-                >
-                  <div className="relative">
-                    <item.icon className="w-6 h-6" />
-                    {showBadge && (
-                      <Badge 
-                        variant="destructive" 
-                        className="absolute -top-2 -right-3 h-5 min-w-5 flex items-center justify-center px-1 text-xs"
-                      >
-                        {adminNotificationCount > 99 ? '99+' : adminNotificationCount}
-                      </Badge>
-                    )}
-                  </div>
-                  <span className="text-sm font-medium">{item.label}</span>
-                </button>
-              );
-            })}
-            {/* Add Player button - always visible */}
-            <button
-              onClick={handleAddProfile}
-              className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-colors bg-primary/5 text-primary hover:bg-primary/10 border-2 border-dashed border-primary/30"
-            >
-              <Users className="w-6 h-6" />
-              <span className="text-sm font-medium">Add Player</span>
-            </button>
+            {hasMultipleProfiles && (
+              <ProfileSelector onAddProfile={handleAddProfile} compact />
+            )}
           </div>
 
-          {/* Season Selector */}
-          <div className="border-t border-border pt-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Current Season</span>
+          <Separator className="mb-4" />
+
+          {/* ── PLAYER Section ── */}
+          <div className="space-y-0.5 mb-3">
+            <SectionLabel>Player</SectionLabel>
+            <MenuRow
+              icon={UserCircle}
+              label="Profile"
+              isActive={activeTab === 'profile'}
+              onClick={() => go('profile', '/profile')}
+            />
+            <MenuRow
+              icon={UserPlus}
+              label="Add Player"
+              onClick={handleAddProfile}
+            />
+          </div>
+
+          {/* ── APP Section ── */}
+          <div className="space-y-0.5 mb-3">
+            <SectionLabel>App</SectionLabel>
+            <MenuRow
+              icon={Settings}
+              label="Settings"
+              isActive={activeTab === 'settings'}
+              onClick={() => go('settings')}
+            />
+            <MenuRow
+              icon={Gamepad2}
+              label="Play"
+              isActive={activeTab === 'minigames'}
+              onClick={() => go('minigames')}
+            />
+            <div className="flex items-center justify-between px-3 py-2.5">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-foreground" />
+                <span className="text-sm font-medium text-foreground">Select Season</span>
+              </div>
               <SeasonSelector
                 seasons={seasons}
                 activeSeason={activeSeason}
@@ -162,16 +206,47 @@ export function MoreMenu({
               />
             </div>
           </div>
-          {/* Sign Out Button */}
-          <div className="border-t border-border pt-4">
-            <Button
-              variant="ghost"
+
+          {/* ── ADMIN Section (conditional) ── */}
+          {isAdmin && (
+            <div className="space-y-0.5 mb-3">
+              <SectionLabel>Admin</SectionLabel>
+              <MenuRow
+                icon={Shield}
+                label="Admin Console"
+                isActive={activeTab === 'admin'}
+                badge={adminNotificationCount}
+                onClick={() => go('admin')}
+              />
+            </div>
+          )}
+
+          {/* ── SUPPORT Section ── */}
+          <div className="space-y-0.5 mb-3">
+            <SectionLabel>Support</SectionLabel>
+            <MenuRow
+              icon={HelpCircle}
+              label="Help Center"
+              onClick={() => {
+                window.open('mailto:support@hoopjournal.me', '_blank');
+                onOpenChange(false);
+              }}
+            />
+            <div className="[&_button]:w-full [&_button]:justify-start [&_button]:gap-3 [&_button]:px-3 [&_button]:py-2.5 [&_button]:h-auto [&_button]:rounded-lg [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-foreground [&_button]:hover:bg-secondary/70 [&_button]:font-medium [&_button]:text-sm">
+              <FeedbackDialog />
+            </div>
+          </div>
+
+          {/* ── ACCOUNT Section ── */}
+          <Separator className="my-3" />
+          <div className="space-y-0.5 pb-2">
+            <SectionLabel>Account</SectionLabel>
+            <MenuRow
+              icon={LogOut}
+              label="Sign Out"
+              variant="destructive"
               onClick={handleSignOut}
-              className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
-            >
-              <LogOut className="w-5 h-5" />
-              <span>Sign Out</span>
-            </Button>
+            />
           </div>
         </SheetContent>
       </Sheet>
