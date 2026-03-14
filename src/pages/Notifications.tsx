@@ -89,16 +89,15 @@ export default function Notifications() {
   };
 
   const deleteMessage = async (msg: BroadcastMessage) => {
-    if (msg.target_audience === 'specific_user' && msg.target_user_id === user?.id) {
-      const { error } = await supabase.from('broadcast_messages').delete().eq('id', msg.id);
-      if (error) {
-        dismiss(msg.id);
-      }
-    } else {
-      dismiss(msg.id);
-    }
+    // Always dismiss locally first so badge updates immediately
+    dismiss(msg.id);
     setMessages((prev) => prev.filter((m) => m.id !== msg.id));
     toast.success('Notification removed');
+
+    // Also delete from DB for direct messages
+    if (msg.target_audience === 'specific_user' && msg.target_user_id === user?.id) {
+      await supabase.from('broadcast_messages').delete().eq('id', msg.id);
+    }
   };
 
   const handleTabChange = (tab: Tab) => {
@@ -273,7 +272,7 @@ export default function Notifications() {
                       )}
                       <button
                         onClick={() => deleteMessage(msg)}
-                        className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors ml-auto opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors ml-auto sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
                       >
                         <Trash2 className="w-3 h-3" />
                         Delete
