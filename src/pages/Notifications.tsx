@@ -89,16 +89,15 @@ export default function Notifications() {
   };
 
   const deleteMessage = async (msg: BroadcastMessage) => {
-    if (msg.target_audience === 'specific_user' && msg.target_user_id === user?.id) {
-      const { error } = await supabase.from('broadcast_messages').delete().eq('id', msg.id);
-      if (error) {
-        dismiss(msg.id);
-      }
-    } else {
-      dismiss(msg.id);
-    }
+    // Always dismiss locally first so badge updates immediately
+    dismiss(msg.id);
     setMessages((prev) => prev.filter((m) => m.id !== msg.id));
     toast.success('Notification removed');
+
+    // Also delete from DB for direct messages
+    if (msg.target_audience === 'specific_user' && msg.target_user_id === user?.id) {
+      await supabase.from('broadcast_messages').delete().eq('id', msg.id);
+    }
   };
 
   const handleTabChange = (tab: Tab) => {
