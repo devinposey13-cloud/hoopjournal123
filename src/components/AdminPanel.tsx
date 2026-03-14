@@ -863,6 +863,7 @@ export function AdminPanel() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5 text-green-500" /> New Today
+              <MetricHint tip="Users who created an account today (since midnight)." />
             </CardDescription>
             <CardTitle className="text-3xl">{usageStats.newUsersToday}</CardTitle>
           </CardHeader>
