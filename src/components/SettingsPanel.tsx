@@ -221,7 +221,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                 <p className="text-xs text-muted-foreground">
                   {formData.coachVoiceGender === 'female' 
                     ? 'Sarah - Warm, encouraging female voice' 
-                    : 'Hakeem - African American narrator voice'}
+                    : 'Phil - Confident, energetic male'}
                 </p>
               </div>
               <div className="flex items-center gap-2">
