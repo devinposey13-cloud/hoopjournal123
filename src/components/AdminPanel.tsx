@@ -140,21 +140,31 @@ export function AdminPanel() {
     totalGames: number;
     gamesThisWeek: number;
     gamesThisMonth: number;
+    gamesToday: number;
     activeUsersToday: number;
     activeUsersWeek: number;
     activeUsersMonth: number;
     coachMemoryEntries: number;
+    coachChatsToday: number;
     scheduledGames: number;
     videoClips: number;
     milestones: number;
     xpProgressEntries: number;
+    xpEarnedToday: number;
+    newUsersToday: number;
     usersByDay: { date: string; count: number }[];
+    gamesByDay: { date: string; count: number }[];
+    xpByDay: { date: string; total: number }[];
   }>({
-    totalGames: 0, gamesThisWeek: 0, gamesThisMonth: 0,
+    totalGames: 0, gamesThisWeek: 0, gamesThisMonth: 0, gamesToday: 0,
     activeUsersToday: 0, activeUsersWeek: 0, activeUsersMonth: 0,
-    coachMemoryEntries: 0, scheduledGames: 0, videoClips: 0,
-    milestones: 0, xpProgressEntries: 0, usersByDay: [],
+    coachMemoryEntries: 0, coachChatsToday: 0, scheduledGames: 0, videoClips: 0,
+    milestones: 0, xpProgressEntries: 0, xpEarnedToday: 0, newUsersToday: 0,
+    usersByDay: [], gamesByDay: [], xpByDay: [],
   });
+
+  // Usage date filter
+  const [usageDateFilter, setUsageDateFilter] = useState<'today' | '7d' | '30d'>('7d');
 
   // Fetch users and reports
   useEffect(() => {
