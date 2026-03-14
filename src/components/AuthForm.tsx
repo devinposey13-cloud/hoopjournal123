@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { LogIn, UserPlus, Loader2, AtSign, Mail, Phone } from 'lucide-react';
-import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
+import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';

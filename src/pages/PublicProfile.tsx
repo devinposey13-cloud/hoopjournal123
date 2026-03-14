@@ -12,7 +12,7 @@ import { ClipCard } from '@/components/ClipCard';
 import { PublicMilestoneCard } from '@/components/milestones/PublicMilestoneCard';
 import { MilestoneRarity } from '@/types/milestone';
 import { cn } from '@/lib/utils';
-import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
+import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 
 interface PublicProfileData {
   name: string;

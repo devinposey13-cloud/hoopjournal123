@@ -2,7 +2,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, LogOut, RefreshCw } from 'lucide-react';
-import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
+import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';

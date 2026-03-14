@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Gamepad2, Settings, Shield, CalendarRange, UserCircle, LogOut, Users, UserPlus } from 'lucide-react';
-import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
+import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import { SeasonSelector } from './SeasonSelector';
 import { ProfileSelector } from './profile/ProfileSelector';
 import { AddProfileDialog } from './profile/AddProfileDialog';

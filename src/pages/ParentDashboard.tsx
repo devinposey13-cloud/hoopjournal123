@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Trophy, TrendingUp, Target, Shield, Zap, Calendar, Award, MapPin, Clock } from 'lucide-react';
 import { format } from 'date-fns';
-import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
+import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 
 interface ParentDashboardData {
   profile: {
