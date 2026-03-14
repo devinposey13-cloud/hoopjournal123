@@ -169,6 +169,7 @@ export type Database = {
           message: string
           sent_by: string | null
           target_audience: string
+          target_user_id: string | null
           title: string
         }
         Insert: {
@@ -178,6 +179,7 @@ export type Database = {
           message: string
           sent_by?: string | null
           target_audience?: string
+          target_user_id?: string | null
           title: string
         }
         Update: {
@@ -187,6 +189,7 @@ export type Database = {
           message?: string
           sent_by?: string | null
           target_audience?: string
+          target_user_id?: string | null
           title?: string
         }
         Relationships: []
