@@ -147,6 +147,42 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
           {/* Player Profiles */}
           <ProfileManagement />
 
+          {/* Account Credentials */}
+          <div className="stat-card bg-secondary/30 p-4 rounded-lg space-y-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-muted-foreground" />
+              Account Credentials
+            </h3>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg border border-border">
+                <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="text-sm font-medium truncate">{userEmail || 'Not available'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg border border-border">
+                <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground">Password</p>
+                  <p className="text-sm text-muted-foreground">Update your account password</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleChangePassword}
+                  disabled={isChangingPassword || !userEmail}
+                  className="flex-shrink-0"
+                >
+                  {isChangingPassword ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                  Change
+                </Button>
+              </div>
+            </div>
+          </div>
+
           {/* ── Coaching & Game Features ── */}
           <SectionHeader>Coaching &amp; Game Features</SectionHeader>
 
