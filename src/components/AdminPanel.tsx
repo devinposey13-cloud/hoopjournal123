@@ -1995,7 +1995,10 @@ export function AdminPanel() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>Games Logged</CardDescription>
+                   <CardDescription className="flex items-center gap-1.5">
+                    Games Logged
+                    <MetricHint tip="Total game stat entries created by users in this period." />
+                  </CardDescription>
                   <CardTitle className="text-2xl">
                     {usageDateFilter === 'today' ? usageStats.gamesToday
                       : usageDateFilter === '7d' ? usageStats.gamesThisWeek
