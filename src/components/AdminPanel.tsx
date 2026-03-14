@@ -890,6 +890,7 @@ export function AdminPanel() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <BarChart3 className="w-3.5 h-3.5" /> Games Today
+              <MetricHint tip="Total game stat entries logged today across all users." />
             </CardDescription>
             <CardTitle className="text-3xl">{usageStats.gamesToday}</CardTitle>
           </CardHeader>
