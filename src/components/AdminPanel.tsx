@@ -872,6 +872,7 @@ export function AdminPanel() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-primary" /> DAU
+              <MetricHint tip="Daily Active Users — unique users who logged a game today." />
             </CardDescription>
             <CardTitle className="text-3xl">{usageStats.activeUsersToday}</CardTitle>
           </CardHeader>
