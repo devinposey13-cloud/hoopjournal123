@@ -358,7 +358,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
           <CardContent className="p-6 text-center">
             <Dumbbell className="w-8 h-8 mx-auto text-muted-foreground/50 mb-2" />
             <p className="text-sm text-muted-foreground">
-              Drills, focus exercises, and mental training coming soon
+              AI-powered drills, practice plans, and training exercises based on your performance.
             </p>
           </CardContent>
         </Card>
