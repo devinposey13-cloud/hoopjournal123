@@ -638,6 +638,9 @@ export default function Index() {
                     </div>
                   )}
 
+                  {/* BROADCAST NOTIFICATIONS */}
+                  <BroadcastNotifications />
+
                   {/* TODAY CARD - Hero priority */}
                   <AnimatedSection delay={0.05}>
                     <TodayCard
