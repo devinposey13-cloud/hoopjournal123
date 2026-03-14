@@ -36,7 +36,7 @@ async function getLogoBase64(): Promise<string | null> {
   
   try {
     // Import the logo from assets
-    const logoModule = await import('@/assets/hoop-journal-logo.png');
+    const logoModule = await import('@/assets/hoop-journal-logo-v2.png');
     const logoUrl = logoModule.default;
     
     const response = await fetch(logoUrl);

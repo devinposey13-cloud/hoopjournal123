@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader2, Lock, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import hoopJournalLogo from '@/assets/hoop-journal-logo.png';
+import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
