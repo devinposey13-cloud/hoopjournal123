@@ -2075,7 +2075,10 @@ export function AdminPanel() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>Milestones Earned</CardDescription>
+                   <CardDescription className="flex items-center gap-1.5">
+                    Milestones Earned
+                    <MetricHint tip="Total milestone achievements unlocked across all users (e.g. first double-double, 100 points scored)." />
+                  </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.milestones}</CardTitle>
                 </CardHeader>
               </Card>
