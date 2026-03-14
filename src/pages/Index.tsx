@@ -871,9 +871,12 @@ export default function Index() {
         {/* Admin Tab */}
         {activeTab === 'admin' && isAdmin && (
           <div className="animate-fade-in">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-              <p className="text-muted-foreground">
+            <div className="mb-6 space-y-1">
+              <h1 className="text-xl font-bold flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Admin Dashboard
+              </h1>
+              <p className="text-sm text-muted-foreground">
                 Manage users, review reports, and view metrics
               </p>
             </div>
