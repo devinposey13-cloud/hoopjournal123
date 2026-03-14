@@ -28,6 +28,7 @@ import Log from "./pages/Log";
 import Progress from "./pages/Progress";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import Notifications from "./pages/Notifications";
 import OAuthCallback from "./pages/OAuthCallback";
 import ParentDashboard from "./pages/ParentDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
