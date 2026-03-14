@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Trophy, Video, Star, TrendingUp, ChevronRight, Trash2 } from 'lucide-react';
+import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from 'framer-motion';
 import { GameStats, VideoClip } from '@/types/basketball';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface RecentActivityProps {
   games: GameStats[];
