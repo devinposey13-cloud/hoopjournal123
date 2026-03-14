@@ -1944,6 +1944,7 @@ export function AdminPanel() {
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
               <Users className="w-4 h-4" /> Active Users
+              <MetricHint tip="Users who logged at least one game during the selected time period. Based on game creation timestamps." />
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card className={usageDateFilter === 'today' ? 'border-primary/50' : ''}>
