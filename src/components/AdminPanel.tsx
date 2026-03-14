@@ -2115,49 +2115,145 @@ export function AdminPanel() {
 
         {/* Metrics Tab */}
         <TabsContent value="metrics" className="space-y-4">
+          {/* User Growth Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                User Growth
+              </CardTitle>
+              <CardDescription>Monthly user signups</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const monthData = Object.entries(
+                  users.reduce((acc, user) => {
+                    const month = format(new Date(user.created_at), 'MMM yyyy');
+                    acc[month] = (acc[month] || 0) + 1;
+                    return acc;
+                  }, {} as Record<string, number>)
+                ).slice(-8);
+                const maxVal = Math.max(...monthData.map(([, c]) => c), 1);
+                return (
+                  <div className="space-y-4">
+                    <div className="flex items-end gap-2 h-32">
+                      {monthData.map(([month, count]) => {
+                        const height = (count / maxVal) * 100;
+                        return (
+                          <div key={month} className="flex-1 flex flex-col items-center gap-1">
+                            <span className="text-xs font-medium">{count}</span>
+                            <div
+                              className="w-full rounded-t bg-primary/80 min-h-[4px] transition-all"
+                              style={{ height: `${Math.max(height, 3)}%` }}
+                            />
+                            <span className="text-[10px] text-muted-foreground truncate w-full text-center">{month.split(' ')[0]}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Total: {totalUsers} users</span>
+                      <span>Latest: {monthData[monthData.length - 1]?.[1] || 0} this month</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* Games & XP Growth */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle>User Growth</CardTitle>
-                <CardDescription>Users by join date</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-primary" />
+                  Games Logged Over Time
+                </CardTitle>
+                <CardDescription>Total games: {usageStats.totalGames}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {Object.entries(
-                    users.reduce((acc, user) => {
-                      const month = format(new Date(user.created_at), 'MMM yyyy');
-                      acc[month] = (acc[month] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>)
-                  ).slice(-6).map(([month, count]) => (
-                    <div key={month} className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">{month}</span>
-                      <span className="font-medium">{count} users</span>
-                    </div>
-                  ))}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Today</span>
+                    <span className="font-medium">{usageStats.gamesToday}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">This Week</span>
+                    <span className="font-medium">{usageStats.gamesThisWeek}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">This Month</span>
+                    <span className="font-medium">{usageStats.gamesThisMonth}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">All Time</span>
+                    <span className="font-medium">{usageStats.totalGames}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-primary" />
+                  Coach AI Usage
+                </CardTitle>
+                <CardDescription>AI interactions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Coach Chats Today</span>
+                    <span className="font-medium">{usageStats.coachChatsToday}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total Memories</span>
+                    <span className="font-medium">{usageStats.coachMemoryEntries}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Est. AI Recaps</span>
+                    <span className="font-medium">{usageStats.totalGames}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">XP Entries</span>
+                    <span className="font-medium">{usageStats.xpProgressEntries}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Distribution Charts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
                 <CardTitle>Grade Distribution</CardTitle>
                 <CardDescription>Users by grade level</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {Object.entries(
+                {(() => {
+                  const gradeData = Object.entries(
                     users.reduce((acc, user) => {
                       acc[user.grade] = (acc[user.grade] || 0) + 1;
                       return acc;
                     }, {} as Record<string, number>)
-                  ).sort((a, b) => b[1] - a[1]).map(([grade, count]) => (
-                    <div key={grade} className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">{grade}</span>
-                      <span className="font-medium">{count}</span>
+                  ).sort((a, b) => b[1] - a[1]);
+                  const maxVal = Math.max(...gradeData.map(([, c]) => c), 1);
+                  return (
+                    <div className="space-y-2">
+                      {gradeData.map(([grade, count]) => (
+                        <div key={grade} className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">{grade}</span>
+                            <span className="font-medium">{count}</span>
+                          </div>
+                          <Progress value={(count / maxVal) * 100} className="h-1.5" />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
               </CardContent>
             </Card>
 
@@ -2167,19 +2263,28 @@ export function AdminPanel() {
                 <CardDescription>Users by position</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {Object.entries(
+                {(() => {
+                  const posData = Object.entries(
                     users.reduce((acc, user) => {
                       acc[user.position] = (acc[user.position] || 0) + 1;
                       return acc;
                     }, {} as Record<string, number>)
-                  ).sort((a, b) => b[1] - a[1]).map(([position, count]) => (
-                    <div key={position} className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">{position}</span>
-                      <span className="font-medium">{count}</span>
+                  ).sort((a, b) => b[1] - a[1]);
+                  const maxVal = Math.max(...posData.map(([, c]) => c), 1);
+                  return (
+                    <div className="space-y-2">
+                      {posData.map(([position, count]) => (
+                        <div key={position} className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">{position}</span>
+                            <span className="font-medium">{count}</span>
+                          </div>
+                          <Progress value={(count / maxVal) * 100} className="h-1.5" />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
               </CardContent>
             </Card>
 
@@ -2203,6 +2308,31 @@ export function AdminPanel() {
                   ))}
                   {reports.length === 0 && (
                     <p className="text-sm text-muted-foreground">No reports yet</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Feedback Summary</CardTitle>
+                <CardDescription>Feedback by status</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {Object.entries(
+                    userFeedback.reduce((acc, f) => {
+                      acc[f.status] = (acc[f.status] || 0) + 1;
+                      return acc;
+                    }, {} as Record<string, number>)
+                  ).map(([status, count]) => (
+                    <div key={status} className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground capitalize">{status}</span>
+                      <span className="font-medium">{count}</span>
+                    </div>
+                  ))}
+                  {userFeedback.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No feedback yet</p>
                   )}
                 </div>
               </CardContent>
