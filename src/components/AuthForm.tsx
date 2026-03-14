@@ -159,7 +159,8 @@ export function AuthForm() {
 
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
-    const redirectUri = isNativeApp() ? LOVABLE_APP_ORIGIN : window.location.origin;
+    // Always use the published lovable.app origin so the OAuth broker accepts the redirect
+    const redirectUri = LOVABLE_APP_ORIGIN;
 
     logOAuthInit('apple', redirectUri);
 
