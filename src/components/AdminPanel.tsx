@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck, ChevronDown, Activity, Cpu, Zap, TrendingUp, Clock, Shield, Star, Calendar as CalendarIcon, CreditCard, Trophy, ToggleLeft, Megaphone } from 'lucide-react';
+import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck, ChevronDown, Activity, Cpu, Zap, TrendingUp, Clock, Shield, Star, Calendar as CalendarIcon, CreditCard, Trophy, ToggleLeft, Megaphone, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { type PlanId, planCatalog, getEffectivePlan, type UserAccessInfo } from '@/lib/plans';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -90,6 +91,19 @@ interface AccountApprovalRequest {
   reviewed_by: string | null;
   reviewed_at: string | null;
   created_at: string;
+}
+
+function MetricHint({ tip }: { tip: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Info className="w-3 h-3 text-muted-foreground/50 cursor-help shrink-0" />
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[220px] text-xs">
+        {tip}
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 export function AdminPanel() {
@@ -840,6 +854,7 @@ export function AdminPanel() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" /> Total Users
+              <MetricHint tip="Total registered player profiles across all accounts." />
             </CardDescription>
             <CardTitle className="text-3xl">{totalUsers}</CardTitle>
           </CardHeader>
@@ -848,6 +863,7 @@ export function AdminPanel() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5 text-green-500" /> New Today
+              <MetricHint tip="Users who created an account today (since midnight)." />
             </CardDescription>
             <CardTitle className="text-3xl">{usageStats.newUsersToday}</CardTitle>
           </CardHeader>
@@ -856,6 +872,7 @@ export function AdminPanel() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-primary" /> DAU
+              <MetricHint tip="Daily Active Users — unique users who logged a game today." />
             </CardDescription>
             <CardTitle className="text-3xl">{usageStats.activeUsersToday}</CardTitle>
           </CardHeader>
@@ -864,6 +881,7 @@ export function AdminPanel() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-primary" /> WAU
+              <MetricHint tip="Weekly Active Users — unique users who logged a game in the last 7 days." />
             </CardDescription>
             <CardTitle className="text-3xl">{usageStats.activeUsersWeek}</CardTitle>
           </CardHeader>
@@ -872,6 +890,7 @@ export function AdminPanel() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <BarChart3 className="w-3.5 h-3.5" /> Games Today
+              <MetricHint tip="Total game stat entries logged today across all users." />
             </CardDescription>
             <CardTitle className="text-3xl">{usageStats.gamesToday}</CardTitle>
           </CardHeader>
@@ -880,6 +899,7 @@ export function AdminPanel() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <Cpu className="w-3.5 h-3.5 text-primary" /> Coach Chats Today
+              <MetricHint tip="New Coach AI memory entries created today from user conversations." />
             </CardDescription>
             <CardTitle className="text-3xl">{usageStats.coachChatsToday}</CardTitle>
           </CardHeader>
@@ -888,25 +908,35 @@ export function AdminPanel() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-amber-500" /> XP Today
+              <MetricHint tip="Sum of current XP across all users active today. Reflects total accumulated XP, not just earned today." />
             </CardDescription>
             <CardTitle className="text-3xl">{usageStats.xpEarnedToday.toLocaleString()}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Public Profiles</CardDescription>
+            <CardDescription className="flex items-center gap-1.5">
+              Public Profiles
+              <MetricHint tip="Players who enabled public visibility on their profile, making it discoverable by others." />
+            </CardDescription>
             <CardTitle className="text-3xl">{publicProfiles}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Pending Reports</CardDescription>
+            <CardDescription className="flex items-center gap-1.5">
+              Pending Reports
+              <MetricHint tip="Content reports flagged by users (e.g. inappropriate AI responses) awaiting admin review." />
+            </CardDescription>
             <CardTitle className="text-3xl text-destructive">{pendingReports}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Unread Feedback</CardDescription>
+            <CardDescription className="flex items-center gap-1.5">
+              Unread Feedback
+              <MetricHint tip="User-submitted feedback messages from Settings that haven't been reviewed by an admin." />
+            </CardDescription>
             <CardTitle className="text-3xl text-primary">{unreadFeedback}</CardTitle>
           </CardHeader>
         </Card>
@@ -1914,6 +1944,7 @@ export function AdminPanel() {
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
               <Users className="w-4 h-4" /> Active Users
+              <MetricHint tip="Users who logged at least one game during the selected time period. Based on game creation timestamps." />
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card className={usageDateFilter === 'today' ? 'border-primary/50' : ''}>
@@ -1959,11 +1990,15 @@ export function AdminPanel() {
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
               <Activity className="w-4 h-4" /> Feature Usage
+              <MetricHint tip="Counts of key features used during the selected period. Helps identify which features drive engagement." />
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>Games Logged</CardDescription>
+                   <CardDescription className="flex items-center gap-1.5">
+                    Games Logged
+                    <MetricHint tip="Total game stat entries created by users in this period." />
+                  </CardDescription>
                   <CardTitle className="text-2xl">
                     {usageDateFilter === 'today' ? usageStats.gamesToday
                       : usageDateFilter === '7d' ? usageStats.gamesThisWeek
@@ -1973,13 +2008,19 @@ export function AdminPanel() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>Coach AI Chats</CardDescription>
+                   <CardDescription className="flex items-center gap-1.5">
+                    Coach AI Chats
+                    <MetricHint tip="Total Coach AI memory entries stored. Each memory captures a key insight from a user's chat conversation." />
+                  </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.coachMemoryEntries}</CardTitle>
                 </CardHeader>
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>XP Earned</CardDescription>
+                   <CardDescription className="flex items-center gap-1.5">
+                    XP Earned
+                    <MetricHint tip="Sum of current XP values for users active today. Represents total accumulated XP, not daily delta." />
+                  </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.xpEarnedToday.toLocaleString()}</CardTitle>
                 </CardHeader>
               </Card>
@@ -1991,7 +2032,10 @@ export function AdminPanel() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>Video Clips</CardDescription>
+                   <CardDescription className="flex items-center gap-1.5">
+                    Video Clips
+                    <MetricHint tip="Total video clips uploaded by all users to the platform." />
+                  </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.videoClips}</CardTitle>
                 </CardHeader>
               </Card>
@@ -2002,12 +2046,14 @@ export function AdminPanel() {
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
               <Cpu className="w-4 h-4" /> AI Credit Consumption
+              <MetricHint tip="Estimates of AI API usage. Each coach chat, post-game recap, and memory extraction consumes AI credits." />
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center gap-1.5">
                     <Zap className="w-3.5 h-3.5 text-primary" /> Coach Memories
+                    <MetricHint tip="Persistent memory entries extracted from Coach AI conversations. Each entry uses an AI call to extract and store." />
                   </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.coachMemoryEntries}</CardTitle>
                 </CardHeader>
@@ -2019,6 +2065,7 @@ export function AdminPanel() {
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center gap-1.5">
                     <Zap className="w-3.5 h-3.5 text-primary" /> AI Recaps (est.)
+                    <MetricHint tip="Estimated AI-generated post-game recaps. Assumes ~1 recap per game logged. Each recap uses an AI call." />
                   </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.totalGames}</CardTitle>
                 </CardHeader>
@@ -2028,13 +2075,19 @@ export function AdminPanel() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>Milestones Earned</CardDescription>
+                   <CardDescription className="flex items-center gap-1.5">
+                    Milestones Earned
+                    <MetricHint tip="Total milestone achievements unlocked across all users (e.g. first double-double, 100 points scored)." />
+                  </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.milestones}</CardTitle>
                 </CardHeader>
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>Scheduled Games</CardDescription>
+                   <CardDescription className="flex items-center gap-1.5">
+                    Scheduled Games
+                    <MetricHint tip="Total upcoming games added to user schedules. Includes past scheduled games that were never deleted." />
+                  </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.scheduledGames}</CardTitle>
                 </CardHeader>
               </Card>
