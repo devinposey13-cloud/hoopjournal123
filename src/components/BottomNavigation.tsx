@@ -98,6 +98,24 @@ export function BottomNavigation({
             );
           })}
 
+          {/* Notifications bell */}
+          <button
+            onClick={() => {
+              onTabChange('dashboard' as Tab);
+              navigate('/');
+            }}
+            className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors text-muted-foreground hover:text-foreground"
+          >
+            <div className="relative">
+              <Bell className="w-5 h-5" />
+              {broadcastCount > 0 && (
+                <span className="absolute -top-1.5 -right-2 flex items-center justify-center min-w-[16px] h-[16px] rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold px-0.5">
+                  {broadcastCount > 99 ? '99+' : broadcastCount}
+                </span>
+              )}
+            </div>
+          </button>
+
           {/* More button */}
           <button
             onClick={() => setMoreMenuOpen(true)}
