@@ -2084,7 +2084,10 @@ export function AdminPanel() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>Scheduled Games</CardDescription>
+                   <CardDescription className="flex items-center gap-1.5">
+                    Scheduled Games
+                    <MetricHint tip="Total upcoming games added to user schedules. Includes past scheduled games that were never deleted." />
+                  </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.scheduledGames}</CardTitle>
                 </CardHeader>
               </Card>
