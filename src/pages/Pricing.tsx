@@ -174,7 +174,7 @@ export default function Pricing() {
             Cancel anytime. No long-term contracts.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Questions? Contact us at support@hoopjournal.me
+            © 2026 Hoop Journal™. Questions? Contact us at support@hoopjournal.me
           </p>
         </div>
       </div>

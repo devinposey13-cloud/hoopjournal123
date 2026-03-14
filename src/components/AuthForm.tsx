@@ -412,7 +412,7 @@ export function AuthForm() {
             <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-4 shadow-glow">
               <img src={hoopJournalLogo} alt="Hoop Journal" className="w-full h-full object-cover" />
             </div>
-            <h1 className="font-bold text-foreground text-4xl">Hoop Journal</h1>
+            <h1 className="font-bold text-foreground text-4xl">Hoop Journal™</h1>
             <p
               className="text-muted-foreground mt-1 text-2xl uppercase tracking-wide"
               style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}>

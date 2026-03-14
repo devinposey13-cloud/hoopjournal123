@@ -623,7 +623,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
             <div className="text-center">
               <p className="text-sm font-medium">💬 Have feedback?</p>
               <p className="text-xs text-muted-foreground">
-                Help us improve Hoop Journal by sharing your thoughts, ideas, or reporting bugs.
+                Help us improve Hoop Journal™ by sharing your thoughts, ideas, or reporting bugs.
               </p>
             </div>
             <FeedbackDialog />

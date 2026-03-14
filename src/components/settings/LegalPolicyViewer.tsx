@@ -90,7 +90,7 @@ export function PrivacyPolicyContent() {
   return (
     <>
       <p className="text-muted-foreground">
-        Hoop Journal ("we," "our," or "us") respects your privacy. This Privacy Policy explains what information we collect, how we use it, and how we protect it.
+        Hoop Journal™ ("we," "our," or "us") respects your privacy. This Privacy Policy explains what information we collect, how we use it, and how we protect it.
       </p>
       <p className="text-muted-foreground">
         Hoop Journal is a basketball habit tracking and performance analytics platform designed to help athletes reflect, improve, and build consistency.
@@ -200,7 +200,7 @@ export function TermsOfServiceContent() {
   return (
     <>
       <p className="text-muted-foreground">
-        Welcome to Hoop Journal.
+        Welcome to Hoop Journal™.
       </p>
       <p className="text-muted-foreground">
         By accessing or using Hoop Journal, you agree to these Terms of Service. If you do not agree, do not use the app.
@@ -243,8 +243,8 @@ export function TermsOfServiceContent() {
       </Section>
 
       <Section title="6. Intellectual Property">
-        <p>All Hoop Journal content, branding, and software are the property of Hoop Journal.</p>
-        <p>Users retain ownership of the content they submit but grant Hoop Journal a limited license to use it for operating the platform.</p>
+        <p>All Hoop Journal™ content, branding, and software are the property of Hoop Journal™.</p>
+        <p>Users retain ownership of the content they submit but grant Hoop Journal™ a limited license to use it for operating the platform.</p>
       </Section>
 
       <Section title="7. Limitation of Liability">
