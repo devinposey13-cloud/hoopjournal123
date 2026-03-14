@@ -87,7 +87,15 @@ export function Navigation({
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
-  const { hasMultipleProfiles } = useActiveProfile();
+  const { activeProfile, hasMultipleProfiles } = useActiveProfile();
+
+  // Derive display values from active profile
+  const displayName = activeProfile?.display_name || activeProfile?.name || 'Player';
+  const positionShort = activeProfile?.position
+    ? activeProfile.position.replace('Point Guard', 'PG').replace('Shooting Guard', 'SG').replace('Combo Guard', 'CG').replace('Small Forward', 'SF').replace('Power Forward', 'PF').replace('Center', 'C')
+    : '';
+  const jerseyNumber = activeProfile?.number != null ? `#${activeProfile.number}` : '';
+  const profileSubtitle = [positionShort, jerseyNumber].filter(Boolean).join(' · ');
 
   const handleSignOut = async () => {
     await signOut();
