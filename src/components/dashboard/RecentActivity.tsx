@@ -81,60 +81,126 @@ export function RecentActivity({ games, clips = [], onViewGame, onViewAllGames, 
       </div>
       
       <div className="space-y-2">
-        {activities.slice(0, 5).map((activity) => {
-          const Icon = activity.icon;
-          const timeAgo = formatDistanceToNow(activity.date, { addSuffix: true });
-          
-          return (
-            <div
-              key={activity.id}
-              className={cn(
-                "flex items-center gap-3 p-3 rounded-lg group",
-                "bg-card/50 border border-border/50",
-                "hover:bg-card/80 transition-colors",
-                activity.onClick && "cursor-pointer"
-              )}
-              onClick={activity.onClick}
-              role={activity.onClick ? "button" : undefined}
-              tabIndex={activity.onClick ? 0 : undefined}
-            >
-              <div className={cn(
-                "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0",
-                activity.accent ? "bg-green-500/10" : "bg-muted/50"
-              )}>
-                <Icon className={cn(
-                  "w-4 h-4",
-                  activity.accent ? "text-green-500" : "text-muted-foreground"
-                )} />
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{activity.title}</p>
-                <p className="text-xs text-muted-foreground truncate">{activity.subtitle}</p>
-              </div>
-              
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <span className="text-xs text-muted-foreground">
-                  {timeAgo}
-                </span>
-                {activity.type === 'game' && onDeleteGame && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteGame(activity.id);
-                    }}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          );
-        })}
+        {activities.slice(0, 5).map((activity) => (
+          <ActivityItemRow
+            key={activity.id}
+            activity={activity}
+            isMobile={isMobile}
+            onDeleteGame={activity.type === 'game' ? onDeleteGame : undefined}
+          />
+        ))}
       </div>
     </div>
   );
+}
+
+const SWIPE_THRESHOLD = 70;
+const DELETE_WIDTH = 72;
+
+function ActivityItemRow({ activity, isMobile, onDeleteGame }: { 
+  activity: ActivityItem; 
+  isMobile: boolean;
+  onDeleteGame?: (id: string) => void;
+}) {
+  const [isSwipeOpen, setIsSwipeOpen] = useState(false);
+  const x = useMotionValue(0);
+  const deleteOpacity = useTransform(x, [-DELETE_WIDTH, -20, 0], [1, 0.5, 0]);
+  const deleteScale = useTransform(x, [-DELETE_WIDTH, -20, 0], [1, 0.8, 0.6]);
+
+  const Icon = activity.icon;
+  const timeAgo = formatDistanceToNow(activity.date, { addSuffix: true });
+
+  const handleDragEnd = (_: any, info: PanInfo) => {
+    if (info.offset.x < -SWIPE_THRESHOLD) {
+      setIsSwipeOpen(true);
+    } else {
+      setIsSwipeOpen(false);
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDeleteGame?.(activity.id);
+    setIsSwipeOpen(false);
+  };
+
+  const itemContent = (
+    <div
+      className={cn(
+        "flex items-center gap-3 p-3 rounded-lg group",
+        "bg-card/50 border border-border/50",
+        "hover:bg-card/80 transition-colors",
+        activity.onClick && "cursor-pointer"
+      )}
+      onClick={activity.onClick}
+      role={activity.onClick ? "button" : undefined}
+      tabIndex={activity.onClick ? 0 : undefined}
+    >
+      <div className={cn(
+        "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0",
+        activity.accent ? "bg-green-500/10" : "bg-muted/50"
+      )}>
+        <Icon className={cn(
+          "w-4 h-4",
+          activity.accent ? "text-green-500" : "text-muted-foreground"
+        )} />
+      </div>
+      
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{activity.title}</p>
+        <p className="text-xs text-muted-foreground truncate">{activity.subtitle}</p>
+      </div>
+      
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <span className="text-xs text-muted-foreground">
+          {timeAgo}
+        </span>
+        {!isMobile && onDeleteGame && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+            onClick={handleDelete}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+
+  if (isMobile && onDeleteGame) {
+    return (
+      <div className="relative overflow-hidden rounded-lg">
+        <motion.div
+          className="absolute inset-y-0 right-0 flex items-center justify-center bg-destructive rounded-r-lg"
+          style={{ width: DELETE_WIDTH, opacity: deleteOpacity }}
+        >
+          <motion.button
+            onClick={handleDelete}
+            className="flex flex-col items-center gap-1 text-destructive-foreground p-3"
+            style={{ scale: deleteScale }}
+          >
+            <Trash2 className="w-5 h-5" />
+            <span className="text-xs font-medium">Delete</span>
+          </motion.button>
+        </motion.div>
+
+        <motion.div
+          drag="x"
+          dragConstraints={{ left: -DELETE_WIDTH, right: 0 }}
+          dragElastic={0.1}
+          onDragEnd={handleDragEnd}
+          animate={{ x: isSwipeOpen ? -DELETE_WIDTH : 0 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          style={{ x }}
+          className="relative z-10"
+        >
+          {itemContent}
+        </motion.div>
+      </div>
+    );
+  }
+
+  return itemContent;
 }
