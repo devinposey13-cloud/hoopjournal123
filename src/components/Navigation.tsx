@@ -140,7 +140,7 @@ export function Navigation({
               <img src={hoopJournalLogo} alt="Hoop Journal" className="w-full h-full object-cover" />
             </div>
             <span className="text-lg font-bold text-foreground hidden sm:block">
-              Hoop Journal
+              Hoop Journal™
             </span>
           </div>
 
