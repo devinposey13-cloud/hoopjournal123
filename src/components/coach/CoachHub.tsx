@@ -276,7 +276,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="-mt-2"
+          className="-mt-2 mb-4"
         >
           <Suspense fallback={<ChatSkeleton />}>
             {activeSection === 'chat' && (
@@ -304,13 +304,14 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
         </motion.div>
       </AnimatePresence>
 
-      {/* Insights & History Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      {/* Coach Insights Section */}
+      <div className="space-y-4 -mt-2">
+        <div>
           <div className="flex items-center gap-2">
-            <Lightbulb className="w-4 h-4 text-amber-500" />
-            <h3 className="text-sm font-semibold">Coach Notes</h3>
+            <Lightbulb className="w-4 h-4 text-primary" />
+            <h3 className="text-base font-bold text-foreground">Coach Insights</h3>
           </div>
+          <p className="text-xs text-muted-foreground mt-1 ml-6">AI-generated insights based on your recent games and performance trends.</p>
         </div>
         
         <div className="grid gap-3">
@@ -325,7 +326,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
                 "border-l-4 transition-colors",
                 insight.type === 'positive' && "border-l-green-500/70 bg-green-500/5",
                 insight.type === 'improvement' && "border-l-amber-500/70 bg-amber-500/5",
-                insight.type === 'neutral' && "border-l-muted-foreground/30"
+                insight.type === 'neutral' && "border-l-blue-500/70 bg-blue-500/5"
               )}>
                 <CardContent className="p-3 sm:p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -357,7 +358,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
           <CardContent className="p-6 text-center">
             <Dumbbell className="w-8 h-8 mx-auto text-muted-foreground/50 mb-2" />
             <p className="text-sm text-muted-foreground">
-              Drills, focus exercises, and mental training coming soon
+              AI-powered drills, practice plans, and training exercises based on your performance.
             </p>
           </CardContent>
         </Card>
