@@ -172,21 +172,28 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
   const FocusIcon = todaysFocus.icon;
 
   const actionCards = [
-    { id: 'chat', label: 'Coach Chat', icon: MessageCircle, description: 'Ask for feedback' },
-    { id: 'knowledge', label: 'BB Knowledge', icon: BookOpen, description: 'Learn the game' },
-    { id: 'compare', label: 'Player Compare', icon: Users, description: 'Compare to pros' },
+    { id: 'chat', label: 'Coach Chat', icon: MessageCircle, description: 'Ask for personalized feedback on your game.' },
+    { id: 'knowledge', label: 'BB Knowledge', icon: BookOpen, description: 'Learn basketball strategy and concepts.' },
+    { id: 'compare', label: 'Player Compare', icon: Users, description: 'Compare your stats with top players.' },
   ];
 
   return (
     <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
-      {/* Header */}
+      {/* Page Header */}
+      <div className="space-y-1">
+        <h1 className="text-xl font-bold text-foreground">Coach AI</h1>
+        <p className="text-sm text-muted-foreground">Personalized feedback based on your stats and recent games.</p>
+      </div>
+
+      {/* Avatar */}
       <div className="text-center">
-        <div className="w-16 h-16 rounded-full overflow-hidden mx-auto mb-2">
-          <img src={getCoachAvatarUrl(profile.coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
+        <div className="relative w-16 h-16 mx-auto mb-2">
+          <div className="absolute inset-0 rounded-full animate-[pulse_2.5s_ease-in-out_infinite] bg-primary/20 scale-125" />
+          <div className="absolute inset-0 rounded-full animate-[pulse_3s_ease-in-out_infinite] bg-primary/10 scale-150" />
+          <div className="relative w-16 h-16 rounded-full overflow-hidden ring-2 ring-primary/30">
+            <img src={getCoachAvatarUrl(profile.coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
+          </div>
         </div>
-        <h1 className="text-xl font-bold flex items-center justify-center gap-2">
-          Coach AI
-        </h1>
         <p className="text-sm text-muted-foreground">
           Your personal performance coach
         </p>
@@ -219,7 +226,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
 
       {/* Primary Actions Row - Quick Access Cards */}
       <div>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
           Quick Actions
         </p>
         <div className="flex justify-center">
@@ -261,7 +268,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content Area - reduced top spacing */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeSection}
@@ -269,6 +276,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
+          className="-mt-2"
         >
           <Suspense fallback={<ChatSkeleton />}>
             {activeSection === 'chat' && (
