@@ -2065,6 +2065,7 @@ export function AdminPanel() {
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center gap-1.5">
                     <Zap className="w-3.5 h-3.5 text-primary" /> AI Recaps (est.)
+                    <MetricHint tip="Estimated AI-generated post-game recaps. Assumes ~1 recap per game logged. Each recap uses an AI call." />
                   </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.totalGames}</CardTitle>
                 </CardHeader>
