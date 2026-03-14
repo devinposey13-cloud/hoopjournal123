@@ -79,51 +79,16 @@ export default function OAuthCallback() {
         }
       }
 
-      // Popup handoff flow (preview iframe -> popup -> opener)
-      // If callback is currently on a different origin than opener target,
-      // first bounce to the opener origin so BroadcastChannel can work.
+      // Popup handoff flow — popup is now on the same origin as the iframe opener,
+      // so both postMessage and BroadcastChannel work directly.
       if (popupMode) {
-        const hasPayload = !!(accessToken && refreshToken) || !!errorParam;
-        if (hasPayload && window.location.origin !== targetOrigin) {
-          const bounceUrl = new URL('/auth/callback', targetOrigin);
-          try {
-            const parsedTargetUrl = new URL(targetUrl);
-            const previewToken = parsedTargetUrl.searchParams.get('__lovable_token');
-            if (previewToken) {
-              bounceUrl.searchParams.set('__lovable_token', previewToken);
-            }
-          } catch {
-            // Ignore malformed target URL and continue
-          }
-          bounceUrl.searchParams.set('popup', '1');
-          bounceUrl.searchParams.set('provider', provider);
-          bounceUrl.searchParams.set('target_origin', targetOrigin);
-          bounceUrl.searchParams.set('target_url', targetUrl);
-
-          const bounceHash = new URLSearchParams();
-          if (errorParam) {
-            bounceHash.set('error', errorParam);
-            if (errorDescription) bounceHash.set('error_description', errorDescription);
-          }
-          if (accessToken) bounceHash.set('access_token', accessToken);
-          if (refreshToken) bounceHash.set('refresh_token', refreshToken);
-          bounceHash.set('popup', '1');
-          bounceHash.set('provider', provider);
-          bounceHash.set('target_origin', targetOrigin);
-
-          const hashString = bounceHash.toString();
-          bounceUrl.hash = hashString ? `#${hashString}` : '';
-
-          console.log('[OAuthCallback] Bouncing popup callback to target origin for token handoff:', targetOrigin);
-          window.location.replace(bounceUrl.toString());
-          return;
-        }
-
         const sendViaOpener = (msg: Record<string, string>) => {
           try {
             if (window.opener) {
-              window.opener.postMessage(msg, targetOrigin);
+              window.opener.postMessage(msg, window.location.origin);
               console.log('[OAuthCallback] Sent token via postMessage to opener');
+            } else {
+              console.log('[OAuthCallback] window.opener is null, skipping postMessage');
             }
           } catch (e) {
             console.warn('[OAuthCallback] postMessage to opener failed:', e);
@@ -150,6 +115,7 @@ export default function OAuthCallback() {
         }
 
         if (accessToken && refreshToken) {
+          console.log('[OAuthCallback] Popup mode: sending tokens via postMessage + BroadcastChannel');
           const msg = { type: 'oauth-complete', provider, accessToken, refreshToken };
           sendViaOpener(msg);
           sendViaBroadcast(msg);
