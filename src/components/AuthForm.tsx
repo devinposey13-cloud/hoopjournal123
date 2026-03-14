@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
 import { isNativeApp } from '@/lib/platform';
-import { openOAuthInSystemBrowser, NATIVE_URL_SCHEME } from '@/lib/nativeOAuth';
+import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
 import {
   logOAuthInit,
   logOAuthError,
