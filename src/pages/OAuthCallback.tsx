@@ -40,6 +40,7 @@ export default function OAuthCallback() {
       const popupMode = queryParams.get('popup') === '1' || hashParams.get('popup') === '1';
       const provider = queryParams.get('provider') || hashParams.get('provider') || 'apple';
       const targetOriginParam = queryParams.get('target_origin') || hashParams.get('target_origin');
+      const targetUrlParam = queryParams.get('target_url') || hashParams.get('target_url');
 
       const isTrustedOrigin = (origin: string) => {
         try {
@@ -65,6 +66,19 @@ export default function OAuthCallback() {
         }
       }
 
+      let targetUrl = `${targetOrigin}/auth/callback`;
+      if (targetUrlParam) {
+        try {
+          const parsedTargetUrl = new URL(targetUrlParam);
+          if (isTrustedOrigin(parsedTargetUrl.origin)) {
+            targetOrigin = parsedTargetUrl.origin;
+            targetUrl = parsedTargetUrl.toString();
+          }
+        } catch {
+          targetUrl = `${targetOrigin}/auth/callback`;
+        }
+      }
+
       // Popup handoff flow (preview iframe -> popup -> opener)
       // If callback is currently on a different origin than opener target,
       // first bounce to the opener origin so BroadcastChannel can work.
@@ -72,9 +86,19 @@ export default function OAuthCallback() {
         const hasPayload = !!(accessToken && refreshToken) || !!errorParam;
         if (hasPayload && window.location.origin !== targetOrigin) {
           const bounceUrl = new URL('/auth/callback', targetOrigin);
+          try {
+            const parsedTargetUrl = new URL(targetUrl);
+            const previewToken = parsedTargetUrl.searchParams.get('__lovable_token');
+            if (previewToken) {
+              bounceUrl.searchParams.set('__lovable_token', previewToken);
+            }
+          } catch {
+            // Ignore malformed target URL and continue
+          }
           bounceUrl.searchParams.set('popup', '1');
           bounceUrl.searchParams.set('provider', provider);
           bounceUrl.searchParams.set('target_origin', targetOrigin);
+          bounceUrl.searchParams.set('target_url', targetUrl);
 
           const bounceHash = new URLSearchParams();
           if (errorParam) {
