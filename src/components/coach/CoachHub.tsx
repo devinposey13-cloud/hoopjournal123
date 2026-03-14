@@ -268,7 +268,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content Area - reduced top spacing */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeSection}
@@ -276,6 +276,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
+          className="-mt-2"
         >
           <Suspense fallback={<ChatSkeleton />}>
             {activeSection === 'chat' && (
