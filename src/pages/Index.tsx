@@ -48,7 +48,7 @@ import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import { useRetroactiveXp } from '@/hooks/useRetroactiveXp';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { LogOut, Trophy, X, Radio, Users, TrendingUp, MessageSquare, Gamepad2 } from 'lucide-react';
+import { LogOut, Trophy, X, Radio, Users, TrendingUp, MessageSquare, Gamepad2, Shield } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton, GamesHubTabSkeleton, CoachTabSkeleton, StatsTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
