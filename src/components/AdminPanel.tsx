@@ -140,21 +140,31 @@ export function AdminPanel() {
     totalGames: number;
     gamesThisWeek: number;
     gamesThisMonth: number;
+    gamesToday: number;
     activeUsersToday: number;
     activeUsersWeek: number;
     activeUsersMonth: number;
     coachMemoryEntries: number;
+    coachChatsToday: number;
     scheduledGames: number;
     videoClips: number;
     milestones: number;
     xpProgressEntries: number;
+    xpEarnedToday: number;
+    newUsersToday: number;
     usersByDay: { date: string; count: number }[];
+    gamesByDay: { date: string; count: number }[];
+    xpByDay: { date: string; total: number }[];
   }>({
-    totalGames: 0, gamesThisWeek: 0, gamesThisMonth: 0,
+    totalGames: 0, gamesThisWeek: 0, gamesThisMonth: 0, gamesToday: 0,
     activeUsersToday: 0, activeUsersWeek: 0, activeUsersMonth: 0,
-    coachMemoryEntries: 0, scheduledGames: 0, videoClips: 0,
-    milestones: 0, xpProgressEntries: 0, usersByDay: [],
+    coachMemoryEntries: 0, coachChatsToday: 0, scheduledGames: 0, videoClips: 0,
+    milestones: 0, xpProgressEntries: 0, xpEarnedToday: 0, newUsersToday: 0,
+    usersByDay: [], gamesByDay: [], xpByDay: [],
   });
+
+  // Usage date filter
+  const [usageDateFilter, setUsageDateFilter] = useState<'today' | '7d' | '30d'>('7d');
 
   // Fetch users and reports
   useEffect(() => {
@@ -224,50 +234,78 @@ export function AdminPanel() {
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const [
-        gamesAll, gamesWeek, gamesMonth,
-        coachMem, schedGames, clips, milestones, xpProg
+        gamesAll, gamesWeek, gamesMonth, gamesTodayResult,
+        coachMem, coachChatsToday, schedGames, clips, milestones, xpProg
       ] = await Promise.all([
         supabase.from('games').select('id', { count: 'exact', head: true }),
         supabase.from('games').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo),
         supabase.from('games').select('id', { count: 'exact', head: true }).gte('created_at', monthAgo),
+        supabase.from('games').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
         supabase.from('coach_memory').select('id', { count: 'exact', head: true }),
+        supabase.from('coach_memory').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
         supabase.from('scheduled_games').select('id', { count: 'exact', head: true }),
         supabase.from('video_clips').select('id', { count: 'exact', head: true }),
         supabase.from('player_milestones').select('id', { count: 'exact', head: true }),
         supabase.from('player_xp_progress').select('id', { count: 'exact', head: true }),
       ]);
 
-      const { data: activeToday } = await supabase
-        .from('games').select('user_id').gte('created_at', todayStart);
-      const { data: activeWeek } = await supabase
-        .from('games').select('user_id').gte('created_at', weekAgo);
-      const { data: activeMonth } = await supabase
-        .from('games').select('user_id').gte('created_at', monthAgo);
+      const [activeToday, activeWeek, activeMonth] = await Promise.all([
+        supabase.from('games').select('user_id').gte('created_at', todayStart),
+        supabase.from('games').select('user_id').gte('created_at', weekAgo),
+        supabase.from('games').select('user_id').gte('created_at', monthAgo),
+      ]);
+
+      // XP earned today
+      const { data: xpTodayData } = await supabase
+        .from('player_xp_progress')
+        .select('current_xp')
+        .gte('updated_at', todayStart);
+      const xpEarnedToday = (xpTodayData || []).reduce((sum, row) => sum + (row.current_xp || 0), 0);
+
+      // New users today
+      const newUsersToday = (usersData || []).filter(u => u.created_at >= todayStart).length;
 
       const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
       const usersByDay: { date: string; count: number }[] = [];
+      const gamesByDay: { date: string; count: number }[] = [];
+
+      // Fetch games for sparkline
+      const { data: recentGames } = await supabase
+        .from('games')
+        .select('created_at')
+        .gte('created_at', twoWeeksAgo.toISOString())
+        .order('created_at', { ascending: true });
+
       for (let d = 0; d < 14; d++) {
         const dayDate = new Date(twoWeeksAgo.getTime() + d * 24 * 60 * 60 * 1000);
         const dayStr = format(dayDate, 'MMM d');
         const dayStart = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate()).toISOString();
         const dayEnd = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate() + 1).toISOString();
-        const count = (usersData || []).filter(u => u.created_at >= dayStart && u.created_at < dayEnd).length;
-        usersByDay.push({ date: dayStr, count });
+        const userCount = (usersData || []).filter(u => u.created_at >= dayStart && u.created_at < dayEnd).length;
+        const gameCount = (recentGames || []).filter(g => g.created_at >= dayStart && g.created_at < dayEnd).length;
+        usersByDay.push({ date: dayStr, count: userCount });
+        gamesByDay.push({ date: dayStr, count: gameCount });
       }
 
       setUsageStats({
         totalGames: gamesAll.count || 0,
         gamesThisWeek: gamesWeek.count || 0,
         gamesThisMonth: gamesMonth.count || 0,
-        activeUsersToday: new Set(activeToday?.map(g => g.user_id) || []).size,
-        activeUsersWeek: new Set(activeWeek?.map(g => g.user_id) || []).size,
-        activeUsersMonth: new Set(activeMonth?.map(g => g.user_id) || []).size,
+        gamesToday: gamesTodayResult.count || 0,
+        activeUsersToday: new Set(activeToday.data?.map(g => g.user_id) || []).size,
+        activeUsersWeek: new Set(activeWeek.data?.map(g => g.user_id) || []).size,
+        activeUsersMonth: new Set(activeMonth.data?.map(g => g.user_id) || []).size,
         coachMemoryEntries: coachMem.count || 0,
+        coachChatsToday: coachChatsToday.count || 0,
         scheduledGames: schedGames.count || 0,
         videoClips: clips.count || 0,
         milestones: milestones.count || 0,
         xpProgressEntries: xpProg.count || 0,
+        xpEarnedToday,
+        newUsersToday,
         usersByDay,
+        gamesByDay,
+        xpByDay: [], // placeholder for now
       });
     } catch (error) {
       console.error('Error fetching admin data:', error);
@@ -793,12 +831,62 @@ export function AdminPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Stats Overview - Expanded Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total Users</CardDescription>
+            <CardDescription className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" /> Total Users
+            </CardDescription>
             <CardTitle className="text-3xl">{totalUsers}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5 text-green-500" /> New Today
+            </CardDescription>
+            <CardTitle className="text-3xl">{usageStats.newUsersToday}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-primary" /> DAU
+            </CardDescription>
+            <CardTitle className="text-3xl">{usageStats.activeUsersToday}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-primary" /> WAU
+            </CardDescription>
+            <CardTitle className="text-3xl">{usageStats.activeUsersWeek}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <BarChart3 className="w-3.5 h-3.5" /> Games Today
+            </CardDescription>
+            <CardTitle className="text-3xl">{usageStats.gamesToday}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5 text-primary" /> Coach Chats Today
+            </CardDescription>
+            <CardTitle className="text-3xl">{usageStats.coachChatsToday}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-amber-500" /> XP Today
+            </CardDescription>
+            <CardTitle className="text-3xl">{usageStats.xpEarnedToday.toLocaleString()}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -815,8 +903,8 @@ export function AdminPanel() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total Reports</CardDescription>
-            <CardTitle className="text-3xl">{reports.length}</CardTitle>
+            <CardDescription>Unread Feedback</CardDescription>
+            <CardTitle className="text-3xl text-primary">{unreadFeedback}</CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -1791,13 +1879,28 @@ export function AdminPanel() {
 
         {/* Usage Dashboard Tab */}
         <TabsContent value="usage" className="space-y-6">
+          {/* Date Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Period:</span>
+            {(['today', '7d', '30d'] as const).map((f) => (
+              <Button
+                key={f}
+                variant={usageDateFilter === f ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setUsageDateFilter(f)}
+              >
+                {f === 'today' ? 'Today' : f === '7d' ? 'Last 7 Days' : 'Last 30 Days'}
+              </Button>
+            ))}
+          </div>
+
           {/* Active Users */}
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
               <Users className="w-4 h-4" /> Active Users
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card>
+              <Card className={usageDateFilter === 'today' ? 'border-primary/50' : ''}>
                 <CardHeader className="pb-2">
                   <CardDescription>Today</CardDescription>
                   <CardTitle className="text-3xl flex items-center gap-2">
@@ -1809,7 +1912,7 @@ export function AdminPanel() {
                   <Progress value={totalUsers > 0 ? (usageStats.activeUsersToday / totalUsers) * 100 : 0} className="h-2" />
                 </CardContent>
               </Card>
-              <Card>
+              <Card className={usageDateFilter === '7d' ? 'border-primary/50' : ''}>
                 <CardHeader className="pb-2">
                   <CardDescription>This Week</CardDescription>
                   <CardTitle className="text-3xl flex items-center gap-2">
@@ -1821,7 +1924,7 @@ export function AdminPanel() {
                   <Progress value={totalUsers > 0 ? (usageStats.activeUsersWeek / totalUsers) * 100 : 0} className="h-2" />
                 </CardContent>
               </Card>
-              <Card>
+              <Card className={usageDateFilter === '30d' ? 'border-primary/50' : ''}>
                 <CardHeader className="pb-2">
                   <CardDescription>This Month</CardDescription>
                   <CardTitle className="text-3xl flex items-center gap-2">
@@ -1836,16 +1939,59 @@ export function AdminPanel() {
             </div>
           </div>
 
+          {/* Feature Usage Counts */}
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Activity className="w-4 h-4" /> Feature Usage
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Games Logged</CardDescription>
+                  <CardTitle className="text-2xl">
+                    {usageDateFilter === 'today' ? usageStats.gamesToday
+                      : usageDateFilter === '7d' ? usageStats.gamesThisWeek
+                      : usageStats.gamesThisMonth}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Coach AI Chats</CardDescription>
+                  <CardTitle className="text-2xl">{usageStats.coachMemoryEntries}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>XP Earned</CardDescription>
+                  <CardTitle className="text-2xl">{usageStats.xpEarnedToday.toLocaleString()}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Public Profiles</CardDescription>
+                  <CardTitle className="text-2xl">{publicProfiles}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Video Clips</CardDescription>
+                  <CardTitle className="text-2xl">{usageStats.videoClips}</CardTitle>
+                </CardHeader>
+              </Card>
+            </div>
+          </div>
+
           {/* AI Credit Consumption */}
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
-              <Cpu className="w-4 h-4" /> AI Credit Consumption (Estimated)
+              <Cpu className="w-4 h-4" /> AI Credit Consumption
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-primary" /> Coach AI Memories
+                    <Zap className="w-3.5 h-3.5 text-primary" /> Coach Memories
                   </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.coachMemoryEntries}</CardTitle>
                 </CardHeader>
@@ -1866,165 +2012,248 @@ export function AdminPanel() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription className="flex items-center gap-1.5">
-                    <TrendingUp className="w-3.5 h-3.5 text-primary" /> Games This Week
-                  </CardDescription>
-                  <CardTitle className="text-2xl">{usageStats.gamesThisWeek}</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-xs text-muted-foreground">New games in last 7 days</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription className="flex items-center gap-1.5">
-                    <TrendingUp className="w-3.5 h-3.5 text-primary" /> Games This Month
-                  </CardDescription>
-                  <CardTitle className="text-2xl">{usageStats.gamesThisMonth}</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-xs text-muted-foreground">New games in last 30 days</p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* API Quota / Feature Usage */}
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
-              <Activity className="w-4 h-4" /> Feature & API Usage
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Scheduled Games</CardDescription>
-                  <CardTitle className="text-2xl">{usageStats.scheduledGames}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Video Clips</CardDescription>
-                  <CardTitle className="text-2xl">{usageStats.videoClips}</CardTitle>
-                </CardHeader>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
                   <CardDescription>Milestones Earned</CardDescription>
                   <CardTitle className="text-2xl">{usageStats.milestones}</CardTitle>
                 </CardHeader>
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>XP Entries</CardDescription>
-                  <CardTitle className="text-2xl">{usageStats.xpProgressEntries}</CardTitle>
+                  <CardDescription>Scheduled Games</CardDescription>
+                  <CardTitle className="text-2xl">{usageStats.scheduledGames}</CardTitle>
                 </CardHeader>
-              </Card>
-              <Card className="sm:col-span-2">
-                <CardHeader className="pb-2">
-                  <CardDescription>Approval Funnel</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Signups</span>
-                      <span className="font-medium">{approvalRequests.length}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Approved</span>
-                      <span className="font-medium">{approvalRequests.filter(r => r.status === 'approved').length}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Pending</span>
-                      <span className="font-medium text-destructive">{pendingApprovals}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Approval Rate</span>
-                      <span className="font-medium">
-                        {approvalRequests.length > 0
-                          ? Math.round((approvalRequests.filter(r => r.status === 'approved').length / approvalRequests.length) * 100)
-                          : 0}%
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
               </Card>
             </div>
           </div>
 
-          {/* Signup Sparkline */}
+          {/* Approval Funnel */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Clock className="w-4 h-4 text-primary" />
-                Signups — Last 14 Days
-              </CardTitle>
+              <CardDescription>Approval Funnel</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-end gap-1 h-24">
-                {usageStats.usersByDay.map((day) => {
-                  const maxCount = Math.max(...usageStats.usersByDay.map(d => d.count), 1);
-                  const height = (day.count / maxCount) * 100;
-                  return (
-                    <div key={day.date} className="flex-1 flex flex-col items-center gap-1" title={`${day.date}: ${day.count}`}>
-                      <span className="text-[9px] text-muted-foreground">{day.count > 0 ? day.count : ''}</span>
-                      <div
-                        className="w-full rounded-t bg-primary/80 min-h-[2px] transition-all"
-                        style={{ height: `${Math.max(height, 2)}%` }}
-                      />
-                      <span className="text-[8px] text-muted-foreground truncate w-full text-center">{day.date.split(' ')[1]}</span>
-                    </div>
-                  );
-                })}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{approvalRequests.length}</p>
+                  <p className="text-xs text-muted-foreground">Signups</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{approvalRequests.filter(r => r.status === 'approved').length}</p>
+                  <p className="text-xs text-muted-foreground">Approved</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-destructive">{pendingApprovals}</p>
+                  <p className="text-xs text-muted-foreground">Pending</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">
+                    {approvalRequests.length > 0
+                      ? Math.round((approvalRequests.filter(r => r.status === 'approved').length / approvalRequests.length) * 100)
+                      : 0}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">Approval Rate</p>
+                </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Sparklines */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary" />
+                  Signups — Last 14 Days
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-end gap-1 h-24">
+                  {usageStats.usersByDay.map((day) => {
+                    const maxCount = Math.max(...usageStats.usersByDay.map(d => d.count), 1);
+                    const height = (day.count / maxCount) * 100;
+                    return (
+                      <div key={day.date} className="flex-1 flex flex-col items-center gap-1" title={`${day.date}: ${day.count}`}>
+                        <span className="text-[9px] text-muted-foreground">{day.count > 0 ? day.count : ''}</span>
+                        <div
+                          className="w-full rounded-t bg-primary/80 min-h-[2px] transition-all"
+                          style={{ height: `${Math.max(height, 2)}%` }}
+                        />
+                        <span className="text-[8px] text-muted-foreground truncate w-full text-center">{day.date.split(' ')[1]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-primary" />
+                  Games Logged — Last 14 Days
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-end gap-1 h-24">
+                  {usageStats.gamesByDay.map((day) => {
+                    const maxCount = Math.max(...usageStats.gamesByDay.map(d => d.count), 1);
+                    const height = (day.count / maxCount) * 100;
+                    return (
+                      <div key={day.date} className="flex-1 flex flex-col items-center gap-1" title={`${day.date}: ${day.count}`}>
+                        <span className="text-[9px] text-muted-foreground">{day.count > 0 ? day.count : ''}</span>
+                        <div
+                          className="w-full rounded-t bg-accent min-h-[2px] transition-all"
+                          style={{ height: `${Math.max(height, 2)}%` }}
+                        />
+                        <span className="text-[8px] text-muted-foreground truncate w-full text-center">{day.date.split(' ')[1]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Metrics Tab */}
         <TabsContent value="metrics" className="space-y-4">
+          {/* User Growth Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                User Growth
+              </CardTitle>
+              <CardDescription>Monthly user signups</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const monthData = Object.entries(
+                  users.reduce((acc, user) => {
+                    const month = format(new Date(user.created_at), 'MMM yyyy');
+                    acc[month] = (acc[month] || 0) + 1;
+                    return acc;
+                  }, {} as Record<string, number>)
+                ).slice(-8);
+                const maxVal = Math.max(...monthData.map(([, c]) => c), 1);
+                return (
+                  <div className="space-y-4">
+                    <div className="flex items-end gap-2 h-32">
+                      {monthData.map(([month, count]) => {
+                        const height = (count / maxVal) * 100;
+                        return (
+                          <div key={month} className="flex-1 flex flex-col items-center gap-1">
+                            <span className="text-xs font-medium">{count}</span>
+                            <div
+                              className="w-full rounded-t bg-primary/80 min-h-[4px] transition-all"
+                              style={{ height: `${Math.max(height, 3)}%` }}
+                            />
+                            <span className="text-[10px] text-muted-foreground truncate w-full text-center">{month.split(' ')[0]}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Total: {totalUsers} users</span>
+                      <span>Latest: {monthData[monthData.length - 1]?.[1] || 0} this month</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* Games & XP Growth */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle>User Growth</CardTitle>
-                <CardDescription>Users by join date</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-primary" />
+                  Games Logged Over Time
+                </CardTitle>
+                <CardDescription>Total games: {usageStats.totalGames}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {Object.entries(
-                    users.reduce((acc, user) => {
-                      const month = format(new Date(user.created_at), 'MMM yyyy');
-                      acc[month] = (acc[month] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>)
-                  ).slice(-6).map(([month, count]) => (
-                    <div key={month} className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">{month}</span>
-                      <span className="font-medium">{count} users</span>
-                    </div>
-                  ))}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Today</span>
+                    <span className="font-medium">{usageStats.gamesToday}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">This Week</span>
+                    <span className="font-medium">{usageStats.gamesThisWeek}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">This Month</span>
+                    <span className="font-medium">{usageStats.gamesThisMonth}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">All Time</span>
+                    <span className="font-medium">{usageStats.totalGames}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-primary" />
+                  Coach AI Usage
+                </CardTitle>
+                <CardDescription>AI interactions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Coach Chats Today</span>
+                    <span className="font-medium">{usageStats.coachChatsToday}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total Memories</span>
+                    <span className="font-medium">{usageStats.coachMemoryEntries}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Est. AI Recaps</span>
+                    <span className="font-medium">{usageStats.totalGames}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">XP Entries</span>
+                    <span className="font-medium">{usageStats.xpProgressEntries}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Distribution Charts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
                 <CardTitle>Grade Distribution</CardTitle>
                 <CardDescription>Users by grade level</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {Object.entries(
+                {(() => {
+                  const gradeData = Object.entries(
                     users.reduce((acc, user) => {
                       acc[user.grade] = (acc[user.grade] || 0) + 1;
                       return acc;
                     }, {} as Record<string, number>)
-                  ).sort((a, b) => b[1] - a[1]).map(([grade, count]) => (
-                    <div key={grade} className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">{grade}</span>
-                      <span className="font-medium">{count}</span>
+                  ).sort((a, b) => b[1] - a[1]);
+                  const maxVal = Math.max(...gradeData.map(([, c]) => c), 1);
+                  return (
+                    <div className="space-y-2">
+                      {gradeData.map(([grade, count]) => (
+                        <div key={grade} className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">{grade}</span>
+                            <span className="font-medium">{count}</span>
+                          </div>
+                          <Progress value={(count / maxVal) * 100} className="h-1.5" />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
               </CardContent>
             </Card>
 
@@ -2034,19 +2263,28 @@ export function AdminPanel() {
                 <CardDescription>Users by position</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {Object.entries(
+                {(() => {
+                  const posData = Object.entries(
                     users.reduce((acc, user) => {
                       acc[user.position] = (acc[user.position] || 0) + 1;
                       return acc;
                     }, {} as Record<string, number>)
-                  ).sort((a, b) => b[1] - a[1]).map(([position, count]) => (
-                    <div key={position} className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">{position}</span>
-                      <span className="font-medium">{count}</span>
+                  ).sort((a, b) => b[1] - a[1]);
+                  const maxVal = Math.max(...posData.map(([, c]) => c), 1);
+                  return (
+                    <div className="space-y-2">
+                      {posData.map(([position, count]) => (
+                        <div key={position} className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">{position}</span>
+                            <span className="font-medium">{count}</span>
+                          </div>
+                          <Progress value={(count / maxVal) * 100} className="h-1.5" />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
               </CardContent>
             </Card>
 
@@ -2070,6 +2308,31 @@ export function AdminPanel() {
                   ))}
                   {reports.length === 0 && (
                     <p className="text-sm text-muted-foreground">No reports yet</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Feedback Summary</CardTitle>
+                <CardDescription>Feedback by status</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {Object.entries(
+                    userFeedback.reduce((acc, f) => {
+                      acc[f.status] = (acc[f.status] || 0) + 1;
+                      return acc;
+                    }, {} as Record<string, number>)
+                  ).map(([status, count]) => (
+                    <div key={status} className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground capitalize">{status}</span>
+                      <span className="font-medium">{count}</span>
+                    </div>
+                  ))}
+                  {userFeedback.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No feedback yet</p>
                   )}
                 </div>
               </CardContent>
