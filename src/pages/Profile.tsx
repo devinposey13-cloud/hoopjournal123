@@ -29,8 +29,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
-const positions = ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center', 'Guard', 'Forward'];
-const grades = ['1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
+const positions = ['Point Guard', 'Shooting Guard', 'Combo Guard', 'Small Forward', 'Power Forward', 'Center'];
+const grades = ['6th Grade', '7th Grade', '8th Grade', 'Freshman', 'Sophomore', 'Junior', 'Senior'];
 
 export default function Profile() {
   const navigate = useNavigate();
