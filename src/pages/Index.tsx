@@ -839,9 +839,9 @@ export default function Index() {
         {activeTab === 'settings' && (
           <div className="animate-fade-in">
             <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold">Settings</h1>
-                <p className="text-muted-foreground">
+              <div className="space-y-1">
+                <h1 className="text-xl font-bold">Settings</h1>
+                <p className="text-sm text-muted-foreground">
                   Manage your player profile
                 </p>
               </div>
