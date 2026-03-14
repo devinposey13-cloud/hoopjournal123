@@ -159,12 +159,103 @@ export function AuthForm() {
 
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
-    // Always use the published lovable.app origin so the OAuth broker accepts the redirect
     const redirectUri = LOVABLE_APP_ORIGIN;
 
     logOAuthInit('apple', redirectUri);
 
     try {
+      const isInIframe = (() => {
+        try {
+          return window.self !== window.top;
+        } catch {
+          return true;
+        }
+      })();
+
+      if (!isNativeApp() && isInIframe) {
+        await clearServiceWorkerCaches();
+
+        const popupRedirectUri = `${LOVABLE_APP_ORIGIN}/auth/callback?popup=1&provider=apple&target_origin=${encodeURIComponent(window.location.origin)}`;
+        const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=apple&redirect_uri=${encodeURIComponent(popupRedirectUri)}`;
+        const popup = window.open(brokerUrl, 'hoopjournal_apple_oauth', 'width=520,height=720');
+
+        if (!popup) {
+          throw new Error('Popup blocked. Please allow popups and try again.');
+        }
+
+        await new Promise<void>((resolve, reject) => {
+          let settled = false;
+
+          const cleanup = () => {
+            window.removeEventListener('message', onMessage);
+            window.clearInterval(closeWatcher);
+            window.clearTimeout(timeoutId);
+          };
+
+          const settle = (fn: () => void) => {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            fn();
+          };
+
+          const onMessage = async (event: MessageEvent) => {
+            const payload = event.data as {
+              type?: string;
+              provider?: string;
+              error?: string;
+              accessToken?: string;
+              refreshToken?: string;
+            };
+
+            const isExpectedMessage = payload?.type === 'oauth-complete' || payload?.type === 'oauth-error';
+            const isAllowedOrigin = [window.location.origin, LOVABLE_APP_ORIGIN].includes(event.origin);
+
+            if (!isExpectedMessage || !isAllowedOrigin || (payload.provider && payload.provider !== 'apple')) {
+              return;
+            }
+
+            if (payload.type === 'oauth-error') {
+              settle(() => reject(new Error(payload.error || 'Apple sign-in failed.')));
+              return;
+            }
+
+            if (!payload.accessToken || !payload.refreshToken) {
+              settle(() => reject(new Error('Missing auth tokens from Apple callback.')));
+              return;
+            }
+
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token: payload.accessToken,
+              refresh_token: payload.refreshToken,
+            });
+
+            if (sessionError) {
+              settle(() => reject(sessionError));
+              return;
+            }
+
+            settle(() => resolve());
+          };
+
+          window.addEventListener('message', onMessage);
+
+          const closeWatcher = window.setInterval(() => {
+            if (popup.closed) {
+              settle(() => reject(new Error('Apple sign-in was closed before completion.')));
+            }
+          }, 500);
+
+          const timeoutId = window.setTimeout(() => {
+            settle(() => reject(new Error('Apple sign-in timed out. Please try again.')));
+          }, 120000);
+        });
+
+        logOAuthSuccess('apple');
+        setAppleLoading(false);
+        return;
+      }
+
       if (isCustomDomain) {
         try {
           await handleCustomDomainOAuth('apple');
