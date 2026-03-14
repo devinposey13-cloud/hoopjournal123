@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AnimatePresence } from 'framer-motion';
 import { Navigation, Tab } from '@/components/Navigation';
+import { BroadcastNotifications } from '@/components/BroadcastNotifications';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { PlayerHeader } from '@/components/PlayerHeader';
 import { GameCard } from '@/components/GameCard';
