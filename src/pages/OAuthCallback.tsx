@@ -51,22 +51,45 @@ export default function OAuthCallback() {
       }
 
       // Popup handoff flow (preview iframe -> popup -> opener)
-      if (popupMode && window.opener) {
+      // Uses both postMessage (when window.opener survives) and BroadcastChannel
+      // (fallback for when cross-origin navigation clears window.opener)
+      if (popupMode) {
+        const sendViaOpener = (msg: Record<string, string>) => {
+          try {
+            if (window.opener) {
+              window.opener.postMessage(msg, targetOrigin);
+              console.log('[OAuthCallback] Sent token via postMessage to opener');
+            }
+          } catch (e) {
+            console.warn('[OAuthCallback] postMessage to opener failed:', e);
+          }
+        };
+
+        const sendViaBroadcast = (msg: Record<string, string>) => {
+          try {
+            const bc = new BroadcastChannel('hoopjournal-oauth');
+            bc.postMessage(msg);
+            console.log('[OAuthCallback] Sent token via BroadcastChannel');
+            // Close after a short delay to ensure delivery
+            setTimeout(() => bc.close(), 500);
+          } catch (e) {
+            console.warn('[OAuthCallback] BroadcastChannel failed:', e);
+          }
+        };
+
         if (errorParam) {
-          window.opener.postMessage(
-            { type: 'oauth-error', provider, error: errorDescription || errorParam },
-            targetOrigin
-          );
-          window.close();
+          const msg = { type: 'oauth-error', provider, error: errorDescription || errorParam };
+          sendViaOpener(msg);
+          sendViaBroadcast(msg);
+          setTimeout(() => window.close(), 300);
           return;
         }
 
         if (accessToken && refreshToken) {
-          window.opener.postMessage(
-            { type: 'oauth-complete', provider, accessToken, refreshToken },
-            targetOrigin
-          );
-          window.close();
+          const msg = { type: 'oauth-complete', provider, accessToken, refreshToken };
+          sendViaOpener(msg);
+          sendViaBroadcast(msg);
+          setTimeout(() => window.close(), 300);
           return;
         }
       }
