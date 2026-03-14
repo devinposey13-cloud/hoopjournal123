@@ -2367,6 +2367,16 @@ export function AdminPanel() {
         <TabsContent value="leaderboards">
           <AdminLeaderboards />
         </TabsContent>
+
+        {/* Feature Flags Tab */}
+        <TabsContent value="flags" className="space-y-4">
+          <AdminFeatureFlags />
+        </TabsContent>
+
+        {/* Broadcast Tab */}
+        <TabsContent value="broadcast" className="space-y-4">
+          <AdminBroadcast />
+        </TabsContent>
       </Tabs>
 
       {/* Admin Override Confirmation Dialog */}
