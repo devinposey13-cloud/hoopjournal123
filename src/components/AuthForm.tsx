@@ -132,11 +132,19 @@ export function AuthForm() {
 
     await new Promise<void>((resolve, reject) => {
       let settled = false;
+      let bc: BroadcastChannel | null = null;
+
+      try {
+        bc = new BroadcastChannel('hoopjournal-oauth');
+      } catch {
+        // BroadcastChannel not supported — rely on postMessage only
+      }
 
       const cleanup = () => {
         window.removeEventListener('message', onMessage);
         window.clearInterval(closeWatcher);
         window.clearTimeout(timeoutId);
+        try { bc?.close(); } catch { /* ignore */ }
       };
 
       const settle = (fn: () => void) => {
@@ -151,19 +159,15 @@ export function AuthForm() {
         fn();
       };
 
-      const onMessage = async (event: MessageEvent) => {
-        const payload = event.data as {
-          type?: string;
-          provider?: string;
-          error?: string;
-          accessToken?: string;
-          refreshToken?: string;
-        };
-
+      const handlePayload = async (payload: {
+        type?: string;
+        provider?: string;
+        error?: string;
+        accessToken?: string;
+        refreshToken?: string;
+      }) => {
         const isExpectedMessage = payload?.type === 'oauth-complete' || payload?.type === 'oauth-error';
-        const isAllowedOrigin = [window.location.origin, LOVABLE_APP_ORIGIN].includes(event.origin);
-
-        if (!isExpectedMessage || !isAllowedOrigin || (payload.provider && payload.provider !== provider)) {
+        if (!isExpectedMessage || (payload.provider && payload.provider !== provider)) {
           return;
         }
 
@@ -190,11 +194,31 @@ export function AuthForm() {
         settle(() => resolve());
       };
 
+      // Listen via postMessage (works when window.opener is preserved)
+      const onMessage = async (event: MessageEvent) => {
+        const isAllowedOrigin = [window.location.origin, LOVABLE_APP_ORIGIN].includes(event.origin);
+        if (!isAllowedOrigin) return;
+        await handlePayload(event.data);
+      };
       window.addEventListener('message', onMessage);
+
+      // Listen via BroadcastChannel (fallback when window.opener is lost after cross-origin nav)
+      if (bc) {
+        bc.onmessage = async (event: MessageEvent) => {
+          console.log('[OAuth] Received token via BroadcastChannel');
+          await handlePayload(event.data);
+        };
+      }
 
       const closeWatcher = window.setInterval(() => {
         if (popup.closed) {
-          settle(() => reject(new Error(`${provider} sign-in was closed before completion.`)));
+          // Give BroadcastChannel a moment to deliver before failing
+          setTimeout(() => {
+            if (!settled) {
+              settle(() => reject(new Error(`${provider} sign-in was closed before completion.`)));
+            }
+          }, 1000);
+          window.clearInterval(closeWatcher);
         }
       }, 500);
 
