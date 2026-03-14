@@ -2053,6 +2053,7 @@ export function AdminPanel() {
                 <CardHeader className="pb-2">
                   <CardDescription className="flex items-center gap-1.5">
                     <Zap className="w-3.5 h-3.5 text-primary" /> Coach Memories
+                    <MetricHint tip="Persistent memory entries extracted from Coach AI conversations. Each entry uses an AI call to extract and store." />
                   </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.coachMemoryEntries}</CardTitle>
                 </CardHeader>
