@@ -899,6 +899,7 @@ export function AdminPanel() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <Cpu className="w-3.5 h-3.5 text-primary" /> Coach Chats Today
+              <MetricHint tip="New Coach AI memory entries created today from user conversations." />
             </CardDescription>
             <CardTitle className="text-3xl">{usageStats.coachChatsToday}</CardTitle>
           </CardHeader>
