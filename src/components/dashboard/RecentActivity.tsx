@@ -80,14 +80,18 @@ export function RecentActivity({ games, clips = [], onViewGame, onViewAllGames, 
         )}
       </div>
       
-      <div className="space-y-2">
-        {activities.slice(0, 5).map((activity) => (
-          <ActivityItemRow
-            key={activity.id}
-            activity={activity}
-            isMobile={isMobile}
-            onDeleteGame={activity.type === 'game' ? onDeleteGame : undefined}
-          />
+      <div className="space-y-3">
+        {activities.slice(0, 5).map((activity, index) => (
+          <div key={activity.id}>
+            <ActivityItemRow
+              activity={activity}
+              isMobile={isMobile}
+              onDeleteGame={activity.type === 'game' ? onDeleteGame : undefined}
+            />
+            {index < Math.min(activities.length, 5) - 1 && (
+              <div className="border-b border-border/30 mt-3 mx-3" />
+            )}
+          </div>
         ))}
       </div>
     </div>
@@ -124,6 +128,10 @@ function ActivityItemRow({ activity, isMobile, onDeleteGame }: {
     setIsSwipeOpen(false);
   };
 
+  // Determine result indicator color
+  const isWin = activity.type === 'game' && activity.accent;
+  const isLoss = activity.type === 'game' && !activity.accent;
+
   const itemContent = (
     <div
       className={cn(
@@ -136,14 +144,23 @@ function ActivityItemRow({ activity, isMobile, onDeleteGame }: {
       role={activity.onClick ? "button" : undefined}
       tabIndex={activity.onClick ? 0 : undefined}
     >
-      <div className={cn(
-        "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0",
-        activity.accent ? "bg-green-500/10" : "bg-muted/50"
-      )}>
-        <Icon className={cn(
-          "w-4 h-4",
-          activity.accent ? "text-green-500" : "text-muted-foreground"
-        )} />
+      {/* Result indicator dot + icon */}
+      <div className="relative flex-shrink-0">
+        {activity.type === 'game' && (
+          <div className={cn(
+            "absolute -left-1 -top-1 w-2.5 h-2.5 rounded-full border-2 border-card z-10",
+            isWin ? "bg-green-500" : "bg-red-500"
+          )} />
+        )}
+        <div className={cn(
+          "w-9 h-9 rounded-full flex items-center justify-center",
+          isWin ? "bg-green-500/10" : isLoss ? "bg-red-500/10" : "bg-muted/50"
+        )}>
+          <Icon className={cn(
+            "w-4 h-4",
+            isWin ? "text-green-500" : isLoss ? "text-red-500" : "text-muted-foreground"
+          )} />
+        </div>
       </div>
       
       <div className="flex-1 min-w-0">

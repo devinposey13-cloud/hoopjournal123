@@ -34,7 +34,7 @@ interface QuickStatProps {
 
 function QuickStat({ label, value, icon: Icon, accent, tooltip }: QuickStatProps) {
   const content = (
-    <div className="flex flex-col items-center min-w-[48px] cursor-default">
+    <div className="flex flex-col items-center min-w-[52px] px-1.5 cursor-default">
       <Icon className={cn("w-3.5 h-3.5 mb-0.5", accent ? "text-primary" : "text-muted-foreground")} />
       <p className={cn("text-sm font-bold tabular-nums", accent && "text-primary")}>{value}</p>
       <p className="text-[10px] text-muted-foreground leading-tight">{label}</p>
@@ -201,7 +201,7 @@ export function PlayerCard({
           {/* Quick Stats Row */}
           {hasStats && (
             <TooltipProvider delayDuration={300}>
-              <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-border/50 overflow-x-auto scrollbar-hide">
+              <div className="flex items-center justify-between gap-3 sm:gap-4 mt-4 pt-5 pb-1 border-t border-border/50 overflow-x-auto scrollbar-hide">
                 {lastGame && (
                   <QuickStat
                     label="Last Game"

@@ -25,7 +25,7 @@ function generateInsight(games: GameStats[], seasonStats: SeasonStats, playerNam
 
   if (games.length < 3) {
     return {
-      message: `${games.length} game${games.length > 1 ? 's' : ''} logged. Keep tracking to unlock detailed performance trends!`,
+      message: `🔥 ${games.length === 1 ? 'First game' : `${games.length} games`} logged.\nKeep tracking to unlock deeper performance insights.`,
       type: 'positive',
       icon: TrendingUp,
     };
@@ -124,28 +124,28 @@ export function DailyInsight({ games, seasonStats, playerName }: DailyInsightPro
 
   return (
     <div className={cn(
-      "p-4 rounded-xl border",
-      insight.type === 'positive' && "bg-green-500/5 border-green-500/20",
-      insight.type === 'improvement' && "bg-amber-500/5 border-amber-500/20",
-      insight.type === 'neutral' && "bg-primary/5 border-primary/20"
+      "p-4 rounded-xl border shadow-sm",
+      insight.type === 'positive' && "bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent border-green-500/25",
+      insight.type === 'improvement' && "bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/25",
+      insight.type === 'neutral' && "bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/25"
     )}>
       <div className="flex items-start gap-3">
         <div className={cn(
-          "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-          insight.type === 'positive' && "bg-green-500/10",
-          insight.type === 'improvement' && "bg-amber-500/10",
-          insight.type === 'neutral' && "bg-primary/10"
+          "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0",
+          insight.type === 'positive' && "bg-green-500/15",
+          insight.type === 'improvement' && "bg-amber-500/15",
+          insight.type === 'neutral' && "bg-primary/15"
         )}>
           <Icon className={cn(
-            "w-4 h-4",
+            "w-[18px] h-[18px]",
             insight.type === 'positive' && "text-green-500",
             insight.type === 'improvement' && "text-amber-500",
             insight.type === 'neutral' && "text-primary"
           )} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-muted-foreground mb-1">Coach Insight</p>
-          <p className="text-sm leading-relaxed">{insight.message}</p>
+          <p className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">Coach Insight</p>
+          <p className="text-sm leading-relaxed whitespace-pre-line">{insight.message}</p>
         </div>
       </div>
     </div>
