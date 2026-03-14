@@ -1990,6 +1990,7 @@ export function AdminPanel() {
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
               <Activity className="w-4 h-4" /> Feature Usage
+              <MetricHint tip="Counts of key features used during the selected period. Helps identify which features drive engagement." />
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <Card>
