@@ -329,7 +329,10 @@ export function LogSection({
     <div className="space-y-5 animate-fade-in">
       {/* Page Header */}
       <div className="space-y-1">
-        <h1 className="text-xl font-bold text-foreground">Log Your Game</h1>
+        <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <ClipboardList className="h-5 w-5 text-primary" />
+          Log Your Game
+        </h1>
         <p className="text-sm text-muted-foreground">Track stats live or record a finished game.</p>
       </div>
       <QuickLiveStatsDialog
