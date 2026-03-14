@@ -272,7 +272,7 @@ export default function Notifications() {
                       )}
                       <button
                         onClick={() => deleteMessage(msg)}
-                        className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors ml-auto opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors ml-auto sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
                       >
                         <Trash2 className="w-3 h-3" />
                         Delete
