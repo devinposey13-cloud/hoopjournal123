@@ -27,6 +27,7 @@ interface ActivityItem {
 }
 
 export function RecentActivity({ games, clips = [], onViewGame, onViewAllGames, onDeleteGame }: RecentActivityProps) {
+  const isMobile = useIsMobile();
   // Build activity feed from games
   const activities: ActivityItem[] = games.slice(0, 5).map(game => ({
     id: game.id,
