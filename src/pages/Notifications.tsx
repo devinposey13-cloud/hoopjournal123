@@ -7,6 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Navigation, Tab } from '@/components/Navigation';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { useCloudData } from '@/hooks/useCloudData';
+import { useDismissedNotifications } from '@/hooks/useDismissedNotifications';
 import { Bell, Mail, Megaphone, Check, CheckCheck, Inbox, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
