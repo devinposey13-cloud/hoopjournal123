@@ -47,6 +47,7 @@ export function BottomNavigation({
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const broadcastCount = useBroadcastCount();
 
   // Check if we're on a /log or /progress route
   const isLogRoute = location.pathname.startsWith('/log');
