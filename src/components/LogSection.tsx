@@ -597,10 +597,10 @@ export function LogSection({
               <Card className="border-border/40">
                 <CardContent className="p-5 text-center">
                   <Calendar className="h-7 w-7 mx-auto text-muted-foreground/40 mb-2" />
-                   <p className="text-sm font-medium mb-1">No upcoming games scheduled</p>
+                   <p className="text-sm font-medium mb-1">No upcoming games scheduled.</p>
                    <p className="text-xs text-muted-foreground mb-3">
-                     Add your schedule so Hoop Journal can help you track your games.
-                   </p>
+                      Add your next game so Hoop Journal™ can help you stay on track this season.
+                    </p>
                   <AddScheduleDialog 
                     onAddGame={addScheduledGame} 
                     onBulkAddGames={bulkImportScheduledGames} 
