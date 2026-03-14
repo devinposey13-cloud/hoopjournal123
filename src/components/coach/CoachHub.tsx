@@ -326,7 +326,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
                 "border-l-4 transition-colors",
                 insight.type === 'positive' && "border-l-green-500/70 bg-green-500/5",
                 insight.type === 'improvement' && "border-l-amber-500/70 bg-amber-500/5",
-                insight.type === 'neutral' && "border-l-muted-foreground/30"
+                insight.type === 'neutral' && "border-l-blue-500/70 bg-blue-500/5"
               )}>
                 <CardContent className="p-3 sm:p-4">
                   <div className="flex items-start justify-between gap-3">
