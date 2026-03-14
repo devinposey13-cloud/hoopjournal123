@@ -912,6 +912,9 @@ export function AdminPanel() {
         </Card>
       </div>
 
+      {/* System Health */}
+      <AdminSystemHealth />
+
       <Tabs defaultValue="approvals" className="space-y-4">
         <div className="relative">
           <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent pb-1 sm:pb-0">
