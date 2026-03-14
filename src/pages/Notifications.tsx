@@ -7,12 +7,13 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Navigation, Tab } from '@/components/Navigation';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { useCloudData } from '@/hooks/useCloudData';
-import { Bell, Mail, Megaphone, Check, CheckCheck, Inbox } from 'lucide-react';
+import { Bell, Mail, Megaphone, Check, CheckCheck, Inbox, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { DashboardSkeleton } from '@/components/skeletons/DashboardSkeleton';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface BroadcastMessage {
   id: string;
@@ -22,6 +23,24 @@ interface BroadcastMessage {
   target_user_id: string | null;
   is_read: boolean;
   created_at: string;
+}
+
+const DISMISSED_KEY = 'hoop-journal-dismissed-notifications';
+
+function getDismissedIds(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function addDismissedId(id: string) {
+  const ids = getDismissedIds();
+  if (!ids.includes(id)) {
+    ids.push(id);
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify(ids));
+  }
 }
 
 export default function Notifications() {
@@ -34,6 +53,7 @@ export default function Notifications() {
   const [messages, setMessages] = useState<BroadcastMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [dismissedIds, setDismissedIds] = useState<string[]>(getDismissedIds());
 
   useEffect(() => {
     if (!user) return;
@@ -77,13 +97,29 @@ export default function Notifications() {
 
     setMessages((prev) => prev.map((m) => ({ ...m, is_read: true })));
 
-    // Only mark specific_user messages as read in DB (broadcast 'all' messages share one row)
     const specificUnread = messages.filter(
       (m) => !m.is_read && m.target_audience === 'specific_user' && m.target_user_id === user?.id
     );
     for (const msg of specificUnread) {
       await supabase.from('broadcast_messages').update({ is_read: true }).eq('id', msg.id);
     }
+  };
+
+  const deleteMessage = async (msg: BroadcastMessage) => {
+    // For direct messages, delete from DB; for broadcasts, dismiss locally
+    if (msg.target_audience === 'specific_user' && msg.target_user_id === user?.id) {
+      const { error } = await supabase.from('broadcast_messages').delete().eq('id', msg.id);
+      if (error) {
+        // Fallback to local dismiss if DB delete fails (RLS)
+        addDismissedId(msg.id);
+        setDismissedIds((prev) => [...prev, msg.id]);
+      }
+    } else {
+      addDismissedId(msg.id);
+      setDismissedIds((prev) => [...prev, msg.id]);
+    }
+    setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+    toast.success('Notification removed');
   };
 
   const handleTabChange = (tab: Tab) => {
@@ -101,8 +137,9 @@ export default function Notifications() {
     return <DashboardSkeleton />;
   }
 
-  const filteredMessages = filter === 'unread' ? messages.filter((m) => !m.is_read) : messages;
-  const unreadCount = messages.filter((m) => !m.is_read).length;
+  const visibleMessages = messages.filter((m) => !dismissedIds.includes(m.id));
+  const filteredMessages = filter === 'unread' ? visibleMessages.filter((m) => !m.is_read) : visibleMessages;
+  const unreadCount = visibleMessages.filter((m) => !m.is_read).length;
 
   return (
     <div className={cn('min-h-screen bg-background', isMobile ? 'pb-20' : '')}>
@@ -188,79 +225,90 @@ export default function Notifications() {
           </div>
         ) : (
           <div className="space-y-2">
-            {filteredMessages.map((msg, index) => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                className={cn(
-                  'relative flex items-start gap-3 rounded-xl border p-4 transition-colors',
-                  !msg.is_read
-                    ? msg.target_audience === 'specific_user'
-                      ? 'bg-primary/5 border-primary/20'
-                      : 'bg-muted/60 border-border'
-                    : 'bg-card border-border/50 opacity-75'
-                )}
-              >
-                {/* Icon */}
-                <div
+            <AnimatePresence mode="popLayout">
+              {filteredMessages.map((msg, index) => (
+                <motion.div
+                  key={msg.id}
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -80, transition: { duration: 0.2 } }}
+                  transition={{ delay: index * 0.03 }}
                   className={cn(
-                    'shrink-0 mt-0.5 w-8 h-8 rounded-full flex items-center justify-center',
-                    msg.target_audience === 'specific_user'
-                      ? 'bg-primary/10'
-                      : 'bg-muted'
+                    'relative group flex items-start gap-3 rounded-xl border p-4 transition-colors',
+                    !msg.is_read
+                      ? msg.target_audience === 'specific_user'
+                        ? 'bg-primary/5 border-primary/20'
+                        : 'bg-muted/60 border-border'
+                      : 'bg-card border-border/50 opacity-75'
                   )}
                 >
-                  {msg.target_audience === 'specific_user' ? (
-                    <Mail className="w-4 h-4 text-primary" />
-                  ) : (
-                    <Megaphone className="w-4 h-4 text-muted-foreground" />
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className={cn('text-sm leading-tight', !msg.is_read ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground')}>
-                      {msg.title}
-                    </p>
-                    <span className="text-[10px] text-muted-foreground/60 shrink-0 mt-0.5">
-                      {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap leading-relaxed">
-                    {msg.message}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span
-                      className={cn(
-                        'inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full',
-                        msg.target_audience === 'specific_user'
-                          ? 'bg-primary/10 text-primary'
-                          : 'bg-muted text-muted-foreground'
-                      )}
-                    >
-                      {msg.target_audience === 'specific_user' ? 'Direct message' : 'Announcement'}
-                    </span>
-                    {!msg.is_read && (
-                      <button
-                        onClick={() => markAsRead(msg.id)}
-                        className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <Check className="w-3 h-3" />
-                        Mark read
-                      </button>
+                  {/* Icon */}
+                  <div
+                    className={cn(
+                      'shrink-0 mt-0.5 w-8 h-8 rounded-full flex items-center justify-center',
+                      msg.target_audience === 'specific_user'
+                        ? 'bg-primary/10'
+                        : 'bg-muted'
+                    )}
+                  >
+                    {msg.target_audience === 'specific_user' ? (
+                      <Mail className="w-4 h-4 text-primary" />
+                    ) : (
+                      <Megaphone className="w-4 h-4 text-muted-foreground" />
                     )}
                   </div>
-                </div>
 
-                {/* Unread dot */}
-                {!msg.is_read && (
-                  <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-primary" />
-                )}
-              </motion.div>
-            ))}
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className={cn('text-sm leading-tight', !msg.is_read ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground')}>
+                        {msg.title}
+                      </p>
+                      <span className="text-[10px] text-muted-foreground/60 shrink-0 mt-0.5">
+                        {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap leading-relaxed">
+                      {msg.message}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span
+                        className={cn(
+                          'inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full',
+                          msg.target_audience === 'specific_user'
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-muted text-muted-foreground'
+                        )}
+                      >
+                        {msg.target_audience === 'specific_user' ? 'Direct message' : 'Announcement'}
+                      </span>
+                      {!msg.is_read && (
+                        <button
+                          onClick={() => markAsRead(msg.id)}
+                          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <Check className="w-3 h-3" />
+                          Mark read
+                        </button>
+                      )}
+                      <button
+                        onClick={() => deleteMessage(msg)}
+                        className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive transition-colors ml-auto opacity-0 group-hover:opacity-100 focus:opacity-100"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Unread dot */}
+                  {!msg.is_read && (
+                    <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-primary" />
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>
