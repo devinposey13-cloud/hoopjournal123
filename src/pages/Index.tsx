@@ -811,10 +811,13 @@ export default function Index() {
         {/* Mini Games Tab */}
         {activeTab === 'minigames' && (
           <div className="space-y-6 animate-fade-in">
-            <div>
-              <h1 className="text-2xl font-bold">Skill Games</h1>
-              <p className="text-muted-foreground">
-                Train your basketball IQ, reaction speed, and focus while earning XP, badges, and leaderboard points.
+            <div className="space-y-1">
+              <h1 className="text-xl font-bold flex items-center gap-2">
+                <Gamepad2 className="h-5 w-5 text-primary" />
+                Skill Games
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Train your basketball IQ, reaction speed, and focus.
               </p>
             </div>
             <GamesHub />
