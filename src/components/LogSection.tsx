@@ -385,7 +385,10 @@ export function LogSection({
               {/* Secondary: Log Game */}
               <div className="h-px bg-border/40" />
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">Just finished a game?</p>
+                <div>
+                  <p className="text-sm text-muted-foreground">Just finished a game?</p>
+                  <p className="text-xs text-muted-foreground/70">Log it to update your season stats.</p>
+                </div>
                 <AddGameDialog 
                   onAddGame={addGame} 
                   isMobile={isMobile}
