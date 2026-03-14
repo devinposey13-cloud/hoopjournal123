@@ -924,7 +924,10 @@ export function AdminPanel() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Pending Reports</CardDescription>
+            <CardDescription className="flex items-center gap-1.5">
+              Pending Reports
+              <MetricHint tip="Content reports flagged by users (e.g. inappropriate AI responses) awaiting admin review." />
+            </CardDescription>
             <CardTitle className="text-3xl text-destructive">{pendingReports}</CardTitle>
           </CardHeader>
         </Card>
