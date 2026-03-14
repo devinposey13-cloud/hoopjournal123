@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Gamepad2, Settings, Shield, CalendarRange, UserCircle, LogOut, Users, UserPlus } from 'lucide-react';
+import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Gamepad2, Settings, Shield, CalendarRange, UserCircle, LogOut, UserPlus, HelpCircle, MessageSquare } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import { SeasonSelector } from './SeasonSelector';
 import { ProfileSelector } from './profile/ProfileSelector';
 import { AddProfileDialog } from './profile/AddProfileDialog';
+import { FeedbackDialog } from './FeedbackDialog';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Season } from '@/types/basketball';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveProfile } from '@/hooks/useActiveProfile';
