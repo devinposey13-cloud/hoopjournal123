@@ -46,7 +46,7 @@ export function CompletionCard({ playerName, onStartGame, onPregameTalk, onExplo
         className="text-3xl md:text-4xl mb-2 text-foreground uppercase tracking-wide"
         style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}
       >
-        You're ready to start your season
+        You're ready to start your Hoop Journal™ season
       </motion.h2>
 
       <motion.p

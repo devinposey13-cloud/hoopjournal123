@@ -243,8 +243,8 @@ export function TermsOfServiceContent() {
       </Section>
 
       <Section title="6. Intellectual Property">
-        <p>All Hoop Journal content, branding, and software are the property of Hoop Journal.</p>
-        <p>Users retain ownership of the content they submit but grant Hoop Journal a limited license to use it for operating the platform.</p>
+        <p>All Hoop Journal™ content, branding, and software are the property of Hoop Journal™.</p>
+        <p>Users retain ownership of the content they submit but grant Hoop Journal™ a limited license to use it for operating the platform.</p>
       </Section>
 
       <Section title="7. Limitation of Liability">

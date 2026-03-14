@@ -95,7 +95,7 @@ export function AgeConfirmationGate({ onConfirmed }: AgeConfirmationGateProps) {
               </h1>
 
               <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mb-8">
-                Hoop Journal is designed for athletes <strong className="text-foreground">13 years and older</strong>.
+                Hoop Journal™ is designed for athletes <strong className="text-foreground">13 years and older</strong>.
                 <br /><br />
                 If you are under 13, a parent or legal guardian must approve your account.
               </p>

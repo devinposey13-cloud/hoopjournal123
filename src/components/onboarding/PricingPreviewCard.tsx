@@ -93,7 +93,7 @@ export function PricingPreviewCard({ onSelectFree, onSelectPaid }: PricingPrevie
       className="flex flex-col items-center text-center px-4 max-h-[80vh] overflow-y-auto"
     >
       <h2 className="text-2xl md:text-3xl mb-2 text-foreground font-semibold">
-        Choose your plan
+        Choose your Hoop Journal™ plan
       </h2>
       <p className="text-muted-foreground mb-3 text-sm">
         Start free. Upgrade when you're ready.

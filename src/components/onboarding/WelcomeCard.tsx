@@ -44,7 +44,7 @@ export function WelcomeCard({ value, onNext, onSkip }: WelcomeCardProps) {
         transition={{ delay: 0.1, duration: 0.4 }}
         className="text-3xl md:text-4xl font-bold mb-2 text-foreground"
       >
-        Welcome to Hoop Journal
+        Welcome to Hoop Journal™
       </motion.h2>
 
       <motion.p
