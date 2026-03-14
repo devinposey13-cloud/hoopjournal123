@@ -1,4 +1,4 @@
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, Zap } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ interface GameCardProps {
   highScore?: number | null;
   highScoreLabel?: string;
   suffix?: string;
+  xpLabel?: string;
   onClick: () => void;
 }
 
@@ -22,6 +23,7 @@ export function GameCard({
   highScore,
   highScoreLabel = 'High Score',
   suffix = '',
+  xpLabel,
   onClick,
 }: GameCardProps) {
   return (
@@ -41,6 +43,12 @@ export function GameCard({
         </div>
         <CardTitle className="text-lg mt-3">{title}</CardTitle>
         <CardDescription className="line-clamp-2">{description}</CardDescription>
+        {xpLabel && (
+          <div className="flex items-center gap-1 mt-1">
+            <Zap className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-medium text-primary">{xpLabel}</span>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <Button 
