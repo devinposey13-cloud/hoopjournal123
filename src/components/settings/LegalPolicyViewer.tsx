@@ -90,7 +90,7 @@ export function PrivacyPolicyContent() {
   return (
     <>
       <p className="text-muted-foreground">
-        Hoop Journal ("we," "our," or "us") respects your privacy. This Privacy Policy explains what information we collect, how we use it, and how we protect it.
+        Hoop Journal™ ("we," "our," or "us") respects your privacy. This Privacy Policy explains what information we collect, how we use it, and how we protect it.
       </p>
       <p className="text-muted-foreground">
         Hoop Journal is a basketball habit tracking and performance analytics platform designed to help athletes reflect, improve, and build consistency.
