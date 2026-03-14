@@ -179,14 +179,21 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
 
   return (
     <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
-      {/* Header */}
+      {/* Page Header */}
+      <div className="space-y-1">
+        <h1 className="text-xl font-bold text-foreground">Coach AI</h1>
+        <p className="text-sm text-muted-foreground">Personalized feedback based on your stats and recent games.</p>
+      </div>
+
+      {/* Avatar */}
       <div className="text-center">
-        <div className="w-16 h-16 rounded-full overflow-hidden mx-auto mb-2">
-          <img src={getCoachAvatarUrl(profile.coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
+        <div className="relative w-16 h-16 mx-auto mb-2">
+          <div className="absolute inset-0 rounded-full animate-[pulse_2.5s_ease-in-out_infinite] bg-primary/20 scale-125" />
+          <div className="absolute inset-0 rounded-full animate-[pulse_3s_ease-in-out_infinite] bg-primary/10 scale-150" />
+          <div className="relative w-16 h-16 rounded-full overflow-hidden ring-2 ring-primary/30">
+            <img src={getCoachAvatarUrl(profile.coachVoiceGender)} alt="Coach AI" className="w-full h-full object-cover" />
+          </div>
         </div>
-        <h1 className="text-xl font-bold flex items-center justify-center gap-2">
-          Coach AI
-        </h1>
         <p className="text-sm text-muted-foreground">
           Your personal performance coach
         </p>
