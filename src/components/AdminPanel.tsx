@@ -976,6 +976,16 @@ export function AdminPanel() {
             <span className="hidden sm:inline">Leaders</span>
             <span className="sm:hidden">Top</span>
           </TabsTrigger>
+          <TabsTrigger value="flags" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0 whitespace-nowrap">
+            <ToggleLeft className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Flags</span>
+            <span className="sm:hidden">Flags</span>
+          </TabsTrigger>
+          <TabsTrigger value="broadcast" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0 whitespace-nowrap">
+            <Megaphone className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Broadcast</span>
+            <span className="sm:hidden">Msg</span>
+          </TabsTrigger>
             </TabsList>
           </div>
           {/* Scroll indicator - fades on right edge when scrollable */}
