@@ -2017,7 +2017,10 @@ export function AdminPanel() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>XP Earned</CardDescription>
+                   <CardDescription className="flex items-center gap-1.5">
+                    XP Earned
+                    <MetricHint tip="Sum of current XP values for users active today. Represents total accumulated XP, not daily delta." />
+                  </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.xpEarnedToday.toLocaleString()}</CardTitle>
                 </CardHeader>
               </Card>
