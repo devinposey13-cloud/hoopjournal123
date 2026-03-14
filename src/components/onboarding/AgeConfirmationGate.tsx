@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Shield, ChevronRight } from 'lucide-react';
+import { Shield, ChevronRight, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface AgeConfirmationGateProps {
   onConfirmed: () => void;
@@ -13,11 +12,11 @@ interface AgeConfirmationGateProps {
 
 export function AgeConfirmationGate({ onConfirmed }: AgeConfirmationGateProps) {
   const { user } = useAuth();
-  const [showParentConsent, setShowParentConsent] = useState(false);
-  const [parentChecked, setParentChecked] = useState(false);
+  const navigate = useNavigate();
+  const [screen, setScreen] = useState<'age-select' | 'under-13'>('age-select');
   const [saving, setSaving] = useState(false);
 
-  const logConfirmation = async (ageDeclared: 'under_13' | '13_or_older', parentConsent: boolean) => {
+  const logConfirmation = async (ageDeclared: 'under_13' | '13_or_older') => {
     if (!user) return;
     setSaving(true);
 
@@ -31,7 +30,6 @@ export function AgeConfirmationGate({ onConfirmed }: AgeConfirmationGateProps) {
     };
 
     try {
-      // Fetch IP via public API (best-effort)
       let ip: string | null = null;
       try {
         const res = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(3000) });
@@ -44,8 +42,8 @@ export function AgeConfirmationGate({ onConfirmed }: AgeConfirmationGateProps) {
       await supabase.from('age_confirmations' as any).insert({
         user_id: user.id,
         age_declared: ageDeclared,
-        parent_consent: parentConsent,
-        consent_timestamp: parentConsent ? new Date().toISOString() : null,
+        parent_consent: false,
+        consent_timestamp: null,
         ip_address: ip,
         device_metadata: deviceMetadata,
       });
@@ -57,47 +55,42 @@ export function AgeConfirmationGate({ onConfirmed }: AgeConfirmationGateProps) {
   };
 
   const handleOver13 = async () => {
-    await logConfirmation('13_or_older', false);
+    await logConfirmation('13_or_older');
     onConfirmed();
   };
 
-  const handleParentApprove = async () => {
-    if (!parentChecked) {
-      toast.error('Please confirm parental approval to continue.');
-      return;
-    }
-    await logConfirmation('under_13', true);
-    onConfirmed();
+  const handleUnder13 = async () => {
+    await logConfirmation('under_13');
+    setScreen('under-13');
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background flex items-center justify-center">
-      {/* Subtle gradient overlay */}
+    <div className="fixed inset-0 z-[60] bg-background flex flex-col items-center justify-center">
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/10 pointer-events-none" />
 
-      <div className="relative z-10 w-full max-w-md px-6">
+      <div className="relative z-10 w-full max-w-md px-6 flex-1 flex items-center">
         <AnimatePresence mode="wait">
-          {!showParentConsent ? (
+          {screen === 'age-select' ? (
             <motion.div
               key="age-select"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.2 }}
-              className="flex flex-col items-center text-center"
+              className="flex flex-col items-center text-center w-full"
             >
               <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
                 <Shield className="w-7 h-7 text-primary" />
               </div>
 
               <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-                Before You Continue
+                Age Confirmation
               </h1>
 
               <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mb-8">
-                Hoop Journal™ is designed for athletes <strong className="text-foreground">13 years and older</strong>.
+                Hoop Journal™ is designed for athletes <strong className="text-foreground">13 years of age and older</strong>.
                 <br /><br />
-                If you are under 13, a parent or legal guardian must approve your account.
+                If you are under 13, please ask a parent or legal guardian to create and manage your account.
               </p>
 
               <div className="w-full space-y-3">
@@ -112,7 +105,7 @@ export function AgeConfirmationGate({ onConfirmed }: AgeConfirmationGateProps) {
 
                 <Button
                   variant="outline"
-                  onClick={() => setShowParentConsent(true)}
+                  onClick={handleUnder13}
                   disabled={saving}
                   className="w-full h-12 text-base border-border/50"
                 >
@@ -122,57 +115,57 @@ export function AgeConfirmationGate({ onConfirmed }: AgeConfirmationGateProps) {
             </motion.div>
           ) : (
             <motion.div
-              key="parent-consent"
+              key="under-13"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.2 }}
-              className="flex flex-col items-center text-center"
+              className="flex flex-col items-center text-center w-full"
             >
               <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
                 <Shield className="w-7 h-7 text-primary" />
               </div>
 
               <h2 className="text-2xl font-bold text-foreground mb-3">
-                Parent Approval Required
+                Parent or Guardian Required
               </h2>
 
-              <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mb-6">
-                To protect young athletes, a parent or legal guardian must review and approve this account.
+              <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mb-8">
+                Hoop Journal™ accounts must be created and managed by a parent or legal guardian for athletes under 13.
+                <br /><br />
+                Please ask a parent or guardian to continue.
               </p>
-
-              <div className="w-full bg-card border border-border/50 rounded-lg p-4 mb-6">
-                <label className="flex items-start gap-3 cursor-pointer text-left">
-                  <Checkbox
-                    checked={parentChecked}
-                    onCheckedChange={(v) => setParentChecked(v === true)}
-                    className="mt-0.5"
-                  />
-                  <span className="text-sm text-foreground leading-relaxed">
-                    I am a parent or legal guardian, and I approve this account for my child.
-                  </span>
-                </label>
-              </div>
 
               <div className="w-full space-y-3">
                 <Button
-                  onClick={handleParentApprove}
-                  disabled={saving || !parentChecked}
+                  onClick={() => setScreen('age-select')}
                   className="w-full h-12 text-base font-semibold gradient-primary"
                 >
-                  {saving ? 'Saving…' : 'Approve and Continue'}
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  Return
                 </Button>
 
-                <button
-                  onClick={() => setShowParentConsent(false)}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/privacy')}
+                  className="w-full h-12 text-base border-border/50"
                 >
-                  ← Back
-                </button>
+                  Learn More
+                </Button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Privacy Policy footer link */}
+      <div className="relative z-10 pb-6">
+        <button
+          onClick={() => navigate('/privacy')}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+        >
+          Privacy Policy
+        </button>
       </div>
     </div>
   );
