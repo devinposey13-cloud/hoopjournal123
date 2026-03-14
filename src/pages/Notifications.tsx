@@ -89,17 +89,13 @@ export default function Notifications() {
   };
 
   const deleteMessage = async (msg: BroadcastMessage) => {
-    // For direct messages, delete from DB; for broadcasts, dismiss locally
     if (msg.target_audience === 'specific_user' && msg.target_user_id === user?.id) {
       const { error } = await supabase.from('broadcast_messages').delete().eq('id', msg.id);
       if (error) {
-        // Fallback to local dismiss if DB delete fails (RLS)
-        addDismissedId(msg.id);
-        setDismissedIds((prev) => [...prev, msg.id]);
+        dismiss(msg.id);
       }
     } else {
-      addDismissedId(msg.id);
-      setDismissedIds((prev) => [...prev, msg.id]);
+      dismiss(msg.id);
     }
     setMessages((prev) => prev.filter((m) => m.id !== msg.id));
     toast.success('Notification removed');
