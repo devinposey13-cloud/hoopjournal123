@@ -41,19 +41,60 @@ export default function OAuthCallback() {
       const provider = queryParams.get('provider') || hashParams.get('provider') || 'apple';
       const targetOriginParam = queryParams.get('target_origin') || hashParams.get('target_origin');
 
+      const isTrustedOrigin = (origin: string) => {
+        try {
+          const host = new URL(origin).hostname;
+          return (
+            host === window.location.hostname ||
+            host === 'localhost' ||
+            host.endsWith('.lovable.app') ||
+            host.endsWith('.lovableproject.com')
+          );
+        } catch {
+          return false;
+        }
+      };
+
       let targetOrigin = window.location.origin;
       if (targetOriginParam) {
         try {
-          targetOrigin = new URL(targetOriginParam).origin;
+          const parsed = new URL(targetOriginParam).origin;
+          targetOrigin = isTrustedOrigin(parsed) ? parsed : window.location.origin;
         } catch {
           targetOrigin = window.location.origin;
         }
       }
 
       // Popup handoff flow (preview iframe -> popup -> opener)
-      // Uses both postMessage (when window.opener survives) and BroadcastChannel
-      // (fallback for when cross-origin navigation clears window.opener)
+      // If callback is currently on a different origin than opener target,
+      // first bounce to the opener origin so BroadcastChannel can work.
       if (popupMode) {
+        const hasPayload = !!(accessToken && refreshToken) || !!errorParam;
+        if (hasPayload && window.location.origin !== targetOrigin) {
+          const bounceUrl = new URL('/auth/callback', targetOrigin);
+          bounceUrl.searchParams.set('popup', '1');
+          bounceUrl.searchParams.set('provider', provider);
+          bounceUrl.searchParams.set('target_origin', targetOrigin);
+
+          const bounceHash = new URLSearchParams();
+          if (errorParam) {
+            bounceHash.set('error', errorParam);
+            if (errorDescription) bounceHash.set('error_description', errorDescription);
+          }
+          if (accessToken) bounceHash.set('access_token', accessToken);
+          if (refreshToken) bounceHash.set('refresh_token', refreshToken);
+          bounceHash.set('popup', '1');
+          bounceHash.set('provider', provider);
+          bounceHash.set('target_origin', targetOrigin);
+
+          const hashString = bounceHash.toString();
+          bounceUrl.hash = hashString ? `#${hashString}` : '';
+
+          console.log('[OAuthCallback] Bouncing popup callback to target origin for token handoff:', targetOrigin);
+          window.location.replace(bounceUrl.toString());
+          return;
+        }
+
         const sendViaOpener = (msg: Record<string, string>) => {
           try {
             if (window.opener) {
@@ -70,7 +111,6 @@ export default function OAuthCallback() {
             const bc = new BroadcastChannel('hoopjournal-oauth');
             bc.postMessage(msg);
             console.log('[OAuthCallback] Sent token via BroadcastChannel');
-            // Close after a short delay to ensure delivery
             setTimeout(() => bc.close(), 500);
           } catch (e) {
             console.warn('[OAuthCallback] BroadcastChannel failed:', e);
