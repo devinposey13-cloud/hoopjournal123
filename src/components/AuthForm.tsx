@@ -122,7 +122,7 @@ export function AuthForm() {
   const handleIframePopupOAuth = async (provider: 'google' | 'apple') => {
     await clearServiceWorkerCaches();
 
-    const popupRedirectUri = `${LOVABLE_APP_ORIGIN}/auth/callback?popup=1&provider=${provider}&target_origin=${encodeURIComponent(window.location.origin)}`;
+    const popupRedirectUri = `${LOVABLE_APP_ORIGIN}/auth/callback?popup=1&provider=${provider}&target_origin=${encodeURIComponent(window.location.origin)}&target_url=${encodeURIComponent(window.location.href)}`;
     const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(popupRedirectUri)}`;
     const popup = window.open(brokerUrl, `hoopjournal_${provider}_oauth`, 'width=520,height=720');
 

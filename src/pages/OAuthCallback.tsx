@@ -86,9 +86,19 @@ export default function OAuthCallback() {
         const hasPayload = !!(accessToken && refreshToken) || !!errorParam;
         if (hasPayload && window.location.origin !== targetOrigin) {
           const bounceUrl = new URL('/auth/callback', targetOrigin);
+          try {
+            const parsedTargetUrl = new URL(targetUrl);
+            const previewToken = parsedTargetUrl.searchParams.get('__lovable_token');
+            if (previewToken) {
+              bounceUrl.searchParams.set('__lovable_token', previewToken);
+            }
+          } catch {
+            // Ignore malformed target URL and continue
+          }
           bounceUrl.searchParams.set('popup', '1');
           bounceUrl.searchParams.set('provider', provider);
           bounceUrl.searchParams.set('target_origin', targetOrigin);
+          bounceUrl.searchParams.set('target_url', targetUrl);
 
           const bounceHash = new URLSearchParams();
           if (errorParam) {
