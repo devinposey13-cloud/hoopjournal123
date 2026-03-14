@@ -276,7 +276,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="-mt-2"
+          className="-mt-2 mb-4"
         >
           <Suspense fallback={<ChatSkeleton />}>
             {activeSection === 'chat' && (
