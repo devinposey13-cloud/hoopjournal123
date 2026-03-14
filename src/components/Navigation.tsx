@@ -89,6 +89,7 @@ export function Navigation({
   const location = useLocation();
   const { signOut } = useAuth();
   const { activeProfile, hasMultipleProfiles } = useActiveProfile();
+  const broadcastCount = useBroadcastCount();
 
   // Derive display values from active profile
   const displayName = activeProfile?.display_name || activeProfile?.name || 'Player';
