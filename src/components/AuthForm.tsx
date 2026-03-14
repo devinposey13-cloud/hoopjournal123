@@ -140,7 +140,7 @@ export function AuthForm() {
       await clearServiceWorkerCaches();
 
       const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${redirectUri}/auth/callback`
+        redirect_uri: redirectUri
       });
 
       if (error) {
