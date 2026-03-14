@@ -233,11 +233,9 @@ export function MoreMenu({
                 onOpenChange(false);
               }}
             />
-            <MenuRow
-              icon={MessageSquare}
-              label="Send Feedback"
-              onClick={() => setShowFeedback(true)}
-            />
+            <div className="[&>*]:w-full">
+              <FeedbackDialog />
+            </div>
           </div>
 
           {/* ── ACCOUNT Section ── */}
