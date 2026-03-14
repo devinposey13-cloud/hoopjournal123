@@ -338,7 +338,7 @@ export function LogSection({
             <CardContent className="p-5 space-y-4">
               {/* Header */}
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Game Actions</h2>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Game Center</h2>
                 {(smartPrompt?.type === 'game_day' || smartPrompt?.type === 'live') && (
                   <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase gap-1">
                     <Zap className="w-3 h-3" />
