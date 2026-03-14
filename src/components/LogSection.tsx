@@ -157,19 +157,37 @@ export function LogSection({
   // Consistency streak
   const streak = useMemo(() => calculateConsistencyStreak(games, schedule), [games, schedule]);
 
-  // Season averages
+  // Season averages with trend indicators
   const seasonAvgs = useMemo(() => {
     if (games.length === 0) return null;
-    const total = games.reduce((acc, g) => ({
+    const sortedGames = [...games].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const total = sortedGames.reduce((acc, g) => ({
       pts: acc.pts + g.points,
       reb: acc.reb + g.rebounds,
       ast: acc.ast + g.assists,
     }), { pts: 0, reb: 0, ast: 0 });
-    const n = games.length;
+    const n = sortedGames.length;
+
+    // Calculate trend by comparing last 3 games avg vs prior 3 games avg
+    const getTrend = (stat: 'points' | 'rebounds' | 'assists'): 'up' | 'down' | null => {
+      if (sortedGames.length < 4) return null;
+      const recent = sortedGames.slice(0, 3);
+      const prior = sortedGames.slice(3, 6);
+      if (prior.length === 0) return null;
+      const recentAvg = recent.reduce((s, g) => s + g[stat], 0) / recent.length;
+      const priorAvg = prior.reduce((s, g) => s + g[stat], 0) / prior.length;
+      const diff = recentAvg - priorAvg;
+      if (Math.abs(diff) < 0.5) return null;
+      return diff > 0 ? 'up' : 'down';
+    };
+
     return {
       ppg: (total.pts / n).toFixed(1),
       rpg: (total.reb / n).toFixed(1),
       apg: (total.ast / n).toFixed(1),
+      ppgTrend: getTrend('points'),
+      rpgTrend: getTrend('rebounds'),
+      apgTrend: getTrend('assists'),
     };
   }, [games]);
 
@@ -338,7 +356,7 @@ export function LogSection({
             <CardContent className="p-5 space-y-4">
               {/* Header */}
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Game Actions</h2>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Game Center</h2>
                 {(smartPrompt?.type === 'game_day' || smartPrompt?.type === 'live') && (
                   <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase gap-1">
                     <Zap className="w-3 h-3" />
@@ -364,7 +382,7 @@ export function LogSection({
               {/* Primary: Start Live Game */}
               <div>
                 <p className="text-sm text-muted-foreground mb-2.5">
-                  Track stats in real time during your game.
+                  Track your stats live while you play.
                 </p>
                 <Button
                   onClick={() => {
@@ -385,7 +403,10 @@ export function LogSection({
               {/* Secondary: Log Game */}
               <div className="h-px bg-border/40" />
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">Just finished a game?</p>
+                <div>
+                  <p className="text-sm text-muted-foreground">Just finished a game?</p>
+                  <p className="text-xs text-muted-foreground/70">Log it to update your season stats.</p>
+                </div>
                 <AddGameDialog 
                   onAddGame={addGame} 
                   isMobile={isMobile}
@@ -411,17 +432,38 @@ export function LogSection({
               {seasonAvgs && (
                 <div className="flex items-center justify-center gap-6 py-3 px-4">
                   <div className="text-center">
-                    <p className="text-lg font-bold">{seasonAvgs.ppg}</p>
+                    <p className="text-lg font-bold">
+                      {seasonAvgs.ppg}
+                      {seasonAvgs.ppgTrend && (
+                        <span className={cn("text-xs ml-0.5", seasonAvgs.ppgTrend === 'up' ? 'text-green-500' : 'text-red-500')}>
+                          {seasonAvgs.ppgTrend === 'up' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">PPG</p>
                   </div>
                   <div className="w-px h-8 bg-border" />
                   <div className="text-center">
-                    <p className="text-lg font-bold">{seasonAvgs.rpg}</p>
+                    <p className="text-lg font-bold">
+                      {seasonAvgs.rpg}
+                      {seasonAvgs.rpgTrend && (
+                        <span className={cn("text-xs ml-0.5", seasonAvgs.rpgTrend === 'up' ? 'text-green-500' : 'text-red-500')}>
+                          {seasonAvgs.rpgTrend === 'up' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">RPG</p>
                   </div>
                   <div className="w-px h-8 bg-border" />
                   <div className="text-center">
-                    <p className="text-lg font-bold">{seasonAvgs.apg}</p>
+                    <p className="text-lg font-bold">
+                      {seasonAvgs.apg}
+                      {seasonAvgs.apgTrend && (
+                        <span className={cn("text-xs ml-0.5", seasonAvgs.apgTrend === 'up' ? 'text-green-500' : 'text-red-500')}>
+                          {seasonAvgs.apgTrend === 'up' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">APG</p>
                   </div>
                   <div className="w-px h-8 bg-border" />
@@ -555,10 +597,10 @@ export function LogSection({
               <Card className="border-border/40">
                 <CardContent className="p-5 text-center">
                   <Calendar className="h-7 w-7 mx-auto text-muted-foreground/40 mb-2" />
-                   <p className="text-sm font-medium mb-1">No upcoming games scheduled</p>
+                   <p className="text-sm font-medium mb-1">No upcoming games scheduled.</p>
                    <p className="text-xs text-muted-foreground mb-3">
-                     Add your schedule so Hoop Journal can help you track your games.
-                   </p>
+                      Add your next game so Hoop Journal™ can help you stay on track this season.
+                    </p>
                   <AddScheduleDialog 
                     onAddGame={addScheduledGame} 
                     onBulkAddGames={bulkImportScheduledGames} 
