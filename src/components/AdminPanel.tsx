@@ -831,12 +831,62 @@ export function AdminPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Stats Overview - Expanded Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total Users</CardDescription>
+            <CardDescription className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" /> Total Users
+            </CardDescription>
             <CardTitle className="text-3xl">{totalUsers}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5 text-green-500" /> New Today
+            </CardDescription>
+            <CardTitle className="text-3xl">{usageStats.newUsersToday}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-primary" /> DAU
+            </CardDescription>
+            <CardTitle className="text-3xl">{usageStats.activeUsersToday}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-primary" /> WAU
+            </CardDescription>
+            <CardTitle className="text-3xl">{usageStats.activeUsersWeek}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <BarChart3 className="w-3.5 h-3.5" /> Games Today
+            </CardDescription>
+            <CardTitle className="text-3xl">{usageStats.gamesToday}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5 text-primary" /> Coach Chats Today
+            </CardDescription>
+            <CardTitle className="text-3xl">{usageStats.coachChatsToday}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-amber-500" /> XP Today
+            </CardDescription>
+            <CardTitle className="text-3xl">{usageStats.xpEarnedToday.toLocaleString()}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -853,8 +903,8 @@ export function AdminPanel() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total Reports</CardDescription>
-            <CardTitle className="text-3xl">{reports.length}</CardTitle>
+            <CardDescription>Unread Feedback</CardDescription>
+            <CardTitle className="text-3xl text-primary">{unreadFeedback}</CardTitle>
           </CardHeader>
         </Card>
       </div>
