@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck, ChevronDown, Activity, Cpu, Zap, TrendingUp, Clock, Shield, Star, Calendar as CalendarIcon, CreditCard, Trophy } from 'lucide-react';
+import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck, ChevronDown, Activity, Cpu, Zap, TrendingUp, Clock, Shield, Star, Calendar as CalendarIcon, CreditCard, Trophy, ToggleLeft, Megaphone } from 'lucide-react';
 import { type PlanId, planCatalog, getEffectivePlan, type UserAccessInfo } from '@/lib/plans';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
