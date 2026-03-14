@@ -37,6 +37,39 @@ export default function OAuthCallback() {
       const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
       const errorParam = hashParams.get('error') || queryParams.get('error');
       const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
+      const popupMode = queryParams.get('popup') === '1' || hashParams.get('popup') === '1';
+      const provider = queryParams.get('provider') || hashParams.get('provider') || 'apple';
+      const targetOriginParam = queryParams.get('target_origin') || hashParams.get('target_origin');
+
+      let targetOrigin = window.location.origin;
+      if (targetOriginParam) {
+        try {
+          targetOrigin = new URL(targetOriginParam).origin;
+        } catch {
+          targetOrigin = window.location.origin;
+        }
+      }
+
+      // Popup handoff flow (preview iframe -> popup -> opener)
+      if (popupMode && window.opener) {
+        if (errorParam) {
+          window.opener.postMessage(
+            { type: 'oauth-error', provider, error: errorDescription || errorParam },
+            targetOrigin
+          );
+          window.close();
+          return;
+        }
+
+        if (accessToken && refreshToken) {
+          window.opener.postMessage(
+            { type: 'oauth-complete', provider, accessToken, refreshToken },
+            targetOrigin
+          );
+          window.close();
+          return;
+        }
+      }
 
       // Handle error from OAuth provider
       if (errorParam) {
