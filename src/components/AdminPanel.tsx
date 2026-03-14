@@ -2046,6 +2046,7 @@ export function AdminPanel() {
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
               <Cpu className="w-4 h-4" /> AI Credit Consumption
+              <MetricHint tip="Estimates of AI API usage. Each coach chat, post-game recap, and memory extraction consumes AI credits." />
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
