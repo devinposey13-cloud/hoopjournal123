@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Gamepad2, Settings, Shield, CalendarRange, UserCircle, LogOut, UserPlus, HelpCircle, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Gamepad2, Settings, Shield, CalendarRange, UserCircle, LogOut, UserPlus, HelpCircle, MessageSquare, Bell } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import { SeasonSelector } from './SeasonSelector';
 import { ProfileSelector } from './profile/ProfileSelector';
@@ -11,6 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Season } from '@/types/basketball';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveProfile } from '@/hooks/useActiveProfile';
+import { useBroadcastCount } from '@/hooks/useBroadcastCount';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -88,6 +89,7 @@ export function Navigation({
   const location = useLocation();
   const { signOut } = useAuth();
   const { activeProfile, hasMultipleProfiles } = useActiveProfile();
+  const broadcastCount = useBroadcastCount();
 
   // Derive display values from active profile
   const displayName = activeProfile?.display_name || activeProfile?.name || 'Player';
@@ -328,8 +330,21 @@ export function Navigation({
 
           </div>
 
-          {/* Spacer for balance */}
-          <div className="w-48" />
+          {/* Right side - Bell + spacer */}
+          <div className="w-48 flex items-center justify-end">
+            <button
+              onClick={() => onTabChange('dashboard')}
+              className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              title="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              {broadcastCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                  {broadcastCount > 99 ? '99+' : broadcastCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
