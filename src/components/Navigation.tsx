@@ -330,8 +330,21 @@ export function Navigation({
 
           </div>
 
-          {/* Spacer for balance */}
-          <div className="w-48" />
+          {/* Right side - Bell + spacer */}
+          <div className="w-48 flex items-center justify-end">
+            <button
+              onClick={() => onTabChange('dashboard')}
+              className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              title="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              {broadcastCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                  {broadcastCount > 99 ? '99+' : broadcastCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
