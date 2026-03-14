@@ -908,6 +908,7 @@ export function AdminPanel() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-amber-500" /> XP Today
+              <MetricHint tip="Sum of current XP across all users active today. Reflects total accumulated XP, not just earned today." />
             </CardDescription>
             <CardTitle className="text-3xl">{usageStats.xpEarnedToday.toLocaleString()}</CardTitle>
           </CardHeader>
