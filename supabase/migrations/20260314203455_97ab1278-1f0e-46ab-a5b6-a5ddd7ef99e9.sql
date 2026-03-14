@@ -1,0 +1,1 @@
+ALTER TABLE public.broadcast_messages ADD COLUMN target_user_id uuid DEFAULT NULL;
