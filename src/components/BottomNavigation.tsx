@@ -101,8 +101,7 @@ export function BottomNavigation({
           {/* Notifications bell */}
           <button
             onClick={() => {
-              onTabChange('dashboard' as Tab);
-              navigate('/');
+              navigate('/notifications');
             }}
             className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors text-muted-foreground hover:text-foreground"
           >

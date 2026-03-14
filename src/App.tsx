@@ -28,6 +28,7 @@ import Log from "./pages/Log";
 import Progress from "./pages/Progress";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import Notifications from "./pages/Notifications";
 import OAuthCallback from "./pages/OAuthCallback";
 import ParentDashboard from "./pages/ParentDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -129,6 +130,7 @@ const App = () => (
                   <Route path="/rewards" element={<Rewards />} />
                   <Route path="/ring-of-honor" element={<RingOfHonor />} />
                   <Route path="/game/:id" element={<GameDetail />} />
+                  <Route path="/notifications" element={<Notifications />} />
                   <Route path="/game/scheduled/:scheduledId" element={<GameDetail />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/parent/:token" element={<ParentDashboard />} />

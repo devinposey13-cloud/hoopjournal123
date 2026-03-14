@@ -333,7 +333,7 @@ export function Navigation({
           {/* Right side - Bell + spacer */}
           <div className="w-48 flex items-center justify-end">
             <button
-              onClick={() => onTabChange('dashboard')}
+              onClick={() => navigate('/notifications')}
               className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
               title="Notifications"
             >
