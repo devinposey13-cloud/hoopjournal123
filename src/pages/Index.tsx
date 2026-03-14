@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AnimatePresence } from 'framer-motion';
 import { Navigation, Tab } from '@/components/Navigation';
+import { BroadcastNotifications } from '@/components/BroadcastNotifications';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { PlayerHeader } from '@/components/PlayerHeader';
 import { GameCard } from '@/components/GameCard';
@@ -637,6 +638,9 @@ export default function Index() {
                       </Select>
                     </div>
                   )}
+
+                  {/* BROADCAST NOTIFICATIONS */}
+                  <BroadcastNotifications />
 
                   {/* TODAY CARD - Hero priority */}
                   <AnimatedSection delay={0.05}>
