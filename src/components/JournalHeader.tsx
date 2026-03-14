@@ -15,7 +15,7 @@ export function JournalHeader({ playerName, className }: JournalHeaderProps) {
       
       <h1
         className="text-6xl md:text-7xl lg:text-8xl mb-1 relative text-foreground uppercase tracking-wide"
-        style={{ fontFamily: "'Teko', sans-serif", fontWeight: 700 }}>
+        style={{ fontFamily: "'Teko', sans-serif", fontWeight: 500 }}>
         HOOP JOURNAL
       </h1>
       <p
