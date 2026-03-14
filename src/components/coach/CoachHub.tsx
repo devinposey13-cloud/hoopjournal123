@@ -226,7 +226,7 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
 
       {/* Primary Actions Row - Quick Access Cards */}
       <div>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
           Quick Actions
         </p>
         <div className="flex justify-center">
