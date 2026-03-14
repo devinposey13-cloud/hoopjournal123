@@ -2032,7 +2032,10 @@ export function AdminPanel() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>Video Clips</CardDescription>
+                   <CardDescription className="flex items-center gap-1.5">
+                    Video Clips
+                    <MetricHint tip="Total video clips uploaded by all users to the platform." />
+                  </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.videoClips}</CardTitle>
                 </CardHeader>
               </Card>
