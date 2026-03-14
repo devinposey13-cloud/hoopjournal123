@@ -2008,7 +2008,10 @@ export function AdminPanel() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardDescription>Coach AI Chats</CardDescription>
+                   <CardDescription className="flex items-center gap-1.5">
+                    Coach AI Chats
+                    <MetricHint tip="Total Coach AI memory entries stored. Each memory captures a key insight from a user's chat conversation." />
+                  </CardDescription>
                   <CardTitle className="text-2xl">{usageStats.coachMemoryEntries}</CardTitle>
                 </CardHeader>
               </Card>
