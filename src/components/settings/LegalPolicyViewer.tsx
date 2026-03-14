@@ -200,7 +200,7 @@ export function TermsOfServiceContent() {
   return (
     <>
       <p className="text-muted-foreground">
-        Welcome to Hoop Journal.
+        Welcome to Hoop Journal™.
       </p>
       <p className="text-muted-foreground">
         By accessing or using Hoop Journal, you agree to these Terms of Service. If you do not agree, do not use the app.
