@@ -22,6 +22,9 @@ import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AdminAccessControls } from '@/components/admin/AdminAccessControls';
 import { AdminLeaderboards } from '@/components/admin/AdminLeaderboards';
+import { AdminFeatureFlags } from '@/components/admin/AdminFeatureFlags';
+import { AdminBroadcast } from '@/components/admin/AdminBroadcast';
+import { AdminSystemHealth } from '@/components/admin/AdminSystemHealth';
 import { format } from 'date-fns';
 
 interface UserFeedback {
