@@ -25,7 +25,7 @@ function generateInsight(games: GameStats[], seasonStats: SeasonStats, playerNam
 
   if (games.length < 3) {
     return {
-      message: `${games.length} game${games.length > 1 ? 's' : ''} logged. Keep tracking to unlock detailed performance trends!`,
+      message: `🔥 ${games.length === 1 ? 'First game' : `${games.length} games`} logged.\nKeep tracking to unlock deeper performance insights.`,
       type: 'positive',
       icon: TrendingUp,
     };
