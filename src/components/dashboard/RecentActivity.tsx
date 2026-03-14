@@ -80,14 +80,18 @@ export function RecentActivity({ games, clips = [], onViewGame, onViewAllGames, 
         )}
       </div>
       
-      <div className="space-y-2">
-        {activities.slice(0, 5).map((activity) => (
-          <ActivityItemRow
-            key={activity.id}
-            activity={activity}
-            isMobile={isMobile}
-            onDeleteGame={activity.type === 'game' ? onDeleteGame : undefined}
-          />
+      <div className="space-y-3">
+        {activities.slice(0, 5).map((activity, index) => (
+          <div key={activity.id}>
+            <ActivityItemRow
+              activity={activity}
+              isMobile={isMobile}
+              onDeleteGame={activity.type === 'game' ? onDeleteGame : undefined}
+            />
+            {index < Math.min(activities.length, 5) - 1 && (
+              <div className="border-b border-border/30 mt-3 mx-3" />
+            )}
+          </div>
         ))}
       </div>
     </div>
