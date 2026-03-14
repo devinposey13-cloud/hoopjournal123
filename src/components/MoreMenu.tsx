@@ -258,15 +258,6 @@ export function MoreMenu({
         onOpenChange={setShowAddProfileDialog}
         onProfileCreated={handleProfileCreated}
       />
-
-      {/* Feedback Dialog triggered from menu */}
-      {showFeedback && (
-        <FeedbackDialog
-          triggerless
-          open={showFeedback}
-          onOpenChange={setShowFeedback}
-        />
-      )}
     </>
   );
 }
