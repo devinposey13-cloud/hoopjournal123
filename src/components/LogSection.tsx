@@ -432,17 +432,38 @@ export function LogSection({
               {seasonAvgs && (
                 <div className="flex items-center justify-center gap-6 py-3 px-4">
                   <div className="text-center">
-                    <p className="text-lg font-bold">{seasonAvgs.ppg}</p>
+                    <p className="text-lg font-bold">
+                      {seasonAvgs.ppg}
+                      {seasonAvgs.ppgTrend && (
+                        <span className={cn("text-xs ml-0.5", seasonAvgs.ppgTrend === 'up' ? 'text-green-500' : 'text-red-500')}>
+                          {seasonAvgs.ppgTrend === 'up' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">PPG</p>
                   </div>
                   <div className="w-px h-8 bg-border" />
                   <div className="text-center">
-                    <p className="text-lg font-bold">{seasonAvgs.rpg}</p>
+                    <p className="text-lg font-bold">
+                      {seasonAvgs.rpg}
+                      {seasonAvgs.rpgTrend && (
+                        <span className={cn("text-xs ml-0.5", seasonAvgs.rpgTrend === 'up' ? 'text-green-500' : 'text-red-500')}>
+                          {seasonAvgs.rpgTrend === 'up' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">RPG</p>
                   </div>
                   <div className="w-px h-8 bg-border" />
                   <div className="text-center">
-                    <p className="text-lg font-bold">{seasonAvgs.apg}</p>
+                    <p className="text-lg font-bold">
+                      {seasonAvgs.apg}
+                      {seasonAvgs.apgTrend && (
+                        <span className={cn("text-xs ml-0.5", seasonAvgs.apgTrend === 'up' ? 'text-green-500' : 'text-red-500')}>
+                          {seasonAvgs.apgTrend === 'up' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">APG</p>
                   </div>
                   <div className="w-px h-8 bg-border" />
