@@ -563,6 +563,22 @@ export default function Index() {
               /* Full journal page wrapper - new command center layout */
               <div className="journal-page rounded-2xl overflow-hidden">
                 <div className="px-6 md:px-10 py-6 space-y-6">
+                  {/* Dashboard Header Branding */}
+                  <div className="text-center">
+                    <h1
+                      className="text-3xl md:text-4xl text-foreground uppercase tracking-wide"
+                      style={{ fontFamily: "'Teko', sans-serif", fontWeight: 500 }}
+                    >
+                      Hoop Journal™ <span className="text-muted-foreground">Dashboard</span>
+                    </h1>
+                    <p
+                      className="text-sm md:text-base text-muted-foreground/60 uppercase tracking-widest mt-0.5"
+                      style={{ fontFamily: "'Teko', sans-serif", fontWeight: 400 }}
+                    >
+                      Track Your Game. Improve Every Day.
+                    </p>
+                  </div>
+
                   {/* Primary Header - Player Card */}
                   <AnimatedSection delay={0.02}>
                     <div className="relative">
