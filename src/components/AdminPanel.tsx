@@ -234,50 +234,78 @@ export function AdminPanel() {
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const [
-        gamesAll, gamesWeek, gamesMonth,
-        coachMem, schedGames, clips, milestones, xpProg
+        gamesAll, gamesWeek, gamesMonth, gamesTodayResult,
+        coachMem, coachChatsToday, schedGames, clips, milestones, xpProg
       ] = await Promise.all([
         supabase.from('games').select('id', { count: 'exact', head: true }),
         supabase.from('games').select('id', { count: 'exact', head: true }).gte('created_at', weekAgo),
         supabase.from('games').select('id', { count: 'exact', head: true }).gte('created_at', monthAgo),
+        supabase.from('games').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
         supabase.from('coach_memory').select('id', { count: 'exact', head: true }),
+        supabase.from('coach_memory').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
         supabase.from('scheduled_games').select('id', { count: 'exact', head: true }),
         supabase.from('video_clips').select('id', { count: 'exact', head: true }),
         supabase.from('player_milestones').select('id', { count: 'exact', head: true }),
         supabase.from('player_xp_progress').select('id', { count: 'exact', head: true }),
       ]);
 
-      const { data: activeToday } = await supabase
-        .from('games').select('user_id').gte('created_at', todayStart);
-      const { data: activeWeek } = await supabase
-        .from('games').select('user_id').gte('created_at', weekAgo);
-      const { data: activeMonth } = await supabase
-        .from('games').select('user_id').gte('created_at', monthAgo);
+      const [activeToday, activeWeek, activeMonth] = await Promise.all([
+        supabase.from('games').select('user_id').gte('created_at', todayStart),
+        supabase.from('games').select('user_id').gte('created_at', weekAgo),
+        supabase.from('games').select('user_id').gte('created_at', monthAgo),
+      ]);
+
+      // XP earned today
+      const { data: xpTodayData } = await supabase
+        .from('player_xp_progress')
+        .select('current_xp')
+        .gte('updated_at', todayStart);
+      const xpEarnedToday = (xpTodayData || []).reduce((sum, row) => sum + (row.current_xp || 0), 0);
+
+      // New users today
+      const newUsersToday = (usersData || []).filter(u => u.created_at >= todayStart).length;
 
       const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
       const usersByDay: { date: string; count: number }[] = [];
+      const gamesByDay: { date: string; count: number }[] = [];
+
+      // Fetch games for sparkline
+      const { data: recentGames } = await supabase
+        .from('games')
+        .select('created_at')
+        .gte('created_at', twoWeeksAgo.toISOString())
+        .order('created_at', { ascending: true });
+
       for (let d = 0; d < 14; d++) {
         const dayDate = new Date(twoWeeksAgo.getTime() + d * 24 * 60 * 60 * 1000);
         const dayStr = format(dayDate, 'MMM d');
         const dayStart = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate()).toISOString();
         const dayEnd = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate() + 1).toISOString();
-        const count = (usersData || []).filter(u => u.created_at >= dayStart && u.created_at < dayEnd).length;
-        usersByDay.push({ date: dayStr, count });
+        const userCount = (usersData || []).filter(u => u.created_at >= dayStart && u.created_at < dayEnd).length;
+        const gameCount = (recentGames || []).filter(g => g.created_at >= dayStart && g.created_at < dayEnd).length;
+        usersByDay.push({ date: dayStr, count: userCount });
+        gamesByDay.push({ date: dayStr, count: gameCount });
       }
 
       setUsageStats({
         totalGames: gamesAll.count || 0,
         gamesThisWeek: gamesWeek.count || 0,
         gamesThisMonth: gamesMonth.count || 0,
-        activeUsersToday: new Set(activeToday?.map(g => g.user_id) || []).size,
-        activeUsersWeek: new Set(activeWeek?.map(g => g.user_id) || []).size,
-        activeUsersMonth: new Set(activeMonth?.map(g => g.user_id) || []).size,
+        gamesToday: gamesTodayResult.count || 0,
+        activeUsersToday: new Set(activeToday.data?.map(g => g.user_id) || []).size,
+        activeUsersWeek: new Set(activeWeek.data?.map(g => g.user_id) || []).size,
+        activeUsersMonth: new Set(activeMonth.data?.map(g => g.user_id) || []).size,
         coachMemoryEntries: coachMem.count || 0,
+        coachChatsToday: coachChatsToday.count || 0,
         scheduledGames: schedGames.count || 0,
         videoClips: clips.count || 0,
         milestones: milestones.count || 0,
         xpProgressEntries: xpProg.count || 0,
+        xpEarnedToday,
+        newUsersToday,
         usersByDay,
+        gamesByDay,
+        xpByDay: [], // placeholder for now
       });
     } catch (error) {
       console.error('Error fetching admin data:', error);
