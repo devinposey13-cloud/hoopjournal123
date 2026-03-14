@@ -26,35 +26,17 @@ interface BroadcastMessage {
   created_at: string;
 }
 
-const DISMISSED_KEY = 'hoop-journal-dismissed-notifications';
-
-function getDismissedIds(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]');
-  } catch {
-    return [];
-  }
-}
-
-function addDismissedId(id: string) {
-  const ids = getDismissedIds();
-  if (!ids.includes(id)) {
-    ids.push(id);
-    localStorage.setItem(DISMISSED_KEY, JSON.stringify(ids));
-  }
-}
-
 export default function Notifications() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { isAdmin } = useAdmin();
   const isMobile = useIsMobile();
   const { seasons, activeSeason, switchSeason, createSeason, deleteSeason, loading } = useCloudData();
+  const { dismissedIds, dismiss } = useDismissedNotifications();
 
   const [messages, setMessages] = useState<BroadcastMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const [dismissedIds, setDismissedIds] = useState<string[]>(getDismissedIds());
 
   useEffect(() => {
     if (!user) return;
