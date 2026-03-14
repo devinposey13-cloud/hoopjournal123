@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
 import { isNativeApp } from '@/lib/platform';
-import { openOAuthInSystemBrowser, NATIVE_URL_SCHEME } from '@/lib/nativeOAuth';
+import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
 import {
   logOAuthInit,
   logOAuthError,
@@ -111,10 +111,102 @@ export function AuthForm() {
     await openOAuthInSystemBrowser(brokerUrl);
   };
 
+  const isInIframe = (() => {
+    try {
+      return window.self !== window.top;
+    } catch {
+      return true;
+    }
+  })();
+
+  const handleIframePopupOAuth = async (provider: 'google' | 'apple') => {
+    await clearServiceWorkerCaches();
+
+    const popupRedirectUri = `${LOVABLE_APP_ORIGIN}/auth/callback?popup=1&provider=${provider}&target_origin=${encodeURIComponent(window.location.origin)}`;
+    const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(popupRedirectUri)}`;
+    const popup = window.open(brokerUrl, `hoopjournal_${provider}_oauth`, 'width=520,height=720');
+
+    if (!popup) {
+      throw new Error('Popup blocked. Please allow popups and try again.');
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+
+      const cleanup = () => {
+        window.removeEventListener('message', onMessage);
+        window.clearInterval(closeWatcher);
+        window.clearTimeout(timeoutId);
+      };
+
+      const settle = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        try {
+          if (!popup.closed) popup.close();
+        } catch {
+          // Best-effort popup close
+        }
+        fn();
+      };
+
+      const onMessage = async (event: MessageEvent) => {
+        const payload = event.data as {
+          type?: string;
+          provider?: string;
+          error?: string;
+          accessToken?: string;
+          refreshToken?: string;
+        };
+
+        const isExpectedMessage = payload?.type === 'oauth-complete' || payload?.type === 'oauth-error';
+        const isAllowedOrigin = [window.location.origin, LOVABLE_APP_ORIGIN].includes(event.origin);
+
+        if (!isExpectedMessage || !isAllowedOrigin || (payload.provider && payload.provider !== provider)) {
+          return;
+        }
+
+        if (payload.type === 'oauth-error') {
+          settle(() => reject(new Error(payload.error || `${provider} sign-in failed.`)));
+          return;
+        }
+
+        if (!payload.accessToken || !payload.refreshToken) {
+          settle(() => reject(new Error(`Missing auth tokens from ${provider} callback.`)));
+          return;
+        }
+
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: payload.accessToken,
+          refresh_token: payload.refreshToken,
+        });
+
+        if (sessionError) {
+          settle(() => reject(sessionError));
+          return;
+        }
+
+        settle(() => resolve());
+      };
+
+      window.addEventListener('message', onMessage);
+
+      const closeWatcher = window.setInterval(() => {
+        if (popup.closed) {
+          settle(() => reject(new Error(`${provider} sign-in was closed before completion.`)));
+        }
+      }, 500);
+
+      const timeoutId = window.setTimeout(() => {
+        settle(() => reject(new Error(`${provider} sign-in timed out. Please try again.`)));
+      }, 120000);
+    });
+  };
+
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    // Always use the published lovable.app origin so the OAuth broker accepts the redirect
-    const redirectUri = isNativeApp() ? LOVABLE_APP_ORIGIN : LOVABLE_APP_ORIGIN;
+    const redirectUri = LOVABLE_APP_ORIGIN;
 
     logOAuthInit('google', redirectUri);
 
@@ -123,6 +215,14 @@ export function AuthForm() {
       if (isNativeApp()) {
         const { nativeGoogleSignIn } = await import('@/lib/nativeGoogleAuth');
         await nativeGoogleSignIn();
+        logOAuthSuccess('google');
+        setGoogleLoading(false);
+        return;
+      }
+
+      // Preview iframe flow: complete OAuth in popup and hydrate session in the opener
+      if (isInIframe) {
+        await handleIframePopupOAuth('google');
         logOAuthSuccess('google');
         setGoogleLoading(false);
         return;
@@ -137,7 +237,6 @@ export function AuthForm() {
         return;
       }
 
-      // Clear SW caches to prevent OAuth redirect interception on mobile
       await clearServiceWorkerCaches();
 
       const { error } = await lovable.auth.signInWithOAuth("google", {
@@ -164,93 +263,8 @@ export function AuthForm() {
     logOAuthInit('apple', redirectUri);
 
     try {
-      const isInIframe = (() => {
-        try {
-          return window.self !== window.top;
-        } catch {
-          return true;
-        }
-      })();
-
       if (!isNativeApp() && isInIframe) {
-        await clearServiceWorkerCaches();
-
-        const popupRedirectUri = `${LOVABLE_APP_ORIGIN}/auth/callback?popup=1&provider=apple&target_origin=${encodeURIComponent(window.location.origin)}`;
-        const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=apple&redirect_uri=${encodeURIComponent(popupRedirectUri)}`;
-        const popup = window.open(brokerUrl, 'hoopjournal_apple_oauth', 'width=520,height=720');
-
-        if (!popup) {
-          throw new Error('Popup blocked. Please allow popups and try again.');
-        }
-
-        await new Promise<void>((resolve, reject) => {
-          let settled = false;
-
-          const cleanup = () => {
-            window.removeEventListener('message', onMessage);
-            window.clearInterval(closeWatcher);
-            window.clearTimeout(timeoutId);
-          };
-
-          const settle = (fn: () => void) => {
-            if (settled) return;
-            settled = true;
-            cleanup();
-            fn();
-          };
-
-          const onMessage = async (event: MessageEvent) => {
-            const payload = event.data as {
-              type?: string;
-              provider?: string;
-              error?: string;
-              accessToken?: string;
-              refreshToken?: string;
-            };
-
-            const isExpectedMessage = payload?.type === 'oauth-complete' || payload?.type === 'oauth-error';
-            const isAllowedOrigin = [window.location.origin, LOVABLE_APP_ORIGIN].includes(event.origin);
-
-            if (!isExpectedMessage || !isAllowedOrigin || (payload.provider && payload.provider !== 'apple')) {
-              return;
-            }
-
-            if (payload.type === 'oauth-error') {
-              settle(() => reject(new Error(payload.error || 'Apple sign-in failed.')));
-              return;
-            }
-
-            if (!payload.accessToken || !payload.refreshToken) {
-              settle(() => reject(new Error('Missing auth tokens from Apple callback.')));
-              return;
-            }
-
-            const { error: sessionError } = await supabase.auth.setSession({
-              access_token: payload.accessToken,
-              refresh_token: payload.refreshToken,
-            });
-
-            if (sessionError) {
-              settle(() => reject(sessionError));
-              return;
-            }
-
-            settle(() => resolve());
-          };
-
-          window.addEventListener('message', onMessage);
-
-          const closeWatcher = window.setInterval(() => {
-            if (popup.closed) {
-              settle(() => reject(new Error('Apple sign-in was closed before completion.')));
-            }
-          }, 500);
-
-          const timeoutId = window.setTimeout(() => {
-            settle(() => reject(new Error('Apple sign-in timed out. Please try again.')));
-          }, 120000);
-        });
-
+        await handleIframePopupOAuth('apple');
         logOAuthSuccess('apple');
         setAppleLoading(false);
         return;
@@ -265,7 +279,6 @@ export function AuthForm() {
         return;
       }
 
-      // Clear SW caches to prevent OAuth redirect interception on mobile
       await clearServiceWorkerCaches();
 
       const { error } = await lovable.auth.signInWithOAuth("apple", {
