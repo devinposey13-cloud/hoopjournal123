@@ -93,6 +93,19 @@ interface AccountApprovalRequest {
   created_at: string;
 }
 
+function MetricHint({ tip }: { tip: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Info className="w-3 h-3 text-muted-foreground/50 cursor-help shrink-0" />
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[220px] text-xs">
+        {tip}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function AdminPanel() {
   const { session } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
