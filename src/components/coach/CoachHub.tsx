@@ -304,13 +304,14 @@ export function CoachHub({ games, seasonStats, profile, prefillPrompt, onPrefill
         </motion.div>
       </AnimatePresence>
 
-      {/* Insights & History Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      {/* Coach Insights Section */}
+      <div className="space-y-4 -mt-2">
+        <div>
           <div className="flex items-center gap-2">
-            <Lightbulb className="w-4 h-4 text-amber-500" />
-            <h3 className="text-sm font-semibold">Coach Notes</h3>
+            <Lightbulb className="w-4 h-4 text-primary" />
+            <h3 className="text-base font-bold text-foreground">Coach Insights</h3>
           </div>
+          <p className="text-xs text-muted-foreground mt-1 ml-6">AI-generated insights based on your recent games and performance trends.</p>
         </div>
         
         <div className="grid gap-3">
