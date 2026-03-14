@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/sheet';
 import { SeasonSelector } from './SeasonSelector';
 import { ProfileSelector } from './profile/ProfileSelector';
-import { FeedbackDialog } from './FeedbackDialog';
 import { AddProfileDialog } from './profile/AddProfileDialog';
 import { FeedbackDialog } from './FeedbackDialog';
 import { Season } from '@/types/basketball';
