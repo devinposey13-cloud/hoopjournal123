@@ -915,7 +915,10 @@ export function AdminPanel() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Public Profiles</CardDescription>
+            <CardDescription className="flex items-center gap-1.5">
+              Public Profiles
+              <MetricHint tip="Players who enabled public visibility on their profile, making it discoverable by others." />
+            </CardDescription>
             <CardTitle className="text-3xl">{publicProfiles}</CardTitle>
           </CardHeader>
         </Card>
