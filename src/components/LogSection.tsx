@@ -157,19 +157,37 @@ export function LogSection({
   // Consistency streak
   const streak = useMemo(() => calculateConsistencyStreak(games, schedule), [games, schedule]);
 
-  // Season averages
+  // Season averages with trend indicators
   const seasonAvgs = useMemo(() => {
     if (games.length === 0) return null;
-    const total = games.reduce((acc, g) => ({
+    const sortedGames = [...games].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const total = sortedGames.reduce((acc, g) => ({
       pts: acc.pts + g.points,
       reb: acc.reb + g.rebounds,
       ast: acc.ast + g.assists,
     }), { pts: 0, reb: 0, ast: 0 });
-    const n = games.length;
+    const n = sortedGames.length;
+
+    // Calculate trend by comparing last 3 games avg vs prior 3 games avg
+    const getTrend = (stat: 'points' | 'rebounds' | 'assists'): 'up' | 'down' | null => {
+      if (sortedGames.length < 4) return null;
+      const recent = sortedGames.slice(0, 3);
+      const prior = sortedGames.slice(3, 6);
+      if (prior.length === 0) return null;
+      const recentAvg = recent.reduce((s, g) => s + g[stat], 0) / recent.length;
+      const priorAvg = prior.reduce((s, g) => s + g[stat], 0) / prior.length;
+      const diff = recentAvg - priorAvg;
+      if (Math.abs(diff) < 0.5) return null;
+      return diff > 0 ? 'up' : 'down';
+    };
+
     return {
       ppg: (total.pts / n).toFixed(1),
       rpg: (total.reb / n).toFixed(1),
       apg: (total.ast / n).toFixed(1),
+      ppgTrend: getTrend('points'),
+      rpgTrend: getTrend('rebounds'),
+      apgTrend: getTrend('assists'),
     };
   }, [games]);
 
