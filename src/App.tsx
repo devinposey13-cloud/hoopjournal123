@@ -130,6 +130,7 @@ const App = () => (
                   <Route path="/rewards" element={<Rewards />} />
                   <Route path="/ring-of-honor" element={<RingOfHonor />} />
                   <Route path="/game/:id" element={<GameDetail />} />
+                  <Route path="/notifications" element={<Notifications />} />
                   <Route path="/game/scheduled/:scheduledId" element={<GameDetail />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/parent/:token" element={<ParentDashboard />} />
