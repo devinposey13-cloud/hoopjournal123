@@ -48,7 +48,7 @@ import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import { useRetroactiveXp } from '@/hooks/useRetroactiveXp';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { LogOut, Trophy, X, Radio, Users, TrendingUp, MessageSquare, Gamepad2 } from 'lucide-react';
+import { LogOut, Trophy, X, Radio, Users, TrendingUp, MessageSquare, Gamepad2, Shield } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton, GamesHubTabSkeleton, CoachTabSkeleton, StatsTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -811,10 +811,13 @@ export default function Index() {
         {/* Mini Games Tab */}
         {activeTab === 'minigames' && (
           <div className="space-y-6 animate-fade-in">
-            <div>
-              <h1 className="text-2xl font-bold">Skill Games</h1>
-              <p className="text-muted-foreground">
-                Train your basketball IQ, reaction speed, and focus while earning XP, badges, and leaderboard points.
+            <div className="space-y-1">
+              <h1 className="text-xl font-bold flex items-center gap-2">
+                <Gamepad2 className="h-5 w-5 text-primary" />
+                Skill Games
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Train your basketball IQ, reaction speed, and focus.
               </p>
             </div>
             <GamesHub />
@@ -836,9 +839,9 @@ export default function Index() {
         {activeTab === 'settings' && (
           <div className="animate-fade-in">
             <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold">Settings</h1>
-                <p className="text-muted-foreground">
+              <div className="space-y-1">
+                <h1 className="text-xl font-bold">Settings</h1>
+                <p className="text-sm text-muted-foreground">
                   Manage your player profile
                 </p>
               </div>
@@ -868,9 +871,12 @@ export default function Index() {
         {/* Admin Tab */}
         {activeTab === 'admin' && isAdmin && (
           <div className="animate-fade-in">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-              <p className="text-muted-foreground">
+            <div className="mb-6 space-y-1">
+              <h1 className="text-xl font-bold flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Admin Dashboard
+              </h1>
+              <p className="text-sm text-muted-foreground">
                 Manage users, review reports, and view metrics
               </p>
             </div>
