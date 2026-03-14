@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ClipboardPlus, MessageCircle, MoreHorizontal, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, ClipboardPlus, MessageCircle, MoreHorizontal, TrendingUp, Bell } from 'lucide-react';
 import { MoreMenu } from './MoreMenu';
 import { Season } from '@/types/basketball';
+import { useBroadcastCount } from '@/hooks/useBroadcastCount';
 
 
 export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile';
