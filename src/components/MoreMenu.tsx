@@ -232,7 +232,7 @@ export function MoreMenu({
                 onOpenChange(false);
               }}
             />
-            <div className="[&>*]:w-full">
+            <div className="[&_button]:w-full [&_button]:justify-start [&_button]:gap-3 [&_button]:px-3 [&_button]:py-2.5 [&_button]:h-auto [&_button]:rounded-lg [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-foreground [&_button]:hover:bg-secondary/70 [&_button]:font-medium [&_button]:text-sm">
               <FeedbackDialog />
             </div>
           </div>
