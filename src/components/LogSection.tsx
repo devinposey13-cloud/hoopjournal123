@@ -364,7 +364,7 @@ export function LogSection({
               {/* Primary: Start Live Game */}
               <div>
                 <p className="text-sm text-muted-foreground mb-2.5">
-                  Track stats in real time during your game.
+                  Track your stats live while you play.
                 </p>
                 <Button
                   onClick={() => {
