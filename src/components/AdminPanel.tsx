@@ -854,6 +854,7 @@ export function AdminPanel() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" /> Total Users
+              <MetricHint tip="Total registered player profiles across all accounts." />
             </CardDescription>
             <CardTitle className="text-3xl">{totalUsers}</CardTitle>
           </CardHeader>
