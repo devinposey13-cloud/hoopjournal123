@@ -7,6 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Navigation, Tab } from '@/components/Navigation';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { useCloudData } from '@/hooks/useCloudData';
+import { useDismissedNotifications } from '@/hooks/useDismissedNotifications';
 import { Bell, Mail, Megaphone, Check, CheckCheck, Inbox, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -25,35 +26,17 @@ interface BroadcastMessage {
   created_at: string;
 }
 
-const DISMISSED_KEY = 'hoop-journal-dismissed-notifications';
-
-function getDismissedIds(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]');
-  } catch {
-    return [];
-  }
-}
-
-function addDismissedId(id: string) {
-  const ids = getDismissedIds();
-  if (!ids.includes(id)) {
-    ids.push(id);
-    localStorage.setItem(DISMISSED_KEY, JSON.stringify(ids));
-  }
-}
-
 export default function Notifications() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { isAdmin } = useAdmin();
   const isMobile = useIsMobile();
   const { seasons, activeSeason, switchSeason, createSeason, deleteSeason, loading } = useCloudData();
+  const { dismissedIds, dismiss } = useDismissedNotifications();
 
   const [messages, setMessages] = useState<BroadcastMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const [dismissedIds, setDismissedIds] = useState<string[]>(getDismissedIds());
 
   useEffect(() => {
     if (!user) return;
@@ -106,17 +89,13 @@ export default function Notifications() {
   };
 
   const deleteMessage = async (msg: BroadcastMessage) => {
-    // For direct messages, delete from DB; for broadcasts, dismiss locally
     if (msg.target_audience === 'specific_user' && msg.target_user_id === user?.id) {
       const { error } = await supabase.from('broadcast_messages').delete().eq('id', msg.id);
       if (error) {
-        // Fallback to local dismiss if DB delete fails (RLS)
-        addDismissedId(msg.id);
-        setDismissedIds((prev) => [...prev, msg.id]);
+        dismiss(msg.id);
       }
     } else {
-      addDismissedId(msg.id);
-      setDismissedIds((prev) => [...prev, msg.id]);
+      dismiss(msg.id);
     }
     setMessages((prev) => prev.filter((m) => m.id !== msg.id));
     toast.success('Notification removed');

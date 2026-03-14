@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDismissedNotifications } from '@/hooks/useDismissedNotifications';
 import { X, Megaphone, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,8 +17,8 @@ interface BroadcastMessage {
 
 export function BroadcastNotifications() {
   const { session } = useAuth();
+  const { dismissedIds, dismiss } = useDismissedNotifications();
   const [messages, setMessages] = useState<BroadcastMessage[]>([]);
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -36,13 +37,11 @@ export function BroadcastNotifications() {
 
     if (error || !data) return;
 
-    // Filter: show messages targeted to 'all', or specifically to this user
     const userId = session.user.id;
     const relevant = (data as BroadcastMessage[]).filter((msg) => {
       if (msg.target_audience === 'specific_user') {
         return msg.target_user_id === userId;
       }
-      // 'all' audience messages are visible to everyone
       return msg.target_audience === 'all';
     });
 
@@ -50,9 +49,8 @@ export function BroadcastNotifications() {
   };
 
   const dismissMessage = async (id: string) => {
-    setDismissedIds((prev) => new Set(prev).add(id));
+    dismiss(id);
 
-    // Mark as read in DB for this user (for specific_user messages)
     const msg = messages.find((m) => m.id === id);
     if (msg?.target_audience === 'specific_user' && msg.target_user_id === session?.user?.id) {
       await supabase
@@ -62,7 +60,7 @@ export function BroadcastNotifications() {
     }
   };
 
-  const visibleMessages = messages.filter((m) => !dismissedIds.has(m.id));
+  const visibleMessages = messages.filter((m) => !dismissedIds.includes(m.id));
 
   if (visibleMessages.length === 0) return null;
 
