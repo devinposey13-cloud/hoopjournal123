@@ -29,8 +29,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
-const positions = ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center', 'Guard', 'Forward'];
-const grades = ['1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
+const positions = ['Point Guard', 'Shooting Guard', 'Combo Guard', 'Small Forward', 'Power Forward', 'Center'];
+const grades = ['6th Grade', '7th Grade', '8th Grade', 'Freshman', 'Sophomore', 'Junior', 'Senior'];
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -230,7 +230,7 @@ export default function Profile() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -245,7 +245,13 @@ export default function Profile() {
             </div>
           </div>
 
+          {/* === Player Identity Section === */}
           <div className="stat-card space-y-6">
+            <div>
+              <h2 className="text-base font-bold text-foreground">Player Identity</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Your basketball identity and player info.</p>
+            </div>
+
             {/* Avatar Upload */}
             <div className="flex flex-col items-center gap-4">
               <div className="relative group">
@@ -309,139 +315,44 @@ export default function Profile() {
               />
             </div>
 
-            {/* Username & Public Profile */}
-            <div className="stat-card bg-secondary/30 p-4 rounded-lg space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="public-profile" className="text-sm font-medium">
-                    Public Profile
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    {formData.isProfilePublic 
-                      ? "Your stats and highlights are visible to others"
-                      : "Your profile is private"
-                    }
-                  </p>
-                </div>
-                <Switch
-                  id="public-profile"
-                  checked={formData.isProfilePublic ?? false}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, isProfilePublic: checked })
-                  }
-                />
-              </div>
-
-              {formData.username ? (
-                <div>
-                  <Label className="text-sm font-medium">Your Profile URL</Label>
-                  {formData.isProfilePublic ? (
-                    <div className="flex items-center gap-2 mt-1">
-                      <code className="text-sm bg-muted px-2 py-1 rounded">
-                        hoopjournal.me/{formData.username}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/${formData.username}`);
-                          toast.success('Link copied!');
-                        }}
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </Button>
-                      <a href={`/${formData.username}`} target="_blank" rel="noopener noreferrer">
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </Button>
-                      </a>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Your username is <strong>{formData.username}</strong>. Enable "Public Profile" to share.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Claim Your Profile URL</Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        value={newUsername}
-                        onChange={(e) => validateUsername(e.target.value)}
-                        placeholder="username"
-                        className="pl-9"
-                        maxLength={20}
-                      />
-                    </div>
-                    <Button
-                      onClick={handleClaimUsername}
-                      disabled={newUsername.length < 3 || !!usernameError || isCheckingUsername}
-                      size="sm"
-                    >
-                      {isCheckingUsername || isClaimingUsername ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Check className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
-                  {usernameError && (
-                    <p className="text-xs text-destructive flex items-center gap-1">
-                      <X className="w-3 h-3" /> {usernameError}
-                    </p>
-                  )}
-                </div>
-              )}
+            {/* Player Name */}
+            <div className="space-y-2">
+              <Label htmlFor="name">Player Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter player name"
+              />
             </div>
 
-            {/* Display Name */}
+            {/* Username (formerly Display Name) */}
             <div className="space-y-2">
-              <Label htmlFor="displayName">
-                Display Name <span className="text-muted-foreground text-xs">(shown on comments)</span>
-              </Label>
+              <Label htmlFor="displayName">Username</Label>
               <Input
                 id="displayName"
                 value={formData.displayName || ''}
                 onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                placeholder="e.g., HoopStar23"
+                placeholder="@HoopStar23"
                 maxLength={30}
+              />
+              <p className="text-xs text-muted-foreground">Used for your public profile and comments.</p>
+            </div>
+
+            {/* Jersey Number */}
+            <div className="space-y-2">
+              <Label htmlFor="number">Jersey Number</Label>
+              <Input
+                id="number"
+                type="number"
+                min={0}
+                max={99}
+                value={formData.number}
+                onChange={(e) => setFormData({ ...formData, number: parseInt(e.target.value) || 0 })}
               />
             </div>
 
-            {/* Basic Info */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Player Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter player name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="number">Jersey Number</Label>
-                <Input
-                  id="number"
-                  type="number"
-                  min={0}
-                  max={99}
-                  value={formData.number}
-                  onChange={(e) => setFormData({ ...formData, number: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-            </div>
-
-            {/* Teams */}
-            <div className="stat-card bg-secondary/30 p-4 rounded-lg">
-              <TeamsManagement />
-            </div>
-
-            {/* Position & Grade */}
+            {/* Position & School Grade */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Position</Label>
@@ -460,7 +371,7 @@ export default function Profile() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Grade</Label>
+                <Label>School Grade</Label>
                 <Select
                   value={formData.grade}
                   onValueChange={(value) => setFormData({ ...formData, grade: value })}
@@ -477,7 +388,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Height */}
             {/* Height */}
             <div className="space-y-2">
               <Label htmlFor="height">Height</Label>
@@ -505,17 +415,120 @@ export default function Profile() {
                 Only visible on public profiles for players in 9th grade or above.
               </p>
             </div>
-
-            {/* Save Button */}
-            <Button onClick={handleSave} disabled={isSaving} className="w-full">
-              {isSaving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              Save Changes
-            </Button>
           </div>
+
+          {/* === Teams Section === */}
+          <div className="stat-card space-y-4">
+            <div>
+              <h2 className="text-base font-bold text-foreground">Teams</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Manage your basketball teams.</p>
+            </div>
+            <TeamsManagement />
+          </div>
+
+          {/* === Profile Visibility Section === */}
+          <div className="stat-card space-y-4">
+            <div>
+              <h2 className="text-base font-bold text-foreground">Profile Visibility</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Control who can see your stats and highlights.</p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="public-profile" className="text-sm font-medium">
+                  Public Profile
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {formData.isProfilePublic 
+                    ? "Your stats and highlights are visible to others"
+                    : "Your profile is private"
+                  }
+                </p>
+              </div>
+              <Switch
+                id="public-profile"
+                checked={formData.isProfilePublic ?? false}
+                onCheckedChange={(checked) => 
+                  setFormData({ ...formData, isProfilePublic: checked })
+                }
+              />
+            </div>
+
+            {formData.username ? (
+              <div>
+                <Label className="text-sm font-medium">Your Profile URL</Label>
+                {formData.isProfilePublic ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <code className="text-sm bg-muted px-2 py-1 rounded">
+                      hoopjournal.me/{formData.username}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/${formData.username}`);
+                        toast.success('Link copied!');
+                      }}
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
+                    <a href={`/${formData.username}`} target="_blank" rel="noopener noreferrer">
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </Button>
+                    </a>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your username is <strong>{formData.username}</strong>. Enable "Public Profile" to share.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Claim Your Profile URL</Label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      value={newUsername}
+                      onChange={(e) => validateUsername(e.target.value)}
+                      placeholder="username"
+                      className="pl-9"
+                      maxLength={20}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleClaimUsername}
+                    disabled={newUsername.length < 3 || !!usernameError || isCheckingUsername}
+                    size="sm"
+                  >
+                    {isCheckingUsername || isClaimingUsername ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                {usernameError && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <X className="w-3 h-3" /> {usernameError}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Save Button */}
+          <Button onClick={handleSave} disabled={isSaving} className="w-full">
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            Save Changes
+          </Button>
         </div>
       </div>
 
