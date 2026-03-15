@@ -110,7 +110,7 @@ export function BottomNavigation({
           >
             <div className="relative">
               <MoreHorizontal className={cn('w-5 h-5', isMoreTab(activeTab) && 'stroke-[2.5px]')} />
-              {isAdmin && adminNotificationCount > 0 && (
+              {(broadcastCount > 0 || (isAdmin && adminNotificationCount > 0)) && (
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full" />
               )}
             </div>
