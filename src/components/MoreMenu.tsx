@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LogOut, Settings, Shield, UserCircle, UserPlus, Calendar,
-  HelpCircle, MessageSquare, Gamepad2,
+  HelpCircle, MessageSquare, Gamepad2, Bell,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveProfile } from '@/hooks/useActiveProfile';
+import { useBroadcastCount } from '@/hooks/useBroadcastCount';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -98,6 +99,7 @@ export function MoreMenu({
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { activeProfile, hasMultipleProfiles } = useActiveProfile();
+  const broadcastCount = useBroadcastCount();
   const [showAddProfileDialog, setShowAddProfileDialog] = useState(false);
 
   const handleSignOut = async () => {
@@ -169,6 +171,12 @@ export function MoreMenu({
               label="Profile"
               isActive={activeTab === 'profile'}
               onClick={() => go('profile', '/profile')}
+            />
+            <MenuRow
+              icon={Bell}
+              label="Notifications"
+              badge={broadcastCount}
+              onClick={() => { navigate('/notifications'); onOpenChange(false); }}
             />
             <MenuRow
               icon={UserPlus}
