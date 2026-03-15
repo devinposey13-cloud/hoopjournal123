@@ -227,7 +227,7 @@ export function TodayCard({
       <div className="flex items-center gap-2">
         {isGameDay && onStartLiveCapture ? (
           <Button 
-            onClick={onStartLiveCapture}
+            onClick={(e) => { e.stopPropagation(); onStartLiveCapture(); }}
             className="flex-1 gap-2"
             size="lg"
           >
@@ -237,7 +237,7 @@ export function TodayCard({
           </Button>
         ) : (
           <Button 
-            onClick={onLogGame}
+            onClick={(e) => { e.stopPropagation(); onLogGame(); }}
             className="flex-1 gap-2"
             size="lg"
           >
