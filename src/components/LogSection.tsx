@@ -707,50 +707,55 @@ export function LogSection({
                   const gradeColor = getGradeColor(grade);
                   
                   return (
-                    <Card 
-                      key={game.id} 
-                      className="overflow-hidden hover:bg-accent/30 transition-colors cursor-pointer border-border/50"
-                      onClick={() => navigate(`/game/${game.id}`)}
+                    <SwipeToDelete
+                      key={game.id}
+                      enabled={isMobile}
+                      onDelete={() => deleteGame(game.id)}
                     >
-                      <CardContent className="p-3">
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 font-black text-xs"
-                            style={{ 
-                              backgroundColor: `${gradeColor}15`,
-                              color: gradeColor,
-                              border: `1px solid ${gradeColor}30`,
-                            }}
-                          >
-                            {grade}
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm truncate">vs {game.opponent}</span>
-                              <span className={cn(
-                                "text-[10px] font-bold px-1.5 py-0.5 rounded",
-                                game.isWin 
-                                  ? "bg-green-500/10 text-green-500" 
-                                  : "bg-red-500/10 text-red-500"
-                              )}>
-                                {game.isWin ? 'W' : 'L'}
-                              </span>
+                      <Card 
+                        className="overflow-hidden hover:bg-accent/30 transition-colors cursor-pointer border-border/50"
+                        onClick={() => navigate(`/game/${game.id}`)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 font-black text-xs"
+                              style={{ 
+                                backgroundColor: `${gradeColor}15`,
+                                color: gradeColor,
+                                border: `1px solid ${gradeColor}30`,
+                              }}
+                            >
+                              {grade}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {game.points} PTS • {game.rebounds} REB • {game.assists} AST
-                            </p>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-sm truncate">vs {game.opponent}</span>
+                                <span className={cn(
+                                  "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                                  game.isWin 
+                                    ? "bg-green-500/10 text-green-500" 
+                                    : "bg-red-500/10 text-red-500"
+                                )}>
+                                  {game.isWin ? 'W' : 'L'}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {game.points} PTS • {game.rebounds} REB • {game.assists} AST
+                              </p>
+                            </div>
+                            
+                            <div className="text-right shrink-0">
+                              <p className="text-[11px] text-muted-foreground">
+                                {format(new Date(game.date), 'MMM d')}
+                              </p>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground/40 shrink-0" />
                           </div>
-                          
-                          <div className="text-right shrink-0">
-                            <p className="text-[11px] text-muted-foreground">
-                              {format(new Date(game.date), 'MMM d')}
-                            </p>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-muted-foreground/40 shrink-0" />
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+                    </SwipeToDelete>
                   );
                 })}
               </div>
