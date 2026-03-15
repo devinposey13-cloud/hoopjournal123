@@ -69,13 +69,31 @@ export function TodayCard({
   const timeLabel = getTimeLabel();
   const isGameDay = Boolean(todayGame);
 
+  // Find linked recorded game for the display game
+  const linkedGame = displayGame
+    ? games.find(g => g.scheduledGameId === displayGame.id)
+    : null;
+
+  const handleCardClick = () => {
+    if (!displayGame) return;
+    if (linkedGame) {
+      navigate(`/game/${linkedGame.id}`);
+    } else {
+      navigate(`/game/scheduled/${displayGame.id}`);
+    }
+  };
+
   return (
-    <div className={cn(
-      "relative overflow-hidden rounded-2xl p-6",
-      "bg-gradient-to-br from-primary/10 via-background to-accent/5",
-      "border border-border/50",
-      isGameDay && "ring-2 ring-primary/30"
-    )}>
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-2xl p-6",
+        "bg-gradient-to-br from-primary/10 via-background to-accent/5",
+        "border border-border/50",
+        isGameDay && "ring-2 ring-primary/30",
+        displayGame && "cursor-pointer"
+      )}
+      onClick={handleCardClick}
+    >
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
       
@@ -209,7 +227,7 @@ export function TodayCard({
       <div className="flex items-center gap-2">
         {isGameDay && onStartLiveCapture ? (
           <Button 
-            onClick={onStartLiveCapture}
+            onClick={(e) => { e.stopPropagation(); onStartLiveCapture(); }}
             className="flex-1 gap-2"
             size="lg"
           >
@@ -219,7 +237,7 @@ export function TodayCard({
           </Button>
         ) : (
           <Button 
-            onClick={onLogGame}
+            onClick={(e) => { e.stopPropagation(); onLogGame(); }}
             className="flex-1 gap-2"
             size="lg"
           >
@@ -229,7 +247,7 @@ export function TodayCard({
           </Button>
         )}
         <Button 
-          onClick={onOpenCoach}
+          onClick={(e) => { e.stopPropagation(); onOpenCoach(); }}
           variant="outline"
           className="flex-1 gap-2"
           size="lg"
