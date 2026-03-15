@@ -99,6 +99,7 @@ export function MoreMenu({
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { activeProfile, hasMultipleProfiles } = useActiveProfile();
+  const broadcastCount = useBroadcastCount();
   const [showAddProfileDialog, setShowAddProfileDialog] = useState(false);
 
   const handleSignOut = async () => {
