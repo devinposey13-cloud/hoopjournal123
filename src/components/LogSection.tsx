@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { SwipeToDelete } from '@/components/ui/swipe-to-delete';
 
 export type LogSubTab = 'history' | 'schedule' | 'add';
 
