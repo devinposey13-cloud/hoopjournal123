@@ -247,7 +247,7 @@ export function TodayCard({
           </Button>
         )}
         <Button 
-          onClick={onOpenCoach}
+          onClick={(e) => { e.stopPropagation(); onOpenCoach(); }}
           variant="outline"
           className="flex-1 gap-2"
           size="lg"
