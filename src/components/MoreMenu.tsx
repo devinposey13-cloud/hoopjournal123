@@ -173,6 +173,12 @@ export function MoreMenu({
               onClick={() => go('profile', '/profile')}
             />
             <MenuRow
+              icon={Bell}
+              label="Notifications"
+              badge={broadcastCount}
+              onClick={() => { navigate('/notifications'); onOpenChange(false); }}
+            />
+            <MenuRow
               icon={UserPlus}
               label="Add Player"
               onClick={handleAddProfile}
