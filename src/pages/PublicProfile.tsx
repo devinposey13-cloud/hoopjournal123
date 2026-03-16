@@ -184,11 +184,12 @@ export default function PublicProfile() {
           setClips(clipsWithUrls);
         }
 
-        // Fetch games for stats calculation
+        // Fetch games for stats calculation - scoped to this profile
         const { data: gamesData, error: gamesError } = await supabase
           .from('games')
           .select('*')
-          .eq('user_id', profileData.user_id);
+          .eq('user_id', profileData.user_id)
+          .or(`profile_id.eq.${profileId},profile_id.is.null`);
 
         if (gamesError) {
           console.error('Error fetching games:', gamesError);
