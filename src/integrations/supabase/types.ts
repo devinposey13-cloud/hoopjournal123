@@ -1592,6 +1592,126 @@ export type Database = {
           },
         ]
       }
+      slack_alert_history: {
+        Row: {
+          category: string
+          channel: string | null
+          created_at: string
+          dedup_key: string | null
+          delivered_at: string | null
+          delivery_status: string
+          error_message: string | null
+          id: string
+          message_preview: string | null
+          retry_count: number
+          severity: string
+          title: string
+        }
+        Insert: {
+          category: string
+          channel?: string | null
+          created_at?: string
+          dedup_key?: string | null
+          delivered_at?: string | null
+          delivery_status?: string
+          error_message?: string | null
+          id?: string
+          message_preview?: string | null
+          retry_count?: number
+          severity?: string
+          title: string
+        }
+        Update: {
+          category?: string
+          channel?: string | null
+          created_at?: string
+          dedup_key?: string | null
+          delivered_at?: string | null
+          delivery_status?: string
+          error_message?: string | null
+          id?: string
+          message_preview?: string | null
+          retry_count?: number
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      slack_alert_preferences: {
+        Row: {
+          category: string
+          channel_override: string | null
+          created_at: string
+          frequency: string
+          id: string
+          is_enabled: boolean
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          severity: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          channel_override?: string | null
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          severity?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          channel_override?: string | null
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          severity?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      slack_integration_config: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          last_failure_at: string | null
+          last_failure_reason: string | null
+          last_success_at: string | null
+          updated_at: string
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          last_failure_at?: string | null
+          last_failure_reason?: string | null
+          last_success_at?: string | null
+          updated_at?: string
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          last_failure_at?: string | null
+          last_failure_reason?: string | null
+          last_success_at?: string | null
+          updated_at?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
       stats_predictions: {
         Row: {
           accuracy_score: number | null
