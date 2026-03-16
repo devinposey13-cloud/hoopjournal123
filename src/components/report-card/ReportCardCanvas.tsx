@@ -197,21 +197,6 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 letterSpacing: '-0.03em', textAlign: 'center',
                 position: 'relative',
               }}>{grade}</div>
-              {tags.length > 0 && (
-                <div style={{
-                  display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center',
-                  marginTop: 4, maxWidth: '100%',
-                }}>
-                  {tags.slice(0, 3).map((tag, i) => (
-                    <div key={i} style={{
-                      background: `${color}15`,
-                      border: `1px solid ${color}30`,
-                      borderRadius: 50, padding: '6px 22px',
-                      color, fontSize: 18 * sf, fontWeight: 700,
-                    }}>{tag.emoji} {tag.label}</div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
