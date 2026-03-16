@@ -1045,6 +1045,9 @@ export function AdminPanel() {
 
         {/* Approvals Tab */}
         <TabsContent value="approvals" className="space-y-4">
+          {/* Approval Mode Selector */}
+          <ApprovalModeSelector session={session} />
+
           {approvalRequests.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
