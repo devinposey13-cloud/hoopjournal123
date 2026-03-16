@@ -105,10 +105,16 @@ const handler = async (req: Request): Promise<Response> => {
                             <p style="margin: 0; font-size: 16px; color: #ffffff;">${email || "Not provided"}</p>
                           </td>
                         </tr>
-                        <tr>
-                          <td style="padding-bottom: 24px;">
+                         <tr>
+                          <td style="padding-bottom: 16px;">
                             <p style="margin: 0 0 4px 0; font-size: 12px; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Signed Up</p>
                             <p style="margin: 0; font-size: 16px; color: #ffffff;">${signupTime} ET</p>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding-bottom: 24px;">
+                            <p style="margin: 0 0 4px 0; font-size: 12px; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Approval</p>
+                            <p style="margin: 0; font-size: 16px; color: ${status === 'approved' ? '#22c55e' : '#f97316'};">${status === 'approved' ? '✅ Auto-Approved' : '⏳ Pending Review'}</p>
                           </td>
                         </tr>
                         <tr>
