@@ -82,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
                   </tr>
                   <tr>
                     <td align="center" style="padding-bottom: 8px;">
-                      <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff;">New Account Request! 🏀</h1>
+                      <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff;">${status === 'approved' ? 'New Player Auto-Approved! ✅🏀' : 'New Account Request! 🏀'}</h1>
                     </td>
                   </tr>
                   <tr>
