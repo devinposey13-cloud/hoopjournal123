@@ -39,8 +39,8 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, restorePurchases } = useRevenueCat();
-  const native = isNativeApp() && rcAvailable;
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, restorePurchases, isLoading: rcLoading } = useRevenueCat();
+  const native = isNativeApp();
 
   if (!config) return null;
 
