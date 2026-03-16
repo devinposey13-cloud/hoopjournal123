@@ -156,7 +156,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               flexShrink: 0,
             }}>
               <div style={{
-                width: 360 * sf, height: 360 * sf, borderRadius: '50%',
+                width: 320 * sf, height: 320 * sf, borderRadius: '50%',
                 border: `7px solid ${color}`,
                 overflow: 'hidden',
                 boxShadow: `0 0 100px ${color}40, 0 0 200px ${color}15`,
@@ -166,7 +166,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 ) : (
                   <div style={{
                     width: '100%', height: '100%', background: '#1e293b',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 120 * sf,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 100 * sf,
                   }}>🏀</div>
                 )}
               </div>
@@ -176,7 +176,8 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               position: 'relative', marginTop: isPost ? 12 : 40,
-              padding: isPost ? '60px 50px' : '80px 60px',
+              padding: isPost ? '60px 30px' : '40px 20px',
+              minWidth: 0, maxWidth: isPost ? 500 : 520, overflow: 'hidden',
             }}>
               <div style={{
                 position: 'absolute', top: '50%', left: '50%',
@@ -199,14 +200,14 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               {tags.length > 0 && (
                 <div style={{
                   display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center',
-                  marginTop: 4,
+                  marginTop: 4, maxWidth: '100%',
                 }}>
                   {tags.slice(0, 3).map((tag, i) => (
                     <div key={i} style={{
                       background: `${color}15`,
                       border: `1px solid ${color}30`,
                       borderRadius: 50, padding: '6px 22px',
-                      color, fontSize: 16 * sf, fontWeight: 700,
+                      color, fontSize: 18 * sf, fontWeight: 700,
                     }}>{tag.emoji} {tag.label}</div>
                   ))}
                 </div>
