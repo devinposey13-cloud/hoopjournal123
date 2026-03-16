@@ -167,6 +167,25 @@ export default function Index() {
     showLevelUpCelebration,
   ]);
 
+  // Auto-resume live stats session if autosave data exists
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('hoopjournal_live_stats_autosave');
+      if (stored && !showQuickLiveCapture) {
+        const data = JSON.parse(stored);
+        const maxAge = 24 * 60 * 60 * 1000;
+        if (Date.now() - data.savedAt < maxAge && data.opponent) {
+          setQuickCaptureOpponent(data.opponent);
+          setShowQuickLiveCapture(true);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    // Only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Auto-open live stats when navigating from onboarding finish
   useEffect(() => {
     const state = location.state as { openLiveStats?: boolean; tab?: Tab } | null;

@@ -210,38 +210,36 @@ export function LiveStatCapture({
     });
   }, [opponent, currentHalf, firstHalfStats, secondHalfStats, history, gamePhoto, isWin, soundEffectsEnabled, halftimeScore, finalScore, saveData]);
 
+  // Keep a ref of current state for unmount save
+  const stateRef = useRef({
+    opponent, currentHalf, firstHalfStats, secondHalfStats, history,
+    gamePhoto, isWin, soundEffectsEnabled, halftimeScore, finalScore,
+  });
+  useEffect(() => {
+    stateRef.current = {
+      opponent, currentHalf, firstHalfStats, secondHalfStats, history,
+      gamePhoto, isWin, soundEffectsEnabled, halftimeScore, finalScore,
+    };
+  }, [opponent, currentHalf, firstHalfStats, secondHalfStats, history, gamePhoto, isWin, soundEffectsEnabled, halftimeScore, finalScore]);
+
+  // Save on unmount (navigation away) so data persists
+  useEffect(() => {
+    return () => {
+      immediateSave(stateRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Immediate save when page becomes hidden (user switches tabs, receives call, etc.)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        immediateSave({
-          opponent,
-          currentHalf,
-          firstHalfStats,
-          secondHalfStats,
-          history,
-          gamePhoto,
-          isWin,
-          soundEffectsEnabled,
-          halftimeScore,
-          finalScore,
-        });
+        immediateSave(stateRef.current);
       }
     };
 
     const handlePageHide = () => {
-      immediateSave({
-        opponent,
-        currentHalf,
-        firstHalfStats,
-        secondHalfStats,
-        history,
-        gamePhoto,
-        isWin,
-        soundEffectsEnabled,
-        halftimeScore,
-        finalScore,
-      });
+      immediateSave(stateRef.current);
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -253,7 +251,7 @@ export function LiveStatCapture({
       window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('beforeunload', handlePageHide);
     };
-  }, [opponent, currentHalf, firstHalfStats, secondHalfStats, history, gamePhoto, isWin, soundEffectsEnabled, halftimeScore, finalScore, immediateSave]);
+  }, [immediateSave]);
 
   // Calculate total stats from both halves
   const totalStats: LiveStats = {
