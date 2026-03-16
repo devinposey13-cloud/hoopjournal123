@@ -191,13 +191,18 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 letterSpacing: '0.4em', textTransform: 'uppercase',
                 textAlign: 'center', marginBottom: 8 * sf,
               }}>HOOP JOURNAL GAME GRADE</div>
-              <div style={{
-                fontSize: 236 * sf, fontWeight: 900, color,
-                lineHeight: 0.9, textShadow: glow,
-                letterSpacing: '-0.03em', textAlign: 'center',
-                position: 'relative', display: 'block',
-                paddingBottom: 10 * sf,
-              }}>{grade}</div>
+              <div
+                data-canvas-grade="true"
+                data-grade-color={color}
+                data-grade-glow={glow}
+                style={{
+                  fontSize: 236 * sf, fontWeight: 900, color,
+                  lineHeight: 0.9, textShadow: glow,
+                  letterSpacing: '-0.03em', textAlign: 'center',
+                  position: 'relative', display: 'block',
+                  paddingBottom: 10 * sf,
+                }}
+              >{grade}</div>
             </div>
           </div>
 

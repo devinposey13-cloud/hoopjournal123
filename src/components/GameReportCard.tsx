@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import type { GameStats } from '@/types/basketball';
 import { ReportCardCanvas, type ExportFormat } from '@/components/report-card/ReportCardCanvas';
 import { SocialPreview } from '@/components/report-card/SocialPreview';
+import { getGameGradeData } from '@/utils/gameGrading';
 
 interface GameReportCardProps {
   open: boolean;
