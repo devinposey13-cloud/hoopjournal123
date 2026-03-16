@@ -27,6 +27,7 @@ import { AdminFeatureFlags } from '@/components/admin/AdminFeatureFlags';
 import { AdminBroadcast } from '@/components/admin/AdminBroadcast';
 import { AdminSystemHealth } from '@/components/admin/AdminSystemHealth';
 import { AdminSlackAlerts } from '@/components/admin/AdminSlackAlerts';
+import { ApprovalModeSelector } from '@/components/admin/ApprovalModeSelector';
 import { dispatchSlackAlert } from '@/utils/slackAlerts';
 import { format } from 'date-fns';
 
@@ -93,6 +94,7 @@ interface AccountApprovalRequest {
   reviewed_by: string | null;
   reviewed_at: string | null;
   created_at: string;
+  approval_method?: string;
 }
 
 function MetricHint({ tip }: { tip: string }) {
@@ -734,8 +736,9 @@ export function AdminPanel() {
         .update({ 
           status: 'approved',
           reviewed_by: session?.user?.id,
-          reviewed_at: new Date().toISOString()
-        })
+          reviewed_at: new Date().toISOString(),
+          approval_method: 'manual'
+        } as any)
         .eq('id', request.id);
 
       if (approvalError) throw approvalError;
@@ -1044,6 +1047,9 @@ export function AdminPanel() {
 
         {/* Approvals Tab */}
         <TabsContent value="approvals" className="space-y-4">
+          {/* Approval Mode Selector */}
+          <ApprovalModeSelector session={session} />
+
           {approvalRequests.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
@@ -1148,6 +1154,11 @@ export function AdminPanel() {
                                 >
                                   {request.status === 'approved' ? 'Approved' : 'Rejected'}
                                 </Badge>
+                                {(request as any).approval_method && (
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    {(request as any).approval_method === 'auto' ? '⚡ Auto' : (request as any).approval_method === 'conditional_flagged' ? '🚩 Flagged' : '👤 Manual'}
+                                  </Badge>
+                                )}
                                 <span className="text-xs text-muted-foreground">
                                   {request.reviewed_at && format(new Date(request.reviewed_at), 'MMM d, yyyy')}
                                 </span>

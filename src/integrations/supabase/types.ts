@@ -17,6 +17,7 @@ export type Database = {
       account_approval_requests: {
         Row: {
           admin_notes: string | null
+          approval_method: string | null
           created_at: string
           email: string | null
           id: string
@@ -29,6 +30,7 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          approval_method?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -41,6 +43,7 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          approval_method?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -354,6 +357,7 @@ export type Database = {
           description: string | null
           flag_key: string
           flag_label: string
+          flag_value: string | null
           id: string
           is_enabled: boolean
           updated_at: string
@@ -364,6 +368,7 @@ export type Database = {
           description?: string | null
           flag_key: string
           flag_label: string
+          flag_value?: string | null
           id?: string
           is_enabled?: boolean
           updated_at?: string
@@ -374,6 +379,7 @@ export type Database = {
           description?: string | null
           flag_key?: string
           flag_label?: string
+          flag_value?: string | null
           id?: string
           is_enabled?: boolean
           updated_at?: string
