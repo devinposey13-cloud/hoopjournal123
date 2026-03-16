@@ -93,6 +93,7 @@ interface AccountApprovalRequest {
   reviewed_by: string | null;
   reviewed_at: string | null;
   created_at: string;
+  approval_method?: string;
 }
 
 function MetricHint({ tip }: { tip: string }) {
