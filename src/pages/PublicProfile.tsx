@@ -135,6 +135,8 @@ export default function PublicProfile() {
           return;
         }
 
+        const profileId = profileData.id;
+
         setProfile({
           name: profileData.name,
           team: profileData.team,
@@ -182,11 +184,12 @@ export default function PublicProfile() {
           setClips(clipsWithUrls);
         }
 
-        // Fetch games for stats calculation
+        // Fetch games for stats calculation - scoped to this profile
         const { data: gamesData, error: gamesError } = await supabase
           .from('games')
           .select('*')
-          .eq('user_id', profileData.user_id);
+          .eq('user_id', profileData.user_id)
+          .or(`profile_id.eq.${profileId},profile_id.is.null`);
 
         if (gamesError) {
           console.error('Error fetching games:', gamesError);
@@ -235,7 +238,7 @@ export default function PublicProfile() {
           });
         }
 
-        // Fetch milestones with joined definitions
+        // Fetch milestones with joined definitions - scoped to this profile
         const { data: milestonesData, error: milestonesError } = await supabase
           .from('player_milestones')
           .select(`
@@ -249,7 +252,8 @@ export default function PublicProfile() {
               icon
             )
           `)
-          .eq('user_id', profileData.user_id);
+          .eq('user_id', profileData.user_id)
+          .or(`profile_id.eq.${profileId},profile_id.is.null`);
 
         if (milestonesError) {
           console.error('Error fetching milestones:', milestonesError);
@@ -273,6 +277,7 @@ export default function PublicProfile() {
           .from('player_tier_achievements')
           .select('*')
           .eq('user_id', profileData.user_id)
+          .or(`profile_id.eq.${profileId},profile_id.is.null`)
           .order('achieved_at', { ascending: false });
 
         if (tierError) {
