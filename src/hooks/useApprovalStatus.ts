@@ -16,6 +16,24 @@ export function useApprovalStatus() {
     }
 
     try {
+      // Fast-path: check if approval mode is automatic
+      try {
+        const { data: flagData } = await supabase
+          .from('feature_flags')
+          .select('flag_value')
+          .eq('flag_key', 'user_approval_mode')
+          .eq('is_enabled', true)
+          .maybeSingle();
+        
+        if (flagData?.flag_value === 'automatic') {
+          setIsApproved(true);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // Continue with normal check if flag read fails
+      }
+
       // Check player_settings for is_approved flag
       // With multi-profile support, users can have multiple rows - check if ANY profile is approved
       const { data: settingsData, error: settingsError } = await supabase

@@ -161,9 +161,9 @@ const handler = async (req: Request): Promise<Response> => {
         body: JSON.stringify({
           category: 'new_user_signup',
           severity: 'info',
-          title: `New Signup: @${username || 'Unknown'}`,
-          summary: `A new player has signed up and is awaiting approval.`,
-          details: { Username: `@${username || 'Unknown'}`, Email: email || 'Not provided', 'Signed Up': signupTime + ' ET' },
+          title: `New Signup: @${username || 'Unknown'} (${status === 'approved' ? 'Auto-Approved' : 'Pending'})`,
+          summary: status === 'approved' ? `A new player has signed up and was auto-approved.` : `A new player has signed up and is awaiting approval.`,
+          details: { Username: `@${username || 'Unknown'}`, Email: email || 'Not provided', 'Signed Up': signupTime + ' ET', 'Approval': status === 'approved' ? 'Auto-Approved' : 'Pending Review' },
           cta_url: 'https://hoopjournal.me',
           dedup_key: `signup_${user_id}`,
         }),

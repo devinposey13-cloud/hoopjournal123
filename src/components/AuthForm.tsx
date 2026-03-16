@@ -378,9 +378,26 @@ export function AuthForm() {
         const { error, data } = await signUp({ identifier, password, method: authMethod });
         if (error) throw error;
 
-        // Create player settings with username and phone if applicable
-        // Note: is_approved defaults to false, requiring admin approval
+        // Check approval mode from feature flags
         if (data.user) {
+          let approvalMode = 'automatic';
+          try {
+            const { data: flagData } = await supabase
+              .from('feature_flags')
+              .select('flag_value')
+              .eq('flag_key', 'user_approval_mode')
+              .eq('is_enabled', true)
+              .maybeSingle();
+            if (flagData?.flag_value) {
+              approvalMode = flagData.flag_value;
+            }
+          } catch {
+            // Default to automatic if flag check fails
+          }
+
+          const shouldAutoApprove = approvalMode === 'automatic' || approvalMode === 'conditional';
+          const approvalMethod = shouldAutoApprove ? 'auto' : 'manual';
+
           const settingsData: any = {
             user_id: data.user.id,
             username: username.toLowerCase(),
@@ -390,7 +407,7 @@ export function AuthForm() {
             number: 0,
             height: "5'8\"",
             grade: '1st Grade',
-            is_approved: false // Require admin approval
+            is_approved: shouldAutoApprove
           };
 
           // Store phone number in player_settings if using phone auth
@@ -398,23 +415,24 @@ export function AuthForm() {
             settingsData.phone = normalizePhoneNumber(phone);
           }
 
-          const { error: settingsError } = await supabase.
-          from('player_settings').
-          insert(settingsData);
+          const { error: settingsError } = await supabase
+            .from('player_settings')
+            .insert(settingsData);
 
           if (settingsError) {
             console.error('Error creating profile:', settingsError);
           }
 
           // Create approval request for admin visibility
-          const { error: approvalError } = await supabase.
-          from('account_approval_requests').
-          insert({
-            user_id: data.user.id,
-            email: authMethod === 'email' ? identifier : null,
-            username: username.toLowerCase(),
-            status: 'pending'
-          });
+          const { error: approvalError } = await supabase
+            .from('account_approval_requests')
+            .insert({
+              user_id: data.user.id,
+              email: authMethod === 'email' ? identifier : null,
+              username: username.toLowerCase(),
+              status: shouldAutoApprove ? 'approved' : 'pending',
+              approval_method: approvalMethod
+            } as any);
 
           if (approvalError) {
             console.error('Error creating approval request:', approvalError);
@@ -434,7 +452,7 @@ export function AuthForm() {
           }
         }
 
-        toast.success('Account created! Awaiting admin approval.');
+        toast.success(approvalMode === 'manual' ? 'Account created! Awaiting admin approval.' : 'Account created! Welcome aboard! 🏀');
       }
     } catch (error: any) {
       toast.error(error.message || 'Authentication failed');
