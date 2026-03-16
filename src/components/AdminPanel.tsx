@@ -2436,6 +2436,11 @@ export function AdminPanel() {
         <TabsContent value="broadcast" className="space-y-4">
           <AdminBroadcast />
         </TabsContent>
+
+        {/* Slack Alerts Tab */}
+        <TabsContent value="slack" className="space-y-4">
+          <AdminSlackAlerts />
+        </TabsContent>
       </Tabs>
 
       {/* Admin Override Confirmation Dialog */}
