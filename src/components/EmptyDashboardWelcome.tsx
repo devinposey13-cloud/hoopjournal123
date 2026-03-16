@@ -96,7 +96,7 @@ export function EmptyDashboardWelcome({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    fileInputRef.current?.click();
+    setTimeout(() => fileInputRef.current?.click(), 0);
   };
 
   const handleConfirmSkip = () => {
@@ -106,6 +106,10 @@ export function EmptyDashboardWelcome({
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Always reset input so the same file can be re-selected
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
@@ -127,9 +131,6 @@ export function EmptyDashboardWelcome({
         }
       } finally {
         setAvatarState('idle');
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
       }
     } else {
       // Fallback to settings panel
@@ -717,7 +718,7 @@ export function EmptyDashboardWelcome({
                         Take Photo
                       </Button>
                       <Button
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={handleAvatarClick}
                         variant="outline"
                         className="flex-1 h-10 text-muted-foreground"
                       >
@@ -737,7 +738,7 @@ export function EmptyDashboardWelcome({
                         Take Photo
                       </Button>
                       <Button
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={handleAvatarClick}
                         variant="outline"
                         className="flex-1 h-12"
                       >
