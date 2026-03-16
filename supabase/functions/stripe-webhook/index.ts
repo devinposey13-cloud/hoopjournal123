@@ -146,6 +146,16 @@ serve(async (req) => {
               updated_at: new Date().toISOString(),
             }).eq("user_id", userId);
             logStep("Subscription canceled, reverted to free (promo lock preserved)", { userId });
+
+            // Slack alert for cancellation
+            fireSlackAlert(supabase, {
+              category: 'canceled_subscription',
+              severity: 'warning',
+              title: 'Subscription Canceled',
+              summary: `A user's subscription has been canceled and reverted to Free.`,
+              details: { 'User ID': userId },
+              dedup_key: `cancel_${subscription.id}`,
+            });
           }
         }
         break;
