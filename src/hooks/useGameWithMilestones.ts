@@ -135,9 +135,9 @@ export function useGameWithMilestones() {
         category: 'high_engagement',
         severity: 'info',
         title: 'High Engagement Streak',
-        summary: `${cloudData.playerSettings?.name || 'A player'} has a ${streakCount}-game consistency streak!`,
+        summary: `${cloudData.profile?.name || 'A player'} has a ${streakCount}-game consistency streak!`,
         details: {
-          'Player': cloudData.playerSettings?.name || 'Unknown',
+          'Player': cloudData.profile?.name || 'Unknown',
           'Streak': `${streakCount} games`,
         },
         dedup_key: `streak_${user?.id}_${streakCount}`,
