@@ -88,7 +88,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   const handleSelectPaid = async (planId: PlanId, billingCycle: BillingCycle) => {
     track('onboarding_plan_checkout_started', { planId, billingCycle });
-    console.log('[Onboarding] Starting checkout for paid plan:', { planId, billingCycle });
+    const native = isNativeApp();
+    console.log('[Onboarding] Starting checkout for paid plan:', { planId, billingCycle, native, capacitor: !!window.Capacitor, protocol: window.location.protocol });
 
     try {
       if (isNativeApp()) {

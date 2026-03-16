@@ -13,7 +13,13 @@ declare global {
 
 /** Returns true when running inside a Capacitor native shell (iOS / Android). */
 export function isNativeApp(): boolean {
-  return !!window.Capacitor?.isNativePlatform?.();
+  // Primary check: Capacitor bridge
+  if (window.Capacitor?.isNativePlatform?.()) return true;
+  // Fallback: check for Capacitor object presence (bridge may not have fully initialised)
+  if (window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web') return true;
+  // Fallback: check for capacitor:// scheme used in iOS WebView
+  if (typeof window !== 'undefined' && window.location?.protocol === 'capacitor:') return true;
+  return false;
 }
 
 /** Returns the current platform: 'ios', 'android', or 'web'. */
