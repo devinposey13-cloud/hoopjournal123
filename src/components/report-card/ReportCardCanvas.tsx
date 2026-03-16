@@ -140,205 +140,211 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
         {/* ── Content Safe Zone ── */}
         <div style={{
           position: 'absolute',
-          top: isPost ? 40 : SAFE.top, bottom: isPost ? 80 : SAFE.bottom,
-          left: 120, right: 120,
+          top: isPost ? 40 : SAFE.top, bottom: isPost ? 80 : SAFE.bottom, left: SAFE.left, right: SAFE.right,
           display: 'flex', flexDirection: 'column',
           alignItems: 'center',
         }}>
 
-          {/* ═══ ROW 1: Player Avatar (centered) ═══ */}
+          {/* ═══ ZONE 1+2: Avatar + Grade Side-by-Side ═══ */}
           <div style={{
-            display: 'flex', justifyContent: 'center', alignItems: 'center',
-            width: '100%', marginBottom: isPost ? 24 : 36, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '100%', marginBottom: isPost ? 20 : 32, gap: isPost ? 36 : 48,
           }}>
+            {/* Left: Avatar */}
             <div style={{
-              width: 240 * sf, height: 240 * sf, borderRadius: '50%',
-              border: `6px solid ${color}`,
-              overflow: 'hidden',
-              boxShadow: `0 0 80px ${color}30, 0 0 160px ${color}10`,
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              flexShrink: 0,
             }}>
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
-              ) : (
+              <div style={{
+                width: 320 * sf, height: 320 * sf, borderRadius: '50%',
+                border: `7px solid ${color}`,
+                overflow: 'hidden',
+                boxShadow: `0 0 100px ${color}40, 0 0 200px ${color}15`,
+              }}>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
+                ) : (
+                  <div style={{
+                    width: '100%', height: '100%', background: '#1e293b',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 100 * sf,
+                  }}>🏀</div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Grade + Tags */}
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              position: 'relative', marginTop: isPost ? 12 : 40,
+              padding: isPost ? '60px 30px' : '40px 20px',
+              minWidth: 0, maxWidth: isPost ? 500 : 520, overflow: 'hidden',
+            }}>
+              <div style={{
+                position: 'absolute', top: '50%', left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 440 * sf, height: 440 * sf, borderRadius: '50%',
+                background: `radial-gradient(circle, ${color}15 0%, transparent 60%)`,
+                pointerEvents: 'none',
+              }} />
+              <div style={{
+                color: s.dim, fontSize: 18 * sf, fontWeight: 800,
+                letterSpacing: '0.4em', textTransform: 'uppercase',
+                textAlign: 'center', marginBottom: 0,
+              }}>HOOP JOURNAL GAME GRADE</div>
+              <div style={{
+                fontSize: 250 * sf, fontWeight: 900, color,
+                lineHeight: 1, textShadow: glow,
+                letterSpacing: '-0.03em', textAlign: 'center',
+                position: 'relative',
+              }}>{grade}</div>
+              {tags.length > 0 && (
                 <div style={{
-                  width: '100%', height: '100%', background: '#1e293b',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80 * sf,
-                }}>🏀</div>
+                  display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center',
+                  marginTop: 4, maxWidth: '100%',
+                }}>
+                  {tags.slice(0, 3).map((tag, i) => (
+                    <div key={i} style={{
+                      background: `${color}15`,
+                      border: `1px solid ${color}30`,
+                      borderRadius: 50, padding: '6px 22px',
+                      color, fontSize: 18 * sf, fontWeight: 700,
+                    }}>{tag.emoji} {tag.label}</div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
 
-          {/* ═══ ROW 2: Game Grade (isolated, centered, dominant) ═══ */}
+          {/* Player Name + Team — 15% larger text */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center',
-            width: '50%', minWidth: 440, minHeight: isPost ? 180 : 220,
-            padding: `${isPost ? 40 : 60}px ${isPost ? 40 : 60}px`,
-            position: 'relative',
-            marginBottom: isPost ? 24 : 36, flexShrink: 0,
-          }}>
-            {/* Glow behind grade */}
-            <div style={{
-              position: 'absolute', top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 360 * sf, height: 360 * sf, borderRadius: '50%',
-              background: `radial-gradient(circle, ${color}12 0%, transparent 60%)`,
-              pointerEvents: 'none',
-            }} />
-            <div style={{
-              color: s.dim, fontSize: 16 * sf, fontWeight: 800,
-              letterSpacing: '0.4em', textTransform: 'uppercase',
-              textAlign: 'center', marginBottom: 0, position: 'relative',
-            }}>HOOP JOURNAL GAME GRADE</div>
-            <div style={{
-              fontSize: isPost ? 180 : 220, fontWeight: 900, color,
-              lineHeight: 1,
-              letterSpacing: '-0.03em', textAlign: 'center',
-              position: 'relative',
-            }}>{grade}</div>
-            {/* Tags below grade */}
-            {tags.length > 0 && (
-              <div style={{
-                display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center',
-                marginTop: 12, maxWidth: '100%', position: 'relative',
-              }}>
-                {tags.slice(0, 3).map((tag, i) => (
-                  <div key={i} style={{
-                    background: `${color}15`,
-                    border: `1px solid ${color}30`,
-                    borderRadius: 50, padding: '6px 22px',
-                    color, fontSize: 18 * sf, fontWeight: 700,
-                  }}>{tag.emoji} {tag.label}</div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ═══ ROW 3: Player Name + Team ═══ */}
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: isPost ? 20 : 32, flexShrink: 0,
+            marginBottom: isPost ? 18 : 28,
           }}>
             <div style={{
-              color: s.bright, fontSize: 48 * sf, fontWeight: 900,
+              color: s.bright, fontSize: 55 * sf, fontWeight: 900,
               letterSpacing: '0.08em', textTransform: 'uppercase',
               textAlign: 'center', lineHeight: 1,
             }}>{playerName}</div>
             <div style={{
-              color: s.muted, fontSize: 20 * sf, fontWeight: 700,
+              color: s.muted, fontSize: 21 * sf, fontWeight: 700,
               letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 10,
               textAlign: 'center',
             }}>{playerTeam}</div>
           </div>
 
-          {/* ═══ ROW 4: Game Matchup ═══ */}
+          {/* ═══ ZONE 3: Game Context ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            marginBottom: isPost ? 20 : 32, gap: 6, flexShrink: 0,
+            marginBottom: isPost ? 18 : 28, gap: 6,
           }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 14,
-              fontSize: 32 * sf, fontWeight: 700,
+              fontSize: 36 * sf, fontWeight: 700,
             }}>
-              <span style={{ color: '#cbd5e1', fontSize: 36 * sf, fontWeight: 900, letterSpacing: '0.04em', textTransform: 'uppercase' }}>vs {game.opponent}</span>
+              <span style={{ color: '#cbd5e1', fontSize: 42 * sf, fontWeight: 900, letterSpacing: '0.04em', textTransform: 'uppercase' }}>vs {game.opponent}</span>
               <span style={{
                 color: game.isWin ? '#4ade80' : '#f87171',
-                fontWeight: 800, fontSize: 16 * sf,
+                fontWeight: 800, fontSize: 18 * sf,
                 background: game.isWin ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
                 border: `1px solid ${game.isWin ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)'}`,
-                borderRadius: 8, padding: '4px 14px',
+                borderRadius: 8, padding: '4px 16px',
               }}>{game.isWin ? 'WIN' : 'LOSS'}{scoreDisplay ? ` ${scoreDisplay}` : ''}</span>
             </div>
-            <div style={{ color: s.dim, fontSize: 14 * sf, fontWeight: 500 }}>
+            <div style={{ color: s.dim, fontSize: 15 * sf, fontWeight: 500 }}>
               {format(new Date(game.date), 'MMM d, yyyy')}
             </div>
           </div>
 
-          {/* ═══ ROW 5: Game Score / Best Impact ═══ */}
+          {/* Micro divider */}
           <div style={{
-            display: 'flex', gap: 32, marginBottom: isPost ? 20 : 32, justifyContent: 'center', flexShrink: 0,
-          }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: s.dim, fontSize: 12 * sf, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>GAME SCORE</div>
-              <div style={{ color: s.bright, fontSize: 50 * sf, fontWeight: 900, lineHeight: 1 }}>{gameScore}</div>
-            </div>
-            {bestImpact.value > 0 && (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ color: s.dim, fontSize: 12 * sf, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>BEST IMPACT</div>
-                <div style={{ color: s.bright, fontSize: 50 * sf, fontWeight: 900, lineHeight: 1 }}>
-                  {bestImpact.value} <span style={{ fontSize: 22 * sf, color: s.sub, fontWeight: 700 }}>{bestImpact.stat}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Divider */}
-          <div style={{
-            width: '50%', height: 1, marginBottom: isPost ? 20 : 32,
-            background: `linear-gradient(90deg, transparent, ${color}30, transparent)`,
-            flexShrink: 0,
+            width: '40%', height: 1, marginBottom: isPost ? 14 : 20,
+            background: `linear-gradient(90deg, transparent, ${color}25, transparent)`,
           }} />
 
-          {/* ═══ ROW 6: Stat Tiles Grid ═══ */}
+          {/* ═══ ZONE 4: Stat Panel ═══ */}
           <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: isPost ? 16 : 20, width: '100%',
-            marginBottom: isPost ? 16 : 20, flexShrink: 0,
+            width: '100%', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', flex: 1, justifyContent: 'center',
           }}>
-            {stats.map((st) => (
-              <div key={st.label} style={{
-                background: 'rgba(15,23,42,0.8)',
-                border: '1px solid rgba(100,116,139,0.12)',
-                borderLeft: `4px solid ${color}`,
-                borderRadius: 14, padding: `${16 * sf}px ${16 * sf}px ${14 * sf}px`,
-                textAlign: 'left',
-              }}>
-                <div style={{ fontSize: 22 * sf, fontWeight: 800, color, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 2, whiteSpace: 'nowrap' }}>{st.label}</div>
-                <div style={{ fontSize: 56 * sf, fontWeight: 900, color: s.bright, lineHeight: 1, whiteSpace: 'nowrap' }}>{st.value}</div>
+            <div style={{
+              display: 'flex', gap: 24, marginBottom: isPost ? 18 : 28, justifyContent: 'center',
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ color: s.dim, fontSize: 13 * sf, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>GAME SCORE</div>
+                <div style={{ color: s.bright, fontSize: 58 * sf, fontWeight: 900, lineHeight: 1 }}>{gameScore}</div>
               </div>
-            ))}
+              {bestImpact.value > 0 && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: s.dim, fontSize: 13 * sf, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>BEST IMPACT</div>
+                  <div style={{ color: s.bright, fontSize: 58 * sf, fontWeight: 900, lineHeight: 1 }}>
+                    {bestImpact.value} <span style={{ fontSize: 24 * sf, color: s.sub, fontWeight: 700 }}>{bestImpact.stat}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div style={{
+              width: '60%', height: 1, marginBottom: isPost ? 18 : 28,
+              background: `linear-gradient(90deg, transparent, ${color}30, transparent)`,
+            }} />
+            {/* Stat grid — labels +10%, numbers +12% */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 24, width: '100%',
+            }}>
+              {stats.map((st) => (
+                <div key={st.label} style={{
+                  background: 'rgba(15,23,42,0.8)',
+                  border: '1px solid rgba(100,116,139,0.12)',
+                  borderLeft: `4px solid ${color}`,
+                  borderRadius: 16, padding: `${20 * sf}px ${20 * sf}px ${18 * sf}px`,
+                  textAlign: 'left',
+                  position: 'relative',
+                }}>
+                  <div style={{ fontSize: 25 * sf, fontWeight: 800, color, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4, whiteSpace: 'nowrap' }}>{st.label}</div>
+                  <div style={{ fontSize: 67 * sf, fontWeight: 900, color: s.bright, lineHeight: 1, whiteSpace: 'nowrap' }}>{st.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Shooting Row */}
+            <div style={{
+              display: 'flex', gap: 24, width: '100%', marginTop: isPost ? 12 : 16,
+              justifyContent: 'center',
+            }}>
+              {[
+                { label: 'FG', made: game.fgMade, att: game.fgAttempted },
+                { label: '3PT', made: game.threePtMade, att: game.threePtAttempted },
+                { label: 'FT', made: game.ftMade, att: game.ftAttempted },
+              ].map((sh) => (
+                <div key={sh.label} style={{
+                  flex: 1, background: 'rgba(15,23,42,0.5)',
+                  border: '1px solid rgba(100,116,139,0.1)',
+                  borderRadius: 12, padding: `${14 * sf}px ${12 * sf}px`,
+                  textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: 18 * sf, fontWeight: 800, color: s.sub, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 2, whiteSpace: 'nowrap' }}>{sh.label}</div>
+                  <div style={{ fontSize: 40 * sf, fontWeight: 900, color: s.bright, lineHeight: 1, whiteSpace: 'nowrap' }}>{sh.made}/{sh.att}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* ═══ ROW 7: Shooting Splits ═══ */}
-          <div style={{
-            display: 'flex', gap: isPost ? 16 : 20, width: '100%',
-            justifyContent: 'center',
-            marginBottom: isPost ? 16 : 24, flexShrink: 0,
-          }}>
-            {[
-              { label: 'FG', made: game.fgMade, att: game.fgAttempted },
-              { label: '3PT', made: game.threePtMade, att: game.threePtAttempted },
-              { label: 'FT', made: game.ftMade, att: game.ftAttempted },
-            ].map((sh) => (
-              <div key={sh.label} style={{
-                flex: 1, background: 'rgba(15,23,42,0.5)',
-                border: '1px solid rgba(100,116,139,0.1)',
-                borderRadius: 12, padding: `${12 * sf}px ${10 * sf}px`,
-                textAlign: 'center',
-              }}>
-                <div style={{ fontSize: 16 * sf, fontWeight: 800, color: s.sub, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 2, whiteSpace: 'nowrap' }}>{sh.label}</div>
-                <div style={{ fontSize: 34 * sf, fontWeight: 900, color: s.bright, lineHeight: 1, whiteSpace: 'nowrap' }}>{sh.made}/{sh.att}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* ═══ ROW 8: XP + Achievements ═══ */}
+          {/* ═══ ZONE 5: Achievements + XP ═══ */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: isPost ? 8 : 12, flexShrink: 0,
-            marginBottom: isPost ? 12 : 20,
+            marginTop: isPost ? 10 : 24, gap: isPost ? 8 : 14,
           }}>
             {careerHighsInGame.length > 0 && (
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
                 {careerHighsInGame.slice(0, 3).map((ch, i) => (
                   <div key={i} style={{
                     background: 'linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,165,0,0.06))',
                     border: '1px solid rgba(255,215,0,0.25)',
-                    borderRadius: 12, padding: '8px 18px',
-                    display: 'flex', alignItems: 'center', gap: 8,
+                    borderRadius: 12, padding: '10px 22px',
+                    display: 'flex', alignItems: 'center', gap: 10,
                   }}>
-                    <span style={{ fontSize: 16 }}>🏆</span>
-                    <span style={{ color: '#fbbf24', fontSize: 14, fontWeight: 800 }}>
+                    <span style={{ fontSize: 18 }}>🏆</span>
+                    <span style={{ color: '#fbbf24', fontSize: 15, fontWeight: 800 }}>
                       Career High: {ch.displayValue} {ch.stat}
                     </span>
                   </div>
@@ -348,31 +354,31 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             <div style={{
               background: 'linear-gradient(135deg, rgba(255,107,0,0.18), rgba(255,165,0,0.08))',
               border: '1px solid rgba(255,107,0,0.3)',
-              borderRadius: 50, padding: isPost ? '8px 28px' : '10px 36px',
-              color: '#ff8c3a', fontSize: 20 * sf, fontWeight: 900,
+              borderRadius: 50, padding: isPost ? '8px 32px' : '12px 44px',
+              color: '#ff8c3a', fontSize: 22 * sf, fontWeight: 900,
               boxShadow: '0 0 40px rgba(255,107,0,0.12)',
               letterSpacing: '0.02em',
             }}>⚡ +{xpEarned} XP Earned</div>
           </div>
 
-          {/* ═══ ROW 9: Brand Footer ═══ */}
+          {/* ═══ FOOTER: Branding + QR ═══ */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            marginTop: 'auto', width: '100%',
-            padding: isPost ? '4px 0 0' : '0',
+            marginTop: isPost ? 'auto' : 32, width: '100%',
+            padding: isPost ? '8px 0 0' : '0',
             flexShrink: 0,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: isPost ? 10 : 14 }}>
-              <img src={hoopJournalLogo} alt="" style={{ width: isPost ? 48 : 72, height: isPost ? 48 : 72, borderRadius: isPost ? 10 : 14 }} crossOrigin="anonymous" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: isPost ? 12 : 16 }}>
+              <img src={hoopJournalLogo} alt="" style={{ width: isPost ? 56 : 82, height: isPost ? 56 : 82, borderRadius: isPost ? 12 : 16 }} crossOrigin="anonymous" />
               <div>
-                <div style={{ color: s.bright, fontSize: isPost ? 18 : 24, fontWeight: 800 }}>Hoop Journal</div>
-                <div style={{ color: s.dim, fontSize: isPost ? 12 : 16, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
+                <div style={{ color: s.bright, fontSize: isPost ? 20 : 28, fontWeight: 800 }}>Hoop Journal</div>
+                <div style={{ color: s.dim, fontSize: isPost ? 13 : 18, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
               <div style={{ color: s.dim, fontSize: isPost ? 8 : 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to track</div>
               <div style={{ padding: isPost ? 4 : 6, background: 'rgba(255,255,255,0.06)', borderRadius: isPost ? 8 : 10 }}>
-                <img src={hoopJournalQr} alt="" style={{ width: isPost ? 80 : 140, height: isPost ? 80 : 140, borderRadius: 6 }} crossOrigin="anonymous" />
+                <img src={hoopJournalQr} alt="" style={{ width: isPost ? 100 : 160, height: isPost ? 100 : 160, borderRadius: 6 }} crossOrigin="anonymous" />
               </div>
             </div>
           </div>
