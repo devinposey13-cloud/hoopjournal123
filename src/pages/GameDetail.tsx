@@ -707,6 +707,15 @@ export default function GameDetail() {
                   </Button>
                 }
               />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowDeleteScheduledDialog(true)}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
             </div>
           </div>
 
