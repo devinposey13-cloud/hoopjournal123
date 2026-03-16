@@ -67,7 +67,6 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
         scale: 2,
         backgroundColor: '#070b16',
         useCORS: true,
-        foreignObjectRendering: true,
         width: CANVAS_W,
         height: CANVAS_H,
         windowWidth: CANVAS_W,
@@ -75,7 +74,17 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
         logging: false,
       });
 
-      return new Promise((resolve) => rawCanvas.toBlob((blob) => resolve(blob ?? null), 'image/png'));
+      const targetCanvas = document.createElement('canvas');
+      targetCanvas.width = CANVAS_W;
+      targetCanvas.height = CANVAS_H;
+      const ctx = targetCanvas.getContext('2d');
+      if (!ctx) return null;
+
+      ctx.fillStyle = '#070b16';
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+      ctx.drawImage(rawCanvas, 0, 0, rawCanvas.width, rawCanvas.height, 0, 0, CANVAS_W, CANVAS_H);
+
+      return new Promise((resolve) => targetCanvas.toBlob((blob) => resolve(blob ?? null), 'image/png'));
     } catch (err) {
       console.error('[ReportCard] Export failed:', err);
       return null;
