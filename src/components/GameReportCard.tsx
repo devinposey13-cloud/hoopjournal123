@@ -46,10 +46,28 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
     if (!exportRef.current) return null;
 
     try {
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
+
+      const images = Array.from(exportRef.current.querySelectorAll('img'));
+      await Promise.all(
+        images.map((img) => {
+          if (img.complete) return Promise.resolve();
+
+          return new Promise<void>((resolve) => {
+            const done = () => resolve();
+            img.addEventListener('load', done, { once: true });
+            img.addEventListener('error', done, { once: true });
+          });
+        })
+      );
+
       const rawCanvas = await html2canvas(exportRef.current, {
-        scale: 1,
-        backgroundColor: null,
+        scale: 2,
+        backgroundColor: '#070b16',
         useCORS: true,
+        foreignObjectRendering: true,
         width: CANVAS_W,
         height: CANVAS_H,
         windowWidth: CANVAS_W,
@@ -57,31 +75,7 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
         logging: false,
       });
 
-      const targetCanvas = document.createElement('canvas');
-      targetCanvas.width = CANVAS_W;
-      targetCanvas.height = CANVAS_H;
-      const ctx = targetCanvas.getContext('2d');
-      if (!ctx) return null;
-
-      ctx.fillStyle = '#070b16';
-      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-      // Preserve the full rendered canvas to avoid cover-cropping the grade area.
-      // html2canvas may return source dimensions that differ from the target export size,
-      // so always use the actual rawCanvas bounds as the source rectangle.
-      ctx.drawImage(
-        rawCanvas,
-        0,
-        0,
-        rawCanvas.width,
-        rawCanvas.height,
-        0,
-        0,
-        CANVAS_W,
-        CANVAS_H,
-      );
-
-      return new Promise(resolve => targetCanvas.toBlob(blob => resolve(blob), 'image/png'));
+      return new Promise((resolve) => rawCanvas.toBlob((blob) => resolve(blob ?? null), 'image/png'));
     } catch (err) {
       console.error('[ReportCard] Export failed:', err);
       return null;

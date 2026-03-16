@@ -175,9 +175,9 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             {/* Right: Grade + Tags */}
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
-              position: 'relative', marginTop: isPost ? 12 : 40,
-              padding: isPost ? '60px 30px' : '40px 20px',
-              minWidth: 0, maxWidth: isPost ? 500 : 520, overflow: 'hidden',
+              position: 'relative', marginTop: isPost ? 12 : 28,
+              padding: isPost ? '56px 30px 84px' : '44px 24px 96px',
+              minWidth: 0, maxWidth: isPost ? 500 : 520, overflow: 'visible',
             }}>
               <div style={{
                 position: 'absolute', top: '50%', left: '50%',
@@ -189,13 +189,14 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               <div style={{
                 color: s.dim, fontSize: 18 * sf, fontWeight: 800,
                 letterSpacing: '0.4em', textTransform: 'uppercase',
-                textAlign: 'center', marginBottom: 0,
+                textAlign: 'center', marginBottom: 8 * sf,
               }}>HOOP JOURNAL GAME GRADE</div>
               <div style={{
-                fontSize: 250 * sf, fontWeight: 900, color,
-                lineHeight: 1, textShadow: glow,
+                fontSize: 236 * sf, fontWeight: 900, color,
+                lineHeight: 0.9, textShadow: glow,
                 letterSpacing: '-0.03em', textAlign: 'center',
-                position: 'relative',
+                position: 'relative', display: 'block',
+                paddingBottom: 10 * sf,
               }}>{grade}</div>
             </div>
           </div>
