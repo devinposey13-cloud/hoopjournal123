@@ -656,48 +656,63 @@ export function LogSection({
               <div className="space-y-1.5">
                 {/* Missing Game Recovery Cards */}
                 {missingGames.slice(0, 3).map(({ game: mg }) => (
-                  <Card
+                  <SwipeToDelete
                     key={`missing-${mg.id}`}
-                    className="overflow-hidden border-amber-500/20 bg-gradient-to-r from-amber-500/5 via-card to-card"
+                    enabled={isMobile}
+                    onDelete={() => deleteScheduledGame(mg.id)}
                   >
-                    <CardContent className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/10 border border-amber-500/20">
-                          <Clock className="w-4 h-4 text-amber-500" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm truncate">vs {mg.opponent}</span>
-                            <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase gap-1">
-                              <AlertCircle className="w-3 h-3" />⚠ Missing Stats
-                             </Badge>
+                    <Card
+                      className="overflow-hidden border-amber-500/20 bg-gradient-to-r from-amber-500/5 via-card to-card"
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/10 border border-amber-500/20">
+                            <Clock className="w-4 h-4 text-amber-500" />
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {format(new Date(mg.date), 'MMM d')} {mg.time ? `• ${mg.time}` : ''} {mg.location ? `• ${mg.location}` : ''}
-                          </p>
-                        </div>
-                        <AddGameDialog
-                          onAddGame={addGame}
-                          isMobile={isMobile}
-                          prefill={{
-                            date: new Date(mg.date),
-                            opponent: mg.opponent,
-                            teamId: mg.teamId,
-                            scheduledGameId: mg.id,
-                          }}
-                          customTrigger={
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm truncate">vs {mg.opponent}</span>
+                              <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px] font-bold uppercase gap-1">
+                                <AlertCircle className="w-3 h-3" />⚠ Missing Stats
+                               </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {format(new Date(mg.date), 'MMM d')} {mg.time ? `• ${mg.time}` : ''} {mg.location ? `• ${mg.location}` : ''}
+                            </p>
+                          </div>
+                          <AddGameDialog
+                            onAddGame={addGame}
+                            isMobile={isMobile}
+                            prefill={{
+                              date: new Date(mg.date),
+                              opponent: mg.opponent,
+                              teamId: mg.teamId,
+                              scheduledGameId: mg.id,
+                            }}
+                            customTrigger={
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-amber-500 border-amber-500/30 hover:bg-amber-500/10 text-xs font-semibold shrink-0 h-8"
+                              >
+                                Log Game
+                              </Button>
+                            }
+                          />
+                          {!isMobile && (
                             <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-amber-500 border-amber-500/30 hover:bg-amber-500/10 text-xs font-semibold shrink-0 h-8"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                              onClick={() => deleteScheduledGame(mg.id)}
                             >
-                              Log Game
+                              <X className="w-4 h-4" />
                             </Button>
-                          }
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </SwipeToDelete>
                 ))}
 
                 {/* Logged Games */}

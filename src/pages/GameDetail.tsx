@@ -75,6 +75,7 @@ export default function GameDetail() {
     seasonStats, 
     activeSeason, 
     updateScheduledGame, 
+    deleteScheduledGame,
     addScheduledGame,
     addGame,
     pendingMilestones,
@@ -105,6 +106,7 @@ export default function GameDetail() {
   const [showReportCard, setShowReportCard] = useState(false);
   const [newCareerHighs, setNewCareerHighs] = useState<CareerHigh[]>([]);
   const [showCareerHighCelebration, setShowCareerHighCelebration] = useState(false);
+  const [showDeleteScheduledDialog, setShowDeleteScheduledDialog] = useState(false);
 
   const handleRecapChange = useCallback((recap: string | null, includeInPdf: boolean) => {
     setCoachRecap(recap);
@@ -705,6 +707,15 @@ export default function GameDetail() {
                   </Button>
                 }
               />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowDeleteScheduledDialog(true)}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
             </div>
           </div>
 
@@ -854,6 +865,31 @@ export default function GameDetail() {
               </div>
             </DialogContent>
           </Dialog>
+
+          {/* Delete Scheduled Game Confirmation */}
+          <AlertDialog open={showDeleteScheduledDialog} onOpenChange={setShowDeleteScheduledDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this game?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently remove the scheduled game vs {scheduledGame.opponent}. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={async () => {
+                    await deleteScheduledGame(scheduledGame.id);
+                    toast.success('Game deleted');
+                    navigate('/');
+                  }}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     );
