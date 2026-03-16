@@ -736,8 +736,9 @@ export function AdminPanel() {
         .update({ 
           status: 'approved',
           reviewed_by: session?.user?.id,
-          reviewed_at: new Date().toISOString()
-        })
+          reviewed_at: new Date().toISOString(),
+          approval_method: 'manual'
+        } as any)
         .eq('id', request.id);
 
       if (approvalError) throw approvalError;
