@@ -1335,8 +1335,8 @@ export default function GameDetail() {
         open={showReportCard}
         onOpenChange={setShowReportCard}
         game={game}
-        playerName={profile?.name || 'Player'}
-        playerTeam={profile?.team || ''}
+        playerName={profile?.displayName || profile?.name || 'Player'}
+        playerTeam={game.teamName || profile?.team || ''}
         avatarUrl={profile?.avatar}
         allGames={allGames}
       />
