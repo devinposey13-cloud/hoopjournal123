@@ -277,6 +277,7 @@ export default function PublicProfile() {
           .from('player_tier_achievements')
           .select('*')
           .eq('user_id', profileData.user_id)
+          .or(`profile_id.eq.${profileId},profile_id.is.null`)
           .order('achieved_at', { ascending: false });
 
         if (tierError) {
