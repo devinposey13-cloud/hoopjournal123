@@ -718,7 +718,7 @@ export function EmptyDashboardWelcome({
                         Take Photo
                       </Button>
                       <Button
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={handleAvatarClick}
                         variant="outline"
                         className="flex-1 h-10 text-muted-foreground"
                       >
