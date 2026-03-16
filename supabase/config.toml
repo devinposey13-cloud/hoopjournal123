@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.parse-schedule-image]
 verify_jwt = false
+
+[functions.send-slack-alert]
+verify_jwt = false
