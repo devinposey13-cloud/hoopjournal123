@@ -128,6 +128,21 @@ export function useGameWithMilestones() {
     // Calculate consistency streak (including the new game)
     const { current: streakCount } = calculateConsistencyStreak(allGames, cloudData.schedule);
     const streakBonus = getStreakXpBonus(streakCount);
+
+    // Dispatch high_engagement alert for 5+ game streaks
+    if (streakCount >= 5) {
+      dispatchSlackAlert({
+        category: 'high_engagement',
+        severity: 'info',
+        title: 'High Engagement Streak',
+        summary: `${cloudData.playerSettings?.name || 'A player'} has a ${streakCount}-game consistency streak!`,
+        details: {
+          'Player': cloudData.playerSettings?.name || 'Unknown',
+          'Streak': `${streakCount} games`,
+        },
+        dedup_key: `streak_${user?.id}_${streakCount}`,
+      });
+    }
     
     const xpResult = await xpProgress.addXp(
       performance.xpEarned,

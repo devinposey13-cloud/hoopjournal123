@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.send-slack-alert]
 verify_jwt = false
+
+[functions.check-churn-risk]
+verify_jwt = false

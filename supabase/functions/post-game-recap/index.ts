@@ -302,6 +302,27 @@ Please give me an encouraging post-game recap!`;
     });
   } catch (error) {
     console.error("Post game recap error:", error);
+
+    // Fire backend_failure Slack alert (non-blocking)
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      await fetch(`${supabaseUrl}/functions/v1/send-slack-alert`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+        },
+        body: JSON.stringify({
+          category: 'backend_failure',
+          severity: 'critical',
+          title: 'Post Game Recap Failure',
+          summary: `post-game-recap edge function threw: ${error instanceof Error ? error.message : String(error)}`,
+          details: { 'Function': 'post-game-recap' },
+          dedup_key: 'backend_failure_post-game-recap',
+        }),
+      });
+    } catch (_) { /* non-blocking */ }
+
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
