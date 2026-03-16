@@ -13,18 +13,19 @@ const logStep = (step: string, details?: any) => {
 };
 
 // Plan → price ID mapping
+// Promo users get charged Pro prices (starter maps to pro)
 const PLAN_PRICES: Record<string, Record<string, string>> = {
   starter: {
-    monthly: "price_1T4OgtRmEndXycaGheeNenUl",
-    yearly: "price_1T4Oh8RmEndXycaGDCWstZbx",
+    monthly: "price_1TBe0sRmEndXycaGjFaOW8im",
+    yearly: "price_1TBe1aRmEndXycaGfoa8Xdtp",
   },
   pro: {
-    monthly: "price_1T4OhTRmEndXycaGihIBzJ4z",
-    yearly: "price_1T4OhiRmEndXycaGTCZ1brsJ",
+    monthly: "price_1TBe0sRmEndXycaGjFaOW8im",
+    yearly: "price_1TBe1aRmEndXycaGfoa8Xdtp",
   },
   elite: {
-    monthly: "price_1T4Oi0RmEndXycaGTr3xvLEP",
-    yearly: "price_1T4OiMRmEndXycaGvwSVdgYK",
+    monthly: "price_1TBe2FRmEndXycaGOWO18p6O",
+    yearly: "price_1TBe2XRmEndXycaG6TZW3emn",
   },
 };
 
