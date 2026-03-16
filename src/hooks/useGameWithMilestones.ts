@@ -107,9 +107,9 @@ export function useGameWithMilestones() {
         category: 'milestone_alert',
         severity: 'info',
         title: 'Milestone Earned',
-        summary: `${cloudData.playerSettings?.name || 'A player'} earned: ${milestoneNames}`,
+        summary: `${cloudData.profile?.name || 'A player'} earned: ${milestoneNames}`,
         details: {
-          'Player': cloudData.playerSettings?.name || 'Unknown',
+          'Player': cloudData.profile?.name || 'Unknown',
           'Milestones': milestoneNames,
           'Game': savedGame.opponent,
         },
