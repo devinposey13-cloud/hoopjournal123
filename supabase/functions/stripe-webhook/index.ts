@@ -239,3 +239,19 @@ async function getUserIdByEmail(supabase: any, email: string): Promise<string | 
   const user = data?.users?.find((u: any) => u.email === email);
   return user?.id || null;
 }
+
+async function fireSlackAlert(supabase: any, payload: any) {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    await fetch(`${supabaseUrl}/functions/v1/send-slack-alert`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    logStep("Slack alert failed (non-blocking)", { error: err instanceof Error ? err.message : String(err) });
+  }
+}
