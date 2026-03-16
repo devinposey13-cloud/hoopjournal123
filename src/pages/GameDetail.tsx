@@ -865,6 +865,31 @@ export default function GameDetail() {
               </div>
             </DialogContent>
           </Dialog>
+
+          {/* Delete Scheduled Game Confirmation */}
+          <AlertDialog open={showDeleteScheduledDialog} onOpenChange={setShowDeleteScheduledDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this game?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently remove the scheduled game vs {scheduledGame.opponent}. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={async () => {
+                    await deleteScheduledGame(scheduledGame.id);
+                    toast.success('Game deleted');
+                    navigate('/');
+                  }}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     );
