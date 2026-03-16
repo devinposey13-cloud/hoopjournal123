@@ -350,8 +350,9 @@ export default function Profile() {
                 type="number"
                 min={0}
                 max={99}
-                value={formData.number}
+                value={formData.number === 0 ? '' : formData.number}
                 onChange={(e) => setFormData({ ...formData, number: parseInt(e.target.value) || 0 })}
+                placeholder="0"
               />
             </div>
 
