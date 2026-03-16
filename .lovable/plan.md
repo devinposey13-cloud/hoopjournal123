@@ -1,33 +1,33 @@
+## RevenueCat Integration — IMPLEMENTED
 
+### What was built
 
-## Plan: Daily Revenue Digest Slack Alert
+1. **Platform Detection** (`src/lib/platform.ts`) — `isNativeApp()`, `getPlatform()`, `isIOS()` helpers
+2. **RevenueCat Hook** (`src/hooks/useRevenueCat.ts`) — SDK init, purchase, restore, offerings
+3. **RevenueCat Webhook** (`supabase/functions/revenuecat-webhook/index.ts`) — syncs purchases to `plan_overrides`
+4. **Conditional Routing** — `useSubscription`, `Pricing.tsx`, `Upgrade.tsx`, `UpgradeDrawer.tsx` all route to RevenueCat on native
 
-### Summary
-Create a new `daily-revenue-digest` edge function that queries the last 24 hours of signup, subscription, and cancellation data, then posts a formatted summary to Slack via the existing `send-slack-alert` function. Schedule it with a daily pg_cron job.
+### Next steps (user action required)
 
-### New Edge Function: `supabase/functions/daily-revenue-digest/index.ts`
+1. **Replace RevenueCat API key** in `src/hooks/useRevenueCat.ts` line 12 — replace `appl_REPLACE_WITH_YOUR_KEY` with your iOS public API key from RevenueCat dashboard
+2. **Create RevenueCat products** matching these IDs: `hj_starter_monthly`, `hj_starter_yearly`, `hj_pro_monthly`, `hj_pro_yearly`, `hj_elite_monthly`, `hj_elite_yearly`
+3. **Configure RevenueCat webhook** pointing to: `https://jwoupnumuotmwpwrkmob.supabase.co/functions/v1/revenuecat-webhook` with Authorization Bearer header matching the secret you just saved
+4. **Set up Capacitor** for native iOS builds (not yet added to the project)
 
-Queries the following data for the past 24 hours:
-- **New signups**: Count from `account_approval_requests` where `created_at >= 24h ago`
-- **Paid conversions**: Count from `plan_overrides` where `subscription_plan != 'free'` and `updated_at >= 24h ago` (new paid users)
-- **Cancellations**: Count from `plan_overrides` where `subscription_plan = 'free'` and `updated_at >= 24h ago` (users who reverted to free)
-- **Active paid subscribers**: Count from `plan_overrides` grouped by plan tier
-- **Estimated daily revenue**: Calculate from active subscriber counts × price per plan (starter/pro: $7.99, elite: $17.99)
+---
 
-Posts the digest via `send-slack-alert` with:
-- category: `admin_audit`, severity: `info`
-- Title: "📊 Daily Revenue Digest"
-- Summary: formatted text with all metrics
-- Details: key-value pairs for each metric
-- Dedup key: `revenue_digest_{date}`
+## Native Google Sign-In — IMPLEMENTED
 
-### Config & Scheduling
+### What was built
 
-- Add `[functions.daily-revenue-digest]` with `verify_jwt = false` to `supabase/config.toml`
-- Create a pg_cron job to run daily at 8:00 AM ET (13:00 UTC): `'0 13 * * *'`
+1. **Plugin** — `@codetrix-studio/capacitor-google-auth` installed
+2. **Native helper** (`src/lib/nativeGoogleAuth.ts`) — `initNativeGoogleAuth()` + `nativeGoogleSignIn()` using `signInWithIdToken`
+3. **AuthForm.tsx** — branches on `isNativeApp()`: native uses SDK, web keeps existing `lovable.auth.signInWithOAuth`
+4. **App.tsx** — initializes the Google Auth plugin on native startup
 
-### Files
-- **Create** `supabase/functions/daily-revenue-digest/index.ts`
-- **Edit** `supabase/config.toml` — add function config
-- **Insert** pg_cron job via insert tool
+### User action required
 
+1. **Replace the Client ID** in `src/lib/nativeGoogleAuth.ts` line 10 — replace `REPLACE_WITH_YOUR_IOS_CLIENT_ID.apps.googleusercontent.com` with your iOS OAuth Client ID from [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. **Create an iOS OAuth Client ID** — type: iOS application, bundle ID: `app.lovable.2cd79f530f3e4e88858df49e60e86e08`
+3. **Add reversed client ID** as a URL scheme in Xcode (e.g. `com.googleusercontent.apps.XXXX`)
+4. Run `npm install` → `npx cap sync` → rebuild in Xcode → TestFlight
