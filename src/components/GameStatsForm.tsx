@@ -289,18 +289,18 @@ export function GameStatsForm({ onSubmit, initialData, submitLabel = 'Save Game'
               <Input
                 type="number"
                 min={0}
-                value={formData.fgMade}
+                value={formData.fgMade === 0 ? '' : formData.fgMade}
                 onChange={(e) => updateField('fgMade', parseInt(e.target.value) || 0)}
-                placeholder="Made"
+                placeholder="0"
                 className="text-center"
               />
               <span className="flex items-center text-muted-foreground">/</span>
               <Input
                 type="number"
                 min={0}
-                value={formData.fgAttempted}
+                value={formData.fgAttempted === 0 ? '' : formData.fgAttempted}
                 onChange={(e) => updateField('fgAttempted', parseInt(e.target.value) || 0)}
-                placeholder="Att"
+                placeholder="0"
                 className="text-center"
               />
             </div>
@@ -311,18 +311,18 @@ export function GameStatsForm({ onSubmit, initialData, submitLabel = 'Save Game'
               <Input
                 type="number"
                 min={0}
-                value={formData.threePtMade}
+                value={formData.threePtMade === 0 ? '' : formData.threePtMade}
                 onChange={(e) => updateField('threePtMade', parseInt(e.target.value) || 0)}
-                placeholder="Made"
+                placeholder="0"
                 className="text-center"
               />
               <span className="flex items-center text-muted-foreground">/</span>
               <Input
                 type="number"
                 min={0}
-                value={formData.threePtAttempted}
+                value={formData.threePtAttempted === 0 ? '' : formData.threePtAttempted}
                 onChange={(e) => updateField('threePtAttempted', parseInt(e.target.value) || 0)}
-                placeholder="Att"
+                placeholder="0"
                 className="text-center"
               />
             </div>
@@ -333,18 +333,18 @@ export function GameStatsForm({ onSubmit, initialData, submitLabel = 'Save Game'
               <Input
                 type="number"
                 min={0}
-                value={formData.ftMade}
+                value={formData.ftMade === 0 ? '' : formData.ftMade}
                 onChange={(e) => updateField('ftMade', parseInt(e.target.value) || 0)}
-                placeholder="Made"
+                placeholder="0"
                 className="text-center"
               />
               <span className="flex items-center text-muted-foreground">/</span>
               <Input
                 type="number"
                 min={0}
-                value={formData.ftAttempted}
+                value={formData.ftAttempted === 0 ? '' : formData.ftAttempted}
                 onChange={(e) => updateField('ftAttempted', parseInt(e.target.value) || 0)}
-                placeholder="Att"
+                placeholder="0"
                 className="text-center"
               />
             </div>
@@ -374,8 +374,9 @@ function NumberInput({
       <Input
         type="number"
         min={0}
-        value={value}
+        value={value === 0 ? '' : value}
         onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+        placeholder="0"
         className="text-center"
       />
     </div>
