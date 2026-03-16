@@ -56,20 +56,31 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
   const periodLabel = cycle === 'monthly' ? 'mo' : 'yr';
 
   const handleUpgrade = async () => {
-    track('upgrade_clicked', { planId: config.recommendedPlan, cycle, native: isNativeApp() });
+    track('upgrade_clicked', { planId: config.recommendedPlan, cycle, native });
     setIsLoading(true);
     try {
-      if (native && rcPkg) {
-        await purchasePackage(rcPkg.identifier);
-        toast.success('Purchase successful! 🎉');
-        onUpgrade(config.recommendedPlan);
-      } else if (native) {
-        toast.error('Package not available');
-      } else {
-        await createCheckout(config.recommendedPlan, cycle);
-        toast.success('Redirecting to checkout...');
-        onUpgrade(config.recommendedPlan);
+      if (native) {
+        if (rcLoading) {
+          toast.info('Loading purchase options… please wait.');
+          return;
+        }
+        if (!rcAvailable) {
+          toast.error('In-app purchases are not available right now. Please try again.');
+          return;
+        }
+        if (rcPkg) {
+          await purchasePackage(rcPkg.identifier);
+          toast.success('Purchase successful! 🎉');
+          onUpgrade(config.recommendedPlan);
+        } else {
+          toast.error('Package not available');
+        }
+        return;
       }
+      // Web: Stripe
+      await createCheckout(config.recommendedPlan, cycle);
+      toast.success('Redirecting to checkout...');
+      onUpgrade(config.recommendedPlan);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to start checkout';
       if (!msg.includes('cancelled') && !msg.includes('canceled')) {
