@@ -100,6 +100,21 @@ export function useGameWithMilestones() {
     if (toReveal.length > 0) {
       setPendingMilestones(toReveal);
       setShowReveal(true);
+
+      // Dispatch milestone Slack alert
+      const milestoneNames = toReveal.map(m => m.milestone.name).join(', ');
+      dispatchSlackAlert({
+        category: 'milestone_alert',
+        severity: 'info',
+        title: 'Milestone Earned',
+        summary: `${cloudData.playerSettings?.name || 'A player'} earned: ${milestoneNames}`,
+        details: {
+          'Player': cloudData.playerSettings?.name || 'Unknown',
+          'Milestones': milestoneNames,
+          'Game': savedGame.opponent,
+        },
+        dedup_key: `milestone_${savedGame.id}`,
+      });
     }
 
     // Calculate performance and award XP
