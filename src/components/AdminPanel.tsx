@@ -336,10 +336,34 @@ export function AdminPanel() {
     }
   }
 
-  // Create email lookup from approval requests
+  // Email lookup state (from auth system)
+  const [authEmailMap, setAuthEmailMap] = useState<Map<string, string>>(new Map());
+
+  // Fetch auth emails on mount (admin-only edge function)
+  useEffect(() => {
+    async function fetchAuthEmails() {
+      try {
+        const { data, error } = await supabase.functions.invoke('admin-user-emails');
+        if (!error && data?.emailMap) {
+          setAuthEmailMap(new Map(Object.entries(data.emailMap)));
+        }
+      } catch (e) {
+        console.error('Failed to fetch auth emails:', e);
+      }
+    }
+    fetchAuthEmails();
+  }, []);
+
+  // Create email lookup: auth emails take priority, then approval requests as fallback
   const userEmailMap = new Map<string, string | null>();
   approvalRequests.forEach(req => {
     userEmailMap.set(req.user_id, req.email);
+  });
+  // Override/fill from auth emails
+  authEmailMap.forEach((email, userId) => {
+    if (email) {
+      userEmailMap.set(userId, email);
+    }
   });
 
   // Filter users by search (including email)
