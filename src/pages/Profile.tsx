@@ -167,6 +167,10 @@ export default function Profile() {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Always reset input immediately so re-selecting the same file works
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     if (!file || !uploadAvatar) return;
 
     if (!file.type.startsWith('image/')) {
@@ -187,9 +191,6 @@ export default function Profile() {
       }
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
