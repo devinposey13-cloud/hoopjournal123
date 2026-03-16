@@ -1,32 +1,33 @@
+## RevenueCat Integration — IMPLEMENTED
 
+### What was built
 
-## Fix: Render Game Grade via Canvas 2D API
+1. **Platform Detection** (`src/lib/platform.ts`) — `isNativeApp()`, `getPlatform()`, `isIOS()` helpers
+2. **RevenueCat Hook** (`src/hooks/useRevenueCat.ts`) — SDK init, purchase, restore, offerings
+3. **RevenueCat Webhook** (`supabase/functions/revenuecat-webhook/index.ts`) — syncs purchases to `plan_overrides`
+4. **Conditional Routing** — `useSubscription`, `Pricing.tsx`, `Upgrade.tsx`, `UpgradeDrawer.tsx` all route to RevenueCat on native
 
-### Problem
-`html2canvas` struggles to accurately rasterize the 236px CSS text for the game grade (e.g., "A+"). The rendered text gets distorted, clipped, or disappears in the exported PNG.
+### Next steps (user action required)
 
-### Solution
-After `html2canvas` captures the full card, **overlay the grade text** directly onto the final canvas using the native Canvas 2D `fillText` API. This bypasses `html2canvas`'s text rendering entirely for the grade.
+1. **Replace RevenueCat API key** in `src/hooks/useRevenueCat.ts` line 12 — replace `appl_REPLACE_WITH_YOUR_KEY` with your iOS public API key from RevenueCat dashboard
+2. **Create RevenueCat products** matching these IDs: `hj_starter_monthly`, `hj_starter_yearly`, `hj_pro_monthly`, `hj_pro_yearly`, `hj_elite_monthly`, `hj_elite_yearly`
+3. **Configure RevenueCat webhook** pointing to: `https://jwoupnumuotmwpwrkmob.supabase.co/functions/v1/revenuecat-webhook` with Authorization Bearer header matching the secret you just saved
+4. **Set up Capacitor** for native iOS builds (not yet added to the project)
 
-### How It Works
+---
 
-1. **Pass grade data to the capture function** — The `captureCard` callback in `GameReportCard.tsx` needs access to `grade`, `color`, and `glow` values. These will be computed from the game via `getGameGradeData`.
+## Native Google Sign-In — IMPLEMENTED
 
-2. **Hide the grade text from html2canvas** — In `ReportCardCanvas.tsx`, wrap the grade `<div>` (the 236px letter) with a CSS class or data attribute (e.g., `data-canvas-grade="true"`). Before calling `html2canvas`, set that element's `visibility: hidden` so html2canvas skips it. Restore visibility after capture.
+### What was built
 
-3. **Draw the grade with fillText** — After `html2canvas` returns the raw canvas and we create the target canvas, use `ctx.fillText()` to paint the grade at the correct position:
-   - Font: `900 236px Inter, sans-serif` (scaled by `sf` for post format)
-   - Color: the grade's computed color
-   - Shadow: the grade's glow value parsed into `ctx.shadowColor`/`ctx.shadowBlur`
-   - Position: calculated from the layout — centered horizontally in the right half of the avatar+grade row
+1. **Plugin** — `@codetrix-studio/capacitor-google-auth` installed
+2. **Native helper** (`src/lib/nativeGoogleAuth.ts`) — `initNativeGoogleAuth()` + `nativeGoogleSignIn()` using `signInWithIdToken`
+3. **AuthForm.tsx** — branches on `isNativeApp()`: native uses SDK, web keeps existing `lovable.auth.signInWithOAuth`
+4. **App.tsx** — initializes the Google Auth plugin on native startup
 
-4. **Position calculation** — The grade sits in the right side of the top flex row. Its approximate center-x is ~70% of `CANVAS_W`, and center-y is ~180px from top (story) or ~140px (post). These will be fine-tuned to match the preview layout. Use `ctx.textAlign = 'center'` and `ctx.textBaseline = 'middle'`.
+### User action required
 
-### Files Changed
-
-- **`src/components/report-card/ReportCardCanvas.tsx`** — Add `data-canvas-grade` attribute to the grade text div so it can be targeted and hidden during capture.
-- **`src/components/GameReportCard.tsx`** — Update `captureCard` to: hide the grade element, capture with html2canvas, draw grade via `fillText`, then restore visibility.
-
-### Why This Works
-The Canvas 2D `fillText` API renders text at the GPU level with pixel-perfect accuracy — no DOM-to-bitmap conversion issues. The rest of the card still uses html2canvas (which handles layout, images, and smaller text fine), while only the problematic large grade text is rendered natively.
-
+1. **Replace the Client ID** in `src/lib/nativeGoogleAuth.ts` line 10 — replace `REPLACE_WITH_YOUR_IOS_CLIENT_ID.apps.googleusercontent.com` with your iOS OAuth Client ID from [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. **Create an iOS OAuth Client ID** — type: iOS application, bundle ID: `app.lovable.2cd79f530f3e4e88858df49e60e86e08`
+3. **Add reversed client ID** as a URL scheme in Xcode (e.g. `com.googleusercontent.apps.XXXX`)
+4. Run `npm install` → `npx cap sync` → rebuild in Xcode → TestFlight
