@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Drawer,
   DrawerContent,
@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Check, ArrowRight, Sparkles, Loader2, RotateCcw } from 'lucide-react';
 import { FeatureList } from '@/components/pricing/FeatureList';
-import { type PlanId, planCatalog, planOrder } from '@/lib/plans';
+import { type BillingCycle, type PlanId, planCatalog, planOrder } from '@/lib/plans';
 import { useRevenueCat, type RCPackage } from '@/hooks/useRevenueCat';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ interface NativePurchaseSheetProps {
   title?: string;
   description?: string;
   recommendedPlan?: PlanId;
+  initialBillingCycle?: BillingCycle;
 }
 
 export function NativePurchaseSheet({
@@ -34,12 +35,21 @@ export function NativePurchaseSheet({
   title = 'Upgrade Your Game',
   description = 'Unlock premium features with a subscription.',
   recommendedPlan = 'pro',
+  initialBillingCycle = 'monthly',
 }: NativePurchaseSheetProps) {
   const { offerings, isLoading, purchasePackage, restorePurchases } = useRevenueCat();
-  const [cycle, setCycle] = useState<'Monthly' | 'Yearly'>('Monthly');
+  const [cycle, setCycle] = useState<'Monthly' | 'Yearly'>(
+    initialBillingCycle === 'yearly' ? 'Yearly' : 'Monthly'
+  );
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(recommendedPlan);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setSelectedPlan(recommendedPlan);
+    setCycle(initialBillingCycle === 'yearly' ? 'Yearly' : 'Monthly');
+  }, [open, recommendedPlan, initialBillingCycle]);
 
   const filteredOfferings = offerings.filter((o) => o.period === cycle);
 
@@ -95,7 +105,6 @@ export function NativePurchaseSheet({
           </DrawerHeader>
 
           <div className="px-6 pb-2 space-y-4">
-            {/* Billing toggle */}
             <div className="flex justify-center">
               <div className="inline-flex rounded-full bg-muted p-1 gap-1">
                 <button
@@ -135,7 +144,6 @@ export function NativePurchaseSheet({
               </div>
             ) : (
               <>
-                {/* Plan pills */}
                 <div className="flex gap-2">
                   {tiers.map((id) => {
                     const pkg = getPackageForPlan(id);
@@ -168,7 +176,6 @@ export function NativePurchaseSheet({
                   })}
                 </div>
 
-                {/* Features preview */}
                 <div className="bg-muted/50 rounded-lg p-4">
                   <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
                     What you get with {planCatalog[selectedPlan].name}
