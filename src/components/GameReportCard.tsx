@@ -66,28 +66,20 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
       ctx.fillStyle = '#070b16';
       ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-      // Use drawImageCover to prevent distortion when rawCanvas aspect ratio differs
-      const srcW = rawCanvas.width;
-      const srcH = rawCanvas.height;
-      const srcAspect = srcW / srcH;
-      const destAspect = CANVAS_W / CANVAS_H;
-
-      let sx: number, sy: number, sw: number, sh: number;
-      if (srcAspect > destAspect) {
-        // Source is wider — crop sides
-        sh = srcH;
-        sw = sh * destAspect;
-        sx = (srcW - sw) / 2;
-        sy = 0;
-      } else {
-        // Source is taller — crop top/bottom
-        sw = srcW;
-        sh = sw / destAspect;
-        sx = 0;
-        sy = (srcH - sh) / 2;
-      }
-
-      ctx.drawImage(rawCanvas, sx, sy, sw, sh, 0, 0, CANVAS_W, CANVAS_H);
+      // Preserve the full rendered canvas to avoid cover-cropping the grade area.
+      // html2canvas may return source dimensions that differ from the target export size,
+      // so always use the actual rawCanvas bounds as the source rectangle.
+      ctx.drawImage(
+        rawCanvas,
+        0,
+        0,
+        rawCanvas.width,
+        rawCanvas.height,
+        0,
+        0,
+        CANVAS_W,
+        CANVAS_H,
+      );
 
       return new Promise(resolve => targetCanvas.toBlob(blob => resolve(blob), 'image/png'));
     } catch (err) {
