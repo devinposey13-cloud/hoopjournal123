@@ -379,8 +379,8 @@ export function AuthForm() {
         if (error) throw error;
 
         // Check approval mode from feature flags
+        let approvalMode = 'automatic';
         if (data.user) {
-          let approvalMode = 'automatic';
           try {
             const { data: flagData } = await supabase
               .from('feature_flags')
