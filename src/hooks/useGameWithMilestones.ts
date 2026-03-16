@@ -15,6 +15,7 @@ import type { NewMilestoneResult } from '@/types/milestone';
 import type { PerformanceResult, XpGainResult, PerformanceTier } from '@/types/xp';
 import type { PostGameInsight } from '@/utils/postGameInsights';
 import { toast } from 'sonner';
+import { dispatchSlackAlert } from '@/utils/slackAlerts';
 
 interface GameWithId extends GameStats {
   id: string;
