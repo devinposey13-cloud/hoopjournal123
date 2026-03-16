@@ -791,6 +791,12 @@ export function AdminPanel() {
         r.id === requestId ? { ...r, status: 'rejected', reviewed_at: new Date().toISOString() } : r
       ));
       toast.success('User rejected');
+      dispatchSlackAlert({
+        category: 'admin_audit',
+        title: 'User Rejected',
+        summary: `Admin rejected an account approval request.`,
+        dedup_key: `reject_${requestId}`,
+      });
     } catch (error) {
       console.error('Error rejecting user:', error);
       toast.error('Failed to reject user');
