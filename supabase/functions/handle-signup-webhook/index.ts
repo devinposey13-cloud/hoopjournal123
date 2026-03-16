@@ -33,7 +33,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { user_id, email, username, status } = payload.record;
+    const { user_id, email, username, status, approval_method } = payload.record;
 
     if (status !== "pending") {
       console.log("Skipping non-pending record");
