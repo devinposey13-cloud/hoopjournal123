@@ -35,8 +35,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { user_id, email, username, status, approval_method } = payload.record;
 
-    if (status !== "pending") {
-      console.log("Skipping non-pending record");
+    if (status !== "pending" && status !== "approved") {
+      console.log("Skipping record with status:", status);
       return new Response(JSON.stringify({ skipped: true }), {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
