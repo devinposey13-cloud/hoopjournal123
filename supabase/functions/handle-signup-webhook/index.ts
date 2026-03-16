@@ -62,7 +62,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "Hoop Journal <noreply@hoopjournal.me>",
       to: [adminEmail],
-      subject: `🏀 New Account Request: ${username || "Unknown"}`,
+      subject: `🏀 ${status === 'approved' ? 'Auto-Approved' : 'New Account Request'}: ${username || "Unknown"}`,
       html: `
         <!DOCTYPE html>
         <html>
