@@ -26,6 +26,7 @@ import { AdminLeaderboards } from '@/components/admin/AdminLeaderboards';
 import { AdminFeatureFlags } from '@/components/admin/AdminFeatureFlags';
 import { AdminBroadcast } from '@/components/admin/AdminBroadcast';
 import { AdminSystemHealth } from '@/components/admin/AdminSystemHealth';
+import { AdminSlackAlerts } from '@/components/admin/AdminSlackAlerts';
 import { format } from 'date-fns';
 
 interface UserFeedback {
