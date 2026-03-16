@@ -12,14 +12,21 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Product ID → plan mapping
+// Product ID → plan mapping (includes both old and new product IDs)
 const PRODUCT_TO_PLAN: Record<string, string> = {
+  // Legacy starter products
   "prod_U2TenmJYJtafl8": "starter",
   "prod_U2Te369rDpYwBQ": "starter",
+  // Legacy pro/elite products
   "prod_U2TeAY16X7k2Ri": "pro",
   "prod_U2TfBflXbqKewl": "pro",
   "prod_U2TfBcoxhUepHK": "elite",
   "prod_U2Tfh9dNymbaRg": "elite",
+  // New products (correct pricing)
+  "prod_U9xw8HkikJdDCE": "pro",
+  "prod_U9xxiVNpQ9FA09": "pro",
+  "prod_U9xyJGOw7lBgaD": "elite",
+  "prod_U9xynfg4pfxwun": "elite",
 };
 
 serve(async (req) => {
