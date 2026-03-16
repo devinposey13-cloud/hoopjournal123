@@ -33,9 +33,9 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const config = reason ? paywallConfigs[reason] : null;
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(config?.recommendedPlan || 'pro');
-  const { isAvailable: rcAvailable, offerings: rcOfferings, restorePurchases } = useRevenueCat();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, restorePurchases, isLoading: rcLoading } = useRevenueCat();
   const [isRestoring, setIsRestoring] = useState(false);
-  const native = isNativeApp() && rcAvailable;
+  const native = isNativeApp();
 
   if (!config) return null;
 
