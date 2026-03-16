@@ -95,6 +95,16 @@ serve(async (req) => {
             }, { onConflict: "user_id" });
             logStep("Plan updated from checkout", { userId, planId });
           }
+
+          // Slack alert for new paid subscription
+          fireSlackAlert(supabase, {
+            category: 'new_paid_subscription',
+            severity: 'info',
+            title: `New Paid Subscription: ${planId}`,
+            summary: `A user subscribed to the ${planId} plan.`,
+            details: { Plan: planId, 'User ID': userId },
+            dedup_key: `checkout_${session.id}`,
+          });
         }
         break;
       }
@@ -136,6 +146,16 @@ serve(async (req) => {
               updated_at: new Date().toISOString(),
             }).eq("user_id", userId);
             logStep("Subscription canceled, reverted to free (promo lock preserved)", { userId });
+
+            // Slack alert for cancellation
+            fireSlackAlert(supabase, {
+              category: 'canceled_subscription',
+              severity: 'warning',
+              title: 'Subscription Canceled',
+              summary: `A user's subscription has been canceled and reverted to Free.`,
+              details: { 'User ID': userId },
+              dedup_key: `cancel_${subscription.id}`,
+            });
           }
         }
         break;
@@ -218,4 +238,20 @@ async function getUserIdByEmail(supabase: any, email: string): Promise<string | 
   const { data } = await supabase.auth.admin.listUsers();
   const user = data?.users?.find((u: any) => u.email === email);
   return user?.id || null;
+}
+
+async function fireSlackAlert(supabase: any, payload: any) {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    await fetch(`${supabaseUrl}/functions/v1/send-slack-alert`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    logStep("Slack alert failed (non-blocking)", { error: err instanceof Error ? err.message : String(err) });
+  }
 }

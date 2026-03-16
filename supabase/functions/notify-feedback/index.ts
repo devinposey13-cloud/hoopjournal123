@@ -103,6 +103,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Feedback notification sent:", emailResponse);
 
+    // Fire Slack alert (non-blocking)
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      await fetch(`${supabaseUrl}/functions/v1/send-slack-alert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}` },
+        body: JSON.stringify({
+          category: 'user_feedback',
+          severity: 'info',
+          title: `New Feedback: ${category || 'General'}`,
+          summary: message.length > 150 ? message.substring(0, 150) + '...' : message,
+          details: { Category: category || 'General', From: userEmail || 'Unknown', Submitted: submittedAt + ' ET' },
+          cta_url: 'https://hoopjournal.me',
+          dedup_key: `feedback_${userEmail}_${Date.now()}`,
+        }),
+      });
+    } catch (slackErr) {
+      console.error('Slack alert failed (non-blocking):', slackErr);
+    }
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },

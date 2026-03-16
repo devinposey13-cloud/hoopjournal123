@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck, ChevronDown, Activity, Cpu, Zap, TrendingUp, Clock, Shield, Star, Calendar as CalendarIcon, CreditCard, Trophy, ToggleLeft, Megaphone, Info } from 'lucide-react';
+import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck, ChevronDown, Activity, Cpu, Zap, TrendingUp, Clock, Shield, Star, Calendar as CalendarIcon, CreditCard, Trophy, ToggleLeft, Megaphone, Info, Bell } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { type PlanId, planCatalog, getEffectivePlan, type UserAccessInfo } from '@/lib/plans';
 import { Calendar } from '@/components/ui/calendar';
@@ -26,6 +26,8 @@ import { AdminLeaderboards } from '@/components/admin/AdminLeaderboards';
 import { AdminFeatureFlags } from '@/components/admin/AdminFeatureFlags';
 import { AdminBroadcast } from '@/components/admin/AdminBroadcast';
 import { AdminSystemHealth } from '@/components/admin/AdminSystemHealth';
+import { AdminSlackAlerts } from '@/components/admin/AdminSlackAlerts';
+import { dispatchSlackAlert } from '@/utils/slackAlerts';
 import { format } from 'date-fns';
 
 interface UserFeedback {
@@ -758,6 +760,13 @@ export function AdminPanel() {
         r.id === request.id ? { ...r, status: 'approved', reviewed_at: new Date().toISOString() } : r
       ));
       toast.success('User approved successfully!');
+      dispatchSlackAlert({
+        category: 'admin_audit',
+        title: `User Approved: @${request.username || 'Unknown'}`,
+        summary: `Admin approved account for ${request.email || 'unknown email'}.`,
+        details: { Username: `@${request.username || 'Unknown'}`, Email: request.email || 'N/A' },
+        dedup_key: `approve_${request.id}`,
+      });
     } catch (error) {
       console.error('Error approving user:', error);
       toast.error('Failed to approve user');
@@ -782,6 +791,12 @@ export function AdminPanel() {
         r.id === requestId ? { ...r, status: 'rejected', reviewed_at: new Date().toISOString() } : r
       ));
       toast.success('User rejected');
+      dispatchSlackAlert({
+        category: 'admin_audit',
+        title: 'User Rejected',
+        summary: `Admin rejected an account approval request.`,
+        dedup_key: `reject_${requestId}`,
+      });
     } catch (error) {
       console.error('Error rejecting user:', error);
       toast.error('Failed to reject user');
@@ -1015,6 +1030,11 @@ export function AdminPanel() {
             <Megaphone className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
             <span className="hidden sm:inline">Broadcast</span>
             <span className="sm:hidden">Msg</span>
+          </TabsTrigger>
+          <TabsTrigger value="slack" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0 whitespace-nowrap">
+            <Bell className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Slack</span>
+            <span className="sm:hidden">Slack</span>
           </TabsTrigger>
             </TabsList>
           </div>
@@ -2429,6 +2449,11 @@ export function AdminPanel() {
         {/* Broadcast Tab */}
         <TabsContent value="broadcast" className="space-y-4">
           <AdminBroadcast />
+        </TabsContent>
+
+        {/* Slack Alerts Tab */}
+        <TabsContent value="slack" className="space-y-4">
+          <AdminSlackAlerts />
         </TabsContent>
       </Tabs>
 

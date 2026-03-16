@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { dispatchSlackAlert } from '@/utils/slackAlerts';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,6 +40,14 @@ export function ReportContentButton({ userMessage, aiResponse }: ReportContentBu
       if (error) throw error;
 
       toast.success('Report submitted. Thank you for helping keep our community safe.');
+      dispatchSlackAlert({
+        category: 'reported_content',
+        severity: 'warning',
+        title: 'Content Reported',
+        summary: `A user reported AI-generated content. Reason: ${reason.trim() || 'No reason given'}`,
+        details: { 'User Message': userMessage.substring(0, 100), Reason: reason.trim() || 'None' },
+        dedup_key: `report_${user.id}_${Date.now()}`,
+      });
       setOpen(false);
       setReason('');
     } catch (error) {

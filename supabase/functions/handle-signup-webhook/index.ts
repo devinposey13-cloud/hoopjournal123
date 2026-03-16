@@ -147,6 +147,25 @@ const handler = async (req: Request): Promise<Response> => {
       .update({ notification_sent: true })
       .eq("user_id", user_id);
 
+    // Fire Slack alert (non-blocking)
+    try {
+      await fetch(`${supabaseUrl}/functions/v1/send-slack-alert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}` },
+        body: JSON.stringify({
+          category: 'new_user_signup',
+          severity: 'info',
+          title: `New Signup: @${username || 'Unknown'}`,
+          summary: `A new player has signed up and is awaiting approval.`,
+          details: { Username: `@${username || 'Unknown'}`, Email: email || 'Not provided', 'Signed Up': signupTime + ' ET' },
+          cta_url: 'https://hoopjournal.me',
+          dedup_key: `signup_${user_id}`,
+        }),
+      });
+    } catch (slackErr) {
+      console.error('Slack alert failed (non-blocking):', slackErr);
+    }
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
