@@ -760,6 +760,13 @@ export function AdminPanel() {
         r.id === request.id ? { ...r, status: 'approved', reviewed_at: new Date().toISOString() } : r
       ));
       toast.success('User approved successfully!');
+      dispatchSlackAlert({
+        category: 'admin_audit',
+        title: `User Approved: @${request.username || 'Unknown'}`,
+        summary: `Admin approved account for ${request.email || 'unknown email'}.`,
+        details: { Username: `@${request.username || 'Unknown'}`, Email: request.email || 'N/A' },
+        dedup_key: `approve_${request.id}`,
+      });
     } catch (error) {
       console.error('Error approving user:', error);
       toast.error('Failed to approve user');
