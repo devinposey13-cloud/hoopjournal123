@@ -1152,6 +1152,11 @@ export function AdminPanel() {
                                 >
                                   {request.status === 'approved' ? 'Approved' : 'Rejected'}
                                 </Badge>
+                                {(request as any).approval_method && (
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    {(request as any).approval_method === 'auto' ? '⚡ Auto' : (request as any).approval_method === 'conditional_flagged' ? '🚩 Flagged' : '👤 Manual'}
+                                  </Badge>
+                                )}
                                 <span className="text-xs text-muted-foreground">
                                   {request.reviewed_at && format(new Date(request.reviewed_at), 'MMM d, yyyy')}
                                 </span>
