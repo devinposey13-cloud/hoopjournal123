@@ -15,6 +15,7 @@ import type { NewMilestoneResult } from '@/types/milestone';
 import type { PerformanceResult, XpGainResult, PerformanceTier } from '@/types/xp';
 import type { PostGameInsight } from '@/utils/postGameInsights';
 import { toast } from 'sonner';
+import { dispatchSlackAlert } from '@/utils/slackAlerts';
 
 interface GameWithId extends GameStats {
   id: string;
@@ -99,6 +100,21 @@ export function useGameWithMilestones() {
     if (toReveal.length > 0) {
       setPendingMilestones(toReveal);
       setShowReveal(true);
+
+      // Dispatch milestone Slack alert
+      const milestoneNames = toReveal.map(m => m.milestone.name).join(', ');
+      dispatchSlackAlert({
+        category: 'milestone_alert',
+        severity: 'info',
+        title: 'Milestone Earned',
+        summary: `${cloudData.profile?.name || 'A player'} earned: ${milestoneNames}`,
+        details: {
+          'Player': cloudData.profile?.name || 'Unknown',
+          'Milestones': milestoneNames,
+          'Game': savedGame.opponent,
+        },
+        dedup_key: `milestone_${savedGame.id}`,
+      });
     }
 
     // Calculate performance and award XP
@@ -112,6 +128,21 @@ export function useGameWithMilestones() {
     // Calculate consistency streak (including the new game)
     const { current: streakCount } = calculateConsistencyStreak(allGames, cloudData.schedule);
     const streakBonus = getStreakXpBonus(streakCount);
+
+    // Dispatch high_engagement alert for 5+ game streaks
+    if (streakCount >= 5) {
+      dispatchSlackAlert({
+        category: 'high_engagement',
+        severity: 'info',
+        title: 'High Engagement Streak',
+        summary: `${cloudData.profile?.name || 'A player'} has a ${streakCount}-game consistency streak!`,
+        details: {
+          'Player': cloudData.profile?.name || 'Unknown',
+          'Streak': `${streakCount} games`,
+        },
+        dedup_key: `streak_${user?.id}_${streakCount}`,
+      });
+    }
     
     const xpResult = await xpProgress.addXp(
       performance.xpEarned,

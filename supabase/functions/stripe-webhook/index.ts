@@ -166,6 +166,27 @@ serve(async (req) => {
         break;
       }
 
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as any;
+        const customerEmail = invoice.customer_email || 'unknown';
+        const amountDue = invoice.amount_due ? `$${(invoice.amount_due / 100).toFixed(2)}` : 'unknown';
+        logStep("Invoice payment failed", { invoiceId: invoice.id, customerEmail, amountDue });
+
+        fireSlackAlert(supabase, {
+          category: 'failed_payment',
+          severity: 'critical',
+          title: 'Failed Payment',
+          summary: `Payment failed for ${customerEmail}. Amount due: ${amountDue}.`,
+          details: {
+            'Customer Email': customerEmail,
+            'Invoice ID': invoice.id,
+            'Amount Due': amountDue,
+          },
+          dedup_key: `failed_payment_${invoice.id}`,
+        });
+        break;
+      }
+
       default:
         logStep("Unhandled event type", { type: event.type });
     }

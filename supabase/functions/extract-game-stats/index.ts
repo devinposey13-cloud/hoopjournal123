@@ -245,6 +245,27 @@ Extract all mentioned statistics accurately. When parsing shooting stats:
     );
   } catch (error) {
     console.error("Extract game stats error:", error);
+
+    // Fire backend_failure Slack alert (non-blocking)
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      await fetch(`${supabaseUrl}/functions/v1/send-slack-alert`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+        },
+        body: JSON.stringify({
+          category: 'backend_failure',
+          severity: 'critical',
+          title: 'Extract Game Stats Failure',
+          summary: `extract-game-stats edge function threw: ${error instanceof Error ? error.message : String(error)}`,
+          details: { 'Function': 'extract-game-stats' },
+          dedup_key: 'backend_failure_extract-game-stats',
+        }),
+      });
+    } catch (_) { /* non-blocking */ }
+
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Failed to extract stats" }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
