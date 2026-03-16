@@ -93,6 +93,9 @@ export function EmptyDashboardWelcome({
   }, [isFirstTimeAfterOnboarding, hasPlayedIntro, playVoice, onIntroPlayed]);
 
   const handleAvatarClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     fileInputRef.current?.click();
   };
 
