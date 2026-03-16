@@ -135,6 +135,8 @@ export default function PublicProfile() {
           return;
         }
 
+        const profileId = profileData.id;
+
         setProfile({
           name: profileData.name,
           team: profileData.team,
