@@ -44,7 +44,7 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
   );
 
   const getNativePriceString = (planId: PlanId): string | undefined => {
-    if (!native) return undefined;
+    if (!native || !rcAvailable) return undefined;
     const suffix = cycle === 'yearly' ? 'year' : 'month';
     return rcOfferings.find(
       (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)
