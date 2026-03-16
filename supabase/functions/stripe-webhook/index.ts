@@ -95,6 +95,16 @@ serve(async (req) => {
             }, { onConflict: "user_id" });
             logStep("Plan updated from checkout", { userId, planId });
           }
+
+          // Slack alert for new paid subscription
+          fireSlackAlert(supabase, {
+            category: 'new_paid_subscription',
+            severity: 'info',
+            title: `New Paid Subscription: ${planId}`,
+            summary: `A user subscribed to the ${planId} plan.`,
+            details: { Plan: planId, 'User ID': userId },
+            dedup_key: `checkout_${session.id}`,
+          });
         }
         break;
       }
