@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.check-churn-risk]
 verify_jwt = false
+
+[functions.daily-revenue-digest]
+verify_jwt = false
