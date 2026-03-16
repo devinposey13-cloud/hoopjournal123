@@ -7,9 +7,8 @@ import { ProgressDots } from './onboarding/ProgressDots';
 import { WelcomeCard } from './onboarding/WelcomeCard';
 import { PlayerIdentityCard } from './onboarding/PlayerIdentityCard';
 import { GoalsCard } from './onboarding/GoalsCard';
-
-
 import { PricingPreviewCard } from './onboarding/PricingPreviewCard';
+import { NativePurchaseSheet } from './purchase/NativePurchaseSheet';
 import { track, type PlanId, type BillingCycle } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
@@ -22,7 +21,6 @@ export interface OnboardingData {
   playingLevel: string;
   seasonGoals: string[];
   parentEmail: string | null;
-  
 }
 
 export type OnboardingCompletionAction = 'start_game' | 'pregame_talk' | 'explore_dashboard';
@@ -37,22 +35,25 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
+  const [nativeSelectedPlan, setNativeSelectedPlan] = useState<PlanId>('pro');
+  const [nativeBillingCycle, setNativeBillingCycle] = useState<BillingCycle>('monthly');
   const navigate = useNavigate();
+  const native = isNativeApp();
   const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, isLoading: rcLoading } = useRevenueCat();
+  const { isAvailable: rcAvailable, isLoading: rcLoading } = useRevenueCat();
   const [data, setData] = useState<OnboardingData>({
     name: '',
     courtRole: '',
     playingLevel: '',
     seasonGoals: [],
     parentEmail: null,
-    
   });
 
   const goBack = useCallback(() => {
     if (currentStep > 0) {
       setDirection(-1);
-      setCurrentStep(prev => prev - 1);
+      setCurrentStep((prev) => prev - 1);
     }
   }, [currentStep]);
 
@@ -61,25 +62,24 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     setCurrentStep(step);
   }, []);
 
-  // Step handlers
   const handleWelcome = (name: string) => {
-    setData(prev => ({ ...prev, name }));
+    setData((prev) => ({ ...prev, name }));
     goForward(1);
   };
+
   const handleSkip = () => {
     onComplete(data, 'explore_dashboard');
   };
 
   const handlePlayerIdentitySubmit = (role: string, level: string) => {
-    setData(prev => ({ ...prev, courtRole: role, playingLevel: level }));
+    setData((prev) => ({ ...prev, courtRole: role, playingLevel: level }));
     goForward(2);
   };
 
   const handleGoalsSubmit = (goals: string[]) => {
-    setData(prev => ({ ...prev, seasonGoals: goals }));
+    setData((prev) => ({ ...prev, seasonGoals: goals }));
     goForward(3);
   };
-
 
   const handleSelectFree = () => {
     track('onboarding_plan_selected', { planId: 'free' });
@@ -87,13 +87,10 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   const handleSelectPaid = async (planId: PlanId, billingCycle: BillingCycle) => {
-    track('onboarding_plan_checkout_started', { planId, billingCycle });
-    const native = isNativeApp();
-    console.log('[Onboarding] Starting checkout for paid plan:', { planId, billingCycle, native, capacitor: !!window.Capacitor, protocol: window.location.protocol });
+    track('onboarding_plan_checkout_started', { planId, billingCycle, native });
 
     try {
-      if (isNativeApp()) {
-        // On native, always use RevenueCat — never fall through to Stripe
+      if (native) {
         if (rcLoading) {
           toast.info('Loading purchase options… please wait.');
           return;
@@ -102,22 +99,13 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           toast.error('In-app purchases are not available right now. Please try again.');
           return;
         }
-        const suffix = billingCycle === 'yearly' ? 'year' : 'month';
-        const rcPkg = rcOfferings.find(
-          (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)
-        );
-        if (rcPkg) {
-          await purchasePackage(rcPkg.identifier);
-          toast.success('Purchase successful! 🎉');
-          navigate('/onboarding/finish');
-          onComplete(data, 'explore_dashboard');
-        } else {
-          toast.error('Package not available');
-        }
+
+        setNativeSelectedPlan(planId);
+        setNativeBillingCycle(billingCycle);
+        setNativeSheetOpen(true);
         return;
       }
 
-      // Web: Stripe checkout
       await createCheckout(planId, billingCycle, 'onboarding');
       toast.info('Redirecting to checkout...');
     } catch (err) {
@@ -129,7 +117,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     }
   };
 
-  // Track pricing preview view
   useEffect(() => {
     if (currentStep === 3) {
       track('onboarding_pricing_viewed', {});
@@ -170,7 +157,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     >
       <OnboardingBackground />
 
-      {/* Header with progress */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -180,7 +166,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         <ProgressDots currentStep={currentStep} totalSteps={TOTAL_STEPS} />
       </motion.div>
 
-      {/* Card content with swipe gestures */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -226,7 +211,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         </AnimatePresence>
       </motion.div>
 
-      {/* Back button */}
       <AnimatePresence>
         {currentStep > 0 && (
           <motion.button
@@ -244,6 +228,20 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           </motion.button>
         )}
       </AnimatePresence>
+
+      {native && (
+        <NativePurchaseSheet
+          open={nativeSheetOpen}
+          onClose={() => setNativeSheetOpen(false)}
+          recommendedPlan={nativeSelectedPlan}
+          initialBillingCycle={nativeBillingCycle}
+          onPurchaseComplete={() => {
+            setNativeSheetOpen(false);
+            navigate('/onboarding/finish');
+            onComplete(data, 'explore_dashboard');
+          }}
+        />
+      )}
     </motion.div>
   );
 }
