@@ -51,14 +51,52 @@ const defaultFormData = {
   teamId: '',
 };
 
+const FORM_STORAGE_KEY = 'hoopjournal_manual_form_autosave';
+
 export function GameStatsForm({ onSubmit, initialData, submitLabel = 'Save Game' }: GameStatsFormProps) {
   const { teams, primaryTeam, loading: teamsLoading } = usePlayerTeams();
-  const [date, setDate] = useState<Date>(initialData?.date || new Date());
-  const [formData, setFormData] = useState({
-    ...defaultFormData,
-    opponent: initialData?.opponent || '',
-    teamId: initialData?.teamId || '',
+  
+  // Restore from localStorage on mount
+  const getSavedForm = () => {
+    try {
+      const stored = localStorage.getItem(FORM_STORAGE_KEY);
+      if (stored) {
+        const data = JSON.parse(stored);
+        if (Date.now() - data.savedAt < 24 * 60 * 60 * 1000) {
+          return data;
+        }
+        localStorage.removeItem(FORM_STORAGE_KEY);
+      }
+    } catch { /* ignore */ }
+    return null;
+  };
+
+  const savedForm = getSavedForm();
+  const [date, setDate] = useState<Date>(initialData?.date || (savedForm?.date ? new Date(savedForm.date) : new Date()));
+  const [formData, setFormData] = useState(() => {
+    if (savedForm?.formData && !initialData) {
+      return { ...defaultFormData, ...savedForm.formData };
+    }
+    return {
+      ...defaultFormData,
+      opponent: initialData?.opponent || '',
+      teamId: initialData?.teamId || '',
+    };
   });
+
+  // Persist form to localStorage on changes
+  useEffect(() => {
+    const hasData = formData.opponent || formData.points || formData.rebounds || formData.assists;
+    if (hasData) {
+      try {
+        localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify({
+          formData,
+          date: date.toISOString(),
+          savedAt: Date.now(),
+        }));
+      } catch { /* ignore */ }
+    }
+  }, [formData, date]);
 
   // Set default team when teams load
   useEffect(() => {
@@ -80,6 +118,8 @@ export function GameStatsForm({ onSubmit, initialData, submitLabel = 'Save Game'
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Clear autosave on successful submit
+    localStorage.removeItem(FORM_STORAGE_KEY);
     const selectedTeam = teams.find(t => t.id === formData.teamId);
     onSubmit({
       ...formData,
