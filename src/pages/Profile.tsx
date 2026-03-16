@@ -159,6 +159,9 @@ export default function Profile() {
   };
 
   const handleAvatarClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     fileInputRef.current?.click();
   };
 
