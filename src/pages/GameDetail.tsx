@@ -106,6 +106,7 @@ export default function GameDetail() {
   const [showReportCard, setShowReportCard] = useState(false);
   const [newCareerHighs, setNewCareerHighs] = useState<CareerHigh[]>([]);
   const [showCareerHighCelebration, setShowCareerHighCelebration] = useState(false);
+  const [showDeleteScheduledDialog, setShowDeleteScheduledDialog] = useState(false);
 
   const handleRecapChange = useCallback((recap: string | null, includeInPdf: boolean) => {
     setCoachRecap(recap);
