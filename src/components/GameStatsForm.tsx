@@ -374,8 +374,9 @@ function NumberInput({
       <Input
         type="number"
         min={0}
-        value={value}
+        value={value === 0 ? '' : value}
         onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+        placeholder="0"
         className="text-center"
       />
     </div>
