@@ -238,7 +238,7 @@ export default function PublicProfile() {
           });
         }
 
-        // Fetch milestones with joined definitions
+        // Fetch milestones with joined definitions - scoped to this profile
         const { data: milestonesData, error: milestonesError } = await supabase
           .from('player_milestones')
           .select(`
@@ -252,7 +252,8 @@ export default function PublicProfile() {
               icon
             )
           `)
-          .eq('user_id', profileData.user_id);
+          .eq('user_id', profileData.user_id)
+          .or(`profile_id.eq.${profileId},profile_id.is.null`);
 
         if (milestonesError) {
           console.error('Error fetching milestones:', milestonesError);
