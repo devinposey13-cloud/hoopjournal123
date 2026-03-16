@@ -96,7 +96,7 @@ export function EmptyDashboardWelcome({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    fileInputRef.current?.click();
+    setTimeout(() => fileInputRef.current?.click(), 0);
   };
 
   const handleConfirmSkip = () => {
