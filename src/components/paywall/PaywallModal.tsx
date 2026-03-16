@@ -33,9 +33,9 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const config = reason ? paywallConfigs[reason] : null;
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(config?.recommendedPlan || 'pro');
-  const { isAvailable: rcAvailable, offerings: rcOfferings, restorePurchases } = useRevenueCat();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, restorePurchases, isLoading: rcLoading } = useRevenueCat();
   const [isRestoring, setIsRestoring] = useState(false);
-  const native = isNativeApp() && rcAvailable;
+  const native = isNativeApp();
 
   if (!config) return null;
 
@@ -44,7 +44,7 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
   );
 
   const getNativePriceString = (planId: PlanId): string | undefined => {
-    if (!native) return undefined;
+    if (!native || !rcAvailable) return undefined;
     const suffix = cycle === 'yearly' ? 'year' : 'month';
     return rcOfferings.find(
       (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)

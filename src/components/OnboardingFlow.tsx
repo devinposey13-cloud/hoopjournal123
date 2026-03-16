@@ -39,7 +39,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [direction, setDirection] = useState(0);
   const navigate = useNavigate();
   const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage } = useRevenueCat();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, isLoading: rcLoading } = useRevenueCat();
   const [data, setData] = useState<OnboardingData>({
     name: '',
     courtRole: '',
@@ -92,7 +92,16 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     console.log('[Onboarding] Starting checkout for paid plan:', { planId, billingCycle });
 
     try {
-      if (isNativeApp() && rcAvailable) {
+      if (isNativeApp()) {
+        // On native, always use RevenueCat — never fall through to Stripe
+        if (rcLoading) {
+          toast.info('Loading purchase options… please wait.');
+          return;
+        }
+        if (!rcAvailable) {
+          toast.error('In-app purchases are not available right now. Please try again.');
+          return;
+        }
         const suffix = billingCycle === 'yearly' ? 'year' : 'month';
         const rcPkg = rcOfferings.find(
           (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)
@@ -102,13 +111,13 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           toast.success('Purchase successful! 🎉');
           navigate('/onboarding/finish');
           onComplete(data, 'explore_dashboard');
-          return;
         } else {
           toast.error('Package not available');
-          return;
         }
+        return;
       }
 
+      // Web: Stripe checkout
       await createCheckout(planId, billingCycle, 'onboarding');
       toast.info('Redirecting to checkout...');
     } catch (err) {

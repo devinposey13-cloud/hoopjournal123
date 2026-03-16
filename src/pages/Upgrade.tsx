@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Lock, RotateCcw, Loader2 } from 'lucide-react';
 import { PlanCard } from '@/components/pricing/PlanCard';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
+import { NativePurchaseSheet } from '@/components/purchase/NativePurchaseSheet';
 import {
   type BillingCycle,
   type PlanId,
@@ -28,17 +29,19 @@ export default function Upgrade() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, restorePurchases } = useRevenueCat();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, restorePurchases, isLoading: rcLoading } = useRevenueCat();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
-  const native = isNativeApp() && rcAvailable;
+  const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
+  const [nativeSelectedPlan, setNativeSelectedPlan] = useState<PlanId>('pro');
+  const native = isNativeApp();
 
   const upgradePlans = planOrder.filter(
     (id) => id !== 'free' && planOrder.indexOf(id) > planOrder.indexOf(currentPlan)
   );
 
   const getNativePriceString = (planId: PlanId): string | undefined => {
-    if (!native) return undefined;
+    if (!native || !rcAvailable) return undefined;
     const suffix = cycle === 'yearly' ? 'year' : 'month';
     return rcOfferings.find(
       (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)
@@ -46,24 +49,28 @@ export default function Upgrade() {
   };
 
   const handleSelect = async (planId: PlanId) => {
-    track('upgrade_clicked', { planId, cycle, native: isNativeApp() });
+    track('upgrade_clicked', { planId, cycle, native });
+
+    // On native, use RevenueCat via NativePurchaseSheet
+    if (native) {
+      if (rcLoading) {
+        toast.info('Loading purchase options… please wait.');
+        return;
+      }
+      if (!rcAvailable) {
+        toast.error('In-app purchases are not available right now. Please try again.');
+        return;
+      }
+      setNativeSelectedPlan(planId);
+      setNativeSheetOpen(true);
+      return;
+    }
+
+    // Web: Stripe checkout
     setLoadingPlan(planId);
     try {
-      if (native) {
-        const suffix = cycle === 'yearly' ? 'year' : 'month';
-        const rcPkg = rcOfferings.find(
-          (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)
-        );
-        if (rcPkg) {
-          await purchasePackage(rcPkg.identifier);
-          toast.success('Purchase successful! 🎉');
-        } else {
-          toast.error('Package not available');
-        }
-      } else {
-        await createCheckout(planId, cycle);
-        toast.success('Redirecting to checkout...');
-      }
+      await createCheckout(planId, cycle);
+      toast.success('Redirecting to checkout...');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to start checkout';
       if (!msg.includes('cancelled') && !msg.includes('canceled')) {
@@ -120,6 +127,14 @@ export default function Upgrade() {
           <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />
         </div>
 
+        {/* Native loading indicator */}
+        {native && rcLoading && (
+          <div className="flex justify-center items-center gap-2 mb-6 text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-sm">Loading App Store prices…</span>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
           {upgradePlans.map((id, i) => (
             <motion.div
@@ -159,6 +174,18 @@ export default function Upgrade() {
           </p>
         </div>
       </div>
+
+      {/* Native purchase sheet */}
+      {native && (
+        <NativePurchaseSheet
+          open={nativeSheetOpen}
+          onClose={() => setNativeSheetOpen(false)}
+          recommendedPlan={nativeSelectedPlan}
+          onPurchaseComplete={() => {
+            setNativeSheetOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

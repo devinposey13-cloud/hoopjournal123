@@ -3,12 +3,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { PlanCard } from '@/components/pricing/PlanCard';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import { PlanCompareTable } from '@/components/pricing/PlanCompareTable';
 import { FAQAccordion } from '@/components/pricing/FAQAccordion';
 import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
+import { NativePurchaseSheet } from '@/components/purchase/NativePurchaseSheet';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, track } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
 import { usePlan } from '@/hooks/usePlanState';
@@ -23,9 +24,12 @@ export default function Pricing() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage } = useRevenueCat();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, isLoading: rcLoading } = useRevenueCat();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [promoApplied, setPromoApplied] = useState(false);
+  const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
+  const [nativeSelectedPlan, setNativeSelectedPlan] = useState<PlanId>('pro');
+  const native = isNativeApp();
 
   // Check if user already has promo_eligible in plan_overrides
   useEffect(() => {
@@ -58,6 +62,14 @@ export default function Pricing() {
     }
   }, [canceled, success]);
 
+  const getNativePriceString = (planId: PlanId): string | undefined => {
+    if (!native || !rcAvailable) return undefined;
+    const suffix = cycle === 'yearly' ? 'year' : 'month';
+    return rcOfferings.find(
+      (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)
+    )?.priceString;
+  };
+
   const handleSelectPlan = async (planId: PlanId) => {
     if (planId === 'free') {
       toast.info("You're already on the Free plan!");
@@ -67,25 +79,28 @@ export default function Pricing() {
       toast.info(`You're already on the ${planCatalog[planId].name} plan!`);
       return;
     }
-    track('upgrade_clicked', { planId, cycle, native: isNativeApp() });
+    track('upgrade_clicked', { planId, cycle, native });
+
+    // On native, use RevenueCat via NativePurchaseSheet
+    if (native) {
+      if (rcLoading) {
+        toast.info('Loading purchase options… please wait.');
+        return;
+      }
+      if (!rcAvailable) {
+        toast.error('In-app purchases are not available right now. Please try again.');
+        return;
+      }
+      setNativeSelectedPlan(planId);
+      setNativeSheetOpen(true);
+      return;
+    }
+
+    // Web: Stripe checkout
     setLoadingPlan(planId);
     try {
-      if (isNativeApp() && rcAvailable) {
-        // Find the matching RevenueCat package
-        const suffix = cycle === 'yearly' ? 'yearly' : 'monthly';
-        const rcPkg = rcOfferings.find(
-          (o) => o.planId === planId && o.period.toLowerCase().includes(suffix === 'yearly' ? 'year' : 'month')
-        );
-        if (rcPkg) {
-          await purchasePackage(rcPkg.identifier);
-          toast.success('Purchase successful! 🎉');
-        } else {
-          toast.error('Package not available');
-        }
-      } else {
-        await createCheckout(planId, cycle);
-        toast.success('Redirecting to checkout...');
-      }
+      await createCheckout(planId, cycle);
+      toast.success('Redirecting to checkout...');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to start checkout';
       if (!msg.includes('cancelled') && !msg.includes('canceled')) {
@@ -129,6 +144,14 @@ export default function Pricing() {
           <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />
         </div>
 
+        {/* Native loading indicator */}
+        {native && rcLoading && (
+          <div className="flex justify-center items-center gap-2 mb-6 text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-sm">Loading App Store prices…</span>
+          </div>
+        )}
+
         {/* Plan cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
           {planOrder.map((id, i) => (
@@ -144,15 +167,18 @@ export default function Pricing() {
                 currentPlan={currentPlan}
                 onSelect={handleSelectPlan}
                 promoApplied={promoApplied}
+                nativePriceString={getNativePriceString(id)}
               />
             </motion.div>
           ))}
         </div>
 
-        {/* Promo Code */}
-        <div className="mb-12">
-          <PromoCodeInput onApplied={() => setPromoApplied(true)} />
-        </div>
+        {/* Promo Code - hide on native since App Store handles pricing */}
+        {!native && (
+          <div className="mb-12">
+            <PromoCodeInput onApplied={() => setPromoApplied(true)} />
+          </div>
+        )}
 
         {/* Compare table */}
         <div className="mb-16">
@@ -178,6 +204,18 @@ export default function Pricing() {
           </p>
         </div>
       </div>
+
+      {/* Native purchase sheet */}
+      {native && (
+        <NativePurchaseSheet
+          open={nativeSheetOpen}
+          onClose={() => setNativeSheetOpen(false)}
+          recommendedPlan={nativeSelectedPlan}
+          onPurchaseComplete={() => {
+            setNativeSheetOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
