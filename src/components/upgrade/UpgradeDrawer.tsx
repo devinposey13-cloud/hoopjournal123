@@ -49,7 +49,7 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
 
   // Find matching RC package for native
   const suffix = cycle === 'yearly' ? 'year' : 'month';
-  const rcPkg = native
+  const rcPkg = (native && rcAvailable)
     ? rcOfferings.find((o) => o.planId === config.recommendedPlan && o.period.toLowerCase().includes(suffix))
     : null;
   const displayPrice = rcPkg ? rcPkg.priceString : `$${price}`;
