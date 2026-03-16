@@ -43,6 +43,8 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
     [game.opponent]
   );
 
+  const gradeData = useMemo(() => getGameGradeData(game), [game]);
+
   const captureCard = useCallback(async (): Promise<Blob | null> => {
     if (!exportRef.current) return null;
 
@@ -55,7 +57,6 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
       await Promise.all(
         images.map((img) => {
           if (img.complete) return Promise.resolve();
-
           return new Promise<void>((resolve) => {
             const done = () => resolve();
             img.addEventListener('load', done, { once: true });
@@ -63,6 +64,10 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
           });
         })
       );
+
+      // Hide the grade text so html2canvas doesn't try to rasterize it
+      const gradeEl = exportRef.current.querySelector('[data-canvas-grade]') as HTMLElement | null;
+      if (gradeEl) gradeEl.style.visibility = 'hidden';
 
       const rawCanvas = await html2canvas(exportRef.current, {
         scale: 2,
@@ -75,6 +80,9 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
         logging: false,
       });
 
+      // Restore visibility
+      if (gradeEl) gradeEl.style.visibility = '';
+
       const targetCanvas = document.createElement('canvas');
       targetCanvas.width = CANVAS_W;
       targetCanvas.height = CANVAS_H;
@@ -85,12 +93,42 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
       ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
       ctx.drawImage(rawCanvas, 0, 0, rawCanvas.width, rawCanvas.height, 0, 0, CANVAS_W, CANVAS_H);
 
+      // ── Draw grade with Canvas 2D fillText ──
+      if (gradeEl) {
+        const containerRect = exportRef.current.getBoundingClientRect();
+        const gradeRect = gradeEl.getBoundingClientRect();
+
+        // Calculate position relative to the export container
+        const relX = gradeRect.left - containerRect.left + gradeRect.width / 2;
+        const relY = gradeRect.top - containerRect.top + gradeRect.height / 2;
+
+        const isPost = exportFormat === 'post';
+        const sf = isPost ? 0.82 : 1;
+        const fontSize = Math.round(236 * sf);
+
+        ctx.save();
+        ctx.font = `900 ${fontSize}px Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = gradeData.color;
+
+        // Parse glow for shadow
+        const glowMatch = gradeData.glow.match(/rgba?\(([^)]+)\)/);
+        if (glowMatch) {
+          ctx.shadowColor = `rgba(${glowMatch[1]})`;
+          ctx.shadowBlur = 60;
+        }
+
+        ctx.fillText(gradeData.grade, relX, relY);
+        ctx.restore();
+      }
+
       return new Promise((resolve) => targetCanvas.toBlob((blob) => resolve(blob ?? null), 'image/png'));
     } catch (err) {
       console.error('[ReportCard] Export failed:', err);
       return null;
     }
-  }, [CANVAS_W, CANVAS_H]);
+  }, [CANVAS_W, CANVAS_H, exportFormat, gradeData]);
 
   const handleSaveShare = async () => {
     setExporting(true);
