@@ -437,6 +437,8 @@ export default function Index() {
   };
 
   const handleQuickCaptureCancel = () => {
+    // Clear autosave so it doesn't auto-resume
+    try { localStorage.removeItem('hoopjournal_live_stats_autosave'); } catch {}
     setShowQuickLiveCapture(false);
     setQuickCaptureOpponent('');
     setQuickCaptureScheduledGameId(undefined);
