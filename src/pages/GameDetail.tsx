@@ -75,6 +75,7 @@ export default function GameDetail() {
     seasonStats, 
     activeSeason, 
     updateScheduledGame, 
+    deleteScheduledGame,
     addScheduledGame,
     addGame,
     pendingMilestones,
