@@ -83,7 +83,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   const handleSelectFree = () => {
     track('onboarding_plan_selected', { planId: 'free' });
-    navigate('/onboarding/finish');
     onComplete(data, 'explore_dashboard');
   };
 
