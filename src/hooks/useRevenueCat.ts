@@ -95,9 +95,25 @@ export function useRevenueCat(): UseRevenueCatReturn {
         log('[RC] Fetching offerings…');
         const rcOfferings = await Purchases.getOfferings();
         const current = (rcOfferings as any)?.current;
-        log(`[RC] Offerings: ${current ? `${current.availablePackages?.length ?? 0} pkgs` : 'null'}`);
-        if (current?.availablePackages) {
-          const mapped: RCPackage[] = current.availablePackages
+        const allPkgs = current?.availablePackages ?? [];
+        log(`[RC] Offerings response: current=${!!current}, availablePackages=${allPkgs.length}`);
+        
+        // Log every raw package for debugging
+        allPkgs.forEach((pkg: any, idx: number) => {
+          const prodId = pkg?.product?.identifier ?? '(no identifier)';
+          const pkgType = pkg?.packageType ?? '(no type)';
+          const price = pkg?.product?.priceString ?? '(no price)';
+          const mapped = RC_PRODUCT_TO_PLAN[prodId] ?? 'UNMAPPED';
+          log(`[RC]   pkg[${idx}]: ${prodId} | type=${pkgType} | price=${price} | maps→${mapped}`);
+        });
+
+        if (allPkgs.length > 0) {
+          const unmapped = allPkgs.filter((pkg: any) => !RC_PRODUCT_TO_PLAN[pkg.product.identifier]);
+          if (unmapped.length > 0) {
+            log(`[RC] ⚠ ${unmapped.length} packages have NO mapping in RC_PRODUCT_TO_PLAN: ${unmapped.map((p: any) => p.product.identifier).join(', ')}`);
+          }
+          
+          const mapped: RCPackage[] = allPkgs
             .filter((pkg: any) => RC_PRODUCT_TO_PLAN[pkg.product.identifier])
             .map((pkg: any) => ({
               identifier: pkg.identifier,
@@ -106,10 +122,14 @@ export function useRevenueCat(): UseRevenueCatReturn {
               period: pkg.packageType === 'ANNUAL' ? 'Yearly' : 'Monthly',
               planId: RC_PRODUCT_TO_PLAN[pkg.product.identifier],
             }));
-          log(`[RC] Mapped: ${mapped.length} — ${mapped.map(m => m.productId).join(', ')}`);
+          log(`[RC] ✓ Mapped ${mapped.length} packages: ${mapped.map(m => `${m.productId}→${m.planId}`).join(', ')}`);
           setOfferings(mapped);
+          
+          if (mapped.length === 0) {
+            log('[RC] ⚠ All packages were filtered out — check RC_PRODUCT_TO_PLAN mapping');
+          }
         } else {
-          log('[RC] ⚠ No current offering / no packages');
+          log('[RC] ⚠ No current offering or no available packages. Check RevenueCat dashboard: are products attached to the "current" offering?');
         }
       } catch (err) {
         log(`[RC] ❌ Init error: ${err instanceof Error ? err.message : String(err)}`);

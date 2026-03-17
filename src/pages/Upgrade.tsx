@@ -137,11 +137,21 @@ export default function Upgrade() {
           <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />
         </div>
 
-        {/* Native loading indicator */}
+        {/* Native loading / error indicator */}
         {native && rcLoading && (
           <div className="flex justify-center items-center gap-2 mb-6 text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span className="text-sm">Loading App Store prices…</span>
+          </div>
+        )}
+        {native && !rcLoading && !rcAvailable && (
+          <div className="flex justify-center items-center gap-2 mb-6 text-destructive">
+            <span className="text-sm">⚠ Purchases temporarily unavailable. Please restart the app.</span>
+          </div>
+        )}
+        {native && !rcLoading && rcAvailable && rcOfferings.length === 0 && (
+          <div className="flex justify-center items-center gap-2 mb-6 text-amber-500">
+            <span className="text-sm">⚠ No purchase options found. Please try again later.</span>
           </div>
         )}
 
