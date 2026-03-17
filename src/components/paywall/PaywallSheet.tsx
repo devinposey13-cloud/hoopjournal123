@@ -66,11 +66,18 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   const dynamicSubline = DYNAMIC_HEADLINES[reason!] || null;
   const bullets = isPdfLimit ? PDF_VALUE_BULLETS : VALUE_BULLETS;
 
+  const trialConfig = getTrialConfig(selectedPlan, cycle);
+  const trialCopy = getTrialCopy(selectedPlan, cycle);
+  const trialCta = getTrialCta(selectedPlan, cycle);
+
   const handleUpgrade = async () => {
-    track('upgrade_clicked', { planId: selectedPlan, reason, cycle });
+    track('upgrade_clicked', { planId: selectedPlan, reason, cycle, hasTrial: trialConfig.hasTrial });
+    if (trialConfig.hasTrial) {
+      track('trial_started', { planId: selectedPlan, cycle, trialDays: trialConfig.trialDays });
+    }
     try {
       await purchasePlan(selectedPlan, cycle);
-      track('upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
+      track(trialConfig.hasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
       onUpgrade(selectedPlan);
     } catch {
       // Error handled by useBilling
