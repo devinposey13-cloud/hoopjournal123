@@ -281,7 +281,8 @@ export type PaywallReason =
   | 'export_pdf'
   | 'parent_dashboard'
   | 'recruiting_profile'
-  | 'report_card';
+  | 'report_card'
+  | 'report_card_limit';
 
 export interface PaywallConfig {
   title: string;
