@@ -83,8 +83,17 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
       // Error handled by useBilling
     }
   };
+  // Track trial visibility analytics
+  const handlePlanSelect = (id: PlanId) => {
+    setSelectedPlan(id);
+    const t = getTrialConfig(id, cycle);
+    if (t.hasTrial) {
+      track('trial_offer_viewed', { planId: id, cycle, trialDays: t.trialDays });
+    } else if (id !== 'free') {
+      track('ineligible_for_trial_shown', { planId: id, cycle });
+    }
+  };
 
-  const handleRestore = async () => {
     try {
       await restorePurchases();
       toast.success('Purchases restored!');
