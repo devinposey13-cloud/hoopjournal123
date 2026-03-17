@@ -125,39 +125,18 @@ export function useRevenueCat(): UseRevenueCatReturn {
         setIsAvailable(false);
         setOfferings([]);
         setPurchases(null);
+        setStatusReason(null);
 
-        const MAX_RUNTIME_RETRIES = 8;
+        const MAX_PLUGIN_RETRIES = 8;
         const RETRY_DELAY = 600;
-        let runtimeReady = false;
-        let lastRuntimePlatform: 'ios' | 'android' | 'web' = diagnostics.runtimePlatform;
+        const PLUGIN_NAME = 'Purchases';
 
-        for (let i = 0; i < MAX_RUNTIME_RETRIES; i++) {
-          if (cancelled) return;
-
-          const runtimePlatform = getCapacitorRuntimePlatform();
-          const runtimeNative = isCapacitorNativeRuntime();
-          lastRuntimePlatform = runtimePlatform;
-
+        if (!diagnostics.runtimeNative) {
+          setStatusReason('shell_native_but_runtime_web');
           log(
-            `[RC] Runtime check ${i + 1}/${MAX_RUNTIME_RETRIES}: platform=${runtimePlatform}, native=${runtimeNative ? '✓' : '✗'}`
+            `[RC] ⚠ Shell is native (${diagnostics.shellPlatform}) but Capacitor runtime reports '${diagnostics.runtimePlatform}'. Continuing with shell-first RevenueCat init attempt…`
           );
-
-          if (runtimeNative && (runtimePlatform === 'ios' || runtimePlatform === 'android')) {
-            runtimeReady = true;
-            break;
-          }
-
-          if (i < MAX_RUNTIME_RETRIES - 1) {
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-          }
-        }
-
-        if (!runtimeReady) {
-          log(
-            `[RC] ❌ Capacitor runtime stayed on '${lastRuntimePlatform}'. Native shell detected, but RevenueCat would use Capacitor WEB implementation in this build.`
-          );
-          log('[RC] Root cause: shell/native heuristics are true, but Capacitor runtime is not native for this plugin.');
-          return;
+          log('[RC] This means TestFlight is inside a native WebView, but the Capacitor bridge/runtime has not identified itself as native yet.');
         }
 
         log('[RC] Importing purchases-capacitor…');
@@ -165,16 +144,17 @@ export function useRevenueCat(): UseRevenueCatReturn {
         if (cancelled) return;
         log('[RC] Import OK');
 
-        const PLUGIN_NAME = 'Purchases';
-        const MAX_PLUGIN_RETRIES = 8;
         let bridgeReady = false;
 
         for (let i = 0; i < MAX_PLUGIN_RETRIES; i++) {
           if (cancelled) return;
 
+          const runtimePlatform = getCapacitorRuntimePlatform();
+          const runtimeNative = isCapacitorNativeRuntime();
           const available = Capacitor.isPluginAvailable(PLUGIN_NAME);
+
           log(
-            `[RC] Bridge check ${i + 1}/${MAX_PLUGIN_RETRIES} for '${PLUGIN_NAME}': ${available ? '✓ available' : '✗ not yet'} | runtime=${getCapacitorRuntimePlatform()}`
+            `[RC] Bridge check ${i + 1}/${MAX_PLUGIN_RETRIES}: shellPlatform=${diagnostics.shellPlatform}, shellNative=${diagnostics.shellNative ? '✓' : '✗'}, runtimePlatform=${runtimePlatform}, runtimeNative=${runtimeNative ? '✓' : '✗'}, plugin=${available ? '✓ available' : '✗ not yet'}`
           );
 
           if (available) {
