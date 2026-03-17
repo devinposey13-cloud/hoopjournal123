@@ -112,7 +112,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
           log('[RC] ⚠ No current offering / no packages');
         }
       } catch (err) {
-        console.error('[RevenueCat] Init error:', err);
+        log(`[RC] ❌ Init error: ${err instanceof Error ? err.message : String(err)}`);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
