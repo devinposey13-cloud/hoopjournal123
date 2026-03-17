@@ -525,6 +525,101 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
                   </div>
                 </div>
 
+                <Separator />
+
+                {/* Trial Eligibility Reset */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <RotateCcw className="w-4 h-4 text-orange-500" />
+                    Trial Eligibility
+                  </Label>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm">
+                      <span className={trialEligible ? 'text-green-600' : 'text-muted-foreground'}>
+                        {trialEligible ? '✓ Eligible for trial' : '✗ Trial already used'}
+                      </span>
+                      {trialResetCount > 0 && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Reset {trialResetCount} time{trialResetCount > 1 ? 's' : ''}
+                          {lastTrialResetAt && ` · Last: ${format(new Date(lastTrialResetAt), 'MMM d, yyyy')}`}
+                        </p>
+                      )}
+                    </div>
+                    <Dialog open={trialResetOpen} onOpenChange={(open) => {
+                      setTrialResetOpen(open);
+                      if (open) track('admin_trial_reset_opened', { targetUserId: selectedUserId });
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-orange-600 border-orange-500/30 hover:bg-orange-500/10"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                          Reset Trial
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Reset Trial Eligibility?</DialogTitle>
+                          <DialogDescription>
+                            This will allow this user to start a free trial again. Use only for support recovery, billing issues, or approved exceptions.
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        {trialEligible && (
+                          <div className="bg-orange-500/10 border border-orange-500/20 rounded-md px-3 py-2 text-sm text-orange-600">
+                            ⚠ This user is already eligible for a trial.
+                          </div>
+                        )}
+
+                        <div className="space-y-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-medium">Reason for reset *</Label>
+                            <Select value={trialResetReason} onValueChange={setTrialResetReason}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a reason…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="billing_bug">Billing bug</SelectItem>
+                                <SelectItem value="failed_onboarding">Failed onboarding / purchase issue</SelectItem>
+                                <SelectItem value="support_recovery">Support recovery</SelectItem>
+                                <SelectItem value="promo_partner">Promo / partner exception</SelectItem>
+                                <SelectItem value="beta_testing">Beta testing issue</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-medium">Additional details</Label>
+                            <Textarea
+                              placeholder="Optional notes about this reset…"
+                              value={trialResetNote}
+                              onChange={(e) => setTrialResetNote(e.target.value)}
+                              className="resize-none"
+                              rows={2}
+                            />
+                          </div>
+                        </div>
+
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setTrialResetOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={handleResetTrialEligibility}
+                            disabled={!trialResetReason || trialResetLoading}
+                            className="bg-orange-600 hover:bg-orange-700 text-white"
+                          >
+                            {trialResetLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                            Confirm Reset
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
                   <AlertDialog>
