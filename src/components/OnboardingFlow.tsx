@@ -12,7 +12,7 @@ import { NativePurchaseSheet } from './purchase/NativePurchaseSheet';
 import { track, type PlanId, type BillingCycle } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
-import { isNativeApp } from '@/lib/platform';
+import { isNativeApp, getPlatform } from '@/lib/platform';
 import { toast } from 'sonner';
 
 export interface OnboardingData {
@@ -87,10 +87,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   const handleSelectPaid = async (planId: PlanId, billingCycle: BillingCycle) => {
+    console.log('[Onboarding] handleSelectPaid', { planId, billingCycle, native, rcAvailable, rcLoading, platform: getPlatform(), hasWebkit: !!(window as any).webkit?.messageHandlers });
     track('onboarding_plan_checkout_started', { planId, billingCycle, native });
 
     try {
       if (native) {
+        console.log('[Onboarding] → Native path (RevenueCat)');
         if (rcLoading) {
           toast.info('Loading purchase options… please wait.');
           return;
@@ -106,6 +108,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         return;
       }
 
+      console.log('[Onboarding] → Web path (Stripe)');
       await createCheckout(planId, billingCycle, 'onboarding');
       toast.info('Redirecting to checkout...');
     } catch (err) {

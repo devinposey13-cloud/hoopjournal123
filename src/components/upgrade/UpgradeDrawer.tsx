@@ -16,7 +16,7 @@ import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
 import { type PlanId, type BillingCycle, planCatalog, getPlanPrice, track } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
-import { isNativeApp } from '@/lib/platform';
+import { isNativeApp, getPlatform } from '@/lib/platform';
 import { toast } from 'sonner';
 
 export interface UpgradeDrawerConfig {
@@ -56,10 +56,12 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
   const periodLabel = cycle === 'monthly' ? 'mo' : 'yr';
 
   const handleUpgrade = async () => {
+    console.log('[UpgradeDrawer] handleUpgrade', { planId: config.recommendedPlan, cycle, native, rcAvailable, rcLoading, platform: getPlatform() });
     track('upgrade_clicked', { planId: config.recommendedPlan, cycle, native });
     setIsLoading(true);
     try {
       if (native) {
+        console.log('[UpgradeDrawer] → Native path (RevenueCat)');
         if (rcLoading) {
           toast.info('Loading purchase options… please wait.');
           return;
@@ -78,6 +80,7 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
         return;
       }
       // Web: Stripe
+      console.log('[UpgradeDrawer] → Web path (Stripe)');
       await createCheckout(config.recommendedPlan, cycle);
       toast.success('Redirecting to checkout...');
       onUpgrade(config.recommendedPlan);
