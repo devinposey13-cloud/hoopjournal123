@@ -467,6 +467,10 @@ export const faqItems = [
     answer: "Absolutely. You can upgrade, downgrade, or switch between monthly and yearly billing anytime. Changes take effect at the start of your next billing cycle.",
   },
   {
+    question: 'Is there a free trial?',
+    answer: "Yes! Pro comes with a 3-day free trial. You won't be charged until the trial ends, and you can cancel anytime before that.",
+  },
+  {
     question: 'What happens to my data if I downgrade?',
     answer: "Your data stays yours — always. If you downgrade, you'll keep everything you've logged. Some features may become limited (like AI insights), but your game history and stats are never deleted.",
   },
