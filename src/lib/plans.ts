@@ -335,6 +335,12 @@ export const paywallConfigs: Record<PaywallReason, PaywallConfig> = {
     recommendedPlan: 'pro',
     mode: 'fullscreen',
   },
+  pdf_export_limit: {
+    title: 'Unlock Unlimited Game Reports',
+    description: "Export official box scores, milestones, and AI breakdowns for every game.",
+    recommendedPlan: 'pro',
+    mode: 'modal',
+  },
   parent_dashboard: {
     title: 'Parent Dashboard.',
     description: "Give parents a dedicated view to follow your basketball journey and development.",
