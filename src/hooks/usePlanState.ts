@@ -107,6 +107,7 @@ export function usePlanState(): PlanState {
           });
           setLifetimeGamesLogged(data.lifetime_games_logged ?? 0);
           setLifetimeReportCards(data.lifetime_report_cards_generated ?? 0);
+          setLifetimePdfExports(data.lifetime_pdf_exports ?? 0);
         } else if (shouldGrandfather) {
           // No row yet — create one with grandfathered = true
           await supabase
