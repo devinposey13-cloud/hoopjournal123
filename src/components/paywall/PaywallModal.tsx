@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import { FeatureList } from '@/components/pricing/FeatureList';
 import { Separator } from '@/components/ui/separator';
-import { Lock, ArrowRight, RotateCcw, Loader2 } from 'lucide-react';
+import { Lock, ArrowRight, RotateCcw, Loader2, Check } from 'lucide-react';
 import {
   type PlanId,
   type BillingCycle,
@@ -42,8 +42,10 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
 
   const handleUpgrade = async () => {
     track('plan_selected', { planId: selectedPlan, billingCycle: cycle });
+    track('upgrade_clicked', { planId: selectedPlan, reason: reason });
     try {
       await purchasePlan(selectedPlan, cycle);
+      track('upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
       onUpgrade(selectedPlan);
     } catch {
       // Error handled by useBilling
@@ -59,6 +61,15 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
     }
   };
 
+  // Value bullets for limit-hit scenarios
+  const isLimitHit = reason === 'game_limit' || reason === 'report_card_limit';
+  const valueBullets = isLimitHit ? [
+    'Unlimited game logs',
+    'Full report cards & sharing',
+    'Performance analytics',
+    'AI Coach insights',
+  ] : null;
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md mx-auto p-0 overflow-hidden">
@@ -66,10 +77,14 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
         <div className="gradient-primary p-6 text-primary-foreground">
           <div className="flex items-center gap-2 mb-2">
             <Lock className="w-5 h-5" />
-            <DialogTitle className="text-lg font-bold">{config.title}</DialogTitle>
+            <DialogTitle className="text-lg font-bold">
+              {isLimitHit ? "You've reached your free limit" : config.title}
+            </DialogTitle>
           </div>
           <DialogDescription className="text-primary-foreground/80 text-sm">
-            {config.description}
+            {isLimitHit
+              ? 'Upgrade to continue tracking your progress and unlock your full potential.'
+              : config.description}
           </DialogDescription>
         </div>
 
@@ -78,6 +93,18 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
         </DialogHeader>
 
         <div className="p-6 space-y-5">
+          {/* Value bullets for limit scenarios */}
+          {valueBullets && (
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              {valueBullets.map((bullet) => (
+                <div key={bullet} className="flex items-center gap-2 text-sm">
+                  <Check className="w-4 h-4 text-primary shrink-0" />
+                  <span>{bullet}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Billing toggle */}
           <div className="flex justify-center">
             <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />

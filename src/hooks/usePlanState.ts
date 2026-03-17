@@ -15,6 +15,7 @@ interface PlanState {
   accessBadge: AccessBadge;
   usage: UsageData;
   lifetimeGamesLogged: number;
+  lifetimeReportCards: number;
   paywallOpen: boolean;
   paywallReason: PaywallReason | null;
   loading: boolean;
@@ -22,6 +23,10 @@ interface PlanState {
   openPaywall: (reason: PaywallReason) => void;
   closePaywall: () => void;
   canLogGame: () => boolean;
+  canGenerateReportCard: () => boolean;
+  incrementReportCards: () => void;
+  freeGamesRemaining: number;
+  freeReportCardsRemaining: number;
 }
 
 const defaultAccessInfo: UserAccessInfo = {
@@ -41,6 +46,7 @@ export function usePlanState(): PlanState {
   const { subscriptionStatus } = useSubscription();
   const [accessInfo, setAccessInfo] = useState<UserAccessInfo>(defaultAccessInfo);
   const [lifetimeGamesLogged, setLifetimeGamesLogged] = useState(0);
+  const [lifetimeReportCards, setLifetimeReportCards] = useState(0);
   const [loading, setLoading] = useState(true);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null);
@@ -95,6 +101,7 @@ export function usePlanState(): PlanState {
             subscriptionStatus: subscriptionStatus || undefined,
           });
           setLifetimeGamesLogged(data.lifetime_games_logged ?? 0);
+          setLifetimeReportCards(data.lifetime_report_cards_generated ?? 0);
         } else if (shouldGrandfather) {
           // No row yet — create one with grandfathered = true
           await supabase
@@ -128,6 +135,11 @@ export function usePlanState(): PlanState {
 
     const config = paywallConfigs[reason];
     track('paywall_shown', { reason, recommendedPlan: config.recommendedPlan });
+    // Track free limit hit for conversion analytics
+    if (reason === 'game_limit' || reason === 'report_card_limit') {
+      track('free_limit_hit', { limitType: reason });
+    }
+    track('upgrade_modal_opened', { reason });
     setPaywallReason(reason);
     setPaywallOpen(true);
   }, [accessInfo]);
@@ -146,6 +158,30 @@ export function usePlanState(): PlanState {
     return lifetimeGamesLogged < limits.maxGamesTotal;
   }, [effectivePlan, lifetimeGamesLogged]);
 
+  const canGenerateReportCard = useCallback(() => {
+    const limits = planCatalog[effectivePlan].limits;
+    if (limits.maxReportCards === null) return true;
+    return lifetimeReportCards < limits.maxReportCards;
+  }, [effectivePlan, lifetimeReportCards]);
+
+  const incrementReportCards = useCallback(async () => {
+    setLifetimeReportCards(prev => prev + 1);
+    if (session?.user?.id) {
+      await supabase
+        .from('plan_overrides')
+        .upsert({
+          user_id: session.user.id,
+          lifetime_report_cards_generated: lifetimeReportCards + 1,
+        }, { onConflict: 'user_id' });
+    }
+  }, [session?.user?.id, lifetimeReportCards]);
+
+  // Compute remaining counts
+  const maxGames = planCatalog[effectivePlan].limits.maxGamesTotal;
+  const maxReports = planCatalog[effectivePlan].limits.maxReportCards;
+  const freeGamesRemaining = maxGames !== null ? Math.max(0, maxGames - lifetimeGamesLogged) : Infinity;
+  const freeReportCardsRemaining = maxReports !== null ? Math.max(0, maxReports - lifetimeReportCards) : Infinity;
+
   return {
     currentPlan: effectivePlan,
     subscriptionPlan: accessInfo.subscriptionPlan,
@@ -153,6 +189,7 @@ export function usePlanState(): PlanState {
     accessBadge,
     usage: mockUsage,
     lifetimeGamesLogged,
+    lifetimeReportCards,
     paywallOpen,
     paywallReason,
     loading,
@@ -160,6 +197,10 @@ export function usePlanState(): PlanState {
     openPaywall,
     closePaywall,
     canLogGame,
+    canGenerateReportCard,
+    incrementReportCards,
+    freeGamesRemaining,
+    freeReportCardsRemaining,
   };
 }
 

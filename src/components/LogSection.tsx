@@ -8,6 +8,7 @@ import { AddGameDialog } from '@/components/AddGameDialog';
 import { AddScheduleDialog } from '@/components/AddScheduleDialog';
 import { ImportScheduleDialog } from '@/components/ImportScheduleDialog';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
+import { FreeLimitBanner } from '@/components/FreeLimitBanner';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { ScheduleCalendar } from '@/components/ScheduleCalendar';
 import { GameStats, ScheduledGame, PlayerTeam } from '@/types/basketball';
@@ -332,6 +333,8 @@ export function LogSection({
 
   return (
     <div className="space-y-5 animate-fade-in">
+      {/* Free Limit Warning */}
+      <FreeLimitBanner />
       {/* Page Header */}
       <div className="space-y-1">
         <h1 className="text-xl font-bold text-foreground flex items-center gap-2">

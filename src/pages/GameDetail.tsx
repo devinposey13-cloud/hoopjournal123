@@ -40,7 +40,7 @@ import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { calculateGameScore } from '@/utils/gameGrading';
 import { usePlan } from '@/hooks/usePlanState';
 import { canUseFeature } from '@/lib/plans';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users, Check, Share2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users, Check, Share2, Lock } from 'lucide-react';
 import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import {
   Select,
@@ -85,7 +85,7 @@ export default function GameDetail() {
     getOccurrenceCount,
   } = useGameWithMilestones();
   const { teams } = usePlayerTeams();
-  const { currentPlan, openPaywall } = usePlan();
+  const { currentPlan, openPaywall, canGenerateReportCard, incrementReportCards } = usePlan();
   const { games: allGames } = useCloudData();
   const insightsHook = usePostGameInsights(allGames);
   const [lastSavedGameId, setLastSavedGameId] = useState<string | null>(null);
@@ -1007,18 +1007,27 @@ export default function GameDetail() {
             </Button>
             <Button 
               onClick={() => {
+                if (!canGenerateReportCard()) {
+                  openPaywall('report_card_limit');
+                  return;
+                }
                 if (!canUseFeature(currentPlan, 'reportCard')) {
                   openPaywall('report_card');
                   return;
                 }
+                incrementReportCards();
                 setShowReportCard(true);
               }}
               size={isMobile ? "icon" : "default"}
               title="Share Report Card"
               className="gradient-primary"
             >
-              <Share2 className={cn("w-4 h-4", !isMobile && "mr-2")} />
-              {!isMobile && "Report Card"}
+              {!canGenerateReportCard() ? (
+                <Lock className={cn("w-4 h-4", !isMobile && "mr-2")} />
+              ) : (
+                <Share2 className={cn("w-4 h-4", !isMobile && "mr-2")} />
+              )}
+              {!isMobile && (!canGenerateReportCard() ? "Upgrade to Share" : "Report Card")}
               {isMobile && <span className="sr-only">Report Card</span>}
             </Button>
           </div>

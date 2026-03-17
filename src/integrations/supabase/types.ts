@@ -793,6 +793,7 @@ export type Database = {
           id: string
           is_grandfathered: boolean
           lifetime_games_logged: number
+          lifetime_report_cards_generated: number
           promo_access_until: string | null
           promo_eligible: boolean
           promo_locked_in: boolean
@@ -810,6 +811,7 @@ export type Database = {
           id?: string
           is_grandfathered?: boolean
           lifetime_games_logged?: number
+          lifetime_report_cards_generated?: number
           promo_access_until?: string | null
           promo_eligible?: boolean
           promo_locked_in?: boolean
@@ -827,6 +829,7 @@ export type Database = {
           id?: string
           is_grandfathered?: boolean
           lifetime_games_logged?: number
+          lifetime_report_cards_generated?: number
           promo_access_until?: string | null
           promo_eligible?: boolean
           promo_locked_in?: boolean

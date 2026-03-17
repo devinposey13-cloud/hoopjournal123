@@ -49,6 +49,7 @@ export interface Plan {
     historyDays: number | null; // null = unlimited
     maxLevel: number | null; // null = unlimited
     maxGamesTotal: number | null; // null = unlimited
+    maxReportCards: number | null; // null = unlimited
     seasonReports: boolean;
     exportPdf: boolean;
     parentDashboard: boolean;
@@ -141,7 +142,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       { label: 'Log up to 3 games', included: true },
       { label: 'Basic stat tracking', included: true },
       { label: 'XP progression', included: true },
-      { label: 'Limited report card generation', included: true },
+      { label: 'Up to 3 report cards', included: true },
       { label: 'Limited AI Coach prompts', included: true },
       { label: 'Advanced analytics', included: false },
       { label: 'Full report cards & sharing', included: false },
@@ -152,6 +153,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       historyDays: 30,
       maxLevel: 10,
       maxGamesTotal: 3,
+      maxReportCards: 3,
       seasonReports: false,
       exportPdf: false,
       parentDashboard: false,
@@ -189,6 +191,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       historyDays: null,
       maxLevel: null,
       maxGamesTotal: null,
+      maxReportCards: null,
       seasonReports: true,
       exportPdf: true,
       parentDashboard: false,
@@ -225,6 +228,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       historyDays: null,
       maxLevel: null,
       maxGamesTotal: null,
+      maxReportCards: null,
       seasonReports: true,
       exportPdf: true,
       parentDashboard: true,
@@ -277,7 +281,8 @@ export type PaywallReason =
   | 'export_pdf'
   | 'parent_dashboard'
   | 'recruiting_profile'
-  | 'report_card';
+  | 'report_card'
+  | 'report_card_limit';
 
 export interface PaywallConfig {
   title: string;
@@ -347,6 +352,12 @@ export const paywallConfigs: Record<PaywallReason, PaywallConfig> = {
     recommendedPlan: 'pro',
     mode: 'modal',
   },
+  report_card_limit: {
+    title: "You've used all your free report cards.",
+    description: "You've generated 3 report cards on the Free plan. Upgrade to Pro for unlimited report cards and sharing.",
+    recommendedPlan: 'pro',
+    mode: 'modal',
+  },
 };
 
 // Mock usage data
@@ -381,7 +392,7 @@ export const compareFeatures: CompareFeature[] = [
   { label: 'Basic stat tracking', free: true, pro: true, elite: true },
   { label: 'XP & Leveling', free: 'Cap at Lv 10', pro: 'Unlimited', elite: 'Unlimited' },
   { label: 'AI Coach prompts', free: '2/month', pro: 'Unlimited', elite: 'Unlimited' },
-  { label: 'Report card generation', free: 'Limited', pro: 'Full', elite: 'Full' },
+  { label: 'Report card generation', free: '3 total', pro: 'Unlimited', elite: 'Unlimited' },
   { label: 'Report card sharing', free: false, pro: true, elite: true },
   { label: 'Performance trends & analytics', free: false, pro: true, elite: true },
   { label: 'Career stats', free: false, pro: true, elite: true },

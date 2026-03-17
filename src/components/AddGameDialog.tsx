@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -76,11 +76,11 @@ export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsume
           <Button 
             className="gradient-primary font-semibold"
             size={isMobile ? "icon" : "default"}
-            title="Add Game"
+            title={canLogGame() ? "Add Game" : "Upgrade to log more games"}
           >
-            <Plus className="w-4 h-4" />
-            {!isMobile && <span className="ml-2">Add Game</span>}
-            {isMobile && <span className="sr-only">Add Game</span>}
+            {canLogGame() ? <Plus className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+            {!isMobile && <span className="ml-2">{canLogGame() ? 'Add Game' : 'Upgrade to Log'}</span>}
+            {isMobile && <span className="sr-only">{canLogGame() ? 'Add Game' : 'Upgrade to Log'}</span>}
           </Button>
         )}
       </DialogTrigger>
