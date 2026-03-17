@@ -459,10 +459,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                           variant="outline"
                           className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10"
                           onClick={() => {
-                            try {
-                              const { track } = require('@/lib/plans');
-                              track('cancel_subscription_clicked', { billingSource: effectiveBillingSource });
-                            } catch {}
+                            track('cancel_subscription_clicked', { billingSource: effectiveBillingSource });
                           }}
                         >
                           <XCircle className="w-4 h-4 mr-2" />
