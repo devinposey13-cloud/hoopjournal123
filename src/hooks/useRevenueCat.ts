@@ -52,6 +52,12 @@ export function useRevenueCat(): UseRevenueCatReturn {
   const [offerings, setOfferings] = useState<RCPackage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [purchases, setPurchases] = useState<any>(null);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+
+  const log = (msg: string) => {
+    console.log(msg);
+    setDebugLog((prev) => [...prev, `${new Date().toISOString().slice(11, 19)} ${msg}`]);
+  };
 
   // Initialise SDK on native only
   useEffect(() => {
