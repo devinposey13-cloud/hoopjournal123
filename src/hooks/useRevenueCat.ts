@@ -168,15 +168,19 @@ export function useRevenueCat(): UseRevenueCatReturn {
         }
 
         if (!bridgeReady) {
+          setStatusReason('plugin_not_registered');
           log('[RC] Bridge not in registry. Attempting direct configure() as fallback…');
           try {
+            log('[RC] configure() start (fallback path)…');
             await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
-            log('[RC] Direct configure() succeeded despite registry miss ✓');
+            log('[RC] configure() success on fallback path ✓');
             bridgeReady = true;
           } catch (directErr) {
             const errMsg = directErr instanceof Error ? directErr.message : String(directErr);
-            log(`[RC] ❌ Direct configure() also failed: ${errMsg}`);
+            setStatusReason('configure_failed');
+            log(`[RC] ❌ configure() failure on fallback path: ${errMsg}`);
             if (errMsg.includes('Web not supported in this plugin')) {
+              setStatusReason('configure_failed_web_impl');
               log(
                 `[RC] ❌ Exact cause: RevenueCat resolved to the Capacitor WEB implementation while shellPlatform=${getPlatform()} and runtimePlatform=${getCapacitorRuntimePlatform()}.`
               );
