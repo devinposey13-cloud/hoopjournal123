@@ -142,7 +142,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       { label: 'Log up to 3 games', included: true },
       { label: 'Basic stat tracking', included: true },
       { label: 'XP progression', included: true },
-      { label: 'Limited report card generation', included: true },
+      { label: 'Up to 3 report cards', included: true },
       { label: 'Limited AI Coach prompts', included: true },
       { label: 'Advanced analytics', included: false },
       { label: 'Full report cards & sharing', included: false },
