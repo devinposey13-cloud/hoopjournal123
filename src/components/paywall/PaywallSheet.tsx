@@ -198,7 +198,7 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                 Everything you unlock
               </p>
               <div className="space-y-2.5">
-                {VALUE_BULLETS.map((b) => (
+                {bullets.map((b) => (
                   <div key={b.label} className="flex items-center gap-3">
                     <span className="text-base">{b.icon}</span>
                     <span className="text-sm text-white/80">{b.label}</span>
