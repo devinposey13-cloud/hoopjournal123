@@ -32,10 +32,10 @@ export function AddClipDialog({ onAddClip, isMobile }: AddClipDialogProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Validate file size (100MB limit)
-    const maxSize = 100 * 1024 * 1024;
+    // Validate file size (250MB limit)
+    const maxSize = 250 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error('Please upload a video under 100MB.');
+      toast.error('Please upload a video under 250MB.');
       e.target.value = '';
       return;
     }
