@@ -176,13 +176,14 @@ export default function Upgrade() {
           <p className="text-xs text-muted-foreground mt-4">
             Cancel anytime. Your data stays yours.
           </p>
-          {/* Debug toggle — triple-tap "Cancel anytime" text */}
-          <p
-            className="text-[9px] text-muted-foreground/30 mt-2 cursor-pointer select-none"
+          {/* Debug toggle — always visible */}
+          <button
+            type="button"
+            className="text-xs text-muted-foreground/60 mt-4 py-2 px-4 underline cursor-pointer select-none"
             onClick={() => setShowDebug((v) => !v)}
           >
             v{native ? 'native' : 'web'} · tap to debug
-          </p>
+          </button>
           {showDebug && (
             <div className="mt-3 bg-black/90 text-green-400 text-[10px] font-mono rounded-lg p-3 text-left max-h-48 overflow-y-auto whitespace-pre-wrap">
               <div>platform: {getPlatform()}</div>
