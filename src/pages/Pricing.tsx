@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -24,11 +25,12 @@ export default function Pricing() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, isLoading: rcLoading } = useRevenueCat();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, isLoading: rcLoading, debugLog } = useRevenueCat();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [promoApplied, setPromoApplied] = useState(false);
   const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
   const [nativeSelectedPlan, setNativeSelectedPlan] = useState<PlanId>('pro');
+  const [showDebug, setShowDebug] = useState(false);
   const native = isNativeApp();
 
   // Check if user already has promo_eligible in plan_overrides
@@ -205,6 +207,26 @@ export default function Pricing() {
           <p className="text-xs text-muted-foreground mt-1">
             © 2026 Hoop Journal™. Questions? Contact us at support@hoopjournal.me
           </p>
+          <button
+            type="button"
+            className="text-xs text-muted-foreground/60 mt-4 py-2 px-4 underline cursor-pointer select-none"
+            onClick={() => setShowDebug((v) => !v)}
+          >
+            v{native ? 'native' : 'web'} · tap to debug
+          </button>
+          {showDebug && (
+            <div className="mt-3 bg-black/90 text-green-400 text-[10px] font-mono rounded-lg p-3 text-left max-h-48 overflow-y-auto whitespace-pre-wrap">
+              <div>platform: {getPlatform()}</div>
+              <div>isNativeApp: {String(native)}</div>
+              <div>rcAvailable: {String(rcAvailable)}</div>
+              <div>rcLoading: {String(rcLoading)}</div>
+              <div>offerings: {rcOfferings.length}</div>
+              <div>webkit: {String(!!(window as any).webkit?.messageHandlers)}</div>
+              <div className="border-t border-green-800 mt-2 pt-2">
+                {debugLog.length === 0 ? '(no log entries yet)' : debugLog.map((l, i) => <div key={i}>{l}</div>)}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
