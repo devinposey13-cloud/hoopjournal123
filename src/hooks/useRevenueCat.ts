@@ -62,9 +62,9 @@ export function useRevenueCat(): UseRevenueCatReturn {
   // Initialise SDK on native only
   useEffect(() => {
     const native = isNativeApp();
-    console.log('[RevenueCat] useEffect — isNativeApp:', native, 'platform:', getPlatform(), 'hasWebkit:', !!(window as any).webkit?.messageHandlers);
+    log(`[RC] isNativeApp: ${native}, platform: ${getPlatform()}, webkit: ${!!(window as any).webkit?.messageHandlers}`);
     if (!native) {
-      console.log('[RevenueCat] Skipping init — not native');
+      log('[RC] Skipping init — not native');
       return;
     }
 
