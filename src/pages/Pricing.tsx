@@ -84,15 +84,21 @@ export default function Pricing() {
     console.log('[Pricing] handleSelectPlan', { planId, cycle, native, rcAvailable, rcLoading, platform: getPlatform() });
     track('upgrade_clicked', { planId, cycle, native });
 
-    // On native, use RevenueCat via NativePurchaseSheet
+    // On native, ONLY use RevenueCat — never fall back to Stripe
     if (native) {
-      console.log('[Pricing] → Native path (RevenueCat)');
+      console.log('[Pricing] → Native path (RevenueCat only, no Stripe fallback)');
       if (rcLoading) {
         toast.info('Loading purchase options… please wait.');
         return;
       }
       if (!rcAvailable) {
-        toast.error('In-app purchases are not available right now. Please try again.');
+        console.log('[Pricing] ✗ RC not available on native — blocking purchase');
+        toast.error('In-app purchases are not available right now. Please restart the app and try again.');
+        return;
+      }
+      if (rcOfferings.length === 0) {
+        console.log('[Pricing] ✗ RC available but 0 offerings — blocking purchase');
+        toast.error('Purchase options are temporarily unavailable. Please try again later.');
         return;
       }
       setNativeSelectedPlan(planId);
@@ -100,7 +106,7 @@ export default function Pricing() {
       return;
     }
 
-    // Web: Stripe checkout
+    // Web only: Stripe checkout
     console.log('[Pricing] → Web path (Stripe)');
     setLoadingPlan(planId);
     try {
