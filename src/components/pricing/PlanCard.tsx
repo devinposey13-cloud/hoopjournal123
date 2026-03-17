@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FeatureList } from './FeatureList';
 import { cn } from '@/lib/utils';
-import { type Plan, type BillingCycle, getPlanPrice, getYearlySavingsPercent, type PlanId, track } from '@/lib/plans';
+import { type Plan, type BillingCycle, getPlanPrice, getYearlySavingsPercent, type PlanId, track, getTrialConfig, getTrialCopy, getTrialCta } from '@/lib/plans';
 
 interface PlanCardProps {
   plan: Plan;
