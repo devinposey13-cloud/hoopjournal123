@@ -93,6 +93,18 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
         </DialogHeader>
 
         <div className="p-6 space-y-5">
+          {/* Value bullets for limit scenarios */}
+          {valueBullets && (
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              {valueBullets.map((bullet) => (
+                <div key={bullet} className="flex items-center gap-2 text-sm">
+                  <Check className="w-4 h-4 text-primary shrink-0" />
+                  <span>{bullet}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Billing toggle */}
           <div className="flex justify-center">
             <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />
