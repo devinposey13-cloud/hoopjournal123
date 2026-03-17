@@ -135,6 +135,11 @@ export function usePlanState(): PlanState {
 
     const config = paywallConfigs[reason];
     track('paywall_shown', { reason, recommendedPlan: config.recommendedPlan });
+    // Track free limit hit for conversion analytics
+    if (reason === 'game_limit' || reason === 'report_card_limit') {
+      track('free_limit_hit', { limitType: reason });
+    }
+    track('upgrade_modal_opened', { reason });
     setPaywallReason(reason);
     setPaywallOpen(true);
   }, [accessInfo]);
