@@ -22,9 +22,15 @@ export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied, nat
   const savings = getYearlySavingsPercent(plan.id);
   const isCurrent = currentPlan === plan.id;
   const isHighlighted = plan.highlighted;
+  const trial = getTrialConfig(plan.id, cycle);
+  const trialCopy = getTrialCopy(plan.id, cycle);
+  const trialCta = getTrialCta(plan.id, cycle);
 
   const handleClick = () => {
-    track('upgrade_clicked', { planId: plan.id });
+    track('upgrade_clicked', { planId: plan.id, hasTrial: trial.hasTrial });
+    if (trial.hasTrial) {
+      track('trial_offer_viewed', { planId: plan.id, cycle, trialDays: trial.trialDays });
+    }
     onSelect(plan.id);
   };
 
