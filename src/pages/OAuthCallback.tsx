@@ -141,11 +141,12 @@ export default function OAuthCallback() {
         const isOnLovableApp = window.location.hostname.includes('lovable.app');
         
         if (isMobileUA && isOnLovableApp) {
-          // Redirect tokens to the native app via custom URL scheme
+          // Despia expects the oauth/ prefix so it closes the native browser
+          // session and routes the WebView to /auth/callback with these params.
           console.log('[OAuthCallback] Mobile browser on lovable.app - redirecting to native app');
           setRedirectingToApp(true);
           
-          const deepLink = `${NATIVE_URL_SCHEME}://auth/callback?access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`;
+          const deepLink = `${NATIVE_URL_SCHEME}://oauth/auth/callback?access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`;
           window.location.href = deepLink;
           
           // Fallback: if deep link doesn't work, show a manual button
