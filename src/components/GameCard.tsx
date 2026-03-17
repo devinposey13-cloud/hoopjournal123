@@ -32,7 +32,7 @@ const SWIPE_THRESHOLD = 80;
 const DELETE_WIDTH = 80;
 
 export function GameCard({ game, profile, onDelete, teams, onTeamChange }: GameCardProps) {
-  const { currentPlan } = usePlan();
+  const { currentPlan, canExportPdf, incrementPdfExports, openPaywall } = usePlan();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [isSwipeOpen, setIsSwipeOpen] = useState(false);
