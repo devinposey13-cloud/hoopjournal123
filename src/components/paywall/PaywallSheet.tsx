@@ -95,6 +95,7 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   };
 
   const handleRestore = async () => {
+    try {
       await restorePurchases();
       toast.success('Purchases restored!');
     } catch {
