@@ -59,6 +59,7 @@ export function AuthForm() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
   const { signIn, signUp } = useAuth();
+  const googleTimeoutRef = useRef<number | null>(null);
 
   // Debug logging for native OAuth diagnosis
   const nativeDetected = isNativeApp();
