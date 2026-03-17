@@ -836,6 +836,16 @@ export async function exportGameBoxScorePdf(
     doc.text(splitText, 14, 40);
   }
 
+  // Apply watermarks and footer to all pages
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    addViralFooter(doc);
+    if (options?.isFreeUser) {
+      addFreeUserWatermark(doc);
+    }
+  }
+
   // Save or share the PDF
   const fileName = `${profile.team.replace(/\s+/g, '_')}_vs_${game.opponent.replace(/\s+/g, '_')}_${format(
     new Date(game.date),
