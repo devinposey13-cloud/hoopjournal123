@@ -1,0 +1,1 @@
+ALTER TABLE public.plan_overrides ADD COLUMN IF NOT EXISTS lifetime_pdf_exports integer NOT NULL DEFAULT 0;
