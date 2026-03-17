@@ -4,6 +4,10 @@
  * On web this hook is a no-op — all purchase flows go through Stripe.
  * On native, it lazily loads @revenuecat/purchases-capacitor, waits for the
  * Capacitor runtime to actually be native, and exposes purchase / restore helpers.
+ *
+ * KEY DIAGNOSTIC: If shellNative=true but the Purchases plugin resolves to the
+ * web stub, the native iOS framework was NOT bundled into the binary. The fix
+ * is: `npx cap sync ios && cd ios/App && pod install`, then rebuild in Xcode.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -32,7 +36,6 @@ export interface RCPackage {
   identifier: string;
   productId: string;
   priceString: string;
-  /** Period label e.g. "Monthly", "Annual" */
   period: string;
   planId: PlanId;
 }
@@ -68,9 +71,32 @@ function getDiagnostics(): RevenueCatDiagnostics {
 }
 
 /**
- * On web, returns a stub with isAvailable=false.
- * On native, lazily loads @revenuecat/purchases-capacitor.
+ * Detect whether the dynamically-imported Purchases module is backed by
+ * the real native Capacitor plugin or the web stub.
+ *
+ * The web stub's configure() immediately throws "Web not supported in this plugin".
+ * Native implementations have an underlying bridge registered in the Capacitor
+ * plugin registry under "PurchasesPlugin" or "Purchases".
  */
+function detectPurchasesImplementation(PurchasesObj: any): 'native' | 'web' | 'unknown' {
+  try {
+    // Check 1: Capacitor plugin registry — the native plugin registers itself
+    const pluginAvailable = Capacitor.isPluginAvailable('Purchases');
+    if (pluginAvailable) return 'native';
+
+    // Check 2: If the plugin object has a _pluginInstance or bridge reference, it's native
+    if (PurchasesObj?._pluginInstance) return 'native';
+
+    // Check 3: Inspect the prototype for web-stub markers
+    // The web implementation typically has methods that throw "not supported"
+    // We can't call them, but if the plugin isn't in the registry, it's web
+    if (!pluginAvailable) return 'web';
+  } catch {
+    // fall through
+  }
+  return 'unknown';
+}
+
 export function useRevenueCat(): UseRevenueCatReturn {
   const { user } = useAuth();
   const [isAvailable, setIsAvailable] = useState(false);
@@ -119,93 +145,95 @@ export function useRevenueCat(): UseRevenueCatReturn {
         setPurchases(null);
         setStatusReason(null);
 
-        const MAX_PLUGIN_RETRIES = 8;
-        const RETRY_DELAY = 600;
-        const PLUGIN_NAME = 'Purchases';
+        // ─── Step 1: Wait for the Capacitor bridge to register the plugin ───
+        const MAX_BRIDGE_RETRIES = 10;
+        const RETRY_DELAY = 500;
 
-        if (!diagnostics.runtimeNative) {
-          setStatusReason('shell_native_but_runtime_web');
+        log('[RC] Waiting for Capacitor bridge to register Purchases plugin…');
+
+        let pluginRegistered = false;
+        for (let i = 0; i < MAX_BRIDGE_RETRIES; i++) {
+          if (cancelled) return;
+
+          const available = Capacitor.isPluginAvailable('Purchases');
+          const rp = getCapacitorRuntimePlatform();
+          const rn = isCapacitorNativeRuntime();
+
           log(
-            `[RC] ⚠ Shell is native (${diagnostics.shellPlatform}) but Capacitor runtime reports '${diagnostics.runtimePlatform}'. Continuing with shell-first RevenueCat init attempt…`
+            `[RC] Bridge poll ${i + 1}/${MAX_BRIDGE_RETRIES}: pluginAvailable=${available}, runtimePlatform=${rp}, runtimeNative=${rn}`
           );
-          log('[RC] This means TestFlight is inside a native WebView, but the Capacitor bridge/runtime has not identified itself as native yet.');
+
+          if (available) {
+            pluginRegistered = true;
+            break;
+          }
+
+          if (i < MAX_BRIDGE_RETRIES - 1) {
+            await new Promise((r) => setTimeout(r, RETRY_DELAY));
+          }
         }
 
-        log('[RC] Importing purchases-capacitor…');
+        // ─── Step 2: If plugin never registered, it's not in the binary ───
+        if (!pluginRegistered) {
+          log(
+            `[RC] ❌ Capacitor.isPluginAvailable('Purchases') = false after ${MAX_BRIDGE_RETRIES} attempts.`
+          );
+          log(
+            '[RC] DIAGNOSIS: The native RevenueCat iOS framework is NOT present in this binary. ' +
+            'The @revenuecat/purchases-capacitor npm package is installed, but the native iOS ' +
+            'CocoaPod (PurchasesHybridCommon) was not bundled. This means `npx cap sync ios` ' +
+            'and/or `cd ios/App && pod install` was not run before building the IPA.'
+          );
+          setStatusReason('native_plugin_missing_in_build');
+          return;
+        }
+
+        // ─── Step 3: Dynamic import & native-vs-web detection ───
+        log('[RC] Plugin registered ✓. Importing @revenuecat/purchases-capacitor…');
         const { Purchases } = await import('@revenuecat/purchases-capacitor');
         if (cancelled) return;
         log('[RC] Import OK');
 
-        let bridgeReady = false;
+        const implType = detectPurchasesImplementation(Purchases);
+        log(`[RC] Purchases implementation type: ${implType}`);
 
-        for (let i = 0; i < MAX_PLUGIN_RETRIES; i++) {
-          if (cancelled) return;
-
-          const runtimePlatform = getCapacitorRuntimePlatform();
-          const runtimeNative = isCapacitorNativeRuntime();
-          const available = Capacitor.isPluginAvailable(PLUGIN_NAME);
-
+        if (implType === 'web') {
           log(
-            `[RC] Bridge check ${i + 1}/${MAX_PLUGIN_RETRIES}: shellPlatform=${diagnostics.shellPlatform}, shellNative=${diagnostics.shellNative ? '✓' : '✗'}, runtimePlatform=${runtimePlatform}, runtimeNative=${runtimeNative ? '✓' : '✗'}, plugin=${available ? '✓ available' : '✗ not yet'}`
+            '[RC] ❌ IMPORTED WEB IMPLEMENTATION IN NATIVE SHELL. ' +
+            'The dynamic import of @revenuecat/purchases-capacitor resolved to the web stub ' +
+            'instead of the native Capacitor bridge. This happens when the Vite bundler resolves ' +
+            'the package to its web entry point because the native plugin is not in the binary. ' +
+            'FIX: run `npx cap sync ios && cd ios/App && pod install`, then rebuild in Xcode.'
           );
-
-          if (available) {
-            bridgeReady = true;
-            break;
-          }
-
-          if (i < MAX_PLUGIN_RETRIES - 1) {
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-          }
+          setStatusReason('imported_web_impl_in_native_shell');
+          return;
         }
 
-        if (!bridgeReady) {
-          setStatusReason('plugin_not_registered');
-          log('[RC] Bridge not in registry. Attempting direct configure() as fallback…');
-          try {
-            log('[RC] configure() start (fallback path)…');
-            await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
-            log('[RC] configure() success on fallback path ✓');
-            bridgeReady = true;
-          } catch (directErr) {
-            const errMsg = directErr instanceof Error ? directErr.message : String(directErr);
-            setStatusReason('configure_failed');
-            log(`[RC] ❌ configure() failure on fallback path: ${errMsg}`);
-            if (errMsg.includes('Web not supported in this plugin')) {
-              setStatusReason('configure_failed_web_impl');
-              log(
-                `[RC] ❌ Exact cause: RevenueCat resolved to the Capacitor WEB implementation while shellPlatform=${getPlatform()} and runtimePlatform=${getCapacitorRuntimePlatform()}.`
-              );
-            }
-            if (errMsg.includes('Web') || errMsg.includes('not implemented') || errMsg.includes('Unimplemented')) {
-              log('[RC] ❌ Native RevenueCat module is unavailable in this build/runtime.');
-            }
+        // ─── Step 4: Configure ───
+        log('[RC] Attempting Purchases.configure()…');
+        try {
+          await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
+          log('[RC] configure() success ✓');
+        } catch (configErr: any) {
+          const msg = configErr?.message ?? String(configErr);
+          const stack = configErr?.stack ?? '(no stack)';
+          log(`[RC] configure() threw: "${msg}"`);
+          log(`[RC] configure() stack: ${stack}`);
+
+          if (msg.includes('already configured') || msg.includes('Already configured')) {
+            log('[RC] Already configured (expected) ✓');
+          } else if (msg.includes('Web not supported') || msg.includes('not implemented') || msg.includes('Unimplemented')) {
+            log(
+              '[RC] ❌ configure() hit web implementation despite plugin registry claiming availability. ' +
+              `shellPlatform=${diagnostics.shellPlatform}, runtimePlatform=${getCapacitorRuntimePlatform()}, ` +
+              `runtimeNative=${isCapacitorNativeRuntime()}.`
+            );
+            setStatusReason('configure_failed_web_impl');
             return;
-          }
-        }
-
-        if (cancelled) return;
-
-        if (bridgeReady && !purchases) {
-          try {
-            log('[RC] configure() start…');
-            await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
-            log('[RC] configure() success ✓');
-          } catch (configErr) {
-            const msg = configErr instanceof Error ? configErr.message : String(configErr);
-            if (msg.includes('already configured') || msg.includes('Already configured')) {
-              log('[RC] Already configured (expected) ✓');
-            } else {
-              setStatusReason('configure_failed');
-              log(`[RC] ❌ configure() failure: ${msg}`);
-              if (msg.includes('Web not supported in this plugin')) {
-                setStatusReason('configure_failed_web_impl');
-                log(
-                  `[RC] ❌ Exact cause: Purchases.configure() hit the WEB implementation. shellPlatform=${getPlatform()}, runtimePlatform=${getCapacitorRuntimePlatform()}, runtimeNative=${isCapacitorNativeRuntime()}.`
-                );
-              }
-              return;
-            }
+          } else {
+            log(`[RC] ❌ configure() unexpected error: ${msg}`);
+            setStatusReason('configure_failed');
+            return;
           }
         }
 
@@ -214,34 +242,35 @@ export function useRevenueCat(): UseRevenueCatReturn {
         setIsAvailable(true);
         setStatusReason(null);
 
+        // ─── Step 5: Log in user ───
         if (user?.id) {
           log(`[RC] Logging in user: ${user.id.slice(0, 8)}…`);
           try {
             await Purchases.logIn({ appUserID: user.id });
             log('[RC] User logged in ✓');
-          } catch (loginErr) {
-            log(`[RC] ⚠ Login error (non-fatal): ${loginErr instanceof Error ? loginErr.message : String(loginErr)}`);
+          } catch (loginErr: any) {
+            log(`[RC] ⚠ Login error (non-fatal): ${loginErr?.message ?? String(loginErr)}`);
           }
         }
 
+        // ─── Step 6: Fetch offerings ───
         log('[RC] getOfferings() start…');
         const rcOfferings = await Purchases.getOfferings();
         log('[RC] getOfferings() success ✓');
+
         const current = (rcOfferings as any)?.current;
         const allPkgs = current?.availablePackages ?? [];
         log(`[RC] Offerings: current=${!!current}, packages=${allPkgs.length}`);
-        log(`[RC] Raw offerings response: ${JSON.stringify(rcOfferings)}`);
 
         if (allPkgs.length === 0) {
           setStatusReason('offerings_empty');
           log(`[RC] Raw offerings keys: ${Object.keys(rcOfferings || {}).join(', ')}`);
           const allOfferings = (rcOfferings as any)?.all;
           if (allOfferings) {
-            const offeringKeys = Object.keys(allOfferings);
-            log(`[RC] All offerings: ${offeringKeys.join(', ')} (${offeringKeys.length} total)`);
-            offeringKeys.forEach((key) => {
-              const offering = allOfferings[key];
-              const pkgCount = offering?.availablePackages?.length ?? 0;
+            const keys = Object.keys(allOfferings);
+            log(`[RC] All offerings: ${keys.join(', ')} (${keys.length} total)`);
+            keys.forEach((key) => {
+              const pkgCount = allOfferings[key]?.availablePackages?.length ?? 0;
               log(`[RC]   offering '${key}': ${pkgCount} packages`);
             });
           }
@@ -256,12 +285,6 @@ export function useRevenueCat(): UseRevenueCatReturn {
         });
 
         if (allPkgs.length > 0) {
-          const unmapped = allPkgs.filter((pkg: any) => !RC_PRODUCT_TO_PLAN[pkg.product.identifier]);
-          if (unmapped.length > 0) {
-            setStatusReason('offering_mapping_mismatch');
-            log(`[RC] ⚠ ${unmapped.length} UNMAPPED: ${unmapped.map((p: any) => p.product.identifier).join(', ')}`);
-          }
-
           const mapped: RCPackage[] = allPkgs
             .filter((pkg: any) => RC_PRODUCT_TO_PLAN[pkg.product.identifier])
             .map((pkg: any) => ({
@@ -272,31 +295,31 @@ export function useRevenueCat(): UseRevenueCatReturn {
               planId: RC_PRODUCT_TO_PLAN[pkg.product.identifier],
             }));
 
-          log(`[RC] ✓ Mapped ${mapped.length} packages: ${mapped.map((item) => `${item.productId}→${item.planId}`).join(', ')}`);
+          log(`[RC] ✓ Mapped ${mapped.length} packages`);
           setOfferings(mapped);
 
           if (mapped.length === 0) {
             setStatusReason('offering_mapping_mismatch');
             log('[RC] ⚠ All packages filtered out — check RC_PRODUCT_TO_PLAN mapping');
           }
-        } else {
-          log('[RC] ⚠ 0 packages. Check RevenueCat dashboard: products attached to "current" offering?');
         }
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
+      } catch (err: any) {
+        const errMsg = err?.message ?? String(err);
+        const stack = err?.stack ?? '(no stack)';
         setIsAvailable(false);
         setPurchases(null);
         setOfferings([]);
-        setStatusReason('init_error');
         log(`[RC] ❌ Init error: ${errMsg}`);
-        if (errMsg.includes('Web not supported in this plugin')) {
+        log(`[RC] ❌ Stack: ${stack}`);
+
+        if (errMsg.includes('Web not supported') || errMsg.includes('not implemented') || errMsg.includes('Unimplemented')) {
           setStatusReason('configure_failed_web_impl');
           log(
-            `[RC] Exact cause: the RevenueCat Capacitor plugin is running its WEB implementation. shellPlatform=${getPlatform()}, runtimePlatform=${getCapacitorRuntimePlatform()}, runtimeNative=${isCapacitorNativeRuntime()}.`
+            `[RC] Root cause: RevenueCat resolved to WEB implementation. ` +
+            `shellPlatform=${getPlatform()}, runtimePlatform=${getCapacitorRuntimePlatform()}, runtimeNative=${isCapacitorNativeRuntime()}.`
           );
-        }
-        if (errMsg.includes('Web') || errMsg.includes('not implemented')) {
-          log('[RC] This confirms the native RevenueCat implementation is unavailable in the current runtime.');
+        } else {
+          setStatusReason('init_error');
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -311,15 +334,12 @@ export function useRevenueCat(): UseRevenueCatReturn {
   const purchasePackage = useCallback(async (packageId: string) => {
     if (!purchases) throw new Error('RevenueCat not available');
     const { Purchases } = await import('@revenuecat/purchases-capacitor');
-
     const rcOfferings = await Purchases.getOfferings();
     const pkg = (rcOfferings as any)?.current?.availablePackages?.find(
       (item: any) => item.identifier === packageId
     );
     if (!pkg) throw new Error(`Package "${packageId}" not found`);
-
     await Purchases.purchasePackage({ aPackage: pkg });
-    // The webhook will update plan_overrides server-side
   }, [purchases]);
 
   const restorePurchases = useCallback(async () => {
@@ -335,12 +355,8 @@ export function useRevenueCat(): UseRevenueCatReturn {
       isAvailable: false,
       offerings: [],
       isLoading: false,
-      purchasePackage: async () => {
-        throw new Error('Not available on web');
-      },
-      restorePurchases: async () => {
-        throw new Error('Not available on web');
-      },
+      purchasePackage: async () => { throw new Error('Not available on web'); },
+      restorePurchases: async () => { throw new Error('Not available on web'); },
       retryInit: () => {},
       debugLog,
       diagnostics,
