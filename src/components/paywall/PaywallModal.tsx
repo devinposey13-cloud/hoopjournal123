@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import { FeatureList } from '@/components/pricing/FeatureList';
 import { Separator } from '@/components/ui/separator';
-import { Lock, ArrowRight, RotateCcw, Loader2 } from 'lucide-react';
+import { Lock, ArrowRight, RotateCcw, Loader2, Check } from 'lucide-react';
 import {
   type PlanId,
   type BillingCycle,
