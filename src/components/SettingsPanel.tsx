@@ -23,7 +23,8 @@ import { useRingOfHonorEligibility } from '@/hooks/useRingOfHonorEligibility';
 import { RingOfHonorOptInModal } from '@/components/xp/RingOfHonorOptInModal';
 import { ParentDashboardSettings } from '@/components/settings/ParentDashboardSettings';
 import { useBilling } from '@/hooks/useBilling';
-import { isNativeApp } from '@/lib/platform';
+import { isNativeApp, isDespia } from '@/lib/platform';
+import { track } from '@/lib/plans';
 import { RotateCcw } from 'lucide-react';
 
 interface SettingsPanelProps {
