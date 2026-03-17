@@ -1,33 +1,38 @@
-## RevenueCat Integration — IMPLEMENTED
 
-### What was built
 
-1. **Platform Detection** (`src/lib/platform.ts`) — `isNativeApp()`, `getPlatform()`, `isIOS()` helpers
-2. **RevenueCat Hook** (`src/hooks/useRevenueCat.ts`) — SDK init, purchase, restore, offerings
-3. **RevenueCat Webhook** (`supabase/functions/revenuecat-webhook/index.ts`) — syncs purchases to `plan_overrides`
-4. **Conditional Routing** — `useSubscription`, `Pricing.tsx`, `Upgrade.tsx`, `UpgradeDrawer.tsx` all route to RevenueCat on native
+## Problem
 
-### Next steps (user action required)
+The "Web not supported in this plugin" error occurs because `@revenuecat/purchases-capacitor` does **not** have a web implementation. When the plugin's JS layer calls `Purchases.configure()`, it checks Capacitor's plugin registry for the native bridge. In a remote-URL TestFlight build, the native bridge may not be registered yet when the hook runs, or the plugin simply sees "web" as the platform internally.
 
-1. **Replace RevenueCat API key** in `src/hooks/useRevenueCat.ts` line 12 — replace `appl_REPLACE_WITH_YOUR_KEY` with your iOS public API key from RevenueCat dashboard
-2. **Create RevenueCat products** matching these IDs: `hj_starter_monthly`, `hj_starter_yearly`, `hj_pro_monthly`, `hj_pro_yearly`, `hj_elite_monthly`, `hj_elite_yearly`
-3. **Configure RevenueCat webhook** pointing to: `https://jwoupnumuotmwpwrkmob.supabase.co/functions/v1/revenuecat-webhook` with Authorization Bearer header matching the secret you just saved
-4. **Set up Capacitor** for native iOS builds (not yet added to the project)
+This is a **known limitation** of the RevenueCat Capacitor plugin — it only works when the native iOS/Android framework is compiled into the binary and the Capacitor bridge is fully initialized.
 
----
+## Root Cause
 
-## Native Google Sign-In — IMPLEMENTED
+The `Purchases.configure()` call happens immediately on component mount. In remote-URL builds (where the app loads from a server URL rather than local files), there can be a race condition where the Capacitor native bridge isn't fully registered yet.
 
-### What was built
+## Plan
 
-1. **Plugin** — `@codetrix-studio/capacitor-google-auth` installed
-2. **Native helper** (`src/lib/nativeGoogleAuth.ts`) — `initNativeGoogleAuth()` + `nativeGoogleSignIn()` using `signInWithIdToken`
-3. **AuthForm.tsx** — branches on `isNativeApp()`: native uses SDK, web keeps existing `lovable.auth.signInWithOAuth`
-4. **App.tsx** — initializes the Google Auth plugin on native startup
+### 1. Add bridge-readiness check with retry logic in `useRevenueCat.ts`
 
-### User action required
+Before calling `Purchases.configure()`, verify the native plugin is actually registered in Capacitor's plugin registry. If not, retry with exponential backoff (up to ~3 seconds) to handle the bridge initialization delay in remote-URL builds.
 
-1. **Replace the Client ID** in `src/lib/nativeGoogleAuth.ts` line 10 — replace `REPLACE_WITH_YOUR_IOS_CLIENT_ID.apps.googleusercontent.com` with your iOS OAuth Client ID from [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-2. **Create an iOS OAuth Client ID** — type: iOS application, bundle ID: `app.lovable.2cd79f530f3e4e88858df49e60e86e08`
-3. **Add reversed client ID** as a URL scheme in Xcode (e.g. `com.googleusercontent.apps.XXXX`)
-4. Run `npm install` → `npx cap sync` → rebuild in Xcode → TestFlight
+```text
+Hook mount
+  → Check if Capacitor.isPluginAvailable('Purchases') 
+  → If not available, retry up to 5 times with 500ms delays
+  → Only then call Purchases.configure()
+  → If still unavailable after retries, set error state (no Stripe fallback)
+```
+
+### 2. Use `Capacitor.isPluginAvailable()` guard
+
+Import `Capacitor` from `@capacitor/core` and check `Capacitor.isPluginAvailable('PurchasesPlugin')` before attempting to configure. This is the standard Capacitor pattern for checking if a native plugin's bridge is present.
+
+### 3. Improve error messaging in debug panel
+
+Log each retry attempt so the debug panel shows exactly what's happening — whether the bridge eventually becomes available or is genuinely missing from the binary.
+
+### Files to modify
+
+- **`src/hooks/useRevenueCat.ts`** — Add bridge availability check with retry loop before `configure()`, improved error logging
+
