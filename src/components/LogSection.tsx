@@ -8,6 +8,7 @@ import { AddGameDialog } from '@/components/AddGameDialog';
 import { AddScheduleDialog } from '@/components/AddScheduleDialog';
 import { ImportScheduleDialog } from '@/components/ImportScheduleDialog';
 import { LiveStatCapture, LiveStatsSaveData } from '@/components/LiveStatCapture';
+import { FreeLimitBanner } from '@/components/FreeLimitBanner';
 import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { ScheduleCalendar } from '@/components/ScheduleCalendar';
 import { GameStats, ScheduledGame, PlayerTeam } from '@/types/basketball';
