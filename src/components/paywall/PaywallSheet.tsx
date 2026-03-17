@@ -306,15 +306,21 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                 }}
               >
                 {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {isPurchasing ? 'Processing...' : `Upgrade to ${planCatalog[selectedPlan].name}`}
+                {isPurchasing ? 'Processing...' : (trialCta || `Upgrade to ${planCatalog[selectedPlan].name}`)}
                 {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
               </Button>
 
-              <div className="flex items-center justify-center gap-3 mt-3 text-[11px] text-white/40">
-                <span>Cancel anytime</span>
-                <span className="w-1 h-1 rounded-full bg-white/20" />
-                <span>No commitment</span>
-              </div>
+              {trialCopy ? (
+                <p className="text-center mt-3 text-[11px] text-white/50">
+                  {trialCopy}
+                </p>
+              ) : (
+                <div className="flex items-center justify-center gap-3 mt-3 text-[11px] text-white/40">
+                  <span>Cancel anytime</span>
+                  <span className="w-1 h-1 rounded-full bg-white/20" />
+                  <span>No commitment</span>
+                </div>
+              )}
             </div>
 
             {/* === TRUST === */}
