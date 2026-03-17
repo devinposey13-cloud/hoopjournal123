@@ -42,8 +42,10 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
 
   const handleUpgrade = async () => {
     track('plan_selected', { planId: selectedPlan, billingCycle: cycle });
+    track('upgrade_clicked', { planId: selectedPlan, reason: reason });
     try {
       await purchasePlan(selectedPlan, cycle);
+      track('upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
       onUpgrade(selectedPlan);
     } catch {
       // Error handled by useBilling
