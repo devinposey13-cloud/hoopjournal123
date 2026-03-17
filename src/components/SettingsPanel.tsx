@@ -61,9 +61,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
   const { progress: xpProgress } = useXpProgress();
   const ringOfHonorEligibility = useRingOfHonorEligibility(xpProgress?.current_level || 1);
   const [showRingOfHonorModal, setShowRingOfHonorModal] = useState(false);
-  const { restorePurchases } = useRevenueCat();
-  const [isRestoringPurchases, setIsRestoringPurchases] = useState(false);
-  const showNativeRestore = isNativeApp();
+  const { restorePurchases, isRestoring: isRestoringPurchases, isNative: showNativeRestore } = useBilling();
 
   const handleRestorePurchases = async () => {
     setIsRestoringPurchases(true);

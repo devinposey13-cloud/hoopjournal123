@@ -39,8 +39,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [nativeBillingCycle, setNativeBillingCycle] = useState<BillingCycle>('monthly');
   const navigate = useNavigate();
   const native = isNativeApp();
-  const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, isLoading: rcLoading } = useRevenueCat();
+  const { purchasePlan, isPurchasing, isNative } = useBilling();
   const [data, setData] = useState<OnboardingData>({
     name: '',
     courtRole: '',
