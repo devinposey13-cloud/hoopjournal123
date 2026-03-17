@@ -649,6 +649,7 @@ export function LiveStatCapture({
       finalScore: { us, them },
     };
     setShowGameOverDialog(false);
+    isAutosaveEnabledRef.current = false;
     clearSavedData();
     onSave(totalStats, savePayload, true);
   };
