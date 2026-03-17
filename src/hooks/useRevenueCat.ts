@@ -95,7 +95,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
         log('[RC] Fetching offerings…');
         const rcOfferings = await Purchases.getOfferings();
         const current = (rcOfferings as any)?.current;
-        console.log('[RevenueCat] Offerings current:', current ? `${current.availablePackages?.length ?? 0} packages` : 'null');
+        log(`[RC] Offerings: ${current ? `${current.availablePackages?.length ?? 0} pkgs` : 'null'}`);
         if (current?.availablePackages) {
           const mapped: RCPackage[] = current.availablePackages
             .filter((pkg: any) => RC_PRODUCT_TO_PLAN[pkg.product.identifier])
