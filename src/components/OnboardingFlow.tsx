@@ -1,18 +1,12 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { AgeConfirmationGate } from './onboarding/AgeConfirmationGate';
 import { OnboardingBackground } from './onboarding/OnboardingBackground';
 import { ProgressDots } from './onboarding/ProgressDots';
 import { WelcomeCard } from './onboarding/WelcomeCard';
 import { PlayerIdentityCard } from './onboarding/PlayerIdentityCard';
 import { GoalsCard } from './onboarding/GoalsCard';
-import { PricingPreviewCard } from './onboarding/PricingPreviewCard';
-import { NativePurchaseSheet } from './purchase/NativePurchaseSheet';
-import { track, type PlanId, type BillingCycle } from '@/lib/plans';
-import { useBilling } from '@/hooks/useBilling';
-import { isNativeApp, getPlatform } from '@/lib/platform';
-import { toast } from 'sonner';
+import { CompletionCard } from './onboarding/CompletionCard';
 
 export interface OnboardingData {
   name: string;
@@ -34,12 +28,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
-  const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
-  const [nativeSelectedPlan, setNativeSelectedPlan] = useState<PlanId>('pro');
-  const [nativeBillingCycle, setNativeBillingCycle] = useState<BillingCycle>('monthly');
-  const navigate = useNavigate();
-  const native = isNativeApp();
-  const { purchasePlan, isPurchasing, isNative } = useBilling();
   const [data, setData] = useState<OnboardingData>({
     name: '',
     courtRole: '',
@@ -78,42 +66,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     setData((prev) => ({ ...prev, seasonGoals: goals }));
     goForward(3);
   };
-
-  const handleSelectFree = () => {
-    track('onboarding_plan_selected', { planId: 'free' });
-    onComplete(data, 'explore_dashboard');
-  };
-
-  const handleSelectPaid = async (planId: PlanId, billingCycle: BillingCycle) => {
-    console.log('[Onboarding] handleSelectPaid', { planId, billingCycle, native, platform: getPlatform() });
-    track('onboarding_plan_checkout_started', { planId, billingCycle, native });
-
-    try {
-      if (native) {
-        console.log('[Onboarding] → Native path (Despia + RevenueCat)');
-        setNativeSelectedPlan(planId);
-        setNativeBillingCycle(billingCycle);
-        setNativeSheetOpen(true);
-        return;
-      }
-
-      console.log('[Onboarding] → Web path (Stripe)');
-      await purchasePlan(planId, billingCycle);
-      toast.info('Redirecting to checkout...');
-    } catch (err) {
-      console.error('[Onboarding] Checkout failed:', err);
-      const msg = err instanceof Error ? err.message : 'Failed to start checkout. Try again.';
-      if (!msg.includes('cancelled') && !msg.includes('canceled')) {
-        toast.error(msg);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (currentStep === 3) {
-      track('onboarding_pricing_viewed', {});
-    }
-  }, [currentStep]);
 
   const variants = {
     enter: (direction: number) => ({
@@ -194,9 +146,11 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               <GoalsCard value={data.seasonGoals} onNext={handleGoalsSubmit} />
             )}
             {currentStep === 3 && (
-              <PricingPreviewCard
-                onSelectFree={handleSelectFree}
-                onSelectPaid={handleSelectPaid}
+              <CompletionCard
+                playerName={data.name || 'Player'}
+                onStartGame={() => onComplete(data, 'start_game')}
+                onPregameTalk={() => onComplete(data, 'pregame_talk')}
+                onExploreDashboard={() => onComplete(data, 'explore_dashboard')}
               />
             )}
           </motion.div>
@@ -204,7 +158,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       </motion.div>
 
       <AnimatePresence>
-        {currentStep > 0 && (
+        {currentStep > 0 && currentStep < 3 && (
           <motion.button
             key="back-button"
             initial={{ opacity: 0, x: -12 }}
@@ -220,20 +174,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           </motion.button>
         )}
       </AnimatePresence>
-
-      {native && (
-        <NativePurchaseSheet
-          open={nativeSheetOpen}
-          onClose={() => setNativeSheetOpen(false)}
-          recommendedPlan={nativeSelectedPlan}
-          initialBillingCycle={nativeBillingCycle}
-          onPurchaseComplete={() => {
-            setNativeSheetOpen(false);
-            navigate('/onboarding/finish');
-            onComplete(data, 'explore_dashboard');
-          }}
-        />
-      )}
     </motion.div>
   );
 }

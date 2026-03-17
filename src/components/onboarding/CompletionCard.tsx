@@ -53,11 +53,20 @@ export function CompletionCard({ playerName, onStartGame, onPregameTalk, onExplo
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.4 }}
-        className="text-muted-foreground mb-8 text-sm"
+        className="text-muted-foreground mb-4 text-sm"
       >
         Your Coach is set up and ready, {playerName}.
         <br />
         Let's log your first game or jump into a pregame talk.
+      </motion.p>
+
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5, duration: 0.4 }}
+        className="text-xs text-muted-foreground/60 mb-8 max-w-xs"
+      >
+        Advanced analytics, AI Coach insights, and unlimited tracking available with Pro and Elite
       </motion.p>
 
       <motion.div
