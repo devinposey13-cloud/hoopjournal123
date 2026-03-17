@@ -9,7 +9,7 @@ interface CompletionCardProps {
   onExploreDashboard?: () => void;
 }
 
-export function CompletionCard({ playerName, onStartGame, onPregameTalk, onExploreDashboard }: CompletionCardProps) {
+export function CompletionCard({ playerName, onStartGame, onExploreDashboard }: CompletionCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, x: 50 }}
@@ -45,18 +45,16 @@ export function CompletionCard({ playerName, onStartGame, onPregameTalk, onExplo
         className="text-3xl md:text-4xl mb-2 text-foreground uppercase tracking-wide"
         style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}
       >
-        You're ready to start your Hoop Journal™ season
+        Welcome to Hoop Journal™, {playerName}
       </motion.h2>
 
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.4 }}
-        className="text-muted-foreground mb-4 text-sm"
+        className="text-muted-foreground mb-4 text-sm max-w-xs"
       >
-        Your Coach is set up and ready, {playerName}.
-        <br />
-        Let's log your first game or jump into a pregame talk.
+        Your personal basketball journal is ready. Track games, earn XP, unlock milestones, and get AI-powered coaching insights — all in one place.
       </motion.p>
 
       <motion.p
@@ -72,37 +70,14 @@ export function CompletionCard({ playerName, onStartGame, onPregameTalk, onExplo
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6, duration: 0.4 }}
-        className="w-full max-w-xs space-y-3"
+        className="w-full max-w-xs"
       >
         <Button
-          onClick={onStartGame}
+          onClick={onExploreDashboard || onStartGame}
           className="w-full h-12 text-lg gradient-primary gap-2"
         >
-          <Play className="w-5 h-5" />
-          Start My First Game
+          Let's Go 🏀
         </Button>
-
-        {onPregameTalk && (
-          <Button
-            onClick={onPregameTalk}
-            variant="outline"
-            className="w-full h-11 text-base gap-2"
-          >
-            <MessageCircle className="w-4 h-4" />
-            Pregame Talk
-          </Button>
-        )}
-
-        {onExploreDashboard && (
-          <Button
-            onClick={onExploreDashboard}
-            variant="ghost"
-            className="w-full h-10 text-sm text-muted-foreground hover:text-foreground gap-2"
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Explore the Dashboard
-          </Button>
-        )}
       </motion.div>
     </motion.div>
   );
