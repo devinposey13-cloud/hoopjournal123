@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, createContext, useContext } from 'rea
 import {
   PlanId, PaywallReason, paywallConfigs, mockUsage, UsageData, track,
   UserAccessInfo, getEffectivePlan, hasSpecialAccess, getAccessBadge, AccessBadge,
-  PRICING_LAUNCH_DATE,
+  PRICING_LAUNCH_DATE, planCatalog,
 } from '@/lib/plans';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
