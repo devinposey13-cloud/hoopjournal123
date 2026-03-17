@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,6 +59,15 @@ export function AuthForm() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
   const { signIn, signUp } = useAuth();
+  const googleTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (googleTimeoutRef.current) {
+        window.clearTimeout(googleTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Debug logging for native OAuth diagnosis
   const nativeDetected = isNativeApp();
@@ -243,9 +252,18 @@ export function AuthForm() {
       // Note: We do NOT use the Capacitor Google Auth SDK here because
       // Despia is not a Capacitor runtime and the plugin won't work.
       if (isNativeApp()) {
+        googleTimeoutRef.current = window.setTimeout(() => {
+          setGoogleLoading(false);
+          toast.error('Google sign-in took too long. Please try again.');
+        }, 25000);
+
         try {
           await handleCustomDomainOAuth('google');
         } catch {
+          if (googleTimeoutRef.current) {
+            window.clearTimeout(googleTimeoutRef.current);
+            googleTimeoutRef.current = null;
+          }
           setGoogleLoading(false);
         }
         return;
@@ -286,6 +304,22 @@ export function AuthForm() {
       setGoogleLoading(false);
     }
   };
+
+  useEffect(() => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+        if (googleTimeoutRef.current) {
+          window.clearTimeout(googleTimeoutRef.current);
+          googleTimeoutRef.current = null;
+        }
+        setGoogleLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
 
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
