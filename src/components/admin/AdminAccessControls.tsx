@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,9 +13,10 @@ import { Separator } from '@/components/ui/separator';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Search, Shield, Star, Loader2, Calendar as CalendarIcon, Trash2, Crown, Users } from 'lucide-react';
-import { type PlanId, planCatalog, getEffectivePlan, PRICING_LAUNCH_DATE, type UserAccessInfo } from '@/lib/plans';
+import { Search, Shield, Star, Loader2, Calendar as CalendarIcon, Trash2, Crown, Users, RotateCcw } from 'lucide-react';
+import { type PlanId, planCatalog, getEffectivePlan, PRICING_LAUNCH_DATE, type UserAccessInfo, track } from '@/lib/plans';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -54,6 +56,15 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
   const [saving, setSaving] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkResult, setBulkResult] = useState<{ grandfathered: number; total: number } | null>(null);
+
+  // Trial reset state
+  const [trialResetOpen, setTrialResetOpen] = useState(false);
+  const [trialResetReason, setTrialResetReason] = useState('');
+  const [trialResetNote, setTrialResetNote] = useState('');
+  const [trialResetLoading, setTrialResetLoading] = useState(false);
+  const [trialEligible, setTrialEligible] = useState(true);
+  const [trialResetCount, setTrialResetCount] = useState(0);
+  const [lastTrialResetAt, setLastTrialResetAt] = useState<string | null>(null);
 
   // Editable fields
   const [isGrandfathered, setIsGrandfathered] = useState(false);
@@ -100,12 +111,19 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
           setAdminOverridePlan(rec.admin_override_plan || 'none');
           setPromoDate(rec.promo_access_until ? new Date(rec.promo_access_until) : undefined);
           setSubscriptionPlan(rec.subscription_plan);
+          // Trial fields
+          setTrialEligible((data as any).trial_eligible ?? true);
+          setTrialResetCount((data as any).trial_eligibility_reset_count ?? 0);
+          setLastTrialResetAt((data as any).last_trial_reset_at ?? null);
         } else {
           setOverride(null);
           setIsGrandfathered(false);
           setAdminOverridePlan('none');
           setPromoDate(undefined);
           setSubscriptionPlan('free');
+          setTrialEligible(true);
+          setTrialResetCount(0);
+          setLastTrialResetAt(null);
         }
       } catch (err) {
         console.error('Error fetching override:', err);
@@ -201,6 +219,39 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
     }
   }
 
+  async function handleResetTrialEligibility() {
+    if (!selectedUserId || !trialResetReason) return;
+    setTrialResetLoading(true);
+    track('admin_trial_reset_confirmed', { targetUserId: selectedUserId, reason: trialResetReason });
+
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-trial-eligibility', {
+        body: {
+          targetUserId: selectedUserId,
+          reasonCategory: trialResetReason,
+          additionalNote: trialResetNote || undefined,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setTrialEligible(true);
+      setTrialResetCount(data.reset_count);
+      setLastTrialResetAt(new Date().toISOString());
+      setTrialResetOpen(false);
+      setTrialResetReason('');
+      setTrialResetNote('');
+      track('admin_trial_reset_completed', { targetUserId: selectedUserId });
+      toast.success('Trial eligibility reset successfully');
+    } catch (err) {
+      console.error('Trial reset error:', err);
+      track('admin_trial_reset_failed', { targetUserId: selectedUserId, error: String(err) });
+      toast.error('Failed to reset trial eligibility');
+    } finally {
+      setTrialResetLoading(false);
+    }
+  }
   async function handleBulkGrandfather() {
     setBulkLoading(true);
     setBulkResult(null);
@@ -471,6 +522,101 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
                        promoDate && new Date(promoDate) > new Date() ? '(Promo)' :
                        '(Subscription)'}
                     </span>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Trial Eligibility Reset */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <RotateCcw className="w-4 h-4 text-orange-500" />
+                    Trial Eligibility
+                  </Label>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm">
+                      <span className={trialEligible ? 'text-green-600' : 'text-muted-foreground'}>
+                        {trialEligible ? '✓ Eligible for trial' : '✗ Trial already used'}
+                      </span>
+                      {trialResetCount > 0 && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Reset {trialResetCount} time{trialResetCount > 1 ? 's' : ''}
+                          {lastTrialResetAt && ` · Last: ${format(new Date(lastTrialResetAt), 'MMM d, yyyy')}`}
+                        </p>
+                      )}
+                    </div>
+                    <Dialog open={trialResetOpen} onOpenChange={(open) => {
+                      setTrialResetOpen(open);
+                      if (open) track('admin_trial_reset_opened', { targetUserId: selectedUserId });
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-orange-600 border-orange-500/30 hover:bg-orange-500/10"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                          Reset Trial
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Reset Trial Eligibility?</DialogTitle>
+                          <DialogDescription>
+                            This will allow this user to start a free trial again. Use only for support recovery, billing issues, or approved exceptions.
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        {trialEligible && (
+                          <div className="bg-orange-500/10 border border-orange-500/20 rounded-md px-3 py-2 text-sm text-orange-600">
+                            ⚠ This user is already eligible for a trial.
+                          </div>
+                        )}
+
+                        <div className="space-y-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-medium">Reason for reset *</Label>
+                            <Select value={trialResetReason} onValueChange={setTrialResetReason}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a reason…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="billing_bug">Billing bug</SelectItem>
+                                <SelectItem value="failed_onboarding">Failed onboarding / purchase issue</SelectItem>
+                                <SelectItem value="support_recovery">Support recovery</SelectItem>
+                                <SelectItem value="promo_partner">Promo / partner exception</SelectItem>
+                                <SelectItem value="beta_testing">Beta testing issue</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-medium">Additional details</Label>
+                            <Textarea
+                              placeholder="Optional notes about this reset…"
+                              value={trialResetNote}
+                              onChange={(e) => setTrialResetNote(e.target.value)}
+                              className="resize-none"
+                              rows={2}
+                            />
+                          </div>
+                        </div>
+
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setTrialResetOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={handleResetTrialEligibility}
+                            disabled={!trialResetReason || trialResetLoading}
+                            className="bg-orange-600 hover:bg-orange-700 text-white"
+                          >
+                            {trialResetLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                            Confirm Reset
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
 
