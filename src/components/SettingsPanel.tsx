@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, Crown, CreditCard, Sun, Moon, Monitor, Trophy, ChevronRight, Star, User, Check, XCircle, Shield, FileText, Lock, Mail, KeyRound } from 'lucide-react';
+import { Save, Loader2, Crown, CreditCard, Sun, Moon, Monitor, Trophy, ChevronRight, Star, User, Check, XCircle, Shield, FileText, Lock, Mail, KeyRound, Smartphone } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
 import { ProfileManagement } from '@/components/settings/ProfileManagement';
@@ -23,7 +23,8 @@ import { useRingOfHonorEligibility } from '@/hooks/useRingOfHonorEligibility';
 import { RingOfHonorOptInModal } from '@/components/xp/RingOfHonorOptInModal';
 import { ParentDashboardSettings } from '@/components/settings/ParentDashboardSettings';
 import { useBilling } from '@/hooks/useBilling';
-import { isNativeApp } from '@/lib/platform';
+import { isNativeApp, isDespia } from '@/lib/platform';
+import { track } from '@/lib/plans';
 import { RotateCcw } from 'lucide-react';
 
 interface SettingsPanelProps {
@@ -55,7 +56,9 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
   const [isCanceling, setIsCanceling] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   
-  const { isSubscribed, planType, subscriptionEnd, subscriptionStatus, billingCycle, cancelAtPeriodEnd, isLoading: subLoading, openCustomerPortal, cancelSubscription } = useSubscription();
+  const { isSubscribed, planType, subscriptionEnd, subscriptionStatus, billingCycle, cancelAtPeriodEnd, billingSource, isLoading: subLoading, openCustomerPortal, cancelSubscription } = useSubscription();
+  // Determine effective billing source: backend value, or infer from Despia runtime
+  const effectiveBillingSource = billingSource || (isDespia() && isSubscribed ? 'ios_app_store' : 'stripe');
   const { currentPlan, accessInfo, accessBadge, loading: planLoading } = usePlan();
   const { theme, setTheme } = useTheme();
   const { progress: xpProgress } = useXpProgress();
@@ -408,6 +411,12 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                   </Badge>
                 </div>
 
+                {/* Billing Source */}
+                <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <CreditCard className="w-3 h-3" />
+                  {effectiveBillingSource === 'ios_app_store' ? 'Billed through App Store' : 'Billed through Stripe'}
+                </div>
+
                 {subscriptionEnd && (
                   <div className="text-sm text-muted-foreground bg-background/50 rounded-md px-3 py-2 border border-border">
                     {cancelAtPeriodEnd
@@ -417,56 +426,94 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                   </div>
                 )}
 
+                {/* Cancellation scheduled notice */}
+                {cancelAtPeriodEnd && (
+                  <div className="text-sm text-orange-600 bg-orange-500/10 rounded-md px-3 py-2 border border-orange-500/20">
+                    Cancellation Scheduled — Your access remains active until {subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'the end of the billing period'}.
+                  </div>
+                )}
+
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={async () => {
-                      setIsLoadingPortal(true);
-                      try { await openCustomerPortal(); }
-                      catch { toast.error('Failed to open billing portal'); }
-                      finally { setIsLoadingPortal(false); }
-                    }}
-                    disabled={isLoadingPortal}
-                  >
-                    {isLoadingPortal ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
-                    Manage
-                  </Button>
+                  {/* Manage button — only for Stripe */}
+                  {effectiveBillingSource !== 'ios_app_store' && (
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={async () => {
+                        setIsLoadingPortal(true);
+                        try { await openCustomerPortal(); }
+                        catch { toast.error('Failed to open billing portal'); }
+                        finally { setIsLoadingPortal(false); }
+                      }}
+                      disabled={isLoadingPortal}
+                    >
+                      {isLoadingPortal ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                      Manage
+                    </Button>
+                  )}
 
                   {!cancelAtPeriodEnd && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline" className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10">
+                        <Button
+                          variant="outline"
+                          className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                          onClick={() => {
+                            track('cancel_subscription_clicked', { billingSource: effectiveBillingSource });
+                          }}
+                        >
                           <XCircle className="w-4 h-4 mr-2" />
-                          Cancel
+                          Cancel Subscription
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Cancel Subscription?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Your plan will remain active until {subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString() : 'the end of the billing period'}. After that, you'll be moved to the Free plan.
+                            {effectiveBillingSource === 'ios_app_store'
+                              ? "App Store subscriptions are managed through Apple. You'll be taken to manage your subscription."
+                              : `Your web subscription will be canceled and will remain active until ${subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString() : 'the end of the billing period'}. You can resubscribe at any time.`
+                            }
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Keep Plan</AlertDialogCancel>
+                          <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
                           <AlertDialogAction
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             onClick={async () => {
-                              setIsCanceling(true);
-                              try {
-                                await cancelSubscription(false);
-                                toast.success('Subscription will cancel at end of billing period');
-                              } catch {
-                                toast.error('Failed to cancel subscription');
-                              } finally {
-                                setIsCanceling(false);
+                              if (effectiveBillingSource === 'ios_app_store') {
+                                // Route to Apple's subscription management
+                                try {
+                                  track('manage_ios_subscription_opened', {});
+                                  const despiaModule = await import('despia-native');
+                                  const despia = (despiaModule.default || despiaModule) as any;
+                                  despia('managesubscriptions://');
+                                  toast.info('Opening App Store subscription management…');
+                                } catch {
+                                  // Fallback: open Apple's subscription management URL
+                                  window.open('https://apps.apple.com/account/subscriptions', '_blank');
+                                  toast.info('Please manage your subscription in the App Store.');
+                                }
+                              } else {
+                                // Stripe cancellation
+                                setIsCanceling(true);
+                                try {
+                                  track('cancel_subscription_confirmed', { billingSource: 'stripe' });
+                                  await cancelSubscription(false);
+                                  track('cancel_subscription_completed', { billingSource: 'stripe' });
+                                  toast.success('Your subscription has been canceled and will remain active until the end of your billing period.');
+                                } catch {
+                                  track('cancel_subscription_failed', { billingSource: 'stripe' });
+                                  toast.error("We couldn't process your request. Please try again.");
+                                } finally {
+                                  setIsCanceling(false);
+                                }
                               }
                             }}
                             disabled={isCanceling}
                           >
                             {isCanceling ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                            Cancel Subscription
+                            {effectiveBillingSource === 'ios_app_store' ? 'Manage in App Store' : 'Yes, Cancel'}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

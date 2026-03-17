@@ -4,6 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { type PlanId, type BillingCycle, STRIPE_PLAN_IDS } from '@/lib/plans';
 import { isNativeApp } from '@/lib/platform';
 
+export type BillingSource = 'stripe' | 'ios_app_store' | null;
+
 export interface SubscriptionState {
   isSubscribed: boolean;
   planType: PlanId | null;
@@ -11,6 +13,7 @@ export interface SubscriptionState {
   subscriptionStatus: string | null;
   billingCycle: 'month' | 'year' | null;
   cancelAtPeriodEnd: boolean;
+  billingSource: BillingSource;
   isLoading: boolean;
   error: string | null;
 }
@@ -24,6 +27,7 @@ export function useSubscription() {
     subscriptionStatus: null,
     billingCycle: null,
     cancelAtPeriodEnd: false,
+    billingSource: null,
     isLoading: true,
     error: null,
   });
@@ -37,6 +41,7 @@ export function useSubscription() {
         subscriptionStatus: null,
         billingCycle: null,
         cancelAtPeriodEnd: false,
+        billingSource: null,
         isLoading: false,
         error: null,
       });
@@ -58,6 +63,7 @@ export function useSubscription() {
         subscriptionStatus: data.subscription_status || null,
         billingCycle: data.billing_cycle || null,
         cancelAtPeriodEnd: data.cancel_at_period_end || false,
+        billingSource: (data.billing_source as BillingSource) || null,
         isLoading: false,
         error: null,
       });
