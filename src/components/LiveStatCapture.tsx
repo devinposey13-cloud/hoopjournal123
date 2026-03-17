@@ -237,13 +237,15 @@ export function LiveStatCapture({
   // Immediate save when page becomes hidden (user switches tabs, receives call, etc.)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
+      if (document.visibilityState === 'hidden' && isAutosaveEnabledRef.current) {
         immediateSave(stateRef.current);
       }
     };
 
     const handlePageHide = () => {
-      immediateSave(stateRef.current);
+      if (isAutosaveEnabledRef.current) {
+        immediateSave(stateRef.current);
+      }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
