@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { isNativeApp } from '@/lib/platform';
+import { isNativeApp, getPlatform } from '@/lib/platform';
 import { useAuth } from '@/hooks/useAuth';
 import type { PlanId } from '@/lib/plans';
 
@@ -54,29 +54,41 @@ export function useRevenueCat(): UseRevenueCatReturn {
 
   // Initialise SDK on native only
   useEffect(() => {
-    if (!isNativeApp()) return;
+    const native = isNativeApp();
+    console.log('[RevenueCat] useEffect — isNativeApp:', native, 'platform:', getPlatform(), 'hasWebkit:', !!(window as any).webkit?.messageHandlers);
+    if (!native) {
+      console.log('[RevenueCat] Skipping init — not native');
+      return;
+    }
 
     let cancelled = false;
 
     (async () => {
       try {
+        console.log('[RevenueCat] Importing @revenuecat/purchases-capacitor…');
         // Dynamic import so the Capacitor plugin isn't bundled on web
         const { Purchases } = await import('@revenuecat/purchases-capacitor');
         if (cancelled) return;
+        console.log('[RevenueCat] Purchases imported, configuring with API key…');
 
         await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
+        console.log('[RevenueCat] Configured successfully');
         setPurchases(Purchases);
         setIsAvailable(true);
 
         // Identify user if logged in
         if (user?.id) {
+          console.log('[RevenueCat] Logging in user:', user.id);
           await Purchases.logIn({ appUserID: user.id });
+          console.log('[RevenueCat] User logged in');
         }
 
         // Fetch offerings
         setIsLoading(true);
+        console.log('[RevenueCat] Fetching offerings…');
         const rcOfferings = await Purchases.getOfferings();
         const current = (rcOfferings as any)?.current;
+        console.log('[RevenueCat] Offerings current:', current ? `${current.availablePackages?.length ?? 0} packages` : 'null');
         if (current?.availablePackages) {
           const mapped: RCPackage[] = current.availablePackages
             .filter((pkg: any) => RC_PRODUCT_TO_PLAN[pkg.product.identifier])
@@ -87,7 +99,10 @@ export function useRevenueCat(): UseRevenueCatReturn {
               period: pkg.packageType === 'ANNUAL' ? 'Yearly' : 'Monthly',
               planId: RC_PRODUCT_TO_PLAN[pkg.product.identifier],
             }));
+          console.log('[RevenueCat] Mapped offerings:', mapped.length, mapped.map(m => m.productId));
           setOfferings(mapped);
+        } else {
+          console.warn('[RevenueCat] No current offering or no packages available');
         }
       } catch (err) {
         console.error('[RevenueCat] Init error:', err);
