@@ -675,6 +675,9 @@ export default function Index() {
                   {/* BROADCAST NOTIFICATIONS */}
                   <BroadcastNotifications />
 
+                  {/* RESET DETECTION BANNER */}
+                  <ResetDetectionBanner />
+
                   {/* FREE LIMIT WARNING BANNER */}
                   <FreeLimitBanner />
 
