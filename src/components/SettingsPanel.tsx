@@ -490,7 +490,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                                   const { track } = await import('@/lib/plans');
                                   track('manage_ios_subscription_opened', {});
                                   const despiaModule = await import('despia-native');
-                                  const despia = despiaModule.default || despiaModule;
+                                  const despia = (despiaModule.default || despiaModule) as any;
                                   despia('managesubscriptions://');
                                   toast.info('Opening App Store subscription management…');
                                 } catch {
