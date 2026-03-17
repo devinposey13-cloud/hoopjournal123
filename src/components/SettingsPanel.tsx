@@ -22,7 +22,7 @@ import { useXpProgress } from '@/hooks/useXpProgress';
 import { useRingOfHonorEligibility } from '@/hooks/useRingOfHonorEligibility';
 import { RingOfHonorOptInModal } from '@/components/xp/RingOfHonorOptInModal';
 import { ParentDashboardSettings } from '@/components/settings/ParentDashboardSettings';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { useBilling } from '@/hooks/useBilling';
 import { isNativeApp } from '@/lib/platform';
 import { RotateCcw } from 'lucide-react';
 
@@ -61,19 +61,14 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
   const { progress: xpProgress } = useXpProgress();
   const ringOfHonorEligibility = useRingOfHonorEligibility(xpProgress?.current_level || 1);
   const [showRingOfHonorModal, setShowRingOfHonorModal] = useState(false);
-  const { restorePurchases } = useRevenueCat();
-  const [isRestoringPurchases, setIsRestoringPurchases] = useState(false);
-  const showNativeRestore = isNativeApp();
+  const { restorePurchases, isRestoring: isRestoringPurchases, isNative: showNativeRestore } = useBilling();
 
   const handleRestorePurchases = async () => {
-    setIsRestoringPurchases(true);
     try {
       await restorePurchases();
       toast.success('Purchases restored!');
     } catch {
       toast.error('Failed to restore purchases');
-    } finally {
-      setIsRestoringPurchases(false);
     }
   };
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);

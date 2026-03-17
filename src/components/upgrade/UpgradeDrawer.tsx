@@ -14,9 +14,7 @@ import { Check, ArrowRight, Sparkles, Loader2, RotateCcw } from 'lucide-react';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
 import { type PlanId, type BillingCycle, planCatalog, getPlanPrice, track } from '@/lib/plans';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
-import { isNativeApp, getPlatform } from '@/lib/platform';
+import { useBilling } from '@/hooks/useBilling';
 import { toast } from 'sonner';
 
 export interface UpgradeDrawerConfig {
@@ -36,75 +34,30 @@ interface UpgradeDrawerProps {
 
 export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawerProps) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(false);
-  const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, restorePurchases, isLoading: rcLoading } = useRevenueCat();
-  const native = isNativeApp();
+  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
 
   if (!config) return null;
 
   const plan = planCatalog[config.recommendedPlan];
   const price = getPlanPrice(config.recommendedPlan, cycle);
-
-  // Find matching RC package for native
-  const suffix = cycle === 'yearly' ? 'year' : 'month';
-  const rcPkg = (native && rcAvailable)
-    ? rcOfferings.find((o) => o.planId === config.recommendedPlan && o.period.toLowerCase().includes(suffix))
-    : null;
-  const displayPrice = rcPkg ? rcPkg.priceString : `$${price}`;
   const periodLabel = cycle === 'monthly' ? 'mo' : 'yr';
 
   const handleUpgrade = async () => {
-    console.log('[UpgradeDrawer] handleUpgrade', { planId: config.recommendedPlan, cycle, native, rcAvailable, rcLoading, platform: getPlatform() });
-    track('upgrade_clicked', { planId: config.recommendedPlan, cycle, native });
-    setIsLoading(true);
+    track('upgrade_clicked', { planId: config.recommendedPlan, cycle, isNative });
     try {
-      if (native) {
-        console.log('[UpgradeDrawer] → Native path (RevenueCat only, no Stripe fallback)');
-        if (rcLoading) {
-          toast.info('Loading purchase options… please wait.');
-          return;
-        }
-        if (!rcAvailable) {
-          console.log('[UpgradeDrawer] ✗ RC not available on native — blocking purchase');
-          toast.error('In-app purchases are not available right now. Please restart the app and try again.');
-          return;
-        }
-        if (!rcPkg) {
-          console.log('[UpgradeDrawer] ✗ No matching RC package for', config.recommendedPlan, cycle);
-          toast.error('Purchase options are temporarily unavailable. Please try again later.');
-          return;
-        }
-        await purchasePackage(rcPkg.identifier);
-        toast.success('Purchase successful! 🎉');
-        onUpgrade(config.recommendedPlan);
-        return;
-      }
-      // Web: Stripe
-      console.log('[UpgradeDrawer] → Web path (Stripe)');
-      await createCheckout(config.recommendedPlan, cycle);
-      toast.success('Redirecting to checkout...');
+      await purchasePlan(config.recommendedPlan, cycle);
       onUpgrade(config.recommendedPlan);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to start checkout';
-      if (!msg.includes('cancelled') && !msg.includes('canceled')) {
-        toast.error(msg);
-      }
-    } finally {
-      setIsLoading(false);
+    } catch {
+      // Error handled by useBilling
     }
   };
 
   const handleRestore = async () => {
-    setIsRestoring(true);
     try {
       await restorePurchases();
       toast.success('Purchases restored!');
     } catch {
       toast.error('Failed to restore purchases');
-    } finally {
-      setIsRestoring(false);
     }
   };
 
@@ -138,10 +91,8 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
                   <div className="text-xs text-muted-foreground">{plan.tagline}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-extrabold text-foreground">{displayPrice}</div>
-                  <div className="text-[10px] text-muted-foreground">
-                    /{periodLabel}
-                  </div>
+                  <div className="text-2xl font-extrabold text-foreground">${price}</div>
+                  <div className="text-[10px] text-muted-foreground">/{periodLabel}</div>
                 </div>
               </div>
 
@@ -164,23 +115,21 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
             )}
 
             {/* Promo Code — only on web (not applicable for IAP) */}
-            {!native && <PromoCodeInput />}
+            {!isNative && <PromoCodeInput />}
           </div>
 
           <DrawerFooter className="pt-2">
             <Button
               onClick={handleUpgrade}
-              disabled={isLoading}
+              disabled={isPurchasing}
               className="w-full gradient-primary text-primary-foreground font-semibold h-12"
             >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : null}
+              {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               Upgrade to {plan.name}
-              {!isLoading && <ArrowRight className="w-4 h-4 ml-2" />}
+              {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
             </Button>
 
-            {native && (
+            {isNative && (
               <Button
                 variant="ghost"
                 className="text-muted-foreground text-xs"

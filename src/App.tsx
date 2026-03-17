@@ -50,11 +50,11 @@ function OAuthErrorHandler() {
   return null;
 }
 
-// Initialize native Google Auth + listen for native OAuth deep link callbacks (Capacitor)
+// Initialize native Google Auth + listen for native OAuth deep link callbacks
 function NativeOAuthHandler() {
   useEffect(() => {
-    // Initialize native Google Sign-In SDK on native platforms
-    if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+    // Initialize native Google Sign-In SDK on native platforms (Despia)
+    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.()) {
       import('@/lib/nativeGoogleAuth').then(({ initNativeGoogleAuth }) => {
         initNativeGoogleAuth();
       });
