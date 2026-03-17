@@ -673,6 +673,9 @@ export default function Index() {
                   {/* BROADCAST NOTIFICATIONS */}
                   <BroadcastNotifications />
 
+                  {/* FREE LIMIT WARNING BANNER */}
+                  <FreeLimitBanner />
+
                   {/* TODAY CARD - Hero priority */}
                   <AnimatedSection delay={0.05}>
                     <TodayCard
