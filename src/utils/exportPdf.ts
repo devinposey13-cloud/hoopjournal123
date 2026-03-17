@@ -339,7 +339,8 @@ interface GameBoxScoreData {
 
 export async function exportGameBoxScorePdf(
   profile: PlayerProfile,
-  gameData: GameBoxScoreData
+  gameData: GameBoxScoreData,
+  options?: PdfExportOptions
 ) {
   const doc = new jsPDF({ orientation: 'landscape' });
   const pageWidth = doc.internal.pageSize.getWidth();
