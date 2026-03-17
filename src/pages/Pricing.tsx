@@ -30,6 +30,7 @@ export default function Pricing() {
   const [promoApplied, setPromoApplied] = useState(false);
   const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
   const [nativeSelectedPlan, setNativeSelectedPlan] = useState<PlanId>('pro');
+  const [showDebug, setShowDebug] = useState(false);
   const native = isNativeApp();
 
   // Check if user already has promo_eligible in plan_overrides
