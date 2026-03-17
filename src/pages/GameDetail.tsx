@@ -40,7 +40,7 @@ import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { calculateGameScore } from '@/utils/gameGrading';
 import { usePlan } from '@/hooks/usePlanState';
 import { canUseFeature } from '@/lib/plans';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users, Check, Share2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users, Check, Share2, Lock } from 'lucide-react';
 import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import {
   Select,
