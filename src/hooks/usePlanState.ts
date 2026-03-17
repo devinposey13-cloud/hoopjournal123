@@ -40,6 +40,7 @@ export function usePlanState(): PlanState {
   const { session } = useAuth();
   const { subscriptionStatus } = useSubscription();
   const [accessInfo, setAccessInfo] = useState<UserAccessInfo>(defaultAccessInfo);
+  const [lifetimeGamesLogged, setLifetimeGamesLogged] = useState(0);
   const [loading, setLoading] = useState(true);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null);
