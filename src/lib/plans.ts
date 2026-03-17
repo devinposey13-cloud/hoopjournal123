@@ -153,6 +153,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       historyDays: 30,
       maxLevel: 10,
       maxGamesTotal: 3,
+      maxReportCards: 3,
       seasonReports: false,
       exportPdf: false,
       parentDashboard: false,
