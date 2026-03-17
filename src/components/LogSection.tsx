@@ -276,6 +276,10 @@ export function LogSection({
         scheduledGameId: quickCaptureScheduledGameId,
       };
       const savedGame = await addGame(gameData);
+      if (!savedGame) {
+        setShowQuickLiveCapture(false);
+        return;
+      }
       toast.success('Game saved successfully!');
       setShowQuickLiveCapture(false);
       setQuickCaptureOpponent('');

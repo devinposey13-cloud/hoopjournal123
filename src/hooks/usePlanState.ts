@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, createContext, useContext } from 'rea
 import {
   PlanId, PaywallReason, paywallConfigs, mockUsage, UsageData, track,
   UserAccessInfo, getEffectivePlan, hasSpecialAccess, getAccessBadge, AccessBadge,
-  PRICING_LAUNCH_DATE,
+  PRICING_LAUNCH_DATE, planCatalog,
 } from '@/lib/plans';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,12 +14,14 @@ interface PlanState {
   accessInfo: UserAccessInfo;
   accessBadge: AccessBadge;
   usage: UsageData;
+  lifetimeGamesLogged: number;
   paywallOpen: boolean;
   paywallReason: PaywallReason | null;
   loading: boolean;
   setCurrentPlan: (plan: PlanId) => void;
   openPaywall: (reason: PaywallReason) => void;
   closePaywall: () => void;
+  canLogGame: () => boolean;
 }
 
 const defaultAccessInfo: UserAccessInfo = {
@@ -38,6 +40,7 @@ export function usePlanState(): PlanState {
   const { session } = useAuth();
   const { subscriptionStatus } = useSubscription();
   const [accessInfo, setAccessInfo] = useState<UserAccessInfo>(defaultAccessInfo);
+  const [lifetimeGamesLogged, setLifetimeGamesLogged] = useState(0);
   const [loading, setLoading] = useState(true);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null);
@@ -91,6 +94,7 @@ export function usePlanState(): PlanState {
             promoSource: data.promo_source || null,
             subscriptionStatus: subscriptionStatus || undefined,
           });
+          setLifetimeGamesLogged(data.lifetime_games_logged ?? 0);
         } else if (shouldGrandfather) {
           // No row yet — create one with grandfathered = true
           await supabase
@@ -136,18 +140,26 @@ export function usePlanState(): PlanState {
     setPaywallReason(null);
   }, [paywallReason]);
 
+  const canLogGame = useCallback(() => {
+    const limits = planCatalog[effectivePlan].limits;
+    if (limits.maxGamesTotal === null) return true;
+    return lifetimeGamesLogged < limits.maxGamesTotal;
+  }, [effectivePlan, lifetimeGamesLogged]);
+
   return {
     currentPlan: effectivePlan,
     subscriptionPlan: accessInfo.subscriptionPlan,
     accessInfo,
     accessBadge,
     usage: mockUsage,
+    lifetimeGamesLogged,
     paywallOpen,
     paywallReason,
     loading,
     setCurrentPlan,
     openPaywall,
     closePaywall,
+    canLogGame,
   };
 }
 

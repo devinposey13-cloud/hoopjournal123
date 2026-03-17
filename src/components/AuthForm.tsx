@@ -64,7 +64,7 @@ export function AuthForm() {
   const nativeDetected = isNativeApp();
   console.log('[AuthForm] ===== RENDER DEBUG =====');
   console.log('[AuthForm] isNativeApp():', nativeDetected);
-  console.log('[AuthForm] window.Capacitor:', window.Capacitor);
+  console.log('[AuthForm] window.Capacitor:', (window as any).Capacitor);
   console.log('[AuthForm] hostname:', window.location.hostname);
   console.log('[AuthForm] origin:', window.location.origin);
 

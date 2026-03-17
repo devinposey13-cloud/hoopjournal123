@@ -48,6 +48,7 @@ export interface Plan {
     pregameTalksPerMonth: number;
     historyDays: number | null; // null = unlimited
     maxLevel: number | null; // null = unlimited
+    maxGamesTotal: number | null; // null = unlimited
     seasonReports: boolean;
     exportPdf: boolean;
     parentDashboard: boolean;
@@ -137,7 +138,7 @@ export const planCatalog: Record<PlanId, Plan> = {
     cta: 'Start Free',
     features: [
       { label: 'Create player profile', included: true },
-      { label: 'Log games', included: true },
+      { label: 'Log up to 3 games', included: true },
       { label: 'Basic stat tracking', included: true },
       { label: 'XP progression', included: true },
       { label: 'Limited report card generation', included: true },
@@ -150,6 +151,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       pregameTalksPerMonth: 0,
       historyDays: 30,
       maxLevel: 10,
+      maxGamesTotal: 3,
       seasonReports: false,
       exportPdf: false,
       parentDashboard: false,
@@ -186,6 +188,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       pregameTalksPerMonth: Infinity,
       historyDays: null,
       maxLevel: null,
+      maxGamesTotal: null,
       seasonReports: true,
       exportPdf: true,
       parentDashboard: false,
@@ -221,6 +224,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       pregameTalksPerMonth: Infinity,
       historyDays: null,
       maxLevel: null,
+      maxGamesTotal: null,
       seasonReports: true,
       exportPdf: true,
       parentDashboard: true,
@@ -267,6 +271,7 @@ export type PaywallReason =
   | 'ai_recap_limit'
   | 'history_limit'
   | 'level_cap'
+  | 'game_limit'
   | 'season_report'
   | 'advanced_analytics'
   | 'export_pdf'
@@ -297,6 +302,12 @@ export const paywallConfigs: Record<PaywallReason, PaywallConfig> = {
   level_cap: {
     title: "You've outgrown Free.",
     description: "You've hit Level 10 — the max on Free. Upgrade to Pro to keep leveling up and unlock new rewards.",
+    recommendedPlan: 'pro',
+    mode: 'modal',
+  },
+  game_limit: {
+    title: "You've hit your game limit.",
+    description: "Free accounts can log up to 3 games. Upgrade to Pro for unlimited game logging and full performance tracking.",
     recommendedPlan: 'pro',
     mode: 'modal',
   },
@@ -366,7 +377,7 @@ export interface CompareFeature {
 
 export const compareFeatures: CompareFeature[] = [
   { label: 'Player profile', free: true, pro: true, elite: true },
-  { label: 'Game logging', free: '30 days', pro: 'Unlimited', elite: 'Unlimited' },
+  { label: 'Game logging', free: '3 games total', pro: 'Unlimited', elite: 'Unlimited' },
   { label: 'Basic stat tracking', free: true, pro: true, elite: true },
   { label: 'XP & Leveling', free: 'Cap at Lv 10', pro: 'Unlimited', elite: 'Unlimited' },
   { label: 'AI Coach prompts', free: '2/month', pro: 'Unlimited', elite: 'Unlimited' },
