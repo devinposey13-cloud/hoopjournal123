@@ -29,7 +29,7 @@ export default function Upgrade() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, restorePurchases, isLoading: rcLoading, debugLog } = useRevenueCat();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, restorePurchases, isLoading: rcLoading, retryInit: rcRetry, debugLog } = useRevenueCat();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
   const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
@@ -145,13 +145,19 @@ export default function Upgrade() {
           </div>
         )}
         {native && !rcLoading && !rcAvailable && (
-          <div className="flex justify-center items-center gap-2 mb-6 text-destructive">
-            <span className="text-sm">⚠ Purchases temporarily unavailable. Please restart the app.</span>
+          <div className="flex flex-col justify-center items-center gap-2 mb-6 text-destructive">
+            <span className="text-sm">⚠ Purchases temporarily unavailable.</span>
+            <Button variant="outline" size="sm" onClick={rcRetry} className="text-xs">
+              Retry
+            </Button>
           </div>
         )}
         {native && !rcLoading && rcAvailable && rcOfferings.length === 0 && (
-          <div className="flex justify-center items-center gap-2 mb-6 text-amber-500">
-            <span className="text-sm">⚠ No purchase options found. Please try again later.</span>
+          <div className="flex flex-col justify-center items-center gap-2 mb-6 text-amber-500">
+            <span className="text-sm">⚠ No purchase options found.</span>
+            <Button variant="outline" size="sm" onClick={rcRetry} className="text-xs">
+              Retry
+            </Button>
           </div>
         )}
 
