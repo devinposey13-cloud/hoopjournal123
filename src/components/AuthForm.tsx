@@ -252,9 +252,18 @@ export function AuthForm() {
       // Note: We do NOT use the Capacitor Google Auth SDK here because
       // Despia is not a Capacitor runtime and the plugin won't work.
       if (isNativeApp()) {
+        googleTimeoutRef.current = window.setTimeout(() => {
+          setGoogleLoading(false);
+          toast.error('Google sign-in took too long. Please try again.');
+        }, 25000);
+
         try {
           await handleCustomDomainOAuth('google');
         } catch {
+          if (googleTimeoutRef.current) {
+            window.clearTimeout(googleTimeoutRef.current);
+            googleTimeoutRef.current = null;
+          }
           setGoogleLoading(false);
         }
         return;
