@@ -182,11 +182,32 @@ export function usePlanState(): PlanState {
     }
   }, [session?.user?.id, lifetimeReportCards]);
 
+  // Free users get 1 PDF export; paid get unlimited
+  const MAX_FREE_PDF_EXPORTS = 1;
+
+  const canExportPdf = useCallback(() => {
+    if (effectivePlan !== 'free') return true;
+    return lifetimePdfExports < MAX_FREE_PDF_EXPORTS;
+  }, [effectivePlan, lifetimePdfExports]);
+
+  const incrementPdfExports = useCallback(async () => {
+    setLifetimePdfExports(prev => prev + 1);
+    if (session?.user?.id) {
+      await supabase
+        .from('plan_overrides')
+        .upsert({
+          user_id: session.user.id,
+          lifetime_pdf_exports: lifetimePdfExports + 1,
+        }, { onConflict: 'user_id' });
+    }
+  }, [session?.user?.id, lifetimePdfExports]);
+
   // Compute remaining counts
   const maxGames = planCatalog[effectivePlan].limits.maxGamesTotal;
   const maxReports = planCatalog[effectivePlan].limits.maxReportCards;
   const freeGamesRemaining = maxGames !== null ? Math.max(0, maxGames - lifetimeGamesLogged) : Infinity;
   const freeReportCardsRemaining = maxReports !== null ? Math.max(0, maxReports - lifetimeReportCards) : Infinity;
+  const freePdfExportsRemaining = effectivePlan === 'free' ? Math.max(0, MAX_FREE_PDF_EXPORTS - lifetimePdfExports) : Infinity;
 
   return {
     currentPlan: effectivePlan,
@@ -196,6 +217,7 @@ export function usePlanState(): PlanState {
     usage: mockUsage,
     lifetimeGamesLogged,
     lifetimeReportCards,
+    lifetimePdfExports,
     paywallOpen,
     paywallReason,
     loading,
@@ -204,9 +226,12 @@ export function usePlanState(): PlanState {
     closePaywall,
     canLogGame,
     canGenerateReportCard,
+    canExportPdf,
     incrementReportCards,
+    incrementPdfExports,
     freeGamesRemaining,
     freeReportCardsRemaining,
+    freePdfExportsRemaining,
   };
 }
 
