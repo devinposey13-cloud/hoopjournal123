@@ -239,12 +239,15 @@ export function AuthForm() {
     logOAuthInit('google', redirectUri);
 
     try {
-      // Native iOS/Android: use native Google Sign-In SDK to avoid disallowed_useragent
+      // Native (Despia) app: use system browser OAuth flow
+      // Note: We do NOT use the Capacitor Google Auth SDK here because
+      // Despia is not a Capacitor runtime and the plugin won't work.
       if (isNativeApp()) {
-        const { nativeGoogleSignIn } = await import('@/lib/nativeGoogleAuth');
-        await nativeGoogleSignIn();
-        logOAuthSuccess('google');
-        setGoogleLoading(false);
+        try {
+          await handleCustomDomainOAuth('google');
+        } catch {
+          setGoogleLoading(false);
+        }
         return;
       }
 
