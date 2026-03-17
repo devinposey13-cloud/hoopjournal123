@@ -196,16 +196,18 @@ export function useRevenueCat(): UseRevenueCatReturn {
 
         if (bridgeReady && !purchases) {
           try {
-            log('[RC] Configuring with API key…');
+            log('[RC] configure() start…');
             await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
-            log('[RC] Configured ✓');
+            log('[RC] configure() success ✓');
           } catch (configErr) {
             const msg = configErr instanceof Error ? configErr.message : String(configErr);
             if (msg.includes('already configured') || msg.includes('Already configured')) {
               log('[RC] Already configured (expected) ✓');
             } else {
-              log(`[RC] ❌ Configure error: ${msg}`);
+              setStatusReason('configure_failed');
+              log(`[RC] ❌ configure() failure: ${msg}`);
               if (msg.includes('Web not supported in this plugin')) {
+                setStatusReason('configure_failed_web_impl');
                 log(
                   `[RC] ❌ Exact cause: Purchases.configure() hit the WEB implementation. shellPlatform=${getPlatform()}, runtimePlatform=${getCapacitorRuntimePlatform()}, runtimeNative=${isCapacitorNativeRuntime()}.`
                 );
