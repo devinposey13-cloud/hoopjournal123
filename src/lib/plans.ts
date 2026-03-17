@@ -352,6 +352,12 @@ export const paywallConfigs: Record<PaywallReason, PaywallConfig> = {
     recommendedPlan: 'pro',
     mode: 'modal',
   },
+  report_card_limit: {
+    title: "You've used all your free report cards.",
+    description: "You've generated 3 report cards on the Free plan. Upgrade to Pro for unlimited report cards and sharing.",
+    recommendedPlan: 'pro',
+    mode: 'modal',
+  },
 };
 
 // Mock usage data
