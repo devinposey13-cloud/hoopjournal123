@@ -54,17 +54,12 @@ function OAuthErrorHandler() {
 // Initialize native Google Auth + listen for native OAuth deep link callbacks
 function NativeOAuthHandler() {
   useEffect(() => {
-    // Initialize native Google Sign-In SDK on native platforms (Despia)
-    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.()) {
-      import('@/lib/nativeGoogleAuth').then(({ initNativeGoogleAuth }) => {
-        initNativeGoogleAuth();
-      });
-    }
-  }, []);
+    if (!isNativeApp()) return;
 
-  useEffect(() => {
+    console.log('[NativeOAuth] Initializing native auth handlers for Despia runtime');
+
     let cleanup: (() => void) | null = null;
-    
+
     setupNativeOAuthListener(
       async (accessToken, refreshToken) => {
         console.log('[NativeOAuth] Received tokens, setting session...');
@@ -87,7 +82,7 @@ function NativeOAuthHandler() {
     ).then((c) => {
       cleanup = c;
     });
-    
+
     return () => cleanup?.();
   }, []);
   

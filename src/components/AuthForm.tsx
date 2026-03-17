@@ -305,6 +305,22 @@ export function AuthForm() {
     }
   };
 
+  useEffect(() => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+        if (googleTimeoutRef.current) {
+          window.clearTimeout(googleTimeoutRef.current);
+          googleTimeoutRef.current = null;
+        }
+        setGoogleLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
+
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
     const redirectUri = LOVABLE_APP_ORIGIN;
