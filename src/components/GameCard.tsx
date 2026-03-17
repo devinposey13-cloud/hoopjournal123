@@ -16,7 +16,7 @@ import {
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { toast } from 'sonner';
 import { usePlan } from '@/hooks/usePlanState';
-import { canUseFeature } from '@/lib/plans';
+import { track } from '@/lib/plans';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 
