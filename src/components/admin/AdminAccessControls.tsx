@@ -111,12 +111,19 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
           setAdminOverridePlan(rec.admin_override_plan || 'none');
           setPromoDate(rec.promo_access_until ? new Date(rec.promo_access_until) : undefined);
           setSubscriptionPlan(rec.subscription_plan);
+          // Trial fields
+          setTrialEligible((data as any).trial_eligible ?? true);
+          setTrialResetCount((data as any).trial_eligibility_reset_count ?? 0);
+          setLastTrialResetAt((data as any).last_trial_reset_at ?? null);
         } else {
           setOverride(null);
           setIsGrandfathered(false);
           setAdminOverridePlan('none');
           setPromoDate(undefined);
           setSubscriptionPlan('free');
+          setTrialEligible(true);
+          setTrialResetCount(0);
+          setLastTrialResetAt(null);
         }
       } catch (err) {
         console.error('Error fetching override:', err);
