@@ -428,6 +428,8 @@ export default function Index() {
       };
 
       const savedGame = await addGame(gameData);
+      // Clear autosave immediately after successful save
+      try { localStorage.removeItem('hoopjournal_live_stats_autosave'); } catch {}
       if (!savedGame) {
         setShowQuickLiveCapture(false);
         return;

@@ -262,6 +262,9 @@ export function useGameWithMilestones() {
       // 2. Delete the game using cloudData
       await cloudData.deleteGame(gameId);
 
+      // 2b. Clear live stats autosave to prevent deleted games from resurfacing
+      try { localStorage.removeItem('hoopjournal_live_stats_autosave'); } catch {}
+
       // 3. Get remaining games and re-evaluate multi-game/season milestones
       const remainingGames: GameWithId[] = cloudData.games
         .filter(g => g.id !== gameId)
