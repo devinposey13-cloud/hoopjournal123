@@ -49,6 +49,7 @@ export interface Plan {
     historyDays: number | null; // null = unlimited
     maxLevel: number | null; // null = unlimited
     maxGamesTotal: number | null; // null = unlimited
+    maxReportCards: number | null; // null = unlimited
     seasonReports: boolean;
     exportPdf: boolean;
     parentDashboard: boolean;
