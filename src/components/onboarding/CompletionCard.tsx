@@ -6,7 +6,6 @@ import '@lottiefiles/dotlottie-wc';
 interface CompletionCardProps {
   playerName: string;
   onStartGame: () => void;
-  onPregameTalk?: () => void;
   onExploreDashboard?: () => void;
 }
 
