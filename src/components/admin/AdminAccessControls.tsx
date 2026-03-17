@@ -219,7 +219,40 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
     }
   }
 
-  async function handleBulkGrandfather() {
+  async function handleResetTrialEligibility() {
+    if (!selectedUserId || !trialResetReason) return;
+    setTrialResetLoading(true);
+    track('admin_trial_reset_confirmed', { targetUserId: selectedUserId, reason: trialResetReason });
+
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-trial-eligibility', {
+        body: {
+          targetUserId: selectedUserId,
+          reasonCategory: trialResetReason,
+          additionalNote: trialResetNote || undefined,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setTrialEligible(true);
+      setTrialResetCount(data.reset_count);
+      setLastTrialResetAt(new Date().toISOString());
+      setTrialResetOpen(false);
+      setTrialResetReason('');
+      setTrialResetNote('');
+      track('admin_trial_reset_completed', { targetUserId: selectedUserId });
+      toast.success('Trial eligibility reset successfully');
+    } catch (err) {
+      console.error('Trial reset error:', err);
+      track('admin_trial_reset_failed', { targetUserId: selectedUserId, error: String(err) });
+      toast.error('Failed to reset trial eligibility');
+    } finally {
+      setTrialResetLoading(false);
+    }
+  }
+
     setBulkLoading(true);
     setBulkResult(null);
     try {
