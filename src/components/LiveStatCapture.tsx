@@ -667,6 +667,7 @@ export function LiveStatCapture({
     setShowGameOverDialog(false);
     
     // Clear autosave data when successfully saving
+    isAutosaveEnabledRef.current = false;
     clearSavedData();
     
     onSave(totalStats, savePayload, isGameOver);
