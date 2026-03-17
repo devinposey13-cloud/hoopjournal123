@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FeatureList } from './FeatureList';
 import { cn } from '@/lib/utils';
-import { type Plan, type BillingCycle, getPlanPrice, getYearlySavingsPercent, type PlanId, track } from '@/lib/plans';
+import { type Plan, type BillingCycle, getPlanPrice, getYearlySavingsPercent, type PlanId, track, getTrialConfig, getTrialCopy, getTrialCta } from '@/lib/plans';
 
 interface PlanCardProps {
   plan: Plan;
@@ -22,9 +22,15 @@ export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied, nat
   const savings = getYearlySavingsPercent(plan.id);
   const isCurrent = currentPlan === plan.id;
   const isHighlighted = plan.highlighted;
+  const trial = getTrialConfig(plan.id, cycle);
+  const trialCopy = getTrialCopy(plan.id, cycle);
+  const trialCta = getTrialCta(plan.id, cycle);
 
   const handleClick = () => {
-    track('upgrade_clicked', { planId: plan.id });
+    track('upgrade_clicked', { planId: plan.id, hasTrial: trial.hasTrial });
+    if (trial.hasTrial) {
+      track('trial_offer_viewed', { planId: plan.id, cycle, trialDays: trial.trialDays });
+    }
     onSelect(plan.id);
   };
 
@@ -94,6 +100,11 @@ export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied, nat
                 Save {savings}% vs monthly
               </p>
             )}
+            {trialCopy && (
+              <p className="text-xs text-primary mt-1.5 font-medium">
+                {trialCopy}
+              </p>
+            )}
           </div>
         </CardHeader>
 
@@ -115,7 +126,7 @@ export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied, nat
               variant={isHighlighted ? 'default' : 'outline'}
               onClick={handleClick}
             >
-              {plan.id === 'free' ? plan.cta : `Upgrade to ${plan.name}`}
+              {plan.id === 'free' ? plan.cta : (trialCta || `Upgrade to ${plan.name}`)}
             </Button>
           )}
         </CardFooter>

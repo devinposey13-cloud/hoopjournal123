@@ -32,6 +32,45 @@ export interface PlanFeature {
   detail?: string;
 }
 
+// Trial configuration per plan+cycle
+export interface TrialConfig {
+  hasTrial: boolean;
+  trialDays: number;
+}
+
+export const trialConfigs: Record<PlanId, Record<BillingCycle, TrialConfig>> = {
+  free: {
+    monthly: { hasTrial: false, trialDays: 0 },
+    yearly: { hasTrial: false, trialDays: 0 },
+  },
+  pro: {
+    monthly: { hasTrial: true, trialDays: 3 },
+    yearly: { hasTrial: true, trialDays: 3 },
+  },
+  elite: {
+    monthly: { hasTrial: false, trialDays: 0 },
+    yearly: { hasTrial: false, trialDays: 0 },
+  },
+};
+
+export function getTrialConfig(planId: PlanId, cycle: BillingCycle): TrialConfig {
+  return trialConfigs[planId]?.[cycle] ?? { hasTrial: false, trialDays: 0 };
+}
+
+export function getTrialCopy(planId: PlanId, cycle: BillingCycle): string | null {
+  const trial = getTrialConfig(planId, cycle);
+  if (!trial.hasTrial) return null;
+  const price = getPlanPrice(planId, cycle);
+  const period = cycle === 'monthly' ? 'month' : 'year';
+  return `${trial.trialDays}-day free trial, then $${price}/${period}. Cancel anytime.`;
+}
+
+export function getTrialCta(planId: PlanId, cycle: BillingCycle): string | null {
+  const trial = getTrialConfig(planId, cycle);
+  if (!trial.hasTrial) return null;
+  return 'Start Free Trial';
+}
+
 export interface Plan {
   id: PlanId;
   name: string;
@@ -89,9 +128,13 @@ export function getEffectivePlan(user: UserAccessInfo): PlanId {
     user.promoLockedIn &&
     user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
     (user.subscriptionPlan === 'pro') &&
-    user.subscriptionStatus === 'active'
+    (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing')
   ) {
     return 'elite';
+  }
+  // Trialing users get their subscription plan's access
+  if (user.subscriptionStatus === 'trialing' && user.subscriptionPlan !== 'free') {
+    return user.subscriptionPlan;
   }
   return user.subscriptionPlan;
 }
@@ -104,7 +147,7 @@ export function hasSpecialAccess(user: UserAccessInfo): boolean {
     user.promoLockedIn &&
     user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
     (user.subscriptionPlan === 'pro') &&
-    user.subscriptionStatus === 'active'
+    (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing')
   ) return true;
   return false;
 }
@@ -422,6 +465,10 @@ export const faqItems = [
   {
     question: 'Can I switch plans?',
     answer: "Absolutely. You can upgrade, downgrade, or switch between monthly and yearly billing anytime. Changes take effect at the start of your next billing cycle.",
+  },
+  {
+    question: 'Is there a free trial?',
+    answer: "Yes! Pro comes with a 3-day free trial. You won't be charged until the trial ends, and you can cancel anytime before that.",
   },
   {
     question: 'What happens to my data if I downgrade?',

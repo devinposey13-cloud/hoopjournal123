@@ -12,6 +12,9 @@ import {
   paywallConfigs,
   getPlanPrice,
   getYearlySavingsPercent,
+  getTrialConfig,
+  getTrialCopy,
+  getTrialCta,
   track,
 } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
@@ -63,14 +66,31 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   const dynamicSubline = DYNAMIC_HEADLINES[reason!] || null;
   const bullets = isPdfLimit ? PDF_VALUE_BULLETS : VALUE_BULLETS;
 
+  const trialConfig = getTrialConfig(selectedPlan, cycle);
+  const trialCopy = getTrialCopy(selectedPlan, cycle);
+  const trialCta = getTrialCta(selectedPlan, cycle);
+
   const handleUpgrade = async () => {
-    track('upgrade_clicked', { planId: selectedPlan, reason, cycle });
+    track('upgrade_clicked', { planId: selectedPlan, reason, cycle, hasTrial: trialConfig.hasTrial });
+    if (trialConfig.hasTrial) {
+      track('trial_started', { planId: selectedPlan, cycle, trialDays: trialConfig.trialDays });
+    }
     try {
       await purchasePlan(selectedPlan, cycle);
-      track('upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
+      track(trialConfig.hasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
       onUpgrade(selectedPlan);
     } catch {
       // Error handled by useBilling
+    }
+  };
+  // Track trial visibility analytics
+  const handlePlanSelect = (id: PlanId) => {
+    setSelectedPlan(id);
+    const t = getTrialConfig(id, cycle);
+    if (t.hasTrial) {
+      track('trial_offer_viewed', { planId: id, cycle, trialDays: t.trialDays });
+    } else if (id !== 'free') {
+      track('ineligible_for_trial_shown', { planId: id, cycle });
     }
   };
 
@@ -224,7 +244,7 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                   return (
                     <button
                       key={id}
-                      onClick={() => setSelectedPlan(id)}
+                      onClick={() => handlePlanSelect(id)}
                       className={cn(
                         'relative rounded-2xl p-4 text-left transition-all duration-200',
                         isSelected
@@ -263,9 +283,13 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                         </Badge>
                       )}
                       <p className="text-[10px] text-white/50 leading-relaxed">
-                        {id === 'pro'
-                          ? 'For players consistently working on their game'
-                          : 'For serious players who want to stand out'}
+                        {(() => {
+                          const t = getTrialConfig(id, cycle);
+                          if (t.hasTrial) return `${t.trialDays}-day free trial`;
+                          return id === 'pro'
+                            ? 'For players consistently working on their game'
+                            : 'For serious players who want to stand out';
+                        })()}
                       </p>
 
                       {isSelected && (
@@ -296,15 +320,21 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                 }}
               >
                 {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {isPurchasing ? 'Processing...' : `Upgrade to ${planCatalog[selectedPlan].name}`}
+                {isPurchasing ? 'Processing...' : (trialCta || `Upgrade to ${planCatalog[selectedPlan].name}`)}
                 {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
               </Button>
 
-              <div className="flex items-center justify-center gap-3 mt-3 text-[11px] text-white/40">
-                <span>Cancel anytime</span>
-                <span className="w-1 h-1 rounded-full bg-white/20" />
-                <span>No commitment</span>
-              </div>
+              {trialCopy ? (
+                <p className="text-center mt-3 text-[11px] text-white/50">
+                  {trialCopy}
+                </p>
+              ) : (
+                <div className="flex items-center justify-center gap-3 mt-3 text-[11px] text-white/40">
+                  <span>Cancel anytime</span>
+                  <span className="w-1 h-1 rounded-full bg-white/20" />
+                  <span>No commitment</span>
+                </div>
+              )}
             </div>
 
             {/* === TRUST === */}
