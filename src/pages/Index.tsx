@@ -38,6 +38,7 @@ import { DashboardQuickStats } from '@/components/dashboard/DashboardQuickStats'
 import { DailyInsight } from '@/components/dashboard/DailyInsight';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { PlayerCard } from '@/components/dashboard/PlayerCard';
+import { FreeLimitBanner } from '@/components/FreeLimitBanner';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
 import { useAdmin } from '@/hooks/useAdmin';
