@@ -128,9 +128,13 @@ export function getEffectivePlan(user: UserAccessInfo): PlanId {
     user.promoLockedIn &&
     user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
     (user.subscriptionPlan === 'pro') &&
-    user.subscriptionStatus === 'active'
+    (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing')
   ) {
     return 'elite';
+  }
+  // Trialing users get their subscription plan's access
+  if (user.subscriptionStatus === 'trialing' && user.subscriptionPlan !== 'free') {
+    return user.subscriptionPlan;
   }
   return user.subscriptionPlan;
 }
