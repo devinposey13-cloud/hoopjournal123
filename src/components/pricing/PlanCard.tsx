@@ -100,6 +100,11 @@ export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied, nat
                 Save {savings}% vs monthly
               </p>
             )}
+            {trialCopy && (
+              <p className="text-xs text-primary mt-1.5 font-medium">
+                {trialCopy}
+              </p>
+            )}
           </div>
         </CardHeader>
 
