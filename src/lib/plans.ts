@@ -191,6 +191,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       historyDays: null,
       maxLevel: null,
       maxGamesTotal: null,
+      maxReportCards: null,
       seasonReports: true,
       exportPdf: true,
       parentDashboard: false,
