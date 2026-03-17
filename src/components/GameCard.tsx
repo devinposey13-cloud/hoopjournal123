@@ -52,8 +52,11 @@ export function GameCard({ game, profile, onDelete, teams, onTeamChange }: GameC
     e.preventDefault();
     e.stopPropagation();
     
-    if (!canUseFeature(currentPlan, 'exportPdf')) {
-      navigate('/upgrade?reason=export_pdf');
+    track('pdf_export_attempted', { gameId: game.id, plan: currentPlan });
+    
+    if (!canExportPdf()) {
+      track('pdf_export_blocked', { gameId: game.id, plan: currentPlan });
+      openPaywall('pdf_export_limit');
       return;
     }
     
@@ -62,9 +65,13 @@ export function GameCard({ game, profile, onDelete, teams, onTeamChange }: GameC
       return;
     }
     
-    toast.info('Generating PDF...');
-    await exportGameBoxScorePdf(profile, { game });
-    toast.success('Box score PDF exported!');
+    const isFreeUser = currentPlan === 'free';
+    
+    toast.info('Generating Official Game Report...');
+    await exportGameBoxScorePdf(profile, { game }, { isFreeUser });
+    await incrementPdfExports();
+    track('pdf_export_completed', { gameId: game.id, plan: currentPlan, isFreeUser });
+    toast.success('Official Game Report exported!');
   };
 
   const handleDragEnd = (_: any, info: PanInfo) => {
