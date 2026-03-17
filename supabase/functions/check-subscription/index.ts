@@ -69,80 +69,104 @@ serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 
-    if (customers.data.length === 0) {
-      logStep("No customer found");
-      return new Response(JSON.stringify({ subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
-
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
-
-    const hasActiveSub = subscriptions.data.length > 0;
+    let hasStripeSub = false;
     let planType: string | null = null;
     let subscriptionEnd: string | null = null;
     let subscriptionStatus: string | null = null;
     let stripeSubscriptionId: string | null = null;
+    let resBillingCycle: string | null = null;
+    let resCancelAtPeriodEnd = false;
+    let billingSource: string | null = null;
 
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      const periodEnd = subscription.current_period_end;
-      try {
-        subscriptionEnd = typeof periodEnd === 'number' 
-          ? new Date(periodEnd * 1000).toISOString()
-          : typeof periodEnd === 'string' 
-            ? new Date(periodEnd).toISOString()
-            : null;
-      } catch {
-        subscriptionEnd = null;
+    if (customers.data.length > 0) {
+      const customerId = customers.data[0].id;
+      logStep("Found Stripe customer", { customerId });
+
+      // Check active subscriptions
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "active",
+        limit: 1,
+      });
+
+      // Also check trialing subscriptions
+      const trialingSubs = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "trialing",
+        limit: 1,
+      });
+
+      const allSubs = [...subscriptions.data, ...trialingSubs.data];
+      hasStripeSub = allSubs.length > 0;
+
+      if (hasStripeSub) {
+        const subscription = allSubs[0];
+        const periodEnd = subscription.current_period_end;
+        try {
+          subscriptionEnd = typeof periodEnd === 'number' 
+            ? new Date(periodEnd * 1000).toISOString()
+            : typeof periodEnd === 'string' 
+              ? new Date(periodEnd).toISOString()
+              : null;
+        } catch {
+          subscriptionEnd = null;
+        }
+        subscriptionStatus = subscription.status;
+        stripeSubscriptionId = subscription.id;
+
+        const priceItem = subscription.items.data[0].price;
+        const productId = priceItem.product as string;
+        planType = PRODUCT_TO_PLAN[productId] || "pro";
+        resBillingCycle = priceItem.recurring?.interval || null;
+        resCancelAtPeriodEnd = subscription.cancel_at_period_end || false;
+        billingSource = "stripe";
+        logStep("Active Stripe subscription found", { subscriptionId: subscription.id, planType, status: subscriptionStatus, billingCycle: resBillingCycle, cancelAtPeriodEnd: resCancelAtPeriodEnd });
+
+        // Sync to plan_overrides
+        const { error: upsertError } = await supabaseClient
+          .from("plan_overrides")
+          .upsert({
+            user_id: user.id,
+            subscription_plan: planType,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id" });
+
+        if (upsertError) {
+          logStep("Warning: failed to sync plan_overrides", { error: upsertError.message });
+        }
       }
-      subscriptionStatus = subscription.status;
-      stripeSubscriptionId = subscription.id;
-
-      const priceItem = subscription.items.data[0].price;
-      const productId = priceItem.product as string;
-      planType = PRODUCT_TO_PLAN[productId] || "pro";
-      const billingCycle = priceItem.recurring?.interval || null;
-      const cancelAtPeriodEnd = subscription.cancel_at_period_end || false;
-      logStep("Active subscription found", { subscriptionId: subscription.id, planType, status: subscriptionStatus, billingCycle, cancelAtPeriodEnd });
-
-      // Sync to plan_overrides
-      const { error: upsertError } = await supabaseClient
-        .from("plan_overrides")
-        .upsert({
-          user_id: user.id,
-          subscription_plan: planType,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id" });
-
-      if (upsertError) {
-        logStep("Warning: failed to sync plan_overrides", { error: upsertError.message });
-      }
-    } else {
-      logStep("No active subscription found");
     }
 
-    // Extract billing cycle and cancel info from the active sub
-    const activeSub = hasActiveSub ? subscriptions.data[0] : null;
-    const resBillingCycle = activeSub?.items?.data?.[0]?.price?.recurring?.interval || null;
-    const resCancelAtPeriodEnd = activeSub?.cancel_at_period_end || false;
+    // If no Stripe subscription, check plan_overrides for RevenueCat/App Store subscription
+    if (!hasStripeSub) {
+      logStep("No Stripe subscription, checking plan_overrides for native subscription");
+      const { data: overrideData } = await supabaseClient
+        .from("plan_overrides")
+        .select("subscription_plan, updated_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (overrideData && overrideData.subscription_plan && overrideData.subscription_plan !== "free") {
+        planType = overrideData.subscription_plan;
+        subscriptionStatus = "active";
+        billingSource = "ios_app_store";
+        logStep("Found native subscription in plan_overrides", { planType, billingSource });
+      } else {
+        logStep("No active subscription found anywhere");
+      }
+    }
+
+    const subscribed = hasStripeSub || (billingSource === "ios_app_store");
 
     return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
+      subscribed,
       plan_type: planType,
       subscription_end: subscriptionEnd,
       subscription_status: subscriptionStatus,
       stripe_subscription_id: stripeSubscriptionId,
       billing_cycle: resBillingCycle,
       cancel_at_period_end: resCancelAtPeriodEnd,
+      billing_source: billingSource,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
