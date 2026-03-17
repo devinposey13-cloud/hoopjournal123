@@ -39,7 +39,15 @@ const DYNAMIC_HEADLINES: Partial<Record<PaywallReason, string>> = {
   game_limit: "You've hit your game limit",
   report_card_limit: "You've used all free report cards",
   report_card: 'Your Game Grade is ready',
+  pdf_export_limit: 'Unlock Unlimited Game Reports',
 };
+
+const PDF_VALUE_BULLETS = [
+  { icon: '📄', label: 'Unlimited PDF exports' },
+  { icon: '✨', label: 'Clean, professional format' },
+  { icon: '🏀', label: 'Share with coaches and recruiters' },
+  { icon: '🧠', label: 'Full AI game recap included' },
+];
 
 export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: PaywallSheetProps) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
@@ -50,8 +58,10 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
 
   if (!config) return null;
 
-  const isLimitHit = reason === 'game_limit' || reason === 'report_card_limit';
+  const isLimitHit = reason === 'game_limit' || reason === 'report_card_limit' || reason === 'pdf_export_limit';
+  const isPdfLimit = reason === 'pdf_export_limit';
   const dynamicSubline = DYNAMIC_HEADLINES[reason!] || null;
+  const bullets = isPdfLimit ? PDF_VALUE_BULLETS : VALUE_BULLETS;
 
   const handleUpgrade = async () => {
     track('upgrade_clicked', { planId: selectedPlan, reason, cycle });
@@ -188,7 +198,7 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                 Everything you unlock
               </p>
               <div className="space-y-2.5">
-                {VALUE_BULLETS.map((b) => (
+                {bullets.map((b) => (
                   <div key={b.label} className="flex items-center gap-3">
                     <span className="text-base">{b.icon}</span>
                     <span className="text-sm text-white/80">{b.label}</span>

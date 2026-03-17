@@ -39,7 +39,7 @@ import { EditScheduleDialog } from '@/components/EditScheduleDialog';
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { calculateGameScore } from '@/utils/gameGrading';
 import { usePlan } from '@/hooks/usePlanState';
-import { canUseFeature } from '@/lib/plans';
+import { canUseFeature, track } from '@/lib/plans';
 import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users, Check, Share2, Lock } from 'lucide-react';
 import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import {
@@ -85,7 +85,7 @@ export default function GameDetail() {
     getOccurrenceCount,
   } = useGameWithMilestones();
   const { teams } = usePlayerTeams();
-  const { currentPlan, openPaywall, canGenerateReportCard, incrementReportCards } = usePlan();
+  const { currentPlan, openPaywall, canGenerateReportCard, incrementReportCards, canExportPdf, incrementPdfExports } = usePlan();
   const { games: allGames } = useCloudData();
   const insightsHook = usePostGameInsights(allGames);
   const [lastSavedGameId, setLastSavedGameId] = useState<string | null>(null);
@@ -506,14 +506,21 @@ export default function GameDetail() {
 
   // Handle PDF export
   const handleExportPdf = async () => {
-    if (!canUseFeature(currentPlan, 'exportPdf')) {
-      navigate('/upgrade?reason=export_pdf');
+    track('pdf_export_attempted', { gameId: game?.id, plan: currentPlan });
+    
+    // Check if free user has hit the export limit
+    if (!canExportPdf()) {
+      track('pdf_export_blocked', { gameId: game?.id, plan: currentPlan });
+      openPaywall('pdf_export_limit');
       return;
     }
+    
     if (!game || !profile) {
       toast.error('Cannot export: missing game or profile data');
       return;
     }
+    
+    const isFreeUser = currentPlan === 'free';
     
     // Get milestones earned in this game for PDF
     const gameMilestones = earnedMilestones
@@ -523,15 +530,19 @@ export default function GameDetail() {
         earnedAt: m.earnedAt,
       }));
     
-    toast.info('Generating PDF...');
+    toast.info('Generating Official Game Report...');
     await exportGameBoxScorePdf(profile, {
       game,
       firstHalf: halfData?.firstHalf,
       secondHalf: halfData?.secondHalf,
       coachRecap: includeRecapInPdf ? coachRecap : undefined,
       milestones: includeMilestonesInPdf && gameMilestones.length > 0 ? gameMilestones : undefined,
-    });
-    toast.success('Box score PDF exported!');
+    }, { isFreeUser });
+    
+    // Increment counter after successful export
+    await incrementPdfExports();
+    track('pdf_export_completed', { gameId: game.id, plan: currentPlan, isFreeUser });
+    toast.success('Official Game Report exported!');
   };
 
   // Handle game photo capture/update
@@ -999,11 +1010,11 @@ export default function GameDetail() {
               variant="outline" 
               onClick={handleExportPdf}
               size={isMobile ? "icon" : "default"}
-              title="Export PDF"
+              title="Export Official Game Report"
             >
               <FileDown className={cn("w-4 h-4", !isMobile && "mr-2")} />
-              {!isMobile && "Export PDF"}
-              {isMobile && <span className="sr-only">Export PDF</span>}
+              {!isMobile && "Game Report"}
+              {isMobile && <span className="sr-only">Export Game Report</span>}
             </Button>
             <Button 
               onClick={() => {

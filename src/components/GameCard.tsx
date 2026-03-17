@@ -16,8 +16,7 @@ import {
 import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { toast } from 'sonner';
 import { usePlan } from '@/hooks/usePlanState';
-import { canUseFeature } from '@/lib/plans';
-import { useNavigate } from 'react-router-dom';
+import { track } from '@/lib/plans';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface GameCardProps {
@@ -32,8 +31,7 @@ const SWIPE_THRESHOLD = 80;
 const DELETE_WIDTH = 80;
 
 export function GameCard({ game, profile, onDelete, teams, onTeamChange }: GameCardProps) {
-  const { currentPlan } = usePlan();
-  const navigate = useNavigate();
+  const { currentPlan, canExportPdf, incrementPdfExports, openPaywall } = usePlan();
   const isMobile = useIsMobile();
   const [isSwipeOpen, setIsSwipeOpen] = useState(false);
   const x = useMotionValue(0);
@@ -52,8 +50,11 @@ export function GameCard({ game, profile, onDelete, teams, onTeamChange }: GameC
     e.preventDefault();
     e.stopPropagation();
     
-    if (!canUseFeature(currentPlan, 'exportPdf')) {
-      navigate('/upgrade?reason=export_pdf');
+    track('pdf_export_attempted', { gameId: game.id, plan: currentPlan });
+    
+    if (!canExportPdf()) {
+      track('pdf_export_blocked', { gameId: game.id, plan: currentPlan });
+      openPaywall('pdf_export_limit');
       return;
     }
     
@@ -62,9 +63,13 @@ export function GameCard({ game, profile, onDelete, teams, onTeamChange }: GameC
       return;
     }
     
-    toast.info('Generating PDF...');
-    await exportGameBoxScorePdf(profile, { game });
-    toast.success('Box score PDF exported!');
+    const isFreeUser = currentPlan === 'free';
+    
+    toast.info('Generating Official Game Report...');
+    await exportGameBoxScorePdf(profile, { game }, { isFreeUser });
+    await incrementPdfExports();
+    track('pdf_export_completed', { gameId: game.id, plan: currentPlan, isFreeUser });
+    toast.success('Official Game Report exported!');
   };
 
   const handleDragEnd = (_: any, info: PanInfo) => {

@@ -7,6 +7,9 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { exportSeasonStatsPdf } from '@/utils/exportPdf';
 import { LevelBadge } from '@/components/xp/LevelBadge';
 import { TierBadges } from '@/components/xp/TierBadges';
+import { usePlan } from '@/hooks/usePlanState';
+import { track } from '@/lib/plans';
+import { toast } from 'sonner';
 import type { XpProgress } from '@/types/xp';
 
 interface TierAchievement {
@@ -23,9 +26,23 @@ interface PlayerHeaderProps {
 
 export function PlayerHeader({ profile, seasonStats, games, xpProgress, tierAchievements = [] }: PlayerHeaderProps) {
   const [showAvatarPreview, setShowAvatarPreview] = useState(false);
+  const { currentPlan, canExportPdf, incrementPdfExports, openPaywall } = usePlan();
 
-  const handleExport = () => {
-    exportSeasonStatsPdf(profile, seasonStats, games);
+  const handleExport = async () => {
+    track('pdf_export_attempted', { context: 'season', plan: currentPlan });
+    
+    if (!canExportPdf()) {
+      track('pdf_export_blocked', { context: 'season', plan: currentPlan });
+      openPaywall('pdf_export_limit');
+      return;
+    }
+    
+    const isFreeUser = currentPlan === 'free';
+    toast.info('Generating Season Report...');
+    await exportSeasonStatsPdf(profile, seasonStats, games, { isFreeUser });
+    await incrementPdfExports();
+    track('pdf_export_completed', { context: 'season', plan: currentPlan, isFreeUser });
+    toast.success('Season Report exported!');
   };
 
   return (
