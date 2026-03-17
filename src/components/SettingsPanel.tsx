@@ -484,7 +484,6 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                               if (effectiveBillingSource === 'ios_app_store') {
                                 // Route to Apple's subscription management
                                 try {
-                                  const { track } = await import('@/lib/plans');
                                   track('manage_ios_subscription_opened', {});
                                   const despiaModule = await import('despia-native');
                                   const despia = (despiaModule.default || despiaModule) as any;
@@ -499,17 +498,12 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                                 // Stripe cancellation
                                 setIsCanceling(true);
                                 try {
+                                  track('cancel_subscription_confirmed', { billingSource: 'stripe' });
                                   await cancelSubscription(false);
-                                  try {
-                                    const { track } = await import('@/lib/plans');
-                                    track('cancel_subscription_completed', { billingSource: 'stripe' });
-                                  } catch {}
+                                  track('cancel_subscription_completed', { billingSource: 'stripe' });
                                   toast.success('Your subscription has been canceled and will remain active until the end of your billing period.');
                                 } catch {
-                                  try {
-                                    const { track } = await import('@/lib/plans');
-                                    track('cancel_subscription_failed', { billingSource: 'stripe' });
-                                  } catch {}
+                                  track('cancel_subscription_failed', { billingSource: 'stripe' });
                                   toast.error("We couldn't process your request. Please try again.");
                                 } finally {
                                   setIsCanceling(false);
