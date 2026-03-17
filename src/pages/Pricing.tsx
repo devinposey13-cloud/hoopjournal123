@@ -246,6 +246,7 @@ export default function Pricing() {
               <div>rcLoading: {String(rcLoading)}</div>
               <div>offerings: {rcOfferings.length}</div>
               <div>webkit: {String(diagnostics.webkitDetected)}</div>
+              <div>statusReason: {statusReason ?? 'none'}</div>
               <div className="border-t border-green-800 mt-2 pt-2">
                 {debugLog.length === 0 ? '(no log entries yet)' : debugLog.map((l, i) => <div key={i}>{l}</div>)}
               </div>

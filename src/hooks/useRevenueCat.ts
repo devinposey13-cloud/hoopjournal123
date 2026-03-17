@@ -352,6 +352,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
       retryInit: () => {},
       debugLog,
       diagnostics,
+      statusReason: 'web_environment',
     };
   }
 
@@ -364,5 +365,6 @@ export function useRevenueCat(): UseRevenueCatReturn {
     retryInit,
     debugLog,
     diagnostics,
+    statusReason,
   };
 }
