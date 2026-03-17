@@ -106,7 +106,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
               period: pkg.packageType === 'ANNUAL' ? 'Yearly' : 'Monthly',
               planId: RC_PRODUCT_TO_PLAN[pkg.product.identifier],
             }));
-          console.log('[RevenueCat] Mapped offerings:', mapped.length, mapped.map(m => m.productId));
+          log(`[RC] Mapped: ${mapped.length} — ${mapped.map(m => m.productId).join(', ')}`);
           setOfferings(mapped);
         } else {
           console.warn('[RevenueCat] No current offering or no packages available');
