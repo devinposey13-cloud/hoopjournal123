@@ -392,7 +392,7 @@ export const compareFeatures: CompareFeature[] = [
   { label: 'Basic stat tracking', free: true, pro: true, elite: true },
   { label: 'XP & Leveling', free: 'Cap at Lv 10', pro: 'Unlimited', elite: 'Unlimited' },
   { label: 'AI Coach prompts', free: '2/month', pro: 'Unlimited', elite: 'Unlimited' },
-  { label: 'Report card generation', free: 'Limited', pro: 'Full', elite: 'Full' },
+  { label: 'Report card generation', free: '3 total', pro: 'Unlimited', elite: 'Unlimited' },
   { label: 'Report card sharing', free: false, pro: true, elite: true },
   { label: 'Performance trends & analytics', free: false, pro: true, elite: true },
   { label: 'Career stats', free: false, pro: true, elite: true },
