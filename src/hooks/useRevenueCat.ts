@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { isNativeApp } from '@/lib/platform';
+import { isNativeApp, getPlatform } from '@/lib/platform';
 import { useAuth } from '@/hooks/useAuth';
 import type { PlanId } from '@/lib/plans';
 
