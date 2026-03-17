@@ -196,7 +196,7 @@ export function LiveStatCapture({
 
   // Autosave on state changes (debounced)
   useEffect(() => {
-    if (!hasInitialized.current) return;
+    if (!hasInitialized.current || !isAutosaveEnabledRef.current) return;
     
     saveData({
       opponent,
