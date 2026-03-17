@@ -40,7 +40,7 @@ import { exportGameBoxScorePdf } from '@/utils/exportPdf';
 import { calculateGameScore } from '@/utils/gameGrading';
 import { usePlan } from '@/hooks/usePlanState';
 import { canUseFeature, track } from '@/lib/plans';
-import { ArrowLeft, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users, Check, Share2, Lock } from 'lucide-react';
+import { LayoutDashboard, Loader2, Trophy, Target, Repeat, Zap, Shield, HandMetal, AlertCircle, Calendar, MapPin, Home, Plane, Plus, Radio, FileDown, Pencil, Copy, Camera, ImageIcon, Trash2, Users, Check, Share2, Lock } from 'lucide-react';
 import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import {
   Select,
@@ -652,8 +652,9 @@ export default function GameDetail() {
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-              <ArrowLeft className="w-5 h-5" />
+            <Button variant="ghost" onClick={() => navigate('/', { replace: true })} className="gap-2">
+              <LayoutDashboard className="w-4 h-4" />
+              Dashboard
             </Button>
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-1">
@@ -910,9 +911,9 @@ export default function GameDetail() {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
-          <Button variant="ghost" onClick={() => navigate('/')} className="mb-6">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+          <Button variant="ghost" onClick={() => navigate('/', { replace: true })} className="mb-6 gap-2">
+            <LayoutDashboard className="w-4 h-4" />
+            Dashboard
           </Button>
           <div className="stat-card text-center py-16">
             <AlertCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -941,8 +942,9 @@ export default function GameDetail() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-5 h-5" />
+          <Button variant="ghost" onClick={() => navigate('/', { replace: true })} className="gap-2">
+            <LayoutDashboard className="w-4 h-4" />
+            Dashboard
           </Button>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
