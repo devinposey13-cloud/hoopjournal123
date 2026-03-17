@@ -148,8 +148,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             {currentStep === 3 && (
               <CompletionCard
                 playerName={data.name || 'Player'}
-                onStartGame={() => onComplete(data, 'start_game')}
-                onPregameTalk={() => onComplete(data, 'pregame_talk')}
+                onStartGame={() => onComplete(data, 'explore_dashboard')}
                 onExploreDashboard={() => onComplete(data, 'explore_dashboard')}
               />
             )}
