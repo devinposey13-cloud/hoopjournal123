@@ -419,6 +419,10 @@ export default function Index() {
       };
 
       const savedGame = await addGame(gameData);
+      if (!savedGame) {
+        setShowQuickLiveCapture(false);
+        return;
+      }
       toast.success('Game saved successfully!');
       setShowQuickLiveCapture(false);
       setQuickCaptureOpponent('');
