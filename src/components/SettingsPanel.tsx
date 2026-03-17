@@ -55,7 +55,8 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
   const [isCanceling, setIsCanceling] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   
-  const { isSubscribed, planType, subscriptionEnd, subscriptionStatus, billingCycle, cancelAtPeriodEnd, isLoading: subLoading, openCustomerPortal, cancelSubscription } = useSubscription();
+  const { isSubscribed, planType, subscriptionEnd, subscriptionStatus, billingCycle, cancelAtPeriodEnd, billingSource, isLoading: subLoading, openCustomerPortal, cancelSubscription } = useSubscription();
+  const { getDespia } = useBilling();
   const { currentPlan, accessInfo, accessBadge, loading: planLoading } = usePlan();
   const { theme, setTheme } = useTheme();
   const { progress: xpProgress } = useXpProgress();
