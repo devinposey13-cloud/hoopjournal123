@@ -271,6 +271,7 @@ export type PaywallReason =
   | 'ai_recap_limit'
   | 'history_limit'
   | 'level_cap'
+  | 'game_limit'
   | 'season_report'
   | 'advanced_analytics'
   | 'export_pdf'
