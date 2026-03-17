@@ -188,9 +188,16 @@ export default function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-open live stats when navigating from onboarding finish
+  // Reset live capture state when navigating back to dashboard
   useEffect(() => {
-    const state = location.state as { openLiveStats?: boolean; tab?: Tab } | null;
+    const state = location.state as { openLiveStats?: boolean; tab?: Tab; fromGameDetail?: boolean } | null;
+    
+    // If we're arriving from a game detail page or any external navigation, close live capture
+    if (showQuickLiveCapture && !state?.openLiveStats) {
+      setShowQuickLiveCapture(false);
+    }
+
+    // Auto-open live stats when navigating from onboarding finish
     if (state?.openLiveStats) {
       navigate('/', { replace: true, state: {} });
       setTimeout(() => {
