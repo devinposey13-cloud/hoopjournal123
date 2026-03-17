@@ -84,27 +84,6 @@ serve(async (req) => {
 
         logStep("Plan activated", { userId: appUserId, planId });
 
-        // Check promo lock-in (same logic as Stripe webhook)
-        if (planId === "starter") {
-          const { data: promoData } = await supabase
-            .from("plan_overrides")
-            .select("promo_eligible, promo_type, promo_locked_in")
-            .eq("user_id", appUserId)
-            .maybeSingle();
-
-          if (
-            promoData?.promo_eligible &&
-            promoData?.promo_type === "AAU_MARCH_2026_ELITE_LOCK" &&
-            !promoData?.promo_locked_in
-          ) {
-            await supabase.from("plan_overrides").update({
-              promo_locked_in: true,
-              promo_start_date: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            }).eq("user_id", appUserId);
-            logStep("Promo locked in via RevenueCat", { userId: appUserId });
-          }
-        }
         break;
       }
 
