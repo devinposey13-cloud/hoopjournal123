@@ -252,7 +252,7 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
       setTrialResetLoading(false);
     }
   }
-
+  async function handleBulkGrandfather() {
     setBulkLoading(true);
     setBulkResult(null);
     try {
