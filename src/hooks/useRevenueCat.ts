@@ -39,6 +39,7 @@ export interface UseRevenueCatReturn {
   isLoading: boolean;
   purchasePackage: (packageId: string) => Promise<void>;
   restorePurchases: () => Promise<void>;
+  debugLog: string[];
 }
 
 /**
