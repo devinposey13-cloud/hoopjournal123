@@ -72,6 +72,9 @@ export function useGameWithMilestones() {
       return null;
     }
 
+    // Track device-level game counter for anti-abuse
+    incrementDeviceCounter('totalGamesLogged');
+
     // Prepare all games including the new one for milestone checking
     const allGames: GameWithId[] = [savedGame, ...cloudData.games].map(g => ({
       ...g,
