@@ -6,14 +6,12 @@ const logStep = (step: string, details?: any) => {
   console.log(`[REVENUECAT-WEBHOOK] ${step}${detailsStr}`);
 };
 
-// RevenueCat product ID → internal plan mapping
+// RevenueCat product ID → internal plan mapping (current App Store product IDs)
 const RC_PRODUCT_TO_PLAN: Record<string, string> = {
-  hj_starter_monthly: "starter",
-  hj_starter_yearly: "starter",
-  hj_pro_monthly: "pro",
-  hj_pro_yearly: "pro",
-  hj_elite_monthly: "elite",
-  hj_elite_yearly: "elite",
+  HoopJ_pro_monthly: "pro",
+  HoopJ_pro_yearly: "pro",
+  HoopJ_elite_monthly: "elite",
+  HoopJ_elite_yearly: "elite",
 };
 
 serve(async (req) => {
