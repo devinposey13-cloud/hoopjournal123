@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GameStats } from '@/types/basketball';
 import { GameStatsForm } from './GameStatsForm';
 import { AIStatsCapture } from './AIStatsCapture';
+import { usePlan } from '@/hooks/usePlanState';
 
 interface AddGameDialogProps {
   onAddGame: (game: Omit<GameStats, 'id'>) => Promise<any> | any;
@@ -31,14 +32,28 @@ interface AddGameDialogProps {
 export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsumed, prefill, customTrigger }: AddGameDialogProps) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'manual' | 'ai'>('ai');
+  const { canLogGame, openPaywall } = usePlan();
 
   // Handle auto-open from external trigger (e.g., onboarding completion)
   useEffect(() => {
     if (autoOpen && !open) {
+      if (!canLogGame()) {
+        openPaywall('game_limit');
+        onAutoOpenConsumed?.();
+        return;
+      }
       setOpen(true);
       onAutoOpenConsumed?.();
     }
-  }, [autoOpen, open, onAutoOpenConsumed]);
+  }, [autoOpen, open, onAutoOpenConsumed, canLogGame, openPaywall]);
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (newOpen && !canLogGame()) {
+      openPaywall('game_limit');
+      return;
+    }
+    setOpen(newOpen);
+  };
 
   const handleSubmit = async (gameData: Omit<GameStats, 'id'>) => {
     const enriched = prefill?.scheduledGameId 
@@ -55,7 +70,7 @@ export function AddGameDialog({ onAddGame, isMobile, autoOpen, onAutoOpenConsume
   } : undefined;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {customTrigger || (
           <Button 
