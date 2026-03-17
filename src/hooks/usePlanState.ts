@@ -15,6 +15,7 @@ interface PlanState {
   accessBadge: AccessBadge;
   usage: UsageData;
   lifetimeGamesLogged: number;
+  lifetimeReportCards: number;
   paywallOpen: boolean;
   paywallReason: PaywallReason | null;
   loading: boolean;
@@ -22,6 +23,10 @@ interface PlanState {
   openPaywall: (reason: PaywallReason) => void;
   closePaywall: () => void;
   canLogGame: () => boolean;
+  canGenerateReportCard: () => boolean;
+  incrementReportCards: () => void;
+  freeGamesRemaining: number;
+  freeReportCardsRemaining: number;
 }
 
 const defaultAccessInfo: UserAccessInfo = {
