@@ -1266,6 +1266,8 @@ export function LiveStatCapture({
             <AlertDialogAction
               onClick={() => {
                 setShowCancelConfirm(false);
+                isAutosaveEnabledRef.current = false;
+                clearSavedData();
                 onCancel();
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
