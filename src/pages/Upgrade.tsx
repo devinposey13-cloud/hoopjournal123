@@ -53,15 +53,21 @@ export default function Upgrade() {
     console.log('[Upgrade] handleSelect', { planId, cycle, native, rcAvailable, rcLoading, platform: getPlatform() });
     track('upgrade_clicked', { planId, cycle, native });
 
-    // On native, use RevenueCat via NativePurchaseSheet
+    // On native, ONLY use RevenueCat — never fall back to Stripe
     if (native) {
-      console.log('[Upgrade] → Native path (RevenueCat)');
+      console.log('[Upgrade] → Native path (RevenueCat only, no Stripe fallback)');
       if (rcLoading) {
         toast.info('Loading purchase options… please wait.');
         return;
       }
       if (!rcAvailable) {
-        toast.error('In-app purchases are not available right now. Please try again.');
+        console.log('[Upgrade] ✗ RC not available on native — blocking purchase');
+        toast.error('In-app purchases are not available right now. Please restart the app and try again.');
+        return;
+      }
+      if (rcOfferings.length === 0) {
+        console.log('[Upgrade] ✗ RC available but 0 offerings — blocking purchase');
+        toast.error('Purchase options are temporarily unavailable. Please try again later.');
         return;
       }
       setNativeSelectedPlan(planId);
@@ -69,7 +75,7 @@ export default function Upgrade() {
       return;
     }
 
-    // Web: Stripe checkout
+    // Web only: Stripe checkout
     console.log('[Upgrade] → Web path (Stripe)');
     setLoadingPlan(planId);
     try {
@@ -131,11 +137,21 @@ export default function Upgrade() {
           <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />
         </div>
 
-        {/* Native loading indicator */}
+        {/* Native loading / error indicator */}
         {native && rcLoading && (
           <div className="flex justify-center items-center gap-2 mb-6 text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span className="text-sm">Loading App Store prices…</span>
+          </div>
+        )}
+        {native && !rcLoading && !rcAvailable && (
+          <div className="flex justify-center items-center gap-2 mb-6 text-destructive">
+            <span className="text-sm">⚠ Purchases temporarily unavailable. Please restart the app.</span>
+          </div>
+        )}
+        {native && !rcLoading && rcAvailable && rcOfferings.length === 0 && (
+          <div className="flex justify-center items-center gap-2 mb-6 text-amber-500">
+            <span className="text-sm">⚠ No purchase options found. Please try again later.</span>
           </div>
         )}
 

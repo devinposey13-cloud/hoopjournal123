@@ -61,22 +61,24 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
     setIsLoading(true);
     try {
       if (native) {
-        console.log('[UpgradeDrawer] → Native path (RevenueCat)');
+        console.log('[UpgradeDrawer] → Native path (RevenueCat only, no Stripe fallback)');
         if (rcLoading) {
           toast.info('Loading purchase options… please wait.');
           return;
         }
         if (!rcAvailable) {
-          toast.error('In-app purchases are not available right now. Please try again.');
+          console.log('[UpgradeDrawer] ✗ RC not available on native — blocking purchase');
+          toast.error('In-app purchases are not available right now. Please restart the app and try again.');
           return;
         }
-        if (rcPkg) {
-          await purchasePackage(rcPkg.identifier);
-          toast.success('Purchase successful! 🎉');
-          onUpgrade(config.recommendedPlan);
-        } else {
-          toast.error('Package not available');
+        if (!rcPkg) {
+          console.log('[UpgradeDrawer] ✗ No matching RC package for', config.recommendedPlan, cycle);
+          toast.error('Purchase options are temporarily unavailable. Please try again later.');
+          return;
         }
+        await purchasePackage(rcPkg.identifier);
+        toast.success('Purchase successful! 🎉');
+        onUpgrade(config.recommendedPlan);
         return;
       }
       // Web: Stripe
