@@ -61,6 +61,14 @@ export function AuthForm() {
   const { signIn, signUp } = useAuth();
   const googleTimeoutRef = useRef<number | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (googleTimeoutRef.current) {
+        window.clearTimeout(googleTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Debug logging for native OAuth diagnosis
   const nativeDetected = isNativeApp();
   console.log('[AuthForm] ===== RENDER DEBUG =====');
