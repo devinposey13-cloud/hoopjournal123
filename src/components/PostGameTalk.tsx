@@ -427,9 +427,16 @@ ${pregameGoals && pregameGoals.length > 0 ? `Their pregame goals were: ${pregame
               <div>
                 <p className="font-medium text-foreground">Key Takeaways:</p>
                 <ul className="ml-4 space-y-1">
-                  {existingInsight.key_takeaways.map((t, i) => (
-                    <li key={i}>• {t}</li>
-                  ))}
+                  {existingInsight.key_takeaways.map((t, i) => {
+                    // Parse structured JSON takeaways into readable text
+                    try {
+                      const parsed = typeof t === 'string' && t.startsWith('{') ? JSON.parse(t) : null;
+                      if (parsed && parsed.body) {
+                        return <li key={i}>• {parsed.title ? `${parsed.title}: ` : ''}{parsed.body}</li>;
+                      }
+                    } catch { /* not JSON, render as-is */ }
+                    return <li key={i}>• {t}</li>;
+                  })}
                 </ul>
               </div>
             )}
