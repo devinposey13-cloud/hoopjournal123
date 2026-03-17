@@ -79,7 +79,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
         log('[RC] Imported OK, configuring…');
 
         await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
-        console.log('[RevenueCat] Configured successfully');
+        log('[RC] Configured ✓');
         setPurchases(Purchases);
         setIsAvailable(true);
 
