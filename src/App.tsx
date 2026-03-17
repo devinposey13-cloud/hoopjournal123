@@ -111,6 +111,7 @@ const App = () => (
               <Sonner />
               <OAuthErrorHandler />
               <NativeOAuthHandler />
+              <GlobalPaywall />
               <BrowserRouter>
                 
                 <Routes>
