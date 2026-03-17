@@ -12,6 +12,9 @@ import {
   paywallConfigs,
   getPlanPrice,
   getYearlySavingsPercent,
+  getTrialConfig,
+  getTrialCopy,
+  getTrialCta,
   track,
 } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
