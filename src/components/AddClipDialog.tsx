@@ -97,7 +97,7 @@ export function AddClipDialog({ onAddClip, isMobile }: AddClipDialogProps) {
                   Click to upload video
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  MP4, MOV, or WebM (Max 100MB)
+                  MP4, MOV, or WebM (Max 250MB)
                 </p>
               </div>
             )}
