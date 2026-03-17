@@ -7,6 +7,9 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { exportSeasonStatsPdf } from '@/utils/exportPdf';
 import { LevelBadge } from '@/components/xp/LevelBadge';
 import { TierBadges } from '@/components/xp/TierBadges';
+import { usePlan } from '@/hooks/usePlanState';
+import { track } from '@/lib/plans';
+import { toast } from 'sonner';
 import type { XpProgress } from '@/types/xp';
 
 interface TierAchievement {
