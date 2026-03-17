@@ -41,6 +41,7 @@ export function useSubscription() {
         subscriptionStatus: null,
         billingCycle: null,
         cancelAtPeriodEnd: false,
+        billingSource: null,
         isLoading: false,
         error: null,
       });
