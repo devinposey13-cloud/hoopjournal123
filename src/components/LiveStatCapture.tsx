@@ -227,7 +227,9 @@ export function LiveStatCapture({
   // Save on unmount (navigation away) so data persists
   useEffect(() => {
     return () => {
-      immediateSave(stateRef.current);
+      if (isAutosaveEnabledRef.current) {
+        immediateSave(stateRef.current);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
