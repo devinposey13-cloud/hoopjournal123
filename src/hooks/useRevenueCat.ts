@@ -149,8 +149,9 @@ export function useRevenueCat(): UseRevenueCatReturn {
       isLoading: false,
       purchasePackage: async () => { throw new Error('Not available on web'); },
       restorePurchases: async () => { throw new Error('Not available on web'); },
+      debugLog,
     };
   }
 
-  return { isAvailable, offerings, isLoading, purchasePackage, restorePurchases };
+  return { isAvailable, offerings, isLoading, purchasePackage, restorePurchases, debugLog };
 }
