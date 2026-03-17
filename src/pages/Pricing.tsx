@@ -163,13 +163,19 @@ export default function Pricing() {
           </div>
         )}
         {native && !rcLoading && !rcAvailable && (
-          <div className="flex justify-center items-center gap-2 mb-6 text-destructive">
-            <span className="text-sm">⚠ Purchases temporarily unavailable. Please restart the app.</span>
+          <div className="flex flex-col justify-center items-center gap-2 mb-6 text-destructive">
+            <span className="text-sm">⚠ Purchases temporarily unavailable.</span>
+            <Button variant="outline" size="sm" onClick={rcRetry} className="text-xs">
+              Retry
+            </Button>
           </div>
         )}
         {native && !rcLoading && rcAvailable && rcOfferings.length === 0 && (
-          <div className="flex justify-center items-center gap-2 mb-6 text-amber-500">
-            <span className="text-sm">⚠ No purchase options found. Please try again later.</span>
+          <div className="flex flex-col justify-center items-center gap-2 mb-6 text-amber-500">
+            <span className="text-sm">⚠ No purchase options found.</span>
+            <Button variant="outline" size="sm" onClick={rcRetry} className="text-xs">
+              Retry
+            </Button>
           </div>
         )}
 
