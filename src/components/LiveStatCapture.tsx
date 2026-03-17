@@ -728,7 +728,7 @@ export function LiveStatCapture({
       
       {/* Header - Compact */}
       <div className="bg-card border-b border-border px-3 py-2 flex items-center justify-between sticky top-0 z-10">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {}}>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowCancelConfirm(true)}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div className="text-center flex items-center gap-2">
