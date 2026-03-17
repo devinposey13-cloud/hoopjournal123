@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { isNativeApp, getPlatform } from '@/lib/platform';
 import { useAuth } from '@/hooks/useAuth';
 import type { PlanId } from '@/lib/plans';
