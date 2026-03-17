@@ -244,7 +244,7 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                   return (
                     <button
                       key={id}
-                      onClick={() => setSelectedPlan(id)}
+                      onClick={() => handlePlanSelect(id)}
                       className={cn(
                         'relative rounded-2xl p-4 text-left transition-all duration-200',
                         isSelected
