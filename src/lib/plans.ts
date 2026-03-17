@@ -187,6 +187,7 @@ export const planCatalog: Record<PlanId, Plan> = {
       pregameTalksPerMonth: Infinity,
       historyDays: null,
       maxLevel: null,
+      maxGamesTotal: null,
       seasonReports: true,
       exportPdf: true,
       parentDashboard: false,
