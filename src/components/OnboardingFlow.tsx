@@ -10,8 +10,7 @@ import { GoalsCard } from './onboarding/GoalsCard';
 import { PricingPreviewCard } from './onboarding/PricingPreviewCard';
 import { NativePurchaseSheet } from './purchase/NativePurchaseSheet';
 import { track, type PlanId, type BillingCycle } from '@/lib/plans';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { useBilling } from '@/hooks/useBilling';
 import { isNativeApp, getPlatform } from '@/lib/platform';
 import { toast } from 'sonner';
 
