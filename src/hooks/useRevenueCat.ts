@@ -109,7 +109,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
           log(`[RC] Mapped: ${mapped.length} — ${mapped.map(m => m.productId).join(', ')}`);
           setOfferings(mapped);
         } else {
-          console.warn('[RevenueCat] No current offering or no packages available');
+          log('[RC] ⚠ No current offering / no packages');
         }
       } catch (err) {
         console.error('[RevenueCat] Init error:', err);
