@@ -1010,11 +1010,11 @@ export default function GameDetail() {
               variant="outline" 
               onClick={handleExportPdf}
               size={isMobile ? "icon" : "default"}
-              title="Export PDF"
+              title="Export Official Game Report"
             >
               <FileDown className={cn("w-4 h-4", !isMobile && "mr-2")} />
-              {!isMobile && "Export PDF"}
-              {isMobile && <span className="sr-only">Export PDF</span>}
+              {!isMobile && "Game Report"}
+              {isMobile && <span className="sr-only">Export Game Report</span>}
             </Button>
             <Button 
               onClick={() => {
