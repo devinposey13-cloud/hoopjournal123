@@ -222,9 +222,9 @@ export function CoachChat({ games, seasonStats, profile, prefillPrompt, onPrefil
       return;
     }
     
-    // Validate file size (100MB limit)
-    if (file.size > 100 * 1024 * 1024) {
-      toast.error('Please upload a video under 100MB.');
+    // Validate file size (250MB limit)
+    if (file.size > 250 * 1024 * 1024) {
+      toast.error('Please upload a video under 250MB.');
       return;
     }
     
