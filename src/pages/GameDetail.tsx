@@ -506,14 +506,21 @@ export default function GameDetail() {
 
   // Handle PDF export
   const handleExportPdf = async () => {
-    if (!canUseFeature(currentPlan, 'exportPdf')) {
-      navigate('/upgrade?reason=export_pdf');
+    track('pdf_export_attempted', { gameId: game?.id, plan: currentPlan });
+    
+    // Check if free user has hit the export limit
+    if (!canExportPdf()) {
+      track('pdf_export_blocked', { gameId: game?.id, plan: currentPlan });
+      openPaywall('pdf_export_limit');
       return;
     }
+    
     if (!game || !profile) {
       toast.error('Cannot export: missing game or profile data');
       return;
     }
+    
+    const isFreeUser = currentPlan === 'free';
     
     // Get milestones earned in this game for PDF
     const gameMilestones = earnedMilestones
@@ -523,15 +530,19 @@ export default function GameDetail() {
         earnedAt: m.earnedAt,
       }));
     
-    toast.info('Generating PDF...');
+    toast.info('Generating Official Game Report...');
     await exportGameBoxScorePdf(profile, {
       game,
       firstHalf: halfData?.firstHalf,
       secondHalf: halfData?.secondHalf,
       coachRecap: includeRecapInPdf ? coachRecap : undefined,
       milestones: includeMilestonesInPdf && gameMilestones.length > 0 ? gameMilestones : undefined,
-    });
-    toast.success('Box score PDF exported!');
+    }, { isFreeUser });
+    
+    // Increment counter after successful export
+    await incrementPdfExports();
+    track('pdf_export_completed', { gameId: game.id, plan: currentPlan, isFreeUser });
+    toast.success('Official Game Report exported!');
   };
 
   // Handle game photo capture/update
