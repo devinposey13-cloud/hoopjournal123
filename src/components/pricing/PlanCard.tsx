@@ -126,7 +126,7 @@ export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied, nat
               variant={isHighlighted ? 'default' : 'outline'}
               onClick={handleClick}
             >
-              {plan.id === 'free' ? plan.cta : `Upgrade to ${plan.name}`}
+              {plan.id === 'free' ? plan.cta : (trialCta || `Upgrade to ${plan.name}`)}
             </Button>
           )}
         </CardFooter>

@@ -273,9 +273,13 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                         </Badge>
                       )}
                       <p className="text-[10px] text-white/50 leading-relaxed">
-                        {id === 'pro'
-                          ? 'For players consistently working on their game'
-                          : 'For serious players who want to stand out'}
+                        {(() => {
+                          const t = getTrialConfig(id, cycle);
+                          if (t.hasTrial) return `${t.trialDays}-day free trial`;
+                          return id === 'pro'
+                            ? 'For players consistently working on their game'
+                            : 'For serious players who want to stand out';
+                        })()}
                       </p>
 
                       {isSelected && (
