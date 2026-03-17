@@ -147,7 +147,7 @@ export function hasSpecialAccess(user: UserAccessInfo): boolean {
     user.promoLockedIn &&
     user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
     (user.subscriptionPlan === 'pro') &&
-    user.subscriptionStatus === 'active'
+    (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing')
   ) return true;
   return false;
 }
