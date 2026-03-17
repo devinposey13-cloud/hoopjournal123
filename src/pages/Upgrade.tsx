@@ -34,6 +34,7 @@ export default function Upgrade() {
   const [isRestoring, setIsRestoring] = useState(false);
   const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
   const [nativeSelectedPlan, setNativeSelectedPlan] = useState<PlanId>('pro');
+  const [showDebug, setShowDebug] = useState(false);
   const native = isNativeApp();
 
   const upgradePlans = planOrder.filter(
