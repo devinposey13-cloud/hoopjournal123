@@ -94,6 +94,7 @@ export function usePlanState(): PlanState {
             promoSource: data.promo_source || null,
             subscriptionStatus: subscriptionStatus || undefined,
           });
+          setLifetimeGamesLogged(data.lifetime_games_logged ?? 0);
         } else if (shouldGrandfather) {
           // No row yet — create one with grandfathered = true
           await supabase
