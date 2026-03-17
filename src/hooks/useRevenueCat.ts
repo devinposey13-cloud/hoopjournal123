@@ -72,7 +72,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
 
     (async () => {
       try {
-        console.log('[RevenueCat] Importing @revenuecat/purchases-capacitor…');
+        log('[RC] Importing purchases-capacitor…');
         // Dynamic import so the Capacitor plugin isn't bundled on web
         const { Purchases } = await import('@revenuecat/purchases-capacitor');
         if (cancelled) return;
