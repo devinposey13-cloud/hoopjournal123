@@ -7,16 +7,16 @@ const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
 };
 
-// Product ID → plan mapping (includes both old and new product IDs)
+// Product ID → plan mapping
 const PRODUCT_TO_PLAN: Record<string, string> = {
-  // Legacy products
-  "prod_U2TenmJYJtafl8": "starter",
-  "prod_U2Te369rDpYwBQ": "starter",
+  // Legacy products (mapped to current tiers for existing subscribers)
+  "prod_U2TenmJYJtafl8": "pro",
+  "prod_U2Te369rDpYwBQ": "pro",
   "prod_U2TeAY16X7k2Ri": "pro",
   "prod_U2TfBflXbqKewl": "pro",
   "prod_U2TfBcoxhUepHK": "elite",
   "prod_U2Tfh9dNymbaRg": "elite",
-  // New products (correct pricing)
+  // Current products
   "prod_U9xw8HkikJdDCE": "pro",
   "prod_U9xxiVNpQ9FA09": "pro",
   "prod_U9xyJGOw7lBgaD": "elite",

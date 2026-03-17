@@ -6,14 +6,12 @@ const logStep = (step: string, details?: any) => {
   console.log(`[REVENUECAT-WEBHOOK] ${step}${detailsStr}`);
 };
 
-// RevenueCat product ID → internal plan mapping
+// RevenueCat product ID → internal plan mapping (current App Store product IDs)
 const RC_PRODUCT_TO_PLAN: Record<string, string> = {
-  hj_starter_monthly: "starter",
-  hj_starter_yearly: "starter",
-  hj_pro_monthly: "pro",
-  hj_pro_yearly: "pro",
-  hj_elite_monthly: "elite",
-  hj_elite_yearly: "elite",
+  HoopJ_pro_monthly: "pro",
+  HoopJ_pro_yearly: "pro",
+  HoopJ_elite_monthly: "elite",
+  HoopJ_elite_yearly: "elite",
 };
 
 serve(async (req) => {
@@ -86,27 +84,6 @@ serve(async (req) => {
 
         logStep("Plan activated", { userId: appUserId, planId });
 
-        // Check promo lock-in (same logic as Stripe webhook)
-        if (planId === "starter") {
-          const { data: promoData } = await supabase
-            .from("plan_overrides")
-            .select("promo_eligible, promo_type, promo_locked_in")
-            .eq("user_id", appUserId)
-            .maybeSingle();
-
-          if (
-            promoData?.promo_eligible &&
-            promoData?.promo_type === "AAU_MARCH_2026_ELITE_LOCK" &&
-            !promoData?.promo_locked_in
-          ) {
-            await supabase.from("plan_overrides").update({
-              promo_locked_in: true,
-              promo_start_date: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            }).eq("user_id", appUserId);
-            logStep("Promo locked in via RevenueCat", { userId: appUserId });
-          }
-        }
         break;
       }
 
