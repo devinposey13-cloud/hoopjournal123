@@ -25,7 +25,7 @@ export default function Pricing() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, isLoading: rcLoading, retryInit: rcRetry, debugLog } = useRevenueCat();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, isLoading: rcLoading, retryInit: rcRetry, debugLog, diagnostics } = useRevenueCat();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [promoApplied, setPromoApplied] = useState(false);
   const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
