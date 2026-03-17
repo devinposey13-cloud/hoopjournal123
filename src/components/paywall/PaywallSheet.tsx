@@ -58,8 +58,10 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
 
   if (!config) return null;
 
-  const isLimitHit = reason === 'game_limit' || reason === 'report_card_limit';
+  const isLimitHit = reason === 'game_limit' || reason === 'report_card_limit' || reason === 'pdf_export_limit';
+  const isPdfLimit = reason === 'pdf_export_limit';
   const dynamicSubline = DYNAMIC_HEADLINES[reason!] || null;
+  const bullets = isPdfLimit ? PDF_VALUE_BULLETS : VALUE_BULLETS;
 
   const handleUpgrade = async () => {
     track('upgrade_clicked', { planId: selectedPlan, reason, cycle });
