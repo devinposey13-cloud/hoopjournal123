@@ -911,9 +911,9 @@ export default function GameDetail() {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
-          <Button variant="ghost" onClick={() => navigate('/')} className="mb-6">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+          <Button variant="ghost" onClick={() => navigate('/', { replace: true })} className="mb-6 gap-2">
+            <LayoutDashboard className="w-4 h-4" />
+            Dashboard
           </Button>
           <div className="stat-card text-center py-16">
             <AlertCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
