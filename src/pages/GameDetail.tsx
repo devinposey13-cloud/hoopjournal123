@@ -941,8 +941,9 @@ export default function GameDetail() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-5 h-5" />
+          <Button variant="ghost" onClick={() => navigate('/', { replace: true })} className="gap-2">
+            <LayoutDashboard className="w-4 h-4" />
+            Dashboard
           </Button>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
