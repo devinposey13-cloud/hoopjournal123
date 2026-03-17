@@ -63,6 +63,7 @@ export function useSubscription() {
         subscriptionStatus: data.subscription_status || null,
         billingCycle: data.billing_cycle || null,
         cancelAtPeriodEnd: data.cancel_at_period_end || false,
+        billingSource: (data.billing_source as BillingSource) || null,
         isLoading: false,
         error: null,
       });
