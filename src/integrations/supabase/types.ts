@@ -92,6 +92,57 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_trial_reset_log: {
+        Row: {
+          additional_note: string | null
+          admin_email: string | null
+          admin_user_id: string
+          created_at: string
+          error_details: string | null
+          id: string
+          new_trial_eligible: boolean
+          previous_trial_eligible: boolean
+          reason_category: string
+          reset_count_after: number
+          reset_count_before: number
+          success: boolean
+          target_user_email: string | null
+          target_user_id: string
+        }
+        Insert: {
+          additional_note?: string | null
+          admin_email?: string | null
+          admin_user_id: string
+          created_at?: string
+          error_details?: string | null
+          id?: string
+          new_trial_eligible: boolean
+          previous_trial_eligible: boolean
+          reason_category: string
+          reset_count_after: number
+          reset_count_before: number
+          success?: boolean
+          target_user_email?: string | null
+          target_user_id: string
+        }
+        Update: {
+          additional_note?: string | null
+          admin_email?: string | null
+          admin_user_id?: string
+          created_at?: string
+          error_details?: string | null
+          id?: string
+          new_trial_eligible?: boolean
+          previous_trial_eligible?: boolean
+          reason_category?: string
+          reset_count_after?: number
+          reset_count_before?: number
+          success?: boolean
+          target_user_email?: string | null
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       age_confirmations: {
         Row: {
           age_declared: string
@@ -792,6 +843,9 @@ export type Database = {
           created_at: string
           id: string
           is_grandfathered: boolean
+          last_trial_reset_at: string | null
+          last_trial_reset_by: string | null
+          last_trial_reset_reason: string | null
           lifetime_games_logged: number
           lifetime_pdf_exports: number
           lifetime_report_cards_generated: number
@@ -802,6 +856,8 @@ export type Database = {
           promo_start_date: string | null
           promo_type: string | null
           subscription_plan: string
+          trial_eligibility_reset_count: number
+          trial_eligible: boolean
           updated_at: string
           updated_by: string | null
           user_id: string
@@ -811,6 +867,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_grandfathered?: boolean
+          last_trial_reset_at?: string | null
+          last_trial_reset_by?: string | null
+          last_trial_reset_reason?: string | null
           lifetime_games_logged?: number
           lifetime_pdf_exports?: number
           lifetime_report_cards_generated?: number
@@ -821,6 +880,8 @@ export type Database = {
           promo_start_date?: string | null
           promo_type?: string | null
           subscription_plan?: string
+          trial_eligibility_reset_count?: number
+          trial_eligible?: boolean
           updated_at?: string
           updated_by?: string | null
           user_id: string
@@ -830,6 +891,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_grandfathered?: boolean
+          last_trial_reset_at?: string | null
+          last_trial_reset_by?: string | null
+          last_trial_reset_reason?: string | null
           lifetime_games_logged?: number
           lifetime_pdf_exports?: number
           lifetime_report_cards_generated?: number
@@ -840,6 +904,8 @@ export type Database = {
           promo_start_date?: string | null
           promo_type?: string | null
           subscription_plan?: string
+          trial_eligibility_reset_count?: number
+          trial_eligible?: boolean
           updated_at?: string
           updated_by?: string | null
           user_id?: string
