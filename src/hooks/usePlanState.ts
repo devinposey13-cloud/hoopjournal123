@@ -16,6 +16,7 @@ interface PlanState {
   usage: UsageData;
   lifetimeGamesLogged: number;
   lifetimeReportCards: number;
+  lifetimePdfExports: number;
   paywallOpen: boolean;
   paywallReason: PaywallReason | null;
   loading: boolean;
@@ -24,9 +25,12 @@ interface PlanState {
   closePaywall: () => void;
   canLogGame: () => boolean;
   canGenerateReportCard: () => boolean;
+  canExportPdf: () => boolean;
   incrementReportCards: () => void;
+  incrementPdfExports: () => void;
   freeGamesRemaining: number;
   freeReportCardsRemaining: number;
+  freePdfExportsRemaining: number;
 }
 
 const defaultAccessInfo: UserAccessInfo = {
