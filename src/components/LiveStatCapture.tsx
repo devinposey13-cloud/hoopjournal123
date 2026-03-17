@@ -1245,6 +1245,30 @@ export function LiveStatCapture({
         </Button>
       </div>
 
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave Live Stats?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your current stats will not be saved. Are you sure you want to cancel?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Tracking</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowCancelConfirm(false);
+                onCancel();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Cancel Game
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Game Over Confirmation Dialog */}
       <AlertDialog open={showGameOverDialog} onOpenChange={setShowGameOverDialog}>
         <AlertDialogContent>
