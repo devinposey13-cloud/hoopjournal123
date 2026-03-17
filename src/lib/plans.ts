@@ -279,6 +279,7 @@ export type PaywallReason =
   | 'season_report'
   | 'advanced_analytics'
   | 'export_pdf'
+  | 'pdf_export_limit'
   | 'parent_dashboard'
   | 'recruiting_profile'
   | 'report_card'
