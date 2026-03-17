@@ -315,6 +315,16 @@ export async function exportSeasonStatsPdf(
     });
   }
 
+  // Apply watermarks and footer to all pages
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    addViralFooter(doc);
+    if (options?.isFreeUser) {
+      addFreeUserWatermark(doc);
+    }
+  }
+
   // Save or share the PDF
   const fileName = `${profile.name.replace(/\s+/g, '_')}_Season_Stats_${format(
     new Date(),
