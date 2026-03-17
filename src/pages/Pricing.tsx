@@ -79,10 +79,12 @@ export default function Pricing() {
       toast.info(`You're already on the ${planCatalog[planId].name} plan!`);
       return;
     }
+    console.log('[Pricing] handleSelectPlan', { planId, cycle, native, rcAvailable, rcLoading, platform: getPlatform() });
     track('upgrade_clicked', { planId, cycle, native });
 
     // On native, use RevenueCat via NativePurchaseSheet
     if (native) {
+      console.log('[Pricing] → Native path (RevenueCat)');
       if (rcLoading) {
         toast.info('Loading purchase options… please wait.');
         return;
@@ -97,6 +99,7 @@ export default function Pricing() {
     }
 
     // Web: Stripe checkout
+    console.log('[Pricing] → Web path (Stripe)');
     setLoadingPlan(planId);
     try {
       await createCheckout(planId, cycle);

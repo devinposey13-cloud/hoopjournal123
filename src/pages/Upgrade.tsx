@@ -49,10 +49,12 @@ export default function Upgrade() {
   };
 
   const handleSelect = async (planId: PlanId) => {
+    console.log('[Upgrade] handleSelect', { planId, cycle, native, rcAvailable, rcLoading, platform: getPlatform() });
     track('upgrade_clicked', { planId, cycle, native });
 
     // On native, use RevenueCat via NativePurchaseSheet
     if (native) {
+      console.log('[Upgrade] → Native path (RevenueCat)');
       if (rcLoading) {
         toast.info('Loading purchase options… please wait.');
         return;
@@ -67,6 +69,7 @@ export default function Upgrade() {
     }
 
     // Web: Stripe checkout
+    console.log('[Upgrade] → Web path (Stripe)');
     setLoadingPlan(planId);
     try {
       await createCheckout(planId, cycle);
