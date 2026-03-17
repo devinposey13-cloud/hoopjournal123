@@ -140,18 +140,26 @@ export function usePlanState(): PlanState {
     setPaywallReason(null);
   }, [paywallReason]);
 
+  const canLogGame = useCallback(() => {
+    const limits = planCatalog[effectivePlan].limits;
+    if (limits.maxGamesTotal === null) return true;
+    return lifetimeGamesLogged < limits.maxGamesTotal;
+  }, [effectivePlan, lifetimeGamesLogged]);
+
   return {
     currentPlan: effectivePlan,
     subscriptionPlan: accessInfo.subscriptionPlan,
     accessInfo,
     accessBadge,
     usage: mockUsage,
+    lifetimeGamesLogged,
     paywallOpen,
     paywallReason,
     loading,
     setCurrentPlan,
     openPaywall,
     closePaywall,
+    canLogGame,
   };
 }
 
