@@ -32,6 +32,45 @@ export interface PlanFeature {
   detail?: string;
 }
 
+// Trial configuration per plan+cycle
+export interface TrialConfig {
+  hasTrial: boolean;
+  trialDays: number;
+}
+
+export const trialConfigs: Record<PlanId, Record<BillingCycle, TrialConfig>> = {
+  free: {
+    monthly: { hasTrial: false, trialDays: 0 },
+    yearly: { hasTrial: false, trialDays: 0 },
+  },
+  pro: {
+    monthly: { hasTrial: true, trialDays: 3 },
+    yearly: { hasTrial: true, trialDays: 3 },
+  },
+  elite: {
+    monthly: { hasTrial: false, trialDays: 0 },
+    yearly: { hasTrial: false, trialDays: 0 },
+  },
+};
+
+export function getTrialConfig(planId: PlanId, cycle: BillingCycle): TrialConfig {
+  return trialConfigs[planId]?.[cycle] ?? { hasTrial: false, trialDays: 0 };
+}
+
+export function getTrialCopy(planId: PlanId, cycle: BillingCycle): string | null {
+  const trial = getTrialConfig(planId, cycle);
+  if (!trial.hasTrial) return null;
+  const price = getPlanPrice(planId, cycle);
+  const period = cycle === 'monthly' ? 'month' : 'year';
+  return `${trial.trialDays}-day free trial, then $${price}/${period}. Cancel anytime.`;
+}
+
+export function getTrialCta(planId: PlanId, cycle: BillingCycle): string | null {
+  const trial = getTrialConfig(planId, cycle);
+  if (!trial.hasTrial) return null;
+  return 'Start Free Trial';
+}
+
 export interface Plan {
   id: PlanId;
   name: string;
