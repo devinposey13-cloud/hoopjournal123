@@ -138,7 +138,7 @@ export const planCatalog: Record<PlanId, Plan> = {
     cta: 'Start Free',
     features: [
       { label: 'Create player profile', included: true },
-      { label: 'Log games', included: true },
+      { label: 'Log up to 3 games', included: true },
       { label: 'Basic stat tracking', included: true },
       { label: 'XP progression', included: true },
       { label: 'Limited report card generation', included: true },
