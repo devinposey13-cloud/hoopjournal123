@@ -377,7 +377,7 @@ export interface CompareFeature {
 
 export const compareFeatures: CompareFeature[] = [
   { label: 'Player profile', free: true, pro: true, elite: true },
-  { label: 'Game logging', free: '30 days', pro: 'Unlimited', elite: 'Unlimited' },
+  { label: 'Game logging', free: '3 games total', pro: 'Unlimited', elite: 'Unlimited' },
   { label: 'Basic stat tracking', free: true, pro: true, elite: true },
   { label: 'XP & Leveling', free: 'Cap at Lv 10', pro: 'Unlimited', elite: 'Unlimited' },
   { label: 'AI Coach prompts', free: '2/month', pro: 'Unlimited', elite: 'Unlimited' },
