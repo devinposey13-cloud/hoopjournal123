@@ -76,7 +76,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
         // Dynamic import so the Capacitor plugin isn't bundled on web
         const { Purchases } = await import('@revenuecat/purchases-capacitor');
         if (cancelled) return;
-        console.log('[RevenueCat] Purchases imported, configuring with API key…');
+        log('[RC] Imported OK, configuring…');
 
         await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
         console.log('[RevenueCat] Configured successfully');
