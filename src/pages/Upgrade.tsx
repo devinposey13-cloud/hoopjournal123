@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Lock, RotateCcw, Loader2 } from 'lucide-react';
 import { PlanCard } from '@/components/pricing/PlanCard';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
-import { NativePurchaseSheet } from '@/components/purchase/NativePurchaseSheet';
 import {
   type BillingCycle,
   type PlanId,
@@ -15,10 +14,9 @@ import {
   paywallConfigs,
   track,
 } from '@/lib/plans';
-import { useSubscription } from '@/hooks/useSubscription';
 import { usePlan } from '@/hooks/usePlanState';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
-import { isNativeApp, getPlatform } from '@/lib/platform';
+import { useBilling } from '@/hooks/useBilling';
+import { isNativeApp } from '@/lib/platform';
 import { toast } from 'sonner';
 
 export default function Upgrade() {
@@ -28,78 +26,34 @@ export default function Upgrade() {
   const config = paywallConfigs[reason];
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
-  const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, restorePurchases, isLoading: rcLoading, retryInit: rcRetry, debugLog, diagnostics, statusReason } = useRevenueCat();
+  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, diagnostics, debugLog } = useBilling();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
-  const [isRestoring, setIsRestoring] = useState(false);
-  const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
-  const [nativeSelectedPlan, setNativeSelectedPlan] = useState<PlanId>('pro');
   const [showDebug, setShowDebug] = useState(false);
-  const native = isNativeApp();
 
   const upgradePlans = planOrder.filter(
     (id) => id !== 'free' && planOrder.indexOf(id) > planOrder.indexOf(currentPlan)
   );
 
-  const getNativePriceString = (planId: PlanId): string | undefined => {
-    if (!native || !rcAvailable) return undefined;
-    const suffix = cycle === 'yearly' ? 'year' : 'month';
-    return rcOfferings.find(
-      (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)
-    )?.priceString;
-  };
-
   const handleSelect = async (planId: PlanId) => {
-    console.log('[Upgrade] handleSelect', { planId, cycle, native, rcAvailable, rcLoading, platform: getPlatform() });
-    track('upgrade_clicked', { planId, cycle, native });
+    console.log('[Upgrade] handleSelect', { planId, cycle, isNative, platform: diagnostics.platform });
+    track('upgrade_clicked', { planId, cycle, isNative });
 
-    // On native, ONLY use RevenueCat — never fall back to Stripe
-    if (native) {
-      console.log('[Upgrade] → Native path (RevenueCat only, no Stripe fallback)');
-      if (rcLoading) {
-        toast.info('Loading purchase options… please wait.');
-        return;
-      }
-      if (!rcAvailable) {
-        console.log('[Upgrade] ✗ RC not available on native — blocking purchase');
-        toast.error('In-app purchases are not available right now. Please restart the app and try again.');
-        return;
-      }
-      if (rcOfferings.length === 0) {
-        console.log('[Upgrade] ✗ RC available but 0 offerings — blocking purchase');
-        toast.error('Purchase options are temporarily unavailable. Please try again later.');
-        return;
-      }
-      setNativeSelectedPlan(planId);
-      setNativeSheetOpen(true);
-      return;
-    }
-
-    // Web only: Stripe checkout
-    console.log('[Upgrade] → Web path (Stripe)');
     setLoadingPlan(planId);
     try {
-      await createCheckout(planId, cycle);
-      toast.success('Redirecting to checkout...');
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to start checkout';
-      if (!msg.includes('cancelled') && !msg.includes('canceled')) {
-        toast.error(msg);
-      }
+      await purchasePlan(planId, cycle);
+    } catch {
+      // Error already handled by useBilling
     } finally {
       setLoadingPlan(null);
     }
   };
 
   const handleRestore = async () => {
-    setIsRestoring(true);
     try {
       await restorePurchases();
       toast.success('Purchases restored!');
     } catch {
       toast.error('Failed to restore purchases');
-    } finally {
-      setIsRestoring(false);
     }
   };
 
@@ -137,30 +91,6 @@ export default function Upgrade() {
           <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />
         </div>
 
-        {/* Native loading / error indicator */}
-        {native && rcLoading && (
-          <div className="flex justify-center items-center gap-2 mb-6 text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">Loading App Store prices…</span>
-          </div>
-        )}
-        {native && !rcLoading && !rcAvailable && (
-          <div className="flex flex-col justify-center items-center gap-2 mb-6 text-destructive">
-            <span className="text-sm">⚠ Purchases temporarily unavailable.</span>
-            <Button variant="outline" size="sm" onClick={rcRetry} className="text-xs">
-              Retry
-            </Button>
-          </div>
-        )}
-        {native && !rcLoading && rcAvailable && rcOfferings.length === 0 && (
-          <div className="flex flex-col justify-center items-center gap-2 mb-6 text-amber-500">
-            <span className="text-sm">⚠ No purchase options found.</span>
-            <Button variant="outline" size="sm" onClick={rcRetry} className="text-xs">
-              Retry
-            </Button>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
           {upgradePlans.map((id, i) => (
             <motion.div
@@ -174,14 +104,13 @@ export default function Upgrade() {
                 cycle={cycle}
                 currentPlan={currentPlan}
                 onSelect={handleSelect}
-                nativePriceString={getNativePriceString(id)}
               />
             </motion.div>
           ))}
         </div>
 
         <div className="text-center space-y-3">
-          {native && (
+          {isNative && (
             <Button
               variant="ghost"
               onClick={handleRestore}
@@ -198,25 +127,23 @@ export default function Upgrade() {
           <p className="text-xs text-muted-foreground mt-4">
             Cancel anytime. Your data stays yours.
           </p>
-          {/* Debug toggle — always visible */}
+          {/* Debug toggle */}
           <button
             type="button"
             className="text-xs text-muted-foreground/60 mt-4 py-2 px-4 underline cursor-pointer select-none"
             onClick={() => setShowDebug((v) => !v)}
           >
-            v{native ? 'native' : 'web'} · tap to debug
+            v{isNative ? 'native' : 'web'} · tap to debug
           </button>
           {showDebug && (
             <div className="mt-3 bg-black/90 text-green-400 text-[10px] font-mono rounded-lg p-3 text-left max-h-48 overflow-y-auto whitespace-pre-wrap">
-              <div>shellPlatform: {diagnostics.shellPlatform}</div>
-              <div>shellNative: {String(diagnostics.shellNative)}</div>
-              <div>runtimePlatform: {diagnostics.runtimePlatform}</div>
-              <div>runtimeNative: {String(diagnostics.runtimeNative)}</div>
-              <div>rcAvailable: {String(rcAvailable)}</div>
-              <div>rcLoading: {String(rcLoading)}</div>
-              <div>offerings: {rcOfferings.length}</div>
-              <div>webkit: {String(diagnostics.webkitDetected)}</div>
-              <div>statusReason: {statusReason ?? 'none'}</div>
+              <div>isDespia: {String(diagnostics.isDespia)}</div>
+              <div>isDespiaIOS: {String(diagnostics.isDespiaIOS)}</div>
+              <div>isDespiaAndroid: {String(diagnostics.isDespiaAndroid)}</div>
+              <div>isWeb: {String(diagnostics.isWeb)}</div>
+              <div>platform: {diagnostics.platform}</div>
+              <div>isPurchasing: {String(isPurchasing)}</div>
+              <div>isRestoring: {String(isRestoring)}</div>
               <div className="border-t border-green-800 mt-2 pt-2">
                 {debugLog.length === 0 ? '(no log entries yet)' : debugLog.map((l, i) => <div key={i}>{l}</div>)}
               </div>
@@ -224,18 +151,6 @@ export default function Upgrade() {
           )}
         </div>
       </div>
-
-      {/* Native purchase sheet */}
-      {native && (
-        <NativePurchaseSheet
-          open={nativeSheetOpen}
-          onClose={() => setNativeSheetOpen(false)}
-          recommendedPlan={nativeSelectedPlan}
-          onPurchaseComplete={() => {
-            setNativeSheetOpen(false);
-          }}
-        />
-      )}
     </div>
   );
 }

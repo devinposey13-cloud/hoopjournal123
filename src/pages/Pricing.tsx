@@ -1,21 +1,18 @@
 import { useState, useEffect } from 'react';
-
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { PlanCard } from '@/components/pricing/PlanCard';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import { PlanCompareTable } from '@/components/pricing/PlanCompareTable';
 import { FAQAccordion } from '@/components/pricing/FAQAccordion';
 import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
-import { NativePurchaseSheet } from '@/components/purchase/NativePurchaseSheet';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, track } from '@/lib/plans';
-import { useSubscription } from '@/hooks/useSubscription';
 import { usePlan } from '@/hooks/usePlanState';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
-import { isNativeApp, getPlatform } from '@/lib/platform';
+import { useBilling } from '@/hooks/useBilling';
+import { isNativeApp } from '@/lib/platform';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -24,12 +21,9 @@ export default function Pricing() {
   const [searchParams] = useSearchParams();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
-  const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, isLoading: rcLoading, retryInit: rcRetry, debugLog, diagnostics, statusReason } = useRevenueCat();
+  const { purchasePlan, isPurchasing, diagnostics, debugLog } = useBilling();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [promoApplied, setPromoApplied] = useState(false);
-  const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
-  const [nativeSelectedPlan, setNativeSelectedPlan] = useState<PlanId>('pro');
   const [showDebug, setShowDebug] = useState(false);
   const native = isNativeApp();
 
@@ -54,7 +48,6 @@ export default function Pricing() {
   const success = searchParams.get('success');
   const canceled = searchParams.get('canceled');
 
-  // Show toast on cancel/success redirect
   useEffect(() => {
     if (canceled === 'true') {
       toast.info("Checkout canceled — you're still on the Free plan.");
@@ -63,14 +56,6 @@ export default function Pricing() {
       toast.success('Subscription activated! 🎉');
     }
   }, [canceled, success]);
-
-  const getNativePriceString = (planId: PlanId): string | undefined => {
-    if (!native || !rcAvailable) return undefined;
-    const suffix = cycle === 'yearly' ? 'year' : 'month';
-    return rcOfferings.find(
-      (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)
-    )?.priceString;
-  };
 
   const handleSelectPlan = async (planId: PlanId) => {
     if (planId === 'free') {
@@ -81,42 +66,14 @@ export default function Pricing() {
       toast.info(`You're already on the ${planCatalog[planId].name} plan!`);
       return;
     }
-    console.log('[Pricing] handleSelectPlan', { planId, cycle, native, rcAvailable, rcLoading, platform: getPlatform() });
+    console.log('[Pricing] handleSelectPlan', { planId, cycle, native, platform: diagnostics.platform });
     track('upgrade_clicked', { planId, cycle, native });
 
-    // On native, ONLY use RevenueCat — never fall back to Stripe
-    if (native) {
-      console.log('[Pricing] → Native path (RevenueCat only, no Stripe fallback)');
-      if (rcLoading) {
-        toast.info('Loading purchase options… please wait.');
-        return;
-      }
-      if (!rcAvailable) {
-        console.log('[Pricing] ✗ RC not available on native — blocking purchase');
-        toast.error('In-app purchases are not available right now. Please restart the app and try again.');
-        return;
-      }
-      if (rcOfferings.length === 0) {
-        console.log('[Pricing] ✗ RC available but 0 offerings — blocking purchase');
-        toast.error('Purchase options are temporarily unavailable. Please try again later.');
-        return;
-      }
-      setNativeSelectedPlan(planId);
-      setNativeSheetOpen(true);
-      return;
-    }
-
-    // Web only: Stripe checkout
-    console.log('[Pricing] → Web path (Stripe)');
     setLoadingPlan(planId);
     try {
-      await createCheckout(planId, cycle);
-      toast.success('Redirecting to checkout...');
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to start checkout';
-      if (!msg.includes('cancelled') && !msg.includes('canceled')) {
-        toast.error(msg);
-      }
+      await purchasePlan(planId, cycle);
+    } catch {
+      // Error already handled by useBilling
     } finally {
       setLoadingPlan(null);
     }
@@ -155,30 +112,6 @@ export default function Pricing() {
           <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />
         </div>
 
-        {/* Native loading / error indicator */}
-        {native && rcLoading && (
-          <div className="flex justify-center items-center gap-2 mb-6 text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">Loading App Store prices…</span>
-          </div>
-        )}
-        {native && !rcLoading && !rcAvailable && (
-          <div className="flex flex-col justify-center items-center gap-2 mb-6 text-destructive">
-            <span className="text-sm">⚠ Purchases temporarily unavailable.</span>
-            <Button variant="outline" size="sm" onClick={rcRetry} className="text-xs">
-              Retry
-            </Button>
-          </div>
-        )}
-        {native && !rcLoading && rcAvailable && rcOfferings.length === 0 && (
-          <div className="flex flex-col justify-center items-center gap-2 mb-6 text-amber-500">
-            <span className="text-sm">⚠ No purchase options found.</span>
-            <Button variant="outline" size="sm" onClick={rcRetry} className="text-xs">
-              Retry
-            </Button>
-          </div>
-        )}
-
         {/* Plan cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
           {planOrder.map((id, i) => (
@@ -194,7 +127,6 @@ export default function Pricing() {
                 currentPlan={currentPlan}
                 onSelect={handleSelectPlan}
                 promoApplied={promoApplied}
-                nativePriceString={getNativePriceString(id)}
               />
             </motion.div>
           ))}
@@ -238,15 +170,12 @@ export default function Pricing() {
           </button>
           {showDebug && (
             <div className="mt-3 bg-black/90 text-green-400 text-[10px] font-mono rounded-lg p-3 text-left max-h-48 overflow-y-auto whitespace-pre-wrap">
-              <div>shellPlatform: {diagnostics.shellPlatform}</div>
-              <div>shellNative: {String(diagnostics.shellNative)}</div>
-              <div>runtimePlatform: {diagnostics.runtimePlatform}</div>
-              <div>runtimeNative: {String(diagnostics.runtimeNative)}</div>
-              <div>rcAvailable: {String(rcAvailable)}</div>
-              <div>rcLoading: {String(rcLoading)}</div>
-              <div>offerings: {rcOfferings.length}</div>
-              <div>webkit: {String(diagnostics.webkitDetected)}</div>
-              <div>statusReason: {statusReason ?? 'none'}</div>
+              <div>isDespia: {String(diagnostics.isDespia)}</div>
+              <div>isDespiaIOS: {String(diagnostics.isDespiaIOS)}</div>
+              <div>isDespiaAndroid: {String(diagnostics.isDespiaAndroid)}</div>
+              <div>isWeb: {String(diagnostics.isWeb)}</div>
+              <div>platform: {diagnostics.platform}</div>
+              <div>isPurchasing: {String(isPurchasing)}</div>
               <div className="border-t border-green-800 mt-2 pt-2">
                 {debugLog.length === 0 ? '(no log entries yet)' : debugLog.map((l, i) => <div key={i}>{l}</div>)}
               </div>
@@ -254,18 +183,6 @@ export default function Pricing() {
           )}
         </div>
       </div>
-
-      {/* Native purchase sheet */}
-      {native && (
-        <NativePurchaseSheet
-          open={nativeSheetOpen}
-          onClose={() => setNativeSheetOpen(false)}
-          recommendedPlan={nativeSelectedPlan}
-          onPurchaseComplete={() => {
-            setNativeSheetOpen(false);
-          }}
-        />
-      )}
     </div>
   );
 }

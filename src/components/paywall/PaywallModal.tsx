@@ -16,8 +16,7 @@ import {
   getPlanPrice,
   track,
 } from '@/lib/plans';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
-import { isNativeApp } from '@/lib/platform';
+import { useBilling } from '@/hooks/useBilling';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -33,9 +32,7 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const config = reason ? paywallConfigs[reason] : null;
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(config?.recommendedPlan || 'pro');
-  const { isAvailable: rcAvailable, offerings: rcOfferings, restorePurchases, isLoading: rcLoading } = useRevenueCat();
-  const [isRestoring, setIsRestoring] = useState(false);
-  const native = isNativeApp();
+  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
 
   if (!config) return null;
 
@@ -43,28 +40,22 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
     (id) => id !== 'free' && planOrder.indexOf(id) > planOrder.indexOf(currentPlan)
   );
 
-  const getNativePriceString = (planId: PlanId): string | undefined => {
-    if (!native || !rcAvailable) return undefined;
-    const suffix = cycle === 'yearly' ? 'year' : 'month';
-    return rcOfferings.find(
-      (o) => o.planId === planId && o.period.toLowerCase().includes(suffix)
-    )?.priceString;
-  };
-
-  const handleUpgrade = () => {
+  const handleUpgrade = async () => {
     track('plan_selected', { planId: selectedPlan, billingCycle: cycle });
-    onUpgrade(selectedPlan);
+    try {
+      await purchasePlan(selectedPlan, cycle);
+      onUpgrade(selectedPlan);
+    } catch {
+      // Error handled by useBilling
+    }
   };
 
   const handleRestore = async () => {
-    setIsRestoring(true);
     try {
       await restorePurchases();
       toast.success('Purchases restored!');
     } catch {
       toast.error('Failed to restore purchases');
-    } finally {
-      setIsRestoring(false);
     }
   };
 
@@ -96,7 +87,6 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
           <div className="flex gap-2">
             {upgradePlans.map((id) => {
               const plan = planCatalog[id];
-              const nativePrice = getNativePriceString(id);
               const price = getPlanPrice(id, cycle);
               const isRecommended = id === config.recommendedPlan;
               return (
@@ -111,9 +101,7 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
                   )}
                 >
                   <div className="text-xs font-semibold mb-1">{plan.name}</div>
-                  <div className="text-lg font-extrabold">
-                    {nativePrice ?? `$${price}`}
-                  </div>
+                  <div className="text-lg font-extrabold">${price}</div>
                   <div className="text-[10px] text-muted-foreground">
                     /{cycle === 'monthly' ? 'mo' : 'yr'}
                   </div>
@@ -141,12 +129,14 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
           <Button
             className="w-full gradient-primary text-primary-foreground font-semibold h-12"
             onClick={handleUpgrade}
+            disabled={isPurchasing}
           >
+            {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
             Upgrade to {planCatalog[selectedPlan].name}
-            <ArrowRight className="w-4 h-4 ml-2" />
+            {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
           </Button>
 
-          {native && (
+          {isNative && (
             <Button
               variant="ghost"
               className="w-full text-muted-foreground text-xs"
