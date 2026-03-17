@@ -305,6 +305,12 @@ export const paywallConfigs: Record<PaywallReason, PaywallConfig> = {
     recommendedPlan: 'pro',
     mode: 'modal',
   },
+  game_limit: {
+    title: "You've hit your game limit.",
+    description: "Free accounts can log up to 3 games. Upgrade to Pro for unlimited game logging and full performance tracking.",
+    recommendedPlan: 'pro',
+    mode: 'modal',
+  },
   season_report: {
     title: 'Unlock Season Reports.',
     description: "Generate detailed season reports to track your progress over time and share with coaches.",
