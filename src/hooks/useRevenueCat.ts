@@ -87,6 +87,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
   const [purchases, setPurchases] = useState<any>(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [retryTrigger, setRetryTrigger] = useState(0);
+  const [statusReason, setStatusReason] = useState<string | null>(null);
   const initAttemptRef = useRef(0);
 
   const log = useCallback((msg: string) => {
@@ -95,6 +96,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
   }, []);
 
   const retryInit = useCallback(() => {
+    setStatusReason(null);
     log('[RC] Manual retry triggered');
     setRetryTrigger((v) => v + 1);
   }, [log]);
