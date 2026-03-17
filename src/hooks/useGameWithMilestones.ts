@@ -10,6 +10,7 @@ import { findInvalidMilestones } from '@/utils/milestoneValidator';
 import { calculatePerformance } from '@/utils/performanceScoring';
 import { calculateGameScore } from '@/utils/gameGrading';
 import { isRecoveryEligible, XP_CONFIG, calculateConsistencyStreak, getStreakXpBonus } from '@/utils/xpCalculations';
+import { incrementDeviceCounter } from '@/lib/deviceUsage';
 import type { GameStats } from '@/types/basketball';
 import type { NewMilestoneResult } from '@/types/milestone';
 import type { PerformanceResult, XpGainResult, PerformanceTier } from '@/types/xp';
