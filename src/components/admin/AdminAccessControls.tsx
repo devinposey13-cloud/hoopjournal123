@@ -57,6 +57,15 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkResult, setBulkResult] = useState<{ grandfathered: number; total: number } | null>(null);
 
+  // Trial reset state
+  const [trialResetOpen, setTrialResetOpen] = useState(false);
+  const [trialResetReason, setTrialResetReason] = useState('');
+  const [trialResetNote, setTrialResetNote] = useState('');
+  const [trialResetLoading, setTrialResetLoading] = useState(false);
+  const [trialEligible, setTrialEligible] = useState(true);
+  const [trialResetCount, setTrialResetCount] = useState(0);
+  const [lastTrialResetAt, setLastTrialResetAt] = useState<string | null>(null);
+
   // Editable fields
   const [isGrandfathered, setIsGrandfathered] = useState(false);
   const [adminOverridePlan, setAdminOverridePlan] = useState<string>('none');
