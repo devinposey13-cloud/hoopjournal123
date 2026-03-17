@@ -111,8 +111,8 @@ const App = () => (
               <Sonner />
               <OAuthErrorHandler />
               <NativeOAuthHandler />
-              <GlobalPaywall />
               <BrowserRouter>
+                <GlobalPaywall />
                 
                 <Routes>
                   <Route path="/auth/callback" element={<OAuthCallback />} />
