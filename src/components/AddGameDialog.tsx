@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
