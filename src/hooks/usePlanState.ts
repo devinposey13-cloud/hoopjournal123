@@ -101,6 +101,7 @@ export function usePlanState(): PlanState {
             subscriptionStatus: subscriptionStatus || undefined,
           });
           setLifetimeGamesLogged(data.lifetime_games_logged ?? 0);
+          setLifetimeReportCards(data.lifetime_report_cards_generated ?? 0);
         } else if (shouldGrandfather) {
           // No row yet — create one with grandfathered = true
           await supabase
