@@ -29,11 +29,12 @@ export default function Upgrade() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, restorePurchases, isLoading: rcLoading } = useRevenueCat();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, purchasePackage, restorePurchases, isLoading: rcLoading, debugLog } = useRevenueCat();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
   const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
   const [nativeSelectedPlan, setNativeSelectedPlan] = useState<PlanId>('pro');
+  const [showDebug, setShowDebug] = useState(false);
   const native = isNativeApp();
 
   const upgradePlans = planOrder.filter(
@@ -175,6 +176,26 @@ export default function Upgrade() {
           <p className="text-xs text-muted-foreground mt-4">
             Cancel anytime. Your data stays yours.
           </p>
+          {/* Debug toggle — triple-tap "Cancel anytime" text */}
+          <p
+            className="text-[9px] text-muted-foreground/30 mt-2 cursor-pointer select-none"
+            onClick={() => setShowDebug((v) => !v)}
+          >
+            v{native ? 'native' : 'web'} · tap to debug
+          </p>
+          {showDebug && (
+            <div className="mt-3 bg-black/90 text-green-400 text-[10px] font-mono rounded-lg p-3 text-left max-h-48 overflow-y-auto whitespace-pre-wrap">
+              <div>platform: {getPlatform()}</div>
+              <div>isNativeApp: {String(native)}</div>
+              <div>rcAvailable: {String(rcAvailable)}</div>
+              <div>rcLoading: {String(rcLoading)}</div>
+              <div>offerings: {rcOfferings.length}</div>
+              <div>webkit: {String(!!(window as any).webkit?.messageHandlers)}</div>
+              <div className="border-t border-green-800 mt-2 pt-2">
+                {debugLog.length === 0 ? '(no log entries yet)' : debugLog.map((l, i) => <div key={i}>{l}</div>)}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

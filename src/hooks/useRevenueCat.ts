@@ -39,6 +39,7 @@ export interface UseRevenueCatReturn {
   isLoading: boolean;
   purchasePackage: (packageId: string) => Promise<void>;
   restorePurchases: () => Promise<void>;
+  debugLog: string[];
 }
 
 /**
@@ -51,13 +52,19 @@ export function useRevenueCat(): UseRevenueCatReturn {
   const [offerings, setOfferings] = useState<RCPackage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [purchases, setPurchases] = useState<any>(null);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+
+  const log = (msg: string) => {
+    console.log(msg);
+    setDebugLog((prev) => [...prev, `${new Date().toISOString().slice(11, 19)} ${msg}`]);
+  };
 
   // Initialise SDK on native only
   useEffect(() => {
     const native = isNativeApp();
-    console.log('[RevenueCat] useEffect — isNativeApp:', native, 'platform:', getPlatform(), 'hasWebkit:', !!(window as any).webkit?.messageHandlers);
+    log(`[RC] isNativeApp: ${native}, platform: ${getPlatform()}, webkit: ${!!(window as any).webkit?.messageHandlers}`);
     if (!native) {
-      console.log('[RevenueCat] Skipping init — not native');
+      log('[RC] Skipping init — not native');
       return;
     }
 
@@ -65,30 +72,30 @@ export function useRevenueCat(): UseRevenueCatReturn {
 
     (async () => {
       try {
-        console.log('[RevenueCat] Importing @revenuecat/purchases-capacitor…');
+        log('[RC] Importing purchases-capacitor…');
         // Dynamic import so the Capacitor plugin isn't bundled on web
         const { Purchases } = await import('@revenuecat/purchases-capacitor');
         if (cancelled) return;
-        console.log('[RevenueCat] Purchases imported, configuring with API key…');
+        log('[RC] Imported OK, configuring…');
 
         await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
-        console.log('[RevenueCat] Configured successfully');
+        log('[RC] Configured ✓');
         setPurchases(Purchases);
         setIsAvailable(true);
 
         // Identify user if logged in
         if (user?.id) {
-          console.log('[RevenueCat] Logging in user:', user.id);
+          log(`[RC] Logging in user: ${user.id}`);
           await Purchases.logIn({ appUserID: user.id });
-          console.log('[RevenueCat] User logged in');
+          log('[RC] User logged in ✓');
         }
 
         // Fetch offerings
         setIsLoading(true);
-        console.log('[RevenueCat] Fetching offerings…');
+        log('[RC] Fetching offerings…');
         const rcOfferings = await Purchases.getOfferings();
         const current = (rcOfferings as any)?.current;
-        console.log('[RevenueCat] Offerings current:', current ? `${current.availablePackages?.length ?? 0} packages` : 'null');
+        log(`[RC] Offerings: ${current ? `${current.availablePackages?.length ?? 0} pkgs` : 'null'}`);
         if (current?.availablePackages) {
           const mapped: RCPackage[] = current.availablePackages
             .filter((pkg: any) => RC_PRODUCT_TO_PLAN[pkg.product.identifier])
@@ -99,13 +106,13 @@ export function useRevenueCat(): UseRevenueCatReturn {
               period: pkg.packageType === 'ANNUAL' ? 'Yearly' : 'Monthly',
               planId: RC_PRODUCT_TO_PLAN[pkg.product.identifier],
             }));
-          console.log('[RevenueCat] Mapped offerings:', mapped.length, mapped.map(m => m.productId));
+          log(`[RC] Mapped: ${mapped.length} — ${mapped.map(m => m.productId).join(', ')}`);
           setOfferings(mapped);
         } else {
-          console.warn('[RevenueCat] No current offering or no packages available');
+          log('[RC] ⚠ No current offering / no packages');
         }
       } catch (err) {
-        console.error('[RevenueCat] Init error:', err);
+        log(`[RC] ❌ Init error: ${err instanceof Error ? err.message : String(err)}`);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -142,8 +149,9 @@ export function useRevenueCat(): UseRevenueCatReturn {
       isLoading: false,
       purchasePackage: async () => { throw new Error('Not available on web'); },
       restorePurchases: async () => { throw new Error('Not available on web'); },
+      debugLog,
     };
   }
 
-  return { isAvailable, offerings, isLoading, purchasePackage, restorePurchases };
+  return { isAvailable, offerings, isLoading, purchasePackage, restorePurchases, debugLog };
 }
