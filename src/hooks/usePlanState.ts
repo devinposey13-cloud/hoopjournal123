@@ -153,6 +153,30 @@ export function usePlanState(): PlanState {
     return lifetimeGamesLogged < limits.maxGamesTotal;
   }, [effectivePlan, lifetimeGamesLogged]);
 
+  const canGenerateReportCard = useCallback(() => {
+    const limits = planCatalog[effectivePlan].limits;
+    if (limits.maxReportCards === null) return true;
+    return lifetimeReportCards < limits.maxReportCards;
+  }, [effectivePlan, lifetimeReportCards]);
+
+  const incrementReportCards = useCallback(async () => {
+    setLifetimeReportCards(prev => prev + 1);
+    if (session?.user?.id) {
+      await supabase
+        .from('plan_overrides')
+        .upsert({
+          user_id: session.user.id,
+          lifetime_report_cards_generated: lifetimeReportCards + 1,
+        }, { onConflict: 'user_id' });
+    }
+  }, [session?.user?.id, lifetimeReportCards]);
+
+  // Compute remaining counts
+  const maxGames = planCatalog[effectivePlan].limits.maxGamesTotal;
+  const maxReports = planCatalog[effectivePlan].limits.maxReportCards;
+  const freeGamesRemaining = maxGames !== null ? Math.max(0, maxGames - lifetimeGamesLogged) : Infinity;
+  const freeReportCardsRemaining = maxReports !== null ? Math.max(0, maxReports - lifetimeReportCards) : Infinity;
+
   return {
     currentPlan: effectivePlan,
     subscriptionPlan: accessInfo.subscriptionPlan,
@@ -160,6 +184,7 @@ export function usePlanState(): PlanState {
     accessBadge,
     usage: mockUsage,
     lifetimeGamesLogged,
+    lifetimeReportCards,
     paywallOpen,
     paywallReason,
     loading,
@@ -167,6 +192,10 @@ export function usePlanState(): PlanState {
     openPaywall,
     closePaywall,
     canLogGame,
+    canGenerateReportCard,
+    incrementReportCards,
+    freeGamesRemaining,
+    freeReportCardsRemaining,
   };
 }
 
