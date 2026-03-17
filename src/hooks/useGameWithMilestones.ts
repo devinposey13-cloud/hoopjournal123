@@ -10,6 +10,7 @@ import { findInvalidMilestones } from '@/utils/milestoneValidator';
 import { calculatePerformance } from '@/utils/performanceScoring';
 import { calculateGameScore } from '@/utils/gameGrading';
 import { isRecoveryEligible, XP_CONFIG, calculateConsistencyStreak, getStreakXpBonus } from '@/utils/xpCalculations';
+import { incrementDeviceCounter } from '@/lib/deviceUsage';
 import type { GameStats } from '@/types/basketball';
 import type { NewMilestoneResult } from '@/types/milestone';
 import type { PerformanceResult, XpGainResult, PerformanceTier } from '@/types/xp';
@@ -70,6 +71,9 @@ export function useGameWithMilestones() {
     if (!savedGame) {
       return null;
     }
+
+    // Track device-level game counter for anti-abuse
+    incrementDeviceCounter('totalGamesLogged');
 
     // Prepare all games including the new one for milestone checking
     const allGames: GameWithId[] = [savedGame, ...cloudData.games].map(g => ({

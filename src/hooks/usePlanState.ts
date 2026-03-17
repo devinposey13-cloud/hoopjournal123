@@ -7,6 +7,12 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import {
+  getDeviceUsage,
+  incrementDeviceCounter,
+  trackAccountOnDevice,
+  checkDeviceLimits,
+} from '@/lib/deviceUsage';
 
 interface PlanState {
   currentPlan: PlanId; // effective plan (computed)
@@ -20,6 +26,7 @@ interface PlanState {
   paywallOpen: boolean;
   paywallReason: PaywallReason | null;
   loading: boolean;
+  isSuspectedReset: boolean;
   setCurrentPlan: (plan: PlanId) => void;
   openPaywall: (reason: PaywallReason) => void;
   closePaywall: () => void;
@@ -28,6 +35,7 @@ interface PlanState {
   canExportPdf: () => boolean;
   incrementReportCards: () => void;
   incrementPdfExports: () => void;
+  incrementGamesDevice: () => void;
   freeGamesRemaining: number;
   freeReportCardsRemaining: number;
   freePdfExportsRemaining: number;
@@ -45,6 +53,13 @@ const defaultAccessInfo: UserAccessInfo = {
   promoSource: null,
 };
 
+// Free tier limits (centralized)
+const FREE_LIMITS = {
+  maxGames: 3,
+  maxReports: 3,
+  maxPdfExports: 1,
+};
+
 export function usePlanState(): PlanState {
   const { session } = useAuth();
   const { subscriptionStatus } = useSubscription();
@@ -55,6 +70,25 @@ export function usePlanState(): PlanState {
   const [loading, setLoading] = useState(true);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null);
+  const [isSuspectedReset, setIsSuspectedReset] = useState(false);
+
+  // Track device account on login
+  useEffect(() => {
+    if (session?.user?.id) {
+      trackAccountOnDevice(session.user.id);
+    }
+  }, [session?.user?.id]);
+
+  // Check device-level limits for suspected reset
+  useEffect(() => {
+    if (session?.user?.id) {
+      const deviceCheck = checkDeviceLimits(FREE_LIMITS);
+      setIsSuspectedReset(deviceCheck.isSuspectedReset);
+      if (deviceCheck.isSuspectedReset) {
+        track('suspected_reset_detected', { accountCount: getDeviceUsage().accountCount });
+      }
+    }
+  }, [session?.user?.id]);
 
   // Fetch plan overrides from DB, auto-grandfather early users
   useEffect(() => {
@@ -158,20 +192,39 @@ export function usePlanState(): PlanState {
     setPaywallReason(null);
   }, [paywallReason]);
 
+  // Check both account-level AND device-level limits
   const canLogGame = useCallback(() => {
+    if (effectivePlan !== 'free') return true;
     const limits = planCatalog[effectivePlan].limits;
     if (limits.maxGamesTotal === null) return true;
-    return lifetimeGamesLogged < limits.maxGamesTotal;
+    // Account limit
+    if (lifetimeGamesLogged >= limits.maxGamesTotal) return false;
+    // Device limit
+    const deviceCheck = checkDeviceLimits(FREE_LIMITS);
+    if (deviceCheck.gamesExceeded) {
+      track('device_limit_hit', { type: 'games' });
+      return false;
+    }
+    return true;
   }, [effectivePlan, lifetimeGamesLogged]);
 
   const canGenerateReportCard = useCallback(() => {
+    if (effectivePlan !== 'free') return true;
     const limits = planCatalog[effectivePlan].limits;
     if (limits.maxReportCards === null) return true;
-    return lifetimeReportCards < limits.maxReportCards;
+    if (lifetimeReportCards >= limits.maxReportCards) return false;
+    // Device limit
+    const deviceCheck = checkDeviceLimits(FREE_LIMITS);
+    if (deviceCheck.reportsExceeded) {
+      track('device_limit_hit', { type: 'reports' });
+      return false;
+    }
+    return true;
   }, [effectivePlan, lifetimeReportCards]);
 
   const incrementReportCards = useCallback(async () => {
     setLifetimeReportCards(prev => prev + 1);
+    incrementDeviceCounter('totalReportsGenerated');
     if (session?.user?.id) {
       await supabase
         .from('plan_overrides')
@@ -183,15 +236,21 @@ export function usePlanState(): PlanState {
   }, [session?.user?.id, lifetimeReportCards]);
 
   // Free users get 1 PDF export; paid get unlimited
-  const MAX_FREE_PDF_EXPORTS = 1;
-
   const canExportPdf = useCallback(() => {
     if (effectivePlan !== 'free') return true;
-    return lifetimePdfExports < MAX_FREE_PDF_EXPORTS;
+    if (lifetimePdfExports >= FREE_LIMITS.maxPdfExports) return false;
+    // Device limit
+    const deviceCheck = checkDeviceLimits(FREE_LIMITS);
+    if (deviceCheck.pdfExportsExceeded) {
+      track('device_limit_hit', { type: 'pdf_exports' });
+      return false;
+    }
+    return true;
   }, [effectivePlan, lifetimePdfExports]);
 
   const incrementPdfExports = useCallback(async () => {
     setLifetimePdfExports(prev => prev + 1);
+    incrementDeviceCounter('totalPdfExports');
     if (session?.user?.id) {
       await supabase
         .from('plan_overrides')
@@ -202,12 +261,17 @@ export function usePlanState(): PlanState {
     }
   }, [session?.user?.id, lifetimePdfExports]);
 
+  // Increment device game counter (called externally after game save)
+  const incrementGamesDevice = useCallback(() => {
+    incrementDeviceCounter('totalGamesLogged');
+  }, []);
+
   // Compute remaining counts
   const maxGames = planCatalog[effectivePlan].limits.maxGamesTotal;
   const maxReports = planCatalog[effectivePlan].limits.maxReportCards;
   const freeGamesRemaining = maxGames !== null ? Math.max(0, maxGames - lifetimeGamesLogged) : Infinity;
   const freeReportCardsRemaining = maxReports !== null ? Math.max(0, maxReports - lifetimeReportCards) : Infinity;
-  const freePdfExportsRemaining = effectivePlan === 'free' ? Math.max(0, MAX_FREE_PDF_EXPORTS - lifetimePdfExports) : Infinity;
+  const freePdfExportsRemaining = effectivePlan === 'free' ? Math.max(0, FREE_LIMITS.maxPdfExports - lifetimePdfExports) : Infinity;
 
   return {
     currentPlan: effectivePlan,
@@ -221,6 +285,7 @@ export function usePlanState(): PlanState {
     paywallOpen,
     paywallReason,
     loading,
+    isSuspectedReset,
     setCurrentPlan,
     openPaywall,
     closePaywall,
@@ -229,6 +294,7 @@ export function usePlanState(): PlanState {
     canExportPdf,
     incrementReportCards,
     incrementPdfExports,
+    incrementGamesDevice,
     freeGamesRemaining,
     freeReportCardsRemaining,
     freePdfExportsRemaining,
