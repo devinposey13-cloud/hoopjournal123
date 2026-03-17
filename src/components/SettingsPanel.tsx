@@ -64,14 +64,11 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
   const { restorePurchases, isRestoring: isRestoringPurchases, isNative: showNativeRestore } = useBilling();
 
   const handleRestorePurchases = async () => {
-    setIsRestoringPurchases(true);
     try {
       await restorePurchases();
       toast.success('Purchases restored!');
     } catch {
       toast.error('Failed to restore purchases');
-    } finally {
-      setIsRestoringPurchases(false);
     }
   };
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);

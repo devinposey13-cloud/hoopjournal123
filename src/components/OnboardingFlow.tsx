@@ -85,21 +85,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   const handleSelectPaid = async (planId: PlanId, billingCycle: BillingCycle) => {
-    console.log('[Onboarding] handleSelectPaid', { planId, billingCycle, native, rcAvailable, rcLoading, platform: getPlatform(), hasWebkit: !!(window as any).webkit?.messageHandlers });
+    console.log('[Onboarding] handleSelectPaid', { planId, billingCycle, native, platform: getPlatform() });
     track('onboarding_plan_checkout_started', { planId, billingCycle, native });
 
     try {
       if (native) {
-        console.log('[Onboarding] → Native path (RevenueCat)');
-        if (rcLoading) {
-          toast.info('Loading purchase options… please wait.');
-          return;
-        }
-        if (!rcAvailable) {
-          toast.error('In-app purchases are not available right now. Please try again.');
-          return;
-        }
-
+        console.log('[Onboarding] → Native path (Despia + RevenueCat)');
         setNativeSelectedPlan(planId);
         setNativeBillingCycle(billingCycle);
         setNativeSheetOpen(true);
@@ -107,7 +98,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       }
 
       console.log('[Onboarding] → Web path (Stripe)');
-      await createCheckout(planId, billingCycle, 'onboarding');
+      await purchasePlan(planId, billingCycle);
       toast.info('Redirecting to checkout...');
     } catch (err) {
       console.error('[Onboarding] Checkout failed:', err);
