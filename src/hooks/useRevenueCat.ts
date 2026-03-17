@@ -85,9 +85,9 @@ export function useRevenueCat(): UseRevenueCatReturn {
 
         // Identify user if logged in
         if (user?.id) {
-          console.log('[RevenueCat] Logging in user:', user.id);
+          log(`[RC] Logging in user: ${user.id}`);
           await Purchases.logIn({ appUserID: user.id });
-          console.log('[RevenueCat] User logged in');
+          log('[RC] User logged in ✓');
         }
 
         // Fetch offerings
