@@ -146,10 +146,15 @@ async function loadImageAsBase64(url: string): Promise<string | null> {
   }
 }
 
+export interface PdfExportOptions {
+  isFreeUser?: boolean;
+}
+
 export async function exportSeasonStatsPdf(
   profile: PlayerProfile,
   seasonStats: SeasonStats,
-  games: GameStats[]
+  games: GameStats[],
+  options?: PdfExportOptions
 ) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
