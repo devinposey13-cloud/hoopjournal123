@@ -332,6 +332,8 @@ export function LogSection({
 
   return (
     <div className="space-y-5 animate-fade-in">
+      {/* Free Limit Warning */}
+      <FreeLimitBanner />
       {/* Page Header */}
       <div className="space-y-1">
         <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
