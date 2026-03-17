@@ -62,6 +62,7 @@ export interface UseRevenueCatReturn {
   retryInit: () => void;
   debugLog: string[];
   diagnostics: RevenueCatDiagnostics;
+  statusReason: string | null;
 }
 
 function getDiagnostics(): RevenueCatDiagnostics {
