@@ -29,7 +29,7 @@ export default function Upgrade() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { createCheckout } = useSubscription();
-  const { isAvailable: rcAvailable, offerings: rcOfferings, restorePurchases, isLoading: rcLoading, retryInit: rcRetry, debugLog, diagnostics } = useRevenueCat();
+  const { isAvailable: rcAvailable, offerings: rcOfferings, restorePurchases, isLoading: rcLoading, retryInit: rcRetry, debugLog, diagnostics, statusReason } = useRevenueCat();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
   const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
@@ -216,6 +216,7 @@ export default function Upgrade() {
               <div>rcLoading: {String(rcLoading)}</div>
               <div>offerings: {rcOfferings.length}</div>
               <div>webkit: {String(diagnostics.webkitDetected)}</div>
+              <div>statusReason: {statusReason ?? 'none'}</div>
               <div className="border-t border-green-800 mt-2 pt-2">
                 {debugLog.length === 0 ? '(no log entries yet)' : debugLog.map((l, i) => <div key={i}>{l}</div>)}
               </div>

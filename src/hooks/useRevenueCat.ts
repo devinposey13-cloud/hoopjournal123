@@ -62,6 +62,7 @@ export interface UseRevenueCatReturn {
   retryInit: () => void;
   debugLog: string[];
   diagnostics: RevenueCatDiagnostics;
+  statusReason: string | null;
 }
 
 function getDiagnostics(): RevenueCatDiagnostics {
@@ -86,6 +87,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
   const [purchases, setPurchases] = useState<any>(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [retryTrigger, setRetryTrigger] = useState(0);
+  const [statusReason, setStatusReason] = useState<string | null>(null);
   const initAttemptRef = useRef(0);
 
   const log = useCallback((msg: string) => {
@@ -94,6 +96,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
   }, []);
 
   const retryInit = useCallback(() => {
+    setStatusReason(null);
     log('[RC] Manual retry triggered');
     setRetryTrigger((v) => v + 1);
   }, [log]);
@@ -122,39 +125,18 @@ export function useRevenueCat(): UseRevenueCatReturn {
         setIsAvailable(false);
         setOfferings([]);
         setPurchases(null);
+        setStatusReason(null);
 
-        const MAX_RUNTIME_RETRIES = 8;
+        const MAX_PLUGIN_RETRIES = 8;
         const RETRY_DELAY = 600;
-        let runtimeReady = false;
-        let lastRuntimePlatform: 'ios' | 'android' | 'web' = diagnostics.runtimePlatform;
+        const PLUGIN_NAME = 'Purchases';
 
-        for (let i = 0; i < MAX_RUNTIME_RETRIES; i++) {
-          if (cancelled) return;
-
-          const runtimePlatform = getCapacitorRuntimePlatform();
-          const runtimeNative = isCapacitorNativeRuntime();
-          lastRuntimePlatform = runtimePlatform;
-
+        if (!diagnostics.runtimeNative) {
+          setStatusReason('shell_native_but_runtime_web');
           log(
-            `[RC] Runtime check ${i + 1}/${MAX_RUNTIME_RETRIES}: platform=${runtimePlatform}, native=${runtimeNative ? '✓' : '✗'}`
+            `[RC] ⚠ Shell is native (${diagnostics.shellPlatform}) but Capacitor runtime reports '${diagnostics.runtimePlatform}'. Continuing with shell-first RevenueCat init attempt…`
           );
-
-          if (runtimeNative && (runtimePlatform === 'ios' || runtimePlatform === 'android')) {
-            runtimeReady = true;
-            break;
-          }
-
-          if (i < MAX_RUNTIME_RETRIES - 1) {
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-          }
-        }
-
-        if (!runtimeReady) {
-          log(
-            `[RC] ❌ Capacitor runtime stayed on '${lastRuntimePlatform}'. Native shell detected, but RevenueCat would use Capacitor WEB implementation in this build.`
-          );
-          log('[RC] Root cause: shell/native heuristics are true, but Capacitor runtime is not native for this plugin.');
-          return;
+          log('[RC] This means TestFlight is inside a native WebView, but the Capacitor bridge/runtime has not identified itself as native yet.');
         }
 
         log('[RC] Importing purchases-capacitor…');
@@ -162,16 +144,17 @@ export function useRevenueCat(): UseRevenueCatReturn {
         if (cancelled) return;
         log('[RC] Import OK');
 
-        const PLUGIN_NAME = 'Purchases';
-        const MAX_PLUGIN_RETRIES = 8;
         let bridgeReady = false;
 
         for (let i = 0; i < MAX_PLUGIN_RETRIES; i++) {
           if (cancelled) return;
 
+          const runtimePlatform = getCapacitorRuntimePlatform();
+          const runtimeNative = isCapacitorNativeRuntime();
           const available = Capacitor.isPluginAvailable(PLUGIN_NAME);
+
           log(
-            `[RC] Bridge check ${i + 1}/${MAX_PLUGIN_RETRIES} for '${PLUGIN_NAME}': ${available ? '✓ available' : '✗ not yet'} | runtime=${getCapacitorRuntimePlatform()}`
+            `[RC] Bridge check ${i + 1}/${MAX_PLUGIN_RETRIES}: shellPlatform=${diagnostics.shellPlatform}, shellNative=${diagnostics.shellNative ? '✓' : '✗'}, runtimePlatform=${runtimePlatform}, runtimeNative=${runtimeNative ? '✓' : '✗'}, plugin=${available ? '✓ available' : '✗ not yet'}`
           );
 
           if (available) {
@@ -185,15 +168,19 @@ export function useRevenueCat(): UseRevenueCatReturn {
         }
 
         if (!bridgeReady) {
+          setStatusReason('plugin_not_registered');
           log('[RC] Bridge not in registry. Attempting direct configure() as fallback…');
           try {
+            log('[RC] configure() start (fallback path)…');
             await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
-            log('[RC] Direct configure() succeeded despite registry miss ✓');
+            log('[RC] configure() success on fallback path ✓');
             bridgeReady = true;
           } catch (directErr) {
             const errMsg = directErr instanceof Error ? directErr.message : String(directErr);
-            log(`[RC] ❌ Direct configure() also failed: ${errMsg}`);
+            setStatusReason('configure_failed');
+            log(`[RC] ❌ configure() failure on fallback path: ${errMsg}`);
             if (errMsg.includes('Web not supported in this plugin')) {
+              setStatusReason('configure_failed_web_impl');
               log(
                 `[RC] ❌ Exact cause: RevenueCat resolved to the Capacitor WEB implementation while shellPlatform=${getPlatform()} and runtimePlatform=${getCapacitorRuntimePlatform()}.`
               );
@@ -209,16 +196,18 @@ export function useRevenueCat(): UseRevenueCatReturn {
 
         if (bridgeReady && !purchases) {
           try {
-            log('[RC] Configuring with API key…');
+            log('[RC] configure() start…');
             await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
-            log('[RC] Configured ✓');
+            log('[RC] configure() success ✓');
           } catch (configErr) {
             const msg = configErr instanceof Error ? configErr.message : String(configErr);
             if (msg.includes('already configured') || msg.includes('Already configured')) {
               log('[RC] Already configured (expected) ✓');
             } else {
-              log(`[RC] ❌ Configure error: ${msg}`);
+              setStatusReason('configure_failed');
+              log(`[RC] ❌ configure() failure: ${msg}`);
               if (msg.includes('Web not supported in this plugin')) {
+                setStatusReason('configure_failed_web_impl');
                 log(
                   `[RC] ❌ Exact cause: Purchases.configure() hit the WEB implementation. shellPlatform=${getPlatform()}, runtimePlatform=${getCapacitorRuntimePlatform()}, runtimeNative=${isCapacitorNativeRuntime()}.`
                 );
@@ -231,6 +220,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
         if (cancelled) return;
         setPurchases(Purchases);
         setIsAvailable(true);
+        setStatusReason(null);
 
         if (user?.id) {
           log(`[RC] Logging in user: ${user.id.slice(0, 8)}…`);
@@ -242,14 +232,16 @@ export function useRevenueCat(): UseRevenueCatReturn {
           }
         }
 
-        log('[RC] Fetching offerings…');
+        log('[RC] getOfferings() start…');
         const rcOfferings = await Purchases.getOfferings();
+        log('[RC] getOfferings() success ✓');
         const current = (rcOfferings as any)?.current;
         const allPkgs = current?.availablePackages ?? [];
         log(`[RC] Offerings: current=${!!current}, packages=${allPkgs.length}`);
         log(`[RC] Raw offerings response: ${JSON.stringify(rcOfferings)}`);
 
         if (allPkgs.length === 0) {
+          setStatusReason('offerings_empty');
           log(`[RC] Raw offerings keys: ${Object.keys(rcOfferings || {}).join(', ')}`);
           const allOfferings = (rcOfferings as any)?.all;
           if (allOfferings) {
@@ -274,6 +266,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
         if (allPkgs.length > 0) {
           const unmapped = allPkgs.filter((pkg: any) => !RC_PRODUCT_TO_PLAN[pkg.product.identifier]);
           if (unmapped.length > 0) {
+            setStatusReason('offering_mapping_mismatch');
             log(`[RC] ⚠ ${unmapped.length} UNMAPPED: ${unmapped.map((p: any) => p.product.identifier).join(', ')}`);
           }
 
@@ -291,6 +284,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
           setOfferings(mapped);
 
           if (mapped.length === 0) {
+            setStatusReason('offering_mapping_mismatch');
             log('[RC] ⚠ All packages filtered out — check RC_PRODUCT_TO_PLAN mapping');
           }
         } else {
@@ -301,8 +295,10 @@ export function useRevenueCat(): UseRevenueCatReturn {
         setIsAvailable(false);
         setPurchases(null);
         setOfferings([]);
+        setStatusReason('init_error');
         log(`[RC] ❌ Init error: ${errMsg}`);
         if (errMsg.includes('Web not supported in this plugin')) {
+          setStatusReason('configure_failed_web_impl');
           log(
             `[RC] Exact cause: the RevenueCat Capacitor plugin is running its WEB implementation. shellPlatform=${getPlatform()}, runtimePlatform=${getCapacitorRuntimePlatform()}, runtimeNative=${isCapacitorNativeRuntime()}.`
           );
@@ -356,6 +352,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
       retryInit: () => {},
       debugLog,
       diagnostics,
+      statusReason: 'web_environment',
     };
   }
 
@@ -368,5 +365,6 @@ export function useRevenueCat(): UseRevenueCatReturn {
     retryInit,
     debugLog,
     diagnostics,
+    statusReason,
   };
 }
