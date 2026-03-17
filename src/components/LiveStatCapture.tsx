@@ -151,6 +151,7 @@ export function LiveStatCapture({
   const [editingStat, setEditingStat] = useState<{ key: keyof LiveStats; label: string } | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isAutosaveEnabledRef = useRef(true);
   const { playSound } = useSoundEffects();
   const { triggerHaptic } = useHapticFeedback();
   const { getSavedData, saveData, immediateSave, clearSavedData } = useLiveStatsAutosave(opponent);
@@ -195,7 +196,7 @@ export function LiveStatCapture({
 
   // Autosave on state changes (debounced)
   useEffect(() => {
-    if (!hasInitialized.current) return;
+    if (!hasInitialized.current || !isAutosaveEnabledRef.current) return;
     
     saveData({
       opponent,
@@ -226,7 +227,9 @@ export function LiveStatCapture({
   // Save on unmount (navigation away) so data persists
   useEffect(() => {
     return () => {
-      immediateSave(stateRef.current);
+      if (isAutosaveEnabledRef.current) {
+        immediateSave(stateRef.current);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -234,13 +237,15 @@ export function LiveStatCapture({
   // Immediate save when page becomes hidden (user switches tabs, receives call, etc.)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
+      if (document.visibilityState === 'hidden' && isAutosaveEnabledRef.current) {
         immediateSave(stateRef.current);
       }
     };
 
     const handlePageHide = () => {
-      immediateSave(stateRef.current);
+      if (isAutosaveEnabledRef.current) {
+        immediateSave(stateRef.current);
+      }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -644,6 +649,7 @@ export function LiveStatCapture({
       finalScore: { us, them },
     };
     setShowGameOverDialog(false);
+    isAutosaveEnabledRef.current = false;
     clearSavedData();
     onSave(totalStats, savePayload, true);
   };
@@ -661,6 +667,7 @@ export function LiveStatCapture({
     setShowGameOverDialog(false);
     
     // Clear autosave data when successfully saving
+    isAutosaveEnabledRef.current = false;
     clearSavedData();
     
     onSave(totalStats, savePayload, isGameOver);
@@ -1259,6 +1266,8 @@ export function LiveStatCapture({
             <AlertDialogAction
               onClick={() => {
                 setShowCancelConfirm(false);
+                isAutosaveEnabledRef.current = false;
+                clearSavedData();
                 onCancel();
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
