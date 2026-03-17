@@ -220,6 +220,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
         if (cancelled) return;
         setPurchases(Purchases);
         setIsAvailable(true);
+        setStatusReason(null);
 
         if (user?.id) {
           log(`[RC] Logging in user: ${user.id.slice(0, 8)}…`);
@@ -231,14 +232,16 @@ export function useRevenueCat(): UseRevenueCatReturn {
           }
         }
 
-        log('[RC] Fetching offerings…');
+        log('[RC] getOfferings() start…');
         const rcOfferings = await Purchases.getOfferings();
+        log('[RC] getOfferings() success ✓');
         const current = (rcOfferings as any)?.current;
         const allPkgs = current?.availablePackages ?? [];
         log(`[RC] Offerings: current=${!!current}, packages=${allPkgs.length}`);
         log(`[RC] Raw offerings response: ${JSON.stringify(rcOfferings)}`);
 
         if (allPkgs.length === 0) {
+          setStatusReason('offerings_empty');
           log(`[RC] Raw offerings keys: ${Object.keys(rcOfferings || {}).join(', ')}`);
           const allOfferings = (rcOfferings as any)?.all;
           if (allOfferings) {
@@ -263,6 +266,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
         if (allPkgs.length > 0) {
           const unmapped = allPkgs.filter((pkg: any) => !RC_PRODUCT_TO_PLAN[pkg.product.identifier]);
           if (unmapped.length > 0) {
+            setStatusReason('offering_mapping_mismatch');
             log(`[RC] ⚠ ${unmapped.length} UNMAPPED: ${unmapped.map((p: any) => p.product.identifier).join(', ')}`);
           }
 
@@ -280,6 +284,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
           setOfferings(mapped);
 
           if (mapped.length === 0) {
+            setStatusReason('offering_mapping_mismatch');
             log('[RC] ⚠ All packages filtered out — check RC_PRODUCT_TO_PLAN mapping');
           }
         } else {
