@@ -295,8 +295,10 @@ export function useRevenueCat(): UseRevenueCatReturn {
         setIsAvailable(false);
         setPurchases(null);
         setOfferings([]);
+        setStatusReason('init_error');
         log(`[RC] ❌ Init error: ${errMsg}`);
         if (errMsg.includes('Web not supported in this plugin')) {
+          setStatusReason('configure_failed_web_impl');
           log(
             `[RC] Exact cause: the RevenueCat Capacitor plugin is running its WEB implementation. shellPlatform=${getPlatform()}, runtimePlatform=${getCapacitorRuntimePlatform()}, runtimeNative=${isCapacitorNativeRuntime()}.`
           );
