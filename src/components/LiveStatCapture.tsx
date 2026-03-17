@@ -135,6 +135,7 @@ export function LiveStatCapture({
   const [gamePhoto, setGamePhoto] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [isWin, setIsWin] = useState<boolean | null>(null);
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(() => {
     try { return localStorage.getItem('hj-sound-effects') === 'true'; } catch { return false; }
@@ -727,7 +728,7 @@ export function LiveStatCapture({
       
       {/* Header - Compact */}
       <div className="bg-card border-b border-border px-3 py-2 flex items-center justify-between sticky top-0 z-10">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {}}>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowCancelConfirm(true)}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div className="text-center flex items-center gap-2">
@@ -1243,6 +1244,30 @@ export function LiveStatCapture({
           {isSaving ? 'Saving...' : 'Save'}
         </Button>
       </div>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave Live Stats?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your current stats will not be saved. Are you sure you want to cancel?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Tracking</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowCancelConfirm(false);
+                onCancel();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Cancel Game
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Game Over Confirmation Dialog */}
       <AlertDialog open={showGameOverDialog} onOpenChange={setShowGameOverDialog}>
