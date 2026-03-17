@@ -50,6 +50,7 @@
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
         "date-fns": "^3.6.0",
+        "despia-native": "^1.0.20",
         "embla-carousel-react": "^8.6.0",
         "framer-motion": "^12.29.2",
         "html2canvas": "^1.4.1",
@@ -735,6 +736,8 @@
     "delayed-stream": ["delayed-stream@1.0.0", "", {}, "sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ=="],
 
     "dequal": ["dequal@2.0.3", "", {}, "sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA=="],
+
+    "despia-native": ["despia-native@1.0.20", "", {}, "sha512-CH8ogWCEerFQWjOI4WBz1F95XUHDh7WmgbrHhMtT57iD3Qfuq62/3eAXH6RK00uuBrMtTNJT7xYi9Re+1iMaCQ=="],
 
     "detect-gpu": ["detect-gpu@5.0.70", "", { "dependencies": { "webgl-constants": "^1.1.1" } }, "sha512-bqerEP1Ese6nt3rFkwPnGbsUF9a4q+gMmpTVVOEzoCyeCc+y7/RvJnQZJx1JwhgQI5Ntg0Kgat8Uu7XpBqnz1w=="],
 
