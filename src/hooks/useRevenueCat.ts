@@ -92,7 +92,7 @@ export function useRevenueCat(): UseRevenueCatReturn {
 
         // Fetch offerings
         setIsLoading(true);
-        console.log('[RevenueCat] Fetching offerings…');
+        log('[RC] Fetching offerings…');
         const rcOfferings = await Purchases.getOfferings();
         const current = (rcOfferings as any)?.current;
         console.log('[RevenueCat] Offerings current:', current ? `${current.availablePackages?.length ?? 0} packages` : 'null');
