@@ -80,10 +80,34 @@ export function useRevenueCat(): UseRevenueCatReturn {
     (async () => {
       try {
         log('[RC] Importing purchases-capacitor…');
-        // Dynamic import so the Capacitor plugin isn't bundled on web
         const { Purchases } = await import('@revenuecat/purchases-capacitor');
         if (cancelled) return;
-        log('[RC] Imported OK, configuring…');
+        log('[RC] Imported OK');
+
+        // Wait for native bridge to be available (handles remote-URL race condition)
+        const MAX_RETRIES = 6;
+        const RETRY_DELAY = 500;
+        let bridgeReady = false;
+
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+          const available = Capacitor.isPluginAvailable('PurchasesPlugin');
+          log(`[RC] Bridge check attempt ${attempt + 1}/${MAX_RETRIES}: ${available ? '✓ available' : '✗ not yet'}`);
+          if (available) {
+            bridgeReady = true;
+            break;
+          }
+          if (attempt < MAX_RETRIES - 1) {
+            await new Promise((r) => setTimeout(r, RETRY_DELAY));
+          }
+        }
+
+        if (!bridgeReady) {
+          log('[RC] ❌ Native bridge never became available after retries. Plugin may not be compiled into the binary.');
+          return;
+        }
+
+        if (cancelled) return;
+        log('[RC] Bridge ready, configuring…');
 
         await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
         log('[RC] Configured ✓');
