@@ -461,7 +461,7 @@ export function useCloudData() {
   };
 
   // Add game (now with profile_id, season_id and team_id)
-  const addGame = async (game: Omit<GameStats, 'id'>) => {
+  const addGame = async (game: Omit<GameStats, 'id'>, options?: { skipLimitCheck?: boolean }) => {
     if (!user || !activeProfileId) return null;
 
     try {
