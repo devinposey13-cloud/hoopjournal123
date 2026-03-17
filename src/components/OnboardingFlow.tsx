@@ -12,7 +12,7 @@ import { NativePurchaseSheet } from './purchase/NativePurchaseSheet';
 import { track, type PlanId, type BillingCycle } from '@/lib/plans';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
-import { isNativeApp } from '@/lib/platform';
+import { isNativeApp, getPlatform } from '@/lib/platform';
 import { toast } from 'sonner';
 
 export interface OnboardingData {
