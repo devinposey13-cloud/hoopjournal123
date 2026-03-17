@@ -135,6 +135,7 @@ export function LiveStatCapture({
   const [gamePhoto, setGamePhoto] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [showGameOverDialog, setShowGameOverDialog] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [isWin, setIsWin] = useState<boolean | null>(null);
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(() => {
     try { return localStorage.getItem('hj-sound-effects') === 'true'; } catch { return false; }
