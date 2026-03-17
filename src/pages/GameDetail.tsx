@@ -1007,18 +1007,27 @@ export default function GameDetail() {
             </Button>
             <Button 
               onClick={() => {
+                if (!canGenerateReportCard()) {
+                  openPaywall('report_card_limit');
+                  return;
+                }
                 if (!canUseFeature(currentPlan, 'reportCard')) {
                   openPaywall('report_card');
                   return;
                 }
+                incrementReportCards();
                 setShowReportCard(true);
               }}
               size={isMobile ? "icon" : "default"}
               title="Share Report Card"
               className="gradient-primary"
             >
-              <Share2 className={cn("w-4 h-4", !isMobile && "mr-2")} />
-              {!isMobile && "Report Card"}
+              {!canGenerateReportCard() ? (
+                <Lock className={cn("w-4 h-4", !isMobile && "mr-2")} />
+              ) : (
+                <Share2 className={cn("w-4 h-4", !isMobile && "mr-2")} />
+              )}
+              {!isMobile && (!canGenerateReportCard() ? "Upgrade to Share" : "Report Card")}
               {isMobile && <span className="sr-only">Report Card</span>}
             </Button>
           </div>
