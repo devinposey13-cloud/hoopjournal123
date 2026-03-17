@@ -14,12 +14,14 @@ interface PlanState {
   accessInfo: UserAccessInfo;
   accessBadge: AccessBadge;
   usage: UsageData;
+  lifetimeGamesLogged: number;
   paywallOpen: boolean;
   paywallReason: PaywallReason | null;
   loading: boolean;
   setCurrentPlan: (plan: PlanId) => void;
   openPaywall: (reason: PaywallReason) => void;
   closePaywall: () => void;
+  canLogGame: () => boolean;
 }
 
 const defaultAccessInfo: UserAccessInfo = {
