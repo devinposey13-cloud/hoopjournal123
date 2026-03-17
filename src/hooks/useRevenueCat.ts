@@ -6,7 +6,7 @@
  * and exposes purchase / restore helpers.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { isNativeApp, getPlatform } from '@/lib/platform';
 import { useAuth } from '@/hooks/useAuth';
@@ -46,6 +46,7 @@ export interface UseRevenueCatReturn {
   isLoading: boolean;
   purchasePackage: (packageId: string) => Promise<void>;
   restorePurchases: () => Promise<void>;
+  retryInit: () => void;
   debugLog: string[];
 }
 
@@ -60,16 +61,26 @@ export function useRevenueCat(): UseRevenueCatReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [purchases, setPurchases] = useState<any>(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
+  const [retryTrigger, setRetryTrigger] = useState(0);
+  const initAttemptRef = useRef(0);
 
-  const log = (msg: string) => {
+  const log = useCallback((msg: string) => {
     console.log(msg);
     setDebugLog((prev) => [...prev, `${new Date().toISOString().slice(11, 19)} ${msg}`]);
-  };
+  }, []);
+
+  const retryInit = useCallback(() => {
+    log('[RC] Manual retry triggered');
+    setRetryTrigger((v) => v + 1);
+  }, [log]);
 
   // Initialise SDK on native only
   useEffect(() => {
     const native = isNativeApp();
-    log(`[RC] isNativeApp: ${native}, platform: ${getPlatform()}, webkit: ${!!(window as any).webkit?.messageHandlers}`);
+    const platform = getPlatform();
+    const attempt = ++initAttemptRef.current;
+    log(`[RC] Init attempt #${attempt} | native: ${native}, platform: ${platform}, webkit: ${!!(window as any).webkit?.messageHandlers}`);
+
     if (!native) {
       log('[RC] Skipping init — not native');
       return;
@@ -79,71 +90,123 @@ export function useRevenueCat(): UseRevenueCatReturn {
 
     (async () => {
       try {
+        setIsLoading(true);
         log('[RC] Importing purchases-capacitor…');
         const { Purchases } = await import('@revenuecat/purchases-capacitor');
         if (cancelled) return;
-        log('[RC] Imported OK');
+        log('[RC] Import OK');
 
         // Wait for native bridge to be available (handles remote-URL race condition)
-        const MAX_RETRIES = 6;
-        const RETRY_DELAY = 500;
+        // CRITICAL: The plugin registers as 'Purchases' (not 'PurchasesPlugin')
+        // See: https://github.com/RevenueCat/purchases-capacitor/blob/main/src/index.ts
+        const PLUGIN_NAME = 'Purchases';
+        const MAX_RETRIES = 8;
+        const RETRY_DELAY = 600;
         let bridgeReady = false;
 
-        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-          const available = Capacitor.isPluginAvailable('PurchasesPlugin');
-          log(`[RC] Bridge check attempt ${attempt + 1}/${MAX_RETRIES}: ${available ? '✓ available' : '✗ not yet'}`);
+        for (let i = 0; i < MAX_RETRIES; i++) {
+          if (cancelled) return;
+          const available = Capacitor.isPluginAvailable(PLUGIN_NAME);
+          log(`[RC] Bridge check ${i + 1}/${MAX_RETRIES} for '${PLUGIN_NAME}': ${available ? '✓ available' : '✗ not yet'}`);
           if (available) {
             bridgeReady = true;
             break;
           }
-          if (attempt < MAX_RETRIES - 1) {
+          if (i < MAX_RETRIES - 1) {
             await new Promise((r) => setTimeout(r, RETRY_DELAY));
           }
         }
 
         if (!bridgeReady) {
-          log('[RC] ❌ Native bridge never became available after retries. Plugin may not be compiled into the binary.');
-          return;
+          // Also try calling configure directly — some Capacitor versions
+          // don't register the plugin in the registry but the native bridge works
+          log('[RC] Bridge not in registry. Attempting direct configure() as fallback…');
+          try {
+            await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
+            log('[RC] Direct configure() succeeded despite registry miss ✓');
+            bridgeReady = true;
+          } catch (directErr) {
+            const errMsg = directErr instanceof Error ? directErr.message : String(directErr);
+            log(`[RC] ❌ Direct configure() also failed: ${errMsg}`);
+            if (errMsg.includes('Web') || errMsg.includes('not implemented') || errMsg.includes('Unimplemented')) {
+              log('[RC] ❌ CONFIRMED: Native plugin not compiled into binary. Run: npx cap sync ios && cd ios/App && pod install && rebuild.');
+            }
+            return;
+          }
         }
 
         if (cancelled) return;
-        log('[RC] Bridge ready, configuring…');
 
-        await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
-        log('[RC] Configured ✓');
+        // Configure if we haven't already (direct fallback path does it above)
+        if (bridgeReady && !purchases) {
+          try {
+            log('[RC] Configuring with API key…');
+            await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
+            log('[RC] Configured ✓');
+          } catch (configErr) {
+            // "Already configured" is fine — means configure() was called by the fallback
+            const msg = configErr instanceof Error ? configErr.message : String(configErr);
+            if (msg.includes('already configured') || msg.includes('Already configured')) {
+              log('[RC] Already configured (expected) ✓');
+            } else {
+              log(`[RC] ❌ Configure error: ${msg}`);
+              return;
+            }
+          }
+        }
+
+        if (cancelled) return;
         setPurchases(Purchases);
         setIsAvailable(true);
 
         // Identify user if logged in
         if (user?.id) {
-          log(`[RC] Logging in user: ${user.id}`);
-          await Purchases.logIn({ appUserID: user.id });
-          log('[RC] User logged in ✓');
+          log(`[RC] Logging in user: ${user.id.slice(0, 8)}…`);
+          try {
+            await Purchases.logIn({ appUserID: user.id });
+            log('[RC] User logged in ✓');
+          } catch (loginErr) {
+            log(`[RC] ⚠ Login error (non-fatal): ${loginErr instanceof Error ? loginErr.message : String(loginErr)}`);
+          }
         }
 
         // Fetch offerings
-        setIsLoading(true);
         log('[RC] Fetching offerings…');
         const rcOfferings = await Purchases.getOfferings();
         const current = (rcOfferings as any)?.current;
         const allPkgs = current?.availablePackages ?? [];
-        log(`[RC] Offerings response: current=${!!current}, availablePackages=${allPkgs.length}`);
-        
-        // Log every raw package for debugging
+        log(`[RC] Offerings: current=${!!current}, packages=${allPkgs.length}`);
+
+        // Log raw offerings JSON for deep debugging
+        if (allPkgs.length === 0) {
+          log(`[RC] Raw offerings keys: ${Object.keys(rcOfferings || {}).join(', ')}`);
+          const allOfferings = (rcOfferings as any)?.all;
+          if (allOfferings) {
+            const offeringKeys = Object.keys(allOfferings);
+            log(`[RC] All offerings: ${offeringKeys.join(', ')} (${offeringKeys.length} total)`);
+            offeringKeys.forEach((key) => {
+              const off = allOfferings[key];
+              const pkgCount = off?.availablePackages?.length ?? 0;
+              log(`[RC]   offering '${key}': ${pkgCount} packages`);
+            });
+          }
+        }
+
+        // Log every raw package
         allPkgs.forEach((pkg: any, idx: number) => {
-          const prodId = pkg?.product?.identifier ?? '(no identifier)';
+          const prodId = pkg?.product?.identifier ?? '(no id)';
           const pkgType = pkg?.packageType ?? '(no type)';
           const price = pkg?.product?.priceString ?? '(no price)';
           const mapped = RC_PRODUCT_TO_PLAN[prodId] ?? 'UNMAPPED';
-          log(`[RC]   pkg[${idx}]: ${prodId} | type=${pkgType} | price=${price} | maps→${mapped}`);
+          log(`[RC]   pkg[${idx}]: ${prodId} | type=${pkgType} | price=${price} | →${mapped}`);
         });
 
         if (allPkgs.length > 0) {
           const unmapped = allPkgs.filter((pkg: any) => !RC_PRODUCT_TO_PLAN[pkg.product.identifier]);
           if (unmapped.length > 0) {
-            log(`[RC] ⚠ ${unmapped.length} packages have NO mapping in RC_PRODUCT_TO_PLAN: ${unmapped.map((p: any) => p.product.identifier).join(', ')}`);
+            log(`[RC] ⚠ ${unmapped.length} UNMAPPED: ${unmapped.map((p: any) => p.product.identifier).join(', ')}`);
           }
-          
+
           const mapped: RCPackage[] = allPkgs
             .filter((pkg: any) => RC_PRODUCT_TO_PLAN[pkg.product.identifier])
             .map((pkg: any) => ({
@@ -155,22 +218,26 @@ export function useRevenueCat(): UseRevenueCatReturn {
             }));
           log(`[RC] ✓ Mapped ${mapped.length} packages: ${mapped.map(m => `${m.productId}→${m.planId}`).join(', ')}`);
           setOfferings(mapped);
-          
+
           if (mapped.length === 0) {
-            log('[RC] ⚠ All packages were filtered out — check RC_PRODUCT_TO_PLAN mapping');
+            log('[RC] ⚠ All packages filtered out — check RC_PRODUCT_TO_PLAN mapping');
           }
         } else {
-          log('[RC] ⚠ No current offering or no available packages. Check RevenueCat dashboard: are products attached to the "current" offering?');
+          log('[RC] ⚠ 0 packages. Check RevenueCat dashboard: products attached to "current" offering?');
         }
       } catch (err) {
-        log(`[RC] ❌ Init error: ${err instanceof Error ? err.message : String(err)}`);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        log(`[RC] ❌ Init error: ${errMsg}`);
+        if (errMsg.includes('Web') || errMsg.includes('not implemented')) {
+          log('[RC] This confirms the native plugin is NOT in the binary.');
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
     })();
 
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, retryTrigger]);
 
   const purchasePackage = useCallback(async (packageId: string) => {
     if (!purchases) throw new Error('RevenueCat not available');
@@ -200,9 +267,10 @@ export function useRevenueCat(): UseRevenueCatReturn {
       isLoading: false,
       purchasePackage: async () => { throw new Error('Not available on web'); },
       restorePurchases: async () => { throw new Error('Not available on web'); },
+      retryInit: () => {},
       debugLog,
     };
   }
 
-  return { isAvailable, offerings, isLoading, purchasePackage, restorePurchases, debugLog };
+  return { isAvailable, offerings, isLoading, purchasePackage, restorePurchases, retryInit, debugLog };
 }
