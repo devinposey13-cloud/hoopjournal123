@@ -151,6 +151,7 @@ export function LiveStatCapture({
   const [editingStat, setEditingStat] = useState<{ key: keyof LiveStats; label: string } | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isAutosaveEnabledRef = useRef(true);
   const { playSound } = useSoundEffects();
   const { triggerHaptic } = useHapticFeedback();
   const { getSavedData, saveData, immediateSave, clearSavedData } = useLiveStatsAutosave(opponent);
