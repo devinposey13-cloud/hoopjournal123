@@ -55,16 +55,12 @@ function OAuthErrorHandler() {
   return null;
 }
 
-// Initialize native Google Auth on startup
-function NativeAuthInitializer() {
+// Log runtime environment on startup
+function RuntimeLogger() {
   useEffect(() => {
-    if (!isNativeApp()) return;
-    console.log('[NativeAuth] Initializing native Google Auth SDK');
-    import('@/lib/nativeGoogleAuth').then(({ initNativeGoogleAuth }) => {
-      initNativeGoogleAuth();
-    }).catch(err => {
-      console.warn('[NativeAuth] Failed to init native Google Auth:', err);
-    });
+    const platform = getPlatform();
+    const native = isNativeApp();
+    console.log(`[Runtime] Platform: ${platform}, isNative: ${native}, UA: ${navigator.userAgent}`);
   }, []);
   
   return null;
