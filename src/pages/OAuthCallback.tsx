@@ -62,24 +62,28 @@ export default function OAuthCallback() {
   };
 
   const handleCallback = async (isRetry = false) => {
-    const fullUrl = window.location.href;
-    const hash = window.location.hash;
-    const search = window.location.search;
     const platform = getPlatform();
     const native = isNativeApp();
 
     log(`--- ${isRetry ? 'RETRY' : 'START'} ---`);
     log(`Platform: ${platform}, isNative: ${native}`);
-    log(`Full URL: ${fullUrl}`);
+    log(`Pre-captured URL: ${_capturedUrl}`);
 
-    const hashParams = new URLSearchParams(hash.replace('#', ''));
-    const queryParams = new URLSearchParams(search);
+    // Use pre-captured tokens (grabbed at module load before Supabase could clear them)
+    // On retry, also re-check current URL in case hash is still present
+    const currentHash = new URLSearchParams(window.location.hash.replace('#', ''));
+    const currentQuery = new URLSearchParams(window.location.search);
 
-    const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
-    const code = queryParams.get('code');
-    const errorParam = hashParams.get('error') || queryParams.get('error');
-    const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
+    const accessToken = _preCapturedTokens.accessToken
+      || currentHash.get('access_token') || currentQuery.get('access_token');
+    const refreshToken = _preCapturedTokens.refreshToken
+      || currentHash.get('refresh_token') || currentQuery.get('refresh_token');
+    const code = _preCapturedTokens.code || currentQuery.get('code');
+    const errorParam = _preCapturedTokens.error
+      || currentHash.get('error') || currentQuery.get('error');
+    const errorDescription = _preCapturedTokens.errorDescription
+      || currentHash.get('error_description') || currentQuery.get('error_description');
+
     const isSystemBrowserReturn = isMobileSystemBrowserOAuthReturn({
       hostname: window.location.hostname,
       native,
@@ -87,7 +91,8 @@ export default function OAuthCallback() {
     });
 
     log(`Code present: ${!!code}`);
-    log(`Tokens present: access=${!!accessToken}, refresh=${!!refreshToken}`);
+    log(`access_token exists: ${!!accessToken}`);
+    log(`refresh_token exists: ${!!refreshToken}`);
     log(`Error present: ${!!errorParam}`);
     log(`System browser return: ${isSystemBrowserReturn}`);
 
