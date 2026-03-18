@@ -10,7 +10,7 @@ import { ProfileProvider } from "@/components/profile/ProfileProvider";
 import { PlanContext, usePlanState } from "@/hooks/usePlanState";
 import { GlobalPaywall } from "@/components/paywall/GlobalPaywall";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
-import { isNativeApp } from "@/lib/platform";
+import { isNativeApp, getPlatform } from "@/lib/platform";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Index from "./pages/Index";
