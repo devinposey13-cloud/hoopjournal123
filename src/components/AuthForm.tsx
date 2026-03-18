@@ -160,7 +160,7 @@ export function AuthForm() {
       ? `${LOVABLE_APP_ORIGIN}/auth/callback`
       : `${CUSTOM_DOMAIN_ORIGIN}/auth/callback`;
 
-    const oauthUrl = await getDirectOAuthUrl(provider, redirectTo, native);
+    const oauthUrl = await getDirectOAuthUrl(provider, redirectTo, native ? 'native' : 'web');
 
     // On native, open hoopjournal.me/oauth-bridge first so iOS shows the custom
     // domain in the auth sheet, then bounce into the actual Google/Apple OAuth URL.
