@@ -446,17 +446,12 @@ export function AdminPanel() {
 
     setDeletingUser(userId);
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ targetUserId: authUserId }),
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { targetUserId: authUserId },
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to delete user');
+      if (error) throw new Error(error.message || 'Failed to delete user');
+      if (!data?.success) throw new Error(data?.error || 'Failed to delete user');
 
       setUsers(prev => prev.filter(u => u.id !== userId));
       toast.success('User completely deleted - they can now sign up again');
@@ -571,17 +566,12 @@ export function AdminPanel() {
 
     setDeletingOrphan(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({ targetUserId: targetId }),
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { targetUserId: targetId },
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to delete orphan user');
+      if (error) throw new Error(error.message || 'Failed to delete orphan user');
+      if (!data?.success) throw new Error(data?.error || 'Failed to delete orphan user');
 
       toast.success('Orphaned user deleted - they can now sign up again');
       setOrphanUserId('');
