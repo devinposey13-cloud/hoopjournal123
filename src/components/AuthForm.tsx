@@ -156,12 +156,12 @@ export function AuthForm() {
   const handleIframePopupOAuth = async (provider: 'google' | 'apple') => {
     await clearServiceWorkerCaches();
 
-    // Redirect popup through managed OAuth using the current origin.
-    const popupRedirectUri = window.location.origin;
-    const brokerUrl = buildBrokerUrl(provider, popupRedirectUri);
-    console.log('[OAuth] Popup redirect_uri:', popupRedirectUri);
-    console.log('[OAuth] Broker URL:', brokerUrl);
-    const popup = window.open(brokerUrl, `hoopjournal_${provider}_oauth`, 'width=520,height=720');
+    // Get direct OAuth URL with popup callback on the current origin
+    const popupRedirectTo = `${window.location.origin}/auth/callback?popup=1&provider=${provider}`;
+    const oauthUrl = await getDirectOAuthUrl(provider, popupRedirectTo);
+    console.log('[OAuth] Popup redirectTo:', popupRedirectTo);
+    console.log('[OAuth] OAuth URL:', oauthUrl.substring(0, 100) + '...');
+    const popup = window.open(oauthUrl, `hoopjournal_${provider}_oauth`, 'width=520,height=720');
 
     if (!popup) {
       throw new Error('Popup blocked. Please allow popups and try again.');
