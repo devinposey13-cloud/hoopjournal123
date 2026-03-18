@@ -1,6 +1,16 @@
-## RevenueCat Integration — IMPLEMENTED
+## OAuth Fix — Bypass Lovable Broker (IMPLEMENTED)
 
-### What was built
+### What was changed
+- `src/components/AuthForm.tsx`: Replaced `buildBrokerUrl()` / `getManagedOAuthRedirectUri()` with `getDirectOAuthUrl()` using `supabase.auth.signInWithOAuth({ skipBrowserRedirect: true })`. Native and custom domain flows now get the real Google/Apple OAuth URL directly from Supabase, bypassing the Lovable `/~oauth/initiate` broker entirely.
+
+### Required backend config (user must verify)
+1. **Google Cloud Console → Authorized redirect URIs:** `https://jwoupnumuotmwpwrkmob.supabase.co/auth/v1/callback`
+2. **Backend Auth → Redirect URLs (allow list):** `https://hoopjournal.me/**` and `https://hoopjournal123.lovable.app/**`
+3. **Backend Auth → Site URL:** `https://hoopjournal.me`
+
+---
+
+## RevenueCat Integration — IMPLEMENTED
 
 1. **Platform Detection** (`src/lib/platform.ts`) — `isNativeApp()`, `getPlatform()`, `isIOS()` helpers
 2. **RevenueCat Hook** (`src/hooks/useRevenueCat.ts`) — SDK init, purchase, restore, offerings
