@@ -759,6 +759,10 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
             </div>
           </div>
 
+          {/* ── Debug ── */}
+          <SectionHeader>Debug</SectionHeader>
+          <AuthDebugPanel />
+
           {/* ── Account ── */}
           <SectionHeader>Account</SectionHeader>
 
