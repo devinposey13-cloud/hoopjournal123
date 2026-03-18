@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { LogIn, UserPlus, Loader2, AtSign, Mail, Phone, Eye, EyeOff } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
@@ -17,20 +18,11 @@ import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
 const CUSTOM_DOMAIN_ORIGIN = 'https://hoopjournal.me';
 const PUBLISHED_ORIGIN = 'https://hoopjournal123.lovable.app';
 
-/**
- * Detect if running on a custom domain (not lovable infra or localhost).
- * Native apps also count since their origin can't receive OAuth redirects.
- */
 const isCustomDomain = () =>
-  isNativeApp() ||
-  (!window.location.hostname.includes('lovable.app') &&
-   !window.location.hostname.includes('lovableproject.com') &&
-   window.location.hostname !== 'localhost');
+  !window.location.hostname.includes('lovable.app') &&
+  !window.location.hostname.includes('lovableproject.com') &&
+  window.location.hostname !== 'localhost';
 
-/**
- * Build a direct Supabase OAuth URL using skipBrowserRedirect.
- * This bypasses any broker/wrapper and gives us the raw URL to open.
- */
 const getDirectOAuthUrl = async (
   provider: 'google' | 'apple',
   redirectTo: string
@@ -44,7 +36,7 @@ const getDirectOAuthUrl = async (
     },
   });
   if (error) throw error;
-  if (!data?.url) throw new Error('No OAuth URL returned from Supabase');
+  if (!data?.url) throw new Error('No OAuth URL returned from backend');
   return data.url;
 };
 
@@ -103,7 +95,6 @@ export function AuthForm() {
 
     try {
       if (isNativeApp()) {
-        // ── MOBILE: Native Google Sign-In SDK → idToken → Supabase ──
         console.log('[Auth] Starting native Google Sign-In (Capacitor SDK)');
         googleTimeoutRef.current = window.setTimeout(() => {
           setGoogleLoading(false);
@@ -115,28 +106,14 @@ export function AuthForm() {
         return;
       }
 
-      if (isCustomDomain()) {
-        // ── CUSTOM DOMAIN / PREVIEW: Direct Supabase OAuth + skipBrowserRedirect ──
-        // Redirect back to the custom domain callback so session stays in-context
-        const redirectTo = `${CUSTOM_DOMAIN_ORIGIN}/auth/callback`;
-        console.log('[Auth] Custom domain Google Sign-In, redirectTo:', redirectTo);
+      console.log('[Auth] Starting managed Google Sign-In');
+      const redirectUri = isCustomDomain()
+        ? `${window.location.origin}/auth/callback`
+        : window.location.origin;
 
-        const oauthUrl = await getDirectOAuthUrl('google', redirectTo);
-        console.log('[Auth] Direct OAuth URL obtained, navigating...');
-        await openOAuthInSystemBrowser(oauthUrl);
-        return;
-      }
-
-      // ── STANDARD WEB: Supabase signInWithOAuth (same-tab redirect) ──
-      console.log('[Auth] Standard web Google Sign-In (same-tab redirect)');
-      const redirectTo = `${window.location.origin}/auth/callback`;
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-          queryParams: { prompt: 'select_account' },
-        },
+      const { error } = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: redirectUri,
+        extraParams: { prompt: 'select_account' },
       });
 
       if (error) throw error;
