@@ -11,8 +11,7 @@ import { lovable } from '@/integrations/lovable';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
-import { isNativeApp } from '@/lib/platform';
-import { nativeGoogleSignIn } from '@/lib/nativeGoogleAuth';
+import { isNativeApp, getPlatform } from '@/lib/platform';
 import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
 
 const CUSTOM_DOMAIN_ORIGIN = 'https://hoopjournal.me';
