@@ -280,7 +280,7 @@ CRITICAL GUIDELINES:
 STRUCTURE YOUR RESPONSE:
 1. **Great Job Today, ${verifiedName || 'Champ'}!** - Start with 2-3 specific things the player did well based on their stats
 2. **Highlight Reel** - Call out their best stat or achievement from this game
-${earnedMilestones && earnedMilestones.length > 0 ? '3. **🏆 Milestones Unlocked!** - Celebrate each milestone they earned with specific praise\n4. **Level Up Tips** - 1-2 friendly suggestions for improvement\n5. **Keep Going!** - End with encouragement and motivation' : '3. **Level Up Tips** - 1-2 friendly suggestions for improvement (frame as exciting opportunities, not weaknesses)\n4. **Keep Going!** - End with encouragement and motivation'}
+${safeMilestones.length > 0 ? '3. **🏆 Milestones Unlocked!** - Celebrate each milestone they earned with specific praise\n4. **Level Up Tips** - 1-2 friendly suggestions for improvement\n5. **Keep Going!** - End with encouragement and motivation' : '3. **Level Up Tips** - 1-2 friendly suggestions for improvement (frame as exciting opportunities, not weaknesses)\n4. **Keep Going!** - End with encouragement and motivation'}
 
 Keep the response under 300 words but make every word count!`;
 
