@@ -17,6 +17,7 @@ const VALID_PROMOS: Record<string, { type: string; validFrom: string; validUntil
 };
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

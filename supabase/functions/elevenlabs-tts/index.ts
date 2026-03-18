@@ -7,6 +7,7 @@ const MALE_VOICE_ID = 'nJvj5shg2xu1GKGxqfkE'; // Hakeem - African American narra
 const FEMALE_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // Sarah - warm, encouraging female voice
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });

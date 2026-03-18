@@ -6,6 +6,7 @@ import { getCorsHeaders } from '../_shared/cors.ts';
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });

@@ -58,6 +58,7 @@ async function tryGenerateAvatar(apiKey: string, imageUrl: string, model: string
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
