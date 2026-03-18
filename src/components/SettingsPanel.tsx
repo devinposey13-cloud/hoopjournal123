@@ -26,7 +26,7 @@ import { useBilling } from '@/hooks/useBilling';
 import { isNativeApp, isDespia } from '@/lib/platform';
 import { track } from '@/lib/plans';
 import { RotateCcw } from 'lucide-react';
-import { AuthDebugPanel } from '@/components/settings/AuthDebugPanel';
+
 
 interface SettingsPanelProps {
   profile: PlayerProfile;
