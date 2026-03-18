@@ -106,25 +106,28 @@ export function AuthForm() {
    * Get the direct OAuth URL from Supabase (bypasses Lovable broker entirely).
    * Works with your own Google/Apple OAuth credentials configured in Supabase.
    *
-   * For native apps we MUST use implicit grant (response_type=token) because
-   * PKCE stores the code_verifier in the initiating context (WebView), but the
-   * callback lands in the system browser (Safari) which has no verifier —
-   * causing the code exchange to silently fail and stranding the user in Safari.
+   * - web: PKCE via SDK (best for normal browser redirects)
+   * - native/popup: implicit token return so the callback gets tokens directly.
+   *   This avoids PKCE verifier/session handoff problems across system-browser
+   *   and popup contexts.
    */
-  const getDirectOAuthUrl = async (provider: 'google' | 'apple', redirectTo: string, forNative = false) => {
-    if (forNative) {
-      // Build implicit-grant URL manually so tokens come back directly in the fragment
+  const getDirectOAuthUrl = async (
+    provider: 'google' | 'apple',
+    redirectTo: string,
+    mode: 'web' | 'native' | 'popup' = 'web'
+  ) => {
+    if (mode === 'native' || mode === 'popup') {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const url = new URL(`${supabaseUrl}/auth/v1/authorize`);
       url.searchParams.set('provider', provider);
       url.searchParams.set('redirect_to', redirectTo);
       url.searchParams.set('response_type', 'token');
       url.searchParams.set('scope', provider === 'google' ? 'openid email profile' : 'name email');
-      console.log('[OAuth] Built implicit-grant URL for native:', url.toString().substring(0, 120) + '...');
+      console.log(`[OAuth] Built implicit-grant URL for ${mode}:`, url.toString().substring(0, 120) + '...');
       return url.toString();
     }
 
-    // Web: use the SDK which handles PKCE correctly (same browser context)
+    // Standard web flow: use SDK-managed PKCE in the same browser context
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -157,7 +160,7 @@ export function AuthForm() {
       ? `${LOVABLE_APP_ORIGIN}/auth/callback`
       : `${CUSTOM_DOMAIN_ORIGIN}/auth/callback`;
 
-    const oauthUrl = await getDirectOAuthUrl(provider, redirectTo, native);
+    const oauthUrl = await getDirectOAuthUrl(provider, redirectTo, native ? 'native' : 'web');
 
     // On native, open hoopjournal.me/oauth-bridge first so iOS shows the custom
     // domain in the auth sheet, then bounce into the actual Google/Apple OAuth URL.
@@ -189,7 +192,7 @@ export function AuthForm() {
 
     // Get direct OAuth URL with popup callback on the current origin
     const popupRedirectTo = `${window.location.origin}/auth/callback?popup=1&provider=${provider}`;
-    const oauthUrl = await getDirectOAuthUrl(provider, popupRedirectTo);
+    const oauthUrl = await getDirectOAuthUrl(provider, popupRedirectTo, 'popup');
     console.log('[OAuth] Popup redirectTo:', popupRedirectTo);
     console.log('[OAuth] OAuth URL:', oauthUrl.substring(0, 100) + '...');
     const popup = window.open(oauthUrl, `hoopjournal_${provider}_oauth`, 'width=520,height=720');
