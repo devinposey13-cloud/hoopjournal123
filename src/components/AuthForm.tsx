@@ -100,13 +100,14 @@ export function AuthForm() {
   window.location.hostname !== 'localhost';
 
   const LOVABLE_APP_ORIGIN = 'https://hoopjournal123.lovable.app';
+  const CUSTOM_DOMAIN_ORIGIN = 'https://hoopjournal.me';
 
   const handleCustomDomainOAuth = async (provider: 'google' | 'apple') => {
     // Best-effort SW cache clear (non-blocking on failure)
     try {await clearServiceWorkerCaches();} catch (_) {}
 
     const native = isNativeApp();
-    const callbackOrigin = native ? LOVABLE_APP_ORIGIN : window.location.origin;
+    const callbackOrigin = native ? CUSTOM_DOMAIN_ORIGIN : window.location.origin;
     const redirectUri = `${callbackOrigin}/auth/callback`;
     const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 

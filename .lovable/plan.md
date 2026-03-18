@@ -1,49 +1,33 @@
+## RevenueCat Integration — IMPLEMENTED
 
+### What was built
 
-## Problem
+1. **Platform Detection** (`src/lib/platform.ts`) — `isNativeApp()`, `getPlatform()`, `isIOS()` helpers
+2. **RevenueCat Hook** (`src/hooks/useRevenueCat.ts`) — SDK init, purchase, restore, offerings
+3. **RevenueCat Webhook** (`supabase/functions/revenuecat-webhook/index.ts`) — syncs purchases to `plan_overrides`
+4. **Conditional Routing** — `useSubscription`, `Pricing.tsx`, `Upgrade.tsx`, `UpgradeDrawer.tsx` all route to RevenueCat on native
 
-The OAuth flow currently uses `https://hoopjournal123.lovable.app` as the broker origin (`LOVABLE_APP_ORIGIN`). This domain appears in the iOS system dialog ("Hoop Journal Wants to Use lovable.app to Sign In" -- visible in your screenshot) and in redirect URLs. You want to use `hoopjournal.me` instead.
+### Next steps (user action required)
 
-## Important Limitation
+1. **Replace RevenueCat API key** in `src/hooks/useRevenueCat.ts` line 12 — replace `appl_REPLACE_WITH_YOUR_KEY` with your iOS public API key from RevenueCat dashboard
+2. **Create RevenueCat products** matching these IDs: `hj_starter_monthly`, `hj_starter_yearly`, `hj_pro_monthly`, `hj_pro_yearly`, `hj_elite_monthly`, `hj_elite_yearly`
+3. **Configure RevenueCat webhook** pointing to: `https://jwoupnumuotmwpwrkmob.supabase.co/functions/v1/revenuecat-webhook` with Authorization Bearer header matching the secret you just saved
+4. **Set up Capacitor** for native iOS builds (not yet added to the project)
 
-The `~oauth/initiate` broker endpoint is a Lovable-managed service that only runs on `*.lovable.app` domains. Your custom domain `hoopjournal.me` does not host this broker, so we **cannot** simply swap the broker URL to `hoopjournal.me/~oauth/initiate` -- it won't work.
+---
 
-However, what we **can** do is change the `redirect_uri` (the callback URL) to use `hoopjournal.me`, so after the OAuth flow completes, the user lands on your custom domain rather than lovable.app. The broker initiation still needs to go through lovable.app, but the visible callback redirect and the iOS dialog can be improved.
+## Native Google Sign-In — IMPLEMENTED
 
-## What Controls the iOS Dialog
+### What was built
 
-The iOS "Wants to Use X to Sign In" dialog shows the domain of the **OAuth provider's consent screen redirect**, which is determined by the `redirect_uri`. If we set `redirect_uri` to `https://hoopjournal.me/auth/callback`, the dialog should show `hoopjournal.me` instead of `lovable.app`.
+1. **Plugin** — `@codetrix-studio/capacitor-google-auth` installed
+2. **Native helper** (`src/lib/nativeGoogleAuth.ts`) — `initNativeGoogleAuth()` + `nativeGoogleSignIn()` using `signInWithIdToken`
+3. **AuthForm.tsx** — branches on `isNativeApp()`: native uses SDK, web keeps existing `lovable.auth.signInWithOAuth`
+4. **App.tsx** — initializes the Google Auth plugin on native startup
 
-## Plan
+### User action required
 
-### 1. Update `LOVABLE_APP_ORIGIN` usage in AuthForm.tsx
-
-- Keep `LOVABLE_APP_ORIGIN = 'https://hoopjournal123.lovable.app'` for the broker URL only (the `~oauth/initiate` endpoint)
-- Add a new constant `CUSTOM_DOMAIN_ORIGIN = 'https://hoopjournal.me'`
-- Change `callbackOrigin` and `redirectUri` to use the custom domain:
-  - For native: `https://hoopjournal.me/auth/callback`
-  - For web on custom domain: `https://hoopjournal.me/auth/callback`
-  - For lovable.app/iframe: keep existing behavior
-
-### 2. Update `handleCustomDomainOAuth`
-
-```
-callbackOrigin = native ? CUSTOM_DOMAIN_ORIGIN : window.location.origin;
-redirectUri = `${callbackOrigin}/auth/callback`;
-brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=...&redirect_uri=...`;
-```
-
-The broker stays on lovable.app, but the redirect after Google/Apple consent goes to `hoopjournal.me`.
-
-### 3. Update OAuthCallback.tsx deep link
-
-The `OAuthCallback` page on `hoopjournal.me` already exists (same codebase). No changes needed there -- it will receive tokens and handle the native deep-link handoff as before.
-
-### 4. Ensure custom domain is configured
-
-Your custom domain `hoopjournal.me` must be connected and active in project settings for this to work. The OAuth callback page at `hoopjournal.me/auth/callback` must be reachable.
-
-## Files to Change
-
-- **`src/components/AuthForm.tsx`**: Add `CUSTOM_DOMAIN_ORIGIN` constant, update `callbackOrigin` in `handleCustomDomainOAuth` and redirect URIs to prefer the custom domain.
-
+1. **Replace the Client ID** in `src/lib/nativeGoogleAuth.ts` line 10 — replace `REPLACE_WITH_YOUR_IOS_CLIENT_ID.apps.googleusercontent.com` with your iOS OAuth Client ID from [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. **Create an iOS OAuth Client ID** — type: iOS application, bundle ID: `app.lovable.2cd79f530f3e4e88858df49e60e86e08`
+3. **Add reversed client ID** as a URL scheme in Xcode (e.g. `com.googleusercontent.apps.XXXX`)
+4. Run `npm install` → `npx cap sync` → rebuild in Xcode → TestFlight
