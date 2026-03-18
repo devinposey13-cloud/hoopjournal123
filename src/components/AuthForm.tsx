@@ -267,9 +267,9 @@ export function AuthForm() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    const redirectUri = getManagedOAuthRedirectUri();
+    const redirectTo = `${LOVABLE_APP_ORIGIN}/auth/callback`;
 
-    logOAuthInit('google', redirectUri);
+    logOAuthInit('google', redirectTo);
 
     try {
       // Native (Despia) app: use system browser OAuth flow
