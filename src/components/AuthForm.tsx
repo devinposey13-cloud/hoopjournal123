@@ -12,6 +12,41 @@ import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
 import { isNativeApp } from '@/lib/platform';
 import { nativeGoogleSignIn } from '@/lib/nativeGoogleAuth';
+import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
+
+const CUSTOM_DOMAIN_ORIGIN = 'https://hoopjournal.me';
+const PUBLISHED_ORIGIN = 'https://hoopjournal123.lovable.app';
+
+/**
+ * Detect if running on a custom domain (not lovable infra or localhost).
+ * Native apps also count since their origin can't receive OAuth redirects.
+ */
+const isCustomDomain = () =>
+  isNativeApp() ||
+  (!window.location.hostname.includes('lovable.app') &&
+   !window.location.hostname.includes('lovableproject.com') &&
+   window.location.hostname !== 'localhost');
+
+/**
+ * Build a direct Supabase OAuth URL using skipBrowserRedirect.
+ * This bypasses any broker/wrapper and gives us the raw URL to open.
+ */
+const getDirectOAuthUrl = async (
+  provider: 'google' | 'apple',
+  redirectTo: string
+): Promise<string> => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true,
+      queryParams: provider === 'google' ? { prompt: 'select_account' } : undefined,
+    },
+  });
+  if (error) throw error;
+  if (!data?.url) throw new Error('No OAuth URL returned from Supabase');
+  return data.url;
+};
 
 // Normalize phone number to E.164 format (+1XXXXXXXXXX)
 const normalizePhoneNumber = (phone: string): string => {
