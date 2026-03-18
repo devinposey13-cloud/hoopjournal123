@@ -10,8 +10,6 @@ import { ProfileProvider } from "@/components/profile/ProfileProvider";
 import { PlanContext, usePlanState } from "@/hooks/usePlanState";
 import { GlobalPaywall } from "@/components/paywall/GlobalPaywall";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
-import { checkUrlForOAuthError, formatErrorWithCode } from "@/utils/oauthErrors";
-import { setupNativeOAuthListener } from "@/lib/nativeOAuth";
 import { isNativeApp } from "@/lib/platform";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
