@@ -51,7 +51,7 @@ const isAllowedUrl = (urlString: string): boolean => {
     ) {
       return false;
     }
-    return true;
+    return ALLOWED_DOMAINS.some(d => hostname === d || hostname.endsWith('.' + d));
   } catch {
     return false;
   }
