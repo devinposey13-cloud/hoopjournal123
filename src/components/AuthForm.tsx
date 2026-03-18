@@ -123,9 +123,10 @@ export function AuthForm() {
     console.log(`[OAuth] callbackOrigin: ${callbackOrigin}`);
     console.log(`[OAuth] redirect_uri: ${redirectUri}`);
     console.log(`[OAuth] brokerUrl: ${brokerUrl}`);
-    console.log(`[OAuth] Code path: ${native ? 'NATIVE (system browser)' : 'WEB (window.location redirect)'}`);
+    console.log(`[OAuth] urlToOpen: ${urlToOpen}`);
+    console.log(`[OAuth] Code path: ${native ? 'NATIVE (system browser via bridge)' : 'WEB (window.location redirect)'}`);
 
-    await openOAuthInSystemBrowser(brokerUrl);
+    await openOAuthInSystemBrowser(urlToOpen);
   };
 
   const isInIframe = (() => {
