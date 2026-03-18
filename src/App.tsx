@@ -31,7 +31,6 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Notifications from "./pages/Notifications";
 import OAuthCallback from "./pages/OAuthCallback";
-import OAuthBridge from "./pages/OAuthBridge";
 import ParentDashboard from "./pages/ParentDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -113,7 +112,7 @@ const App = () => (
                 
                 <Routes>
                   <Route path="/auth/callback" element={<OAuthCallback />} />
-                  <Route path="/oauth-bridge" element={<OAuthBridge />} />
+                  
                   <Route path="/" element={<Index />} />
                   <Route path="/log" element={<Log />} />
                   <Route path="/log/:subTab" element={<Log />} />
