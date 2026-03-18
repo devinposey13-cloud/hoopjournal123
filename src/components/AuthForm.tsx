@@ -111,15 +111,22 @@ export function AuthForm() {
     const redirectUri = `${callbackOrigin}/auth/callback`;
     const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
+    // On native, open hoopjournal.me/oauth-bridge first so iOS dialog shows
+    // "hoopjournal.me" instead of "lovable.app", then it redirects to the broker.
+    const urlToOpen = native
+      ? `${CUSTOM_DOMAIN_ORIGIN}/oauth-bridge?broker_url=${encodeURIComponent(brokerUrl)}`
+      : brokerUrl;
+
     console.log(`[OAuth] ===== ${provider.toUpperCase()} OAUTH DEBUG =====`);
     console.log(`[OAuth] isNativeApp(): ${native}`);
     console.log(`[OAuth] isCustomDomain: ${isCustomDomain}`);
     console.log(`[OAuth] callbackOrigin: ${callbackOrigin}`);
     console.log(`[OAuth] redirect_uri: ${redirectUri}`);
     console.log(`[OAuth] brokerUrl: ${brokerUrl}`);
-    console.log(`[OAuth] Code path: ${native ? 'NATIVE (system browser)' : 'WEB (window.location redirect)'}`);
+    console.log(`[OAuth] urlToOpen: ${urlToOpen}`);
+    console.log(`[OAuth] Code path: ${native ? 'NATIVE (system browser via bridge)' : 'WEB (window.location redirect)'}`);
 
-    await openOAuthInSystemBrowser(brokerUrl);
+    await openOAuthInSystemBrowser(urlToOpen);
   };
 
   const isInIframe = (() => {
