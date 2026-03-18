@@ -2223,6 +2223,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      plan_overrides_sensitive_unchanged: {
+        Args: {
+          _new_admin_override_plan: string
+          _new_subscription_plan: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
