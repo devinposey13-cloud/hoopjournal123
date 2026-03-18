@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from '../_shared/cors.ts';
 
 const AVATAR_PROMPT = "Create a stylized illustrated portrait of the person in this photo as a basketball player avatar. CRITICAL: You MUST precisely preserve the person's exact facial structure, skin tone, eye shape, nose shape, mouth shape, hairstyle, hair color, and any distinguishing facial features — the result must be immediately recognizable as the same person. Apply a vibrant digital illustration style similar to NBA 2K cover art or trading card illustrations. Use dynamic lighting with rim lighting effects. Add a subtle basketball-themed background with soft bokeh court lights. The style should be polished and professional while keeping the likeness perfectly intact. IMPORTANT: Do NOT add any text, names, nicknames, labels, watermarks, or any written words anywhere in the image. The image must contain zero text of any kind.";
@@ -64,6 +65,26 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { imageUrl } = await req.json();
 
     if (!imageUrl) {
