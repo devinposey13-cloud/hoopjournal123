@@ -192,7 +192,7 @@ export function AuthForm() {
 
     // Get direct OAuth URL with popup callback on the current origin
     const popupRedirectTo = `${window.location.origin}/auth/callback?popup=1&provider=${provider}`;
-    const oauthUrl = await getDirectOAuthUrl(provider, popupRedirectTo);
+    const oauthUrl = await getDirectOAuthUrl(provider, popupRedirectTo, 'popup');
     console.log('[OAuth] Popup redirectTo:', popupRedirectTo);
     console.log('[OAuth] OAuth URL:', oauthUrl.substring(0, 100) + '...');
     const popup = window.open(oauthUrl, `hoopjournal_${provider}_oauth`, 'width=520,height=720');
