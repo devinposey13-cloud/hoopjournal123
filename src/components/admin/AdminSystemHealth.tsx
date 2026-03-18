@@ -41,13 +41,11 @@ export function AdminSystemHealth() {
     // Check API (edge functions)
     try {
       const start = Date.now();
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscription`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+      const { error } = await supabase.functions.invoke('check-subscription', {
+        body: {},
       });
       const duration = Date.now() - start;
-      newHealth.api = response.status >= 500 ? 'offline' : duration > 5000 ? 'degraded' : 'online';
+      newHealth.api = error ? 'degraded' : duration > 5000 ? 'degraded' : 'online';
     } catch {
       newHealth.api = 'offline';
     }
