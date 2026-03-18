@@ -11,8 +11,7 @@ import { lovable } from '@/integrations/lovable';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
-import { isNativeApp } from '@/lib/platform';
-import { nativeGoogleSignIn } from '@/lib/nativeGoogleAuth';
+import { isNativeApp, getPlatform } from '@/lib/platform';
 import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
 
 const CUSTOM_DOMAIN_ORIGIN = 'https://hoopjournal.me';
@@ -92,24 +91,32 @@ export function AuthForm() {
   // ─── Google Sign-In ───────────────────────────────────────────────
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
+    const platform = getPlatform();
+    console.log(`[Auth:Google] Platform: ${platform}, isNative: ${isNativeApp()}`);
 
     try {
       if (isNativeApp()) {
-        console.log('[Auth] Starting native Google Sign-In (Capacitor SDK)');
+        // ── DESPIA NATIVE: Open system browser via Despia bridge ──
+        const redirectTo = `${CUSTOM_DOMAIN_ORIGIN}/auth/callback`;
+        console.log(`[Auth:Google] Despia native flow, redirectTo: ${redirectTo}`);
+
         googleTimeoutRef.current = window.setTimeout(() => {
           setGoogleLoading(false);
           toast.error('Google sign-in took too long. Please try again.');
-        }, 25000);
+        }, 30000);
 
-        await nativeGoogleSignIn();
-        console.log('[Auth] Native Google Sign-In completed');
+        const oauthUrl = await getDirectOAuthUrl('google', redirectTo);
+        console.log(`[Auth:Google] OAuth URL generated, opening in system browser`);
+        await openOAuthInSystemBrowser(oauthUrl);
         return;
       }
 
-      console.log('[Auth] Starting managed Google Sign-In');
+      // ── WEB: Use Lovable managed OAuth ──
+      console.log('[Auth:Google] Web flow via lovable.auth');
       const redirectUri = isCustomDomain()
         ? `${window.location.origin}/auth/callback`
         : window.location.origin;
+      console.log(`[Auth:Google] Redirect URI: ${redirectUri}`);
 
       const { error } = await lovable.auth.signInWithOAuth('google', {
         redirect_uri: redirectUri,
@@ -118,7 +125,7 @@ export function AuthForm() {
 
       if (error) throw error;
     } catch (error: unknown) {
-      console.error('[Auth] Google sign-in error:', error);
+      console.error('[Auth:Google] Sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Google sign-in failed';
       toast.error(message);
       setGoogleLoading(false);

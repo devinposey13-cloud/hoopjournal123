@@ -10,7 +10,7 @@ import { ProfileProvider } from "@/components/profile/ProfileProvider";
 import { PlanContext, usePlanState } from "@/hooks/usePlanState";
 import { GlobalPaywall } from "@/components/paywall/GlobalPaywall";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
-import { isNativeApp } from "@/lib/platform";
+import { isNativeApp, getPlatform } from "@/lib/platform";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Index from "./pages/Index";
@@ -55,16 +55,12 @@ function OAuthErrorHandler() {
   return null;
 }
 
-// Initialize native Google Auth on startup
-function NativeAuthInitializer() {
+// Log runtime environment on startup
+function RuntimeLogger() {
   useEffect(() => {
-    if (!isNativeApp()) return;
-    console.log('[NativeAuth] Initializing native Google Auth SDK');
-    import('@/lib/nativeGoogleAuth').then(({ initNativeGoogleAuth }) => {
-      initNativeGoogleAuth();
-    }).catch(err => {
-      console.warn('[NativeAuth] Failed to init native Google Auth:', err);
-    });
+    const platform = getPlatform();
+    const native = isNativeApp();
+    console.log(`[Runtime] Platform: ${platform}, isNative: ${native}, UA: ${navigator.userAgent}`);
   }, []);
   
   return null;
@@ -87,7 +83,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <OAuthErrorHandler />
-              <NativeAuthInitializer />
+              <RuntimeLogger />
               <BrowserRouter>
                 <GlobalPaywall />
                 
