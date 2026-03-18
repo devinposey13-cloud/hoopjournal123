@@ -9,8 +9,8 @@
 import { isNativeApp } from '@/lib/platform';
 import { toast } from 'sonner';
 
-// Custom URL scheme registered in the native app's Info.plist
-export const NATIVE_URL_SCHEME = 'hoopjournal';
+// Re-export for backward compatibility
+export { NATIVE_URL_SCHEME } from '@/lib/authConfig';
 
 /**
  * Open OAuth in the secure native browser session.

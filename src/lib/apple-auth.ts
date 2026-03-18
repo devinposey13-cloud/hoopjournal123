@@ -8,12 +8,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { getPlatform } from '@/lib/platform';
-
-// Your Apple Service ID (public identifier — safe for frontend).
-// Must match what's configured in Lovable Cloud Auth Settings for Apple.
-const APPLE_CLIENT_ID = 'com.hoopjournal.web';
-
-const APP_URL = 'https://hoopjournal.me';
+import { APPLE_CLIENT_ID, APPLE_REDIRECT_URI } from '@/lib/authConfig';
 
 declare global {
   interface Window {
@@ -53,7 +48,7 @@ export function initAppleAuth(): void {
       window.AppleID.auth.init({
         clientId: APPLE_CLIENT_ID,
         scope: 'name email',
-        redirectURI: `${APP_URL}/auth/apple/callback`,
+        redirectURI: APPLE_REDIRECT_URI,
         usePopup: false,
       });
       console.log('[AppleAuth] JS SDK initialized');

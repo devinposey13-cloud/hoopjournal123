@@ -14,14 +14,12 @@ import { Separator } from '@/components/ui/separator';
 import { isNativeApp, getPlatform, isDespiaIOS } from '@/lib/platform';
 import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
 import { signInWithAppleNative, isAppleJSAvailable } from '@/lib/apple-auth';
-
-const CUSTOM_DOMAIN_ORIGIN = 'https://hoopjournal.me';
-const PUBLISHED_ORIGIN = 'https://hoopjournal123.lovable.app';
-
-const isCustomDomain = () =>
-  !window.location.hostname.includes('lovable.app') &&
-  !window.location.hostname.includes('lovableproject.com') &&
-  window.location.hostname !== 'localhost';
+import {
+  APP_ORIGIN,
+  PUBLISHED_ORIGIN,
+  isCustomDomain,
+  getOAuthRedirectUri,
+} from '@/lib/authConfig';
 
 const getDirectOAuthUrl = async (
   provider: 'google' | 'apple',
@@ -98,7 +96,7 @@ export function AuthForm() {
     try {
       if (isNativeApp()) {
         // ── DESPIA NATIVE: Open system browser via Despia bridge ──
-        const redirectTo = `${CUSTOM_DOMAIN_ORIGIN}/auth/callback`;
+        const redirectTo = getOAuthRedirectUri({ forNative: true });
         console.log(`[Auth:Google] Despia native flow, redirectTo: ${redirectTo}`);
 
         googleTimeoutRef.current = window.setTimeout(() => {
@@ -114,9 +112,7 @@ export function AuthForm() {
 
       // ── WEB: Use Lovable managed OAuth ──
       console.log('[Auth:Google] Web flow via lovable.auth');
-      const redirectUri = isCustomDomain()
-        ? `${window.location.origin}/auth/callback`
-        : window.location.origin;
+      const redirectUri = getOAuthRedirectUri();
       console.log(`[Auth:Google] Redirect URI: ${redirectUri}`);
 
       const { error } = await lovable.auth.signInWithOAuth('google', {
@@ -149,9 +145,7 @@ export function AuthForm() {
       // ── WEB: Use Lovable managed OAuth ──
       if (!isNativeApp()) {
         console.log('[Auth:Apple] Web flow via lovable.auth');
-        const redirectUri = isCustomDomain()
-          ? `${window.location.origin}/auth/callback`
-          : window.location.origin;
+        const redirectUri = getOAuthRedirectUri();
 
         const { error } = await lovable.auth.signInWithOAuth('apple', {
           redirect_uri: redirectUri,
@@ -163,7 +157,7 @@ export function AuthForm() {
 
       // ── ANDROID NATIVE / FALLBACK: Use OAuth redirect via system browser ──
       console.log('[Auth:Apple] Native fallback — OAuth redirect');
-      const redirectTo = `${PUBLISHED_ORIGIN}/auth/callback`;
+      const redirectTo = getOAuthRedirectUri({ forNative: true });
       const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
       await openOAuthInSystemBrowser(oauthUrl);
     } catch (error: unknown) {

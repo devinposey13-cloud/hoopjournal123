@@ -1,4 +1,7 @@
-export const NATIVE_URL_SCHEME = 'hoopjournal';
+import { NATIVE_URL_SCHEME, APP_DOMAIN } from '@/lib/authConfig';
+
+// Re-export for backward compatibility
+export { NATIVE_URL_SCHEME };
 
 type NativeReturnParams = {
   code?: string | null;
@@ -19,7 +22,7 @@ export function isMobileSystemBrowserOAuthReturn({
   native,
   userAgent,
 }: SystemBrowserReturnParams): boolean {
-  return !native && /iPhone|iPad|iPod|Android/i.test(userAgent) && hostname.includes('hoopjournal.me');
+  return !native && /iPhone|iPad|iPod|Android/i.test(userAgent) && hostname.includes(APP_DOMAIN);
 }
 
 export function buildNativeOAuthReturnUrl({
