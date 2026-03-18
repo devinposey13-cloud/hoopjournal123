@@ -142,11 +142,21 @@ export function AuthForm() {
     try { await clearServiceWorkerCaches(); } catch (_) {}
 
     const native = isNativeApp();
-    // Native must return directly to the app scheme so the TestFlight build
-    // regains control instead of landing on a web callback page in Safari.
+
+    // IMPORTANT: Supabase CANNOT redirect to custom URL schemes (hoopjournal://).
+    //
+    // Native: redirect to the lovable.app callback page. OAuthCallback.tsx already
+    //   detects mobile user-agents on lovable.app and deep-links tokens into the
+    //   native app via hoopjournal://oauth/auth/callback. This is the only flow
+    //   that works reliably with Supabase + iOS system browser.
+    //
+    // Web (hoopjournal.me): redirect BACK to hoopjournal.me/auth/callback so the
+    //   user stays in the same browser tab. Previously this pointed at lovable.app,
+    //   which opened a new tab / context.
     const redirectTo = native
-      ? 'hoopjournal://oauth/auth/callback'
-      : `${LOVABLE_APP_ORIGIN}/auth/callback`;
+      ? `${LOVABLE_APP_ORIGIN}/auth/callback`
+      : `${CUSTOM_DOMAIN_ORIGIN}/auth/callback`;
+
     const oauthUrl = await getDirectOAuthUrl(provider, redirectTo, native);
 
     // On native, open hoopjournal.me/oauth-bridge first so iOS shows the custom
@@ -161,7 +171,7 @@ export function AuthForm() {
     console.log(`[OAuth] redirectTo: ${redirectTo}`);
     console.log(`[OAuth] oauthUrl: ${oauthUrl.substring(0, 100)}...`);
     console.log(`[OAuth] urlToOpen: ${urlToOpen.substring(0, 100)}...`);
-    console.log(`[OAuth] Code path: ${native ? 'NATIVE (system browser via bridge -> app scheme)' : 'WEB (direct redirect)'}`);
+    console.log(`[OAuth] Code path: ${native ? 'NATIVE (system browser via bridge -> lovable.app -> deep link)' : 'WEB (direct redirect -> hoopjournal.me/auth/callback)'}`);
 
     await openOAuthInSystemBrowser(urlToOpen);
   };
