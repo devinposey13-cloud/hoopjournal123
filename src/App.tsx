@@ -83,7 +83,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <OAuthErrorHandler />
-              <NativeAuthInitializer />
+              <RuntimeLogger />
               <BrowserRouter>
                 <GlobalPaywall />
                 

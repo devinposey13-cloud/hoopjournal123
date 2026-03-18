@@ -2,17 +2,21 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
-import { isNativeApp } from '@/lib/platform';
+import { isNativeApp, getPlatform } from '@/lib/platform';
 
 const NATIVE_URL_SCHEME = 'hoopjournal';
 
 /**
- * OAuth callback handler.
- * 
+ * OAuth callback handler — supports both web and Despia native.
+ *
  * WEB: Supabase PKCE auto-exchanges the code via detectSessionInUrl,
  *      then we redirect to /.
- * NATIVE: If on web but mobile UA (system browser after OAuth),
- *         deep-link tokens back to the native app.
+ *
+ * DESPIA NATIVE (system browser on hoopjournal.me):
+ *   1. PKCE code exchange happens automatically (same domain as redirectTo).
+ *   2. If we're in the system browser (mobile UA, not inside Despia),
+ *      deep-link tokens back to the native app via Universal Links / custom scheme.
+ *   3. If we're already inside Despia (Universal Link returned us), just navigate to /.
  */
 export default function OAuthCallback() {
   const navigate = useNavigate();
@@ -25,14 +29,18 @@ export default function OAuthCallback() {
     const handleCallback = async () => {
       const hash = window.location.hash;
       const search = window.location.search;
+      const platform = getPlatform();
+      const native = isNativeApp();
 
-      console.log('[OAuthCallback] Processing callback...');
+      console.log(`[OAuthCallback] Processing callback — platform: ${platform}, isNative: ${native}`);
+      console.log(`[OAuthCallback] URL: ${window.location.href}`);
 
       const hashParams = new URLSearchParams(hash.replace('#', ''));
       const queryParams = new URLSearchParams(search);
 
       const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+      const code = queryParams.get('code');
       const errorParam = hashParams.get('error') || queryParams.get('error');
       const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
 
@@ -44,33 +52,53 @@ export default function OAuthCallback() {
         return;
       }
 
+      // ── Inside Despia native shell: session was set, just go home ──
+      if (native) {
+        console.log('[OAuthCallback] Inside Despia shell — waiting for session...');
+        await waitForSession();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          console.log('[OAuthCallback] Session active in Despia, navigating home');
+          navigate('/', { replace: true });
+        } else {
+          console.warn('[OAuthCallback] No session found in Despia shell');
+          setError('Session could not be restored. Please try signing in again.');
+          setTimeout(() => navigate('/', { replace: true }), 3000);
+        }
+        return;
+      }
+
       // ── Tokens in URL (implicit grant or native redirect) ──
       if (accessToken && refreshToken) {
         console.log('[OAuthCallback] Tokens found in URL');
 
-        // Check if system browser opened by native app
+        // Check if system browser opened by Despia native app
         const isMobileUA = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        const isOnPublishedDomain = window.location.hostname.includes('lovable.app') || 
+        const isOnPublishedDomain = window.location.hostname.includes('lovable.app') ||
                                      window.location.hostname.includes('hoopjournal.me');
 
-        if (isMobileUA && isOnPublishedDomain && !isNativeApp()) {
-          console.log('[OAuthCallback] Mobile browser — redirecting to native app');
+        if (isMobileUA && isOnPublishedDomain) {
+          console.log('[OAuthCallback] Mobile system browser — deep-linking tokens to native app');
           setRedirectingToApp(true);
 
+          // Set session in case Universal Link brings us back to the same page
+          try {
+            await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+            console.log('[OAuthCallback] Session set in system browser');
+          } catch (e) {
+            console.error('[OAuthCallback] setSession error in system browser:', e);
+          }
+
+          // Deep-link to native app with tokens
           const deepLink = `${NATIVE_URL_SCHEME}://oauth/auth/callback?access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`;
+          setDeepLinkUrl(deepLink);
           window.location.href = deepLink;
 
           // Fallback if deep link fails
-          setTimeout(async () => {
-            try {
-              await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-            } catch (e) {
-              console.error('[OAuthCallback] Fallback session error:', e);
-            }
+          setTimeout(() => {
             setRedirectingToApp(false);
             setShowReturnButton(true);
-            setDeepLinkUrl(deepLink);
-          }, 2500);
+          }, 3000);
           return;
         }
 
@@ -88,7 +116,7 @@ export default function OAuthCallback() {
             return;
           }
 
-          console.log('[OAuthCallback] Session set successfully');
+          console.log('[OAuthCallback] Session set successfully (web)');
           window.history.replaceState({}, '', '/auth/callback');
           navigate('/', { replace: true });
         } catch (e: unknown) {
@@ -99,19 +127,41 @@ export default function OAuthCallback() {
         return;
       }
 
-      // ── PKCE flow: Supabase client auto-exchanges code via detectSessionInUrl ──
-      // Wait briefly for the auth state change to fire
-      console.log('[OAuthCallback] No tokens in URL — waiting for PKCE exchange...');
-      
-      // Give Supabase client time to detect and exchange the code
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      // ── PKCE flow: code in URL or Supabase client auto-exchanges ──
+      if (code) {
+        console.log('[OAuthCallback] PKCE code found, waiting for Supabase to exchange...');
+      } else {
+        console.log('[OAuthCallback] No tokens or code — waiting for PKCE exchange...');
+      }
+
+      await waitForSession();
+
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        console.log('[OAuthCallback] Session established via PKCE');
+        console.log(`[OAuthCallback] Session established via PKCE — provider: ${session.user?.app_metadata?.provider}`);
+
+        // If in system browser on mobile, deep-link back to app
+        const isMobileUA = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isOnCustomDomain = window.location.hostname.includes('hoopjournal.me');
+
+        if (isMobileUA && isOnCustomDomain) {
+          console.log('[OAuthCallback] PKCE complete in system browser — deep-linking to app');
+          setRedirectingToApp(true);
+
+          const deepLink = `${NATIVE_URL_SCHEME}://oauth/auth/callback?access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}`;
+          setDeepLinkUrl(deepLink);
+          window.location.href = deepLink;
+
+          setTimeout(() => {
+            setRedirectingToApp(false);
+            setShowReturnButton(true);
+          }, 3000);
+          return;
+        }
+
         navigate('/', { replace: true });
       } else {
-        console.log('[OAuthCallback] No session found, redirecting to login');
+        console.warn('[OAuthCallback] No session after PKCE wait');
         navigate('/', { replace: true });
       }
     };
@@ -156,4 +206,30 @@ export default function OAuthCallback() {
       </div>
     </div>
   );
+}
+
+/** Wait up to 5s for Supabase to hydrate the session (PKCE exchange). */
+async function waitForSession(): Promise<void> {
+  return new Promise((resolve) => {
+    let resolved = false;
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (!resolved) {
+          resolved = true;
+          sub.subscription.unsubscribe();
+          resolve();
+        }
+      }
+    });
+
+    // Safety timeout
+    setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        sub.subscription.unsubscribe();
+        resolve();
+      }
+    }, 5000);
+  });
 }
