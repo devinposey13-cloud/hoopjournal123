@@ -347,9 +347,9 @@ export function AuthForm() {
 
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
-    const redirectUri = getManagedOAuthRedirectUri();
+    const redirectTo = `${LOVABLE_APP_ORIGIN}/auth/callback`;
 
-    logOAuthInit('apple', redirectUri);
+    logOAuthInit('apple', redirectTo);
 
     try {
       if (!isNativeApp() && isInIframe) {
