@@ -6,12 +6,38 @@ import { isNativeApp, getPlatform } from '@/lib/platform';
 import { buildNativeOAuthReturnUrl, isMobileSystemBrowserOAuthReturn } from '@/lib/oauthCallback';
 
 /**
+ * PRE-CAPTURE: Grab tokens from the URL immediately at module load time,
+ * BEFORE the Supabase client's detectSessionInUrl can consume/clear the hash.
+ * This prevents the "Auth session missing" error in implicit grant flows.
+ */
+const _capturedUrl = window.location.href;
+const _capturedHash = window.location.hash;
+const _capturedSearch = window.location.search;
+const _hashParams = new URLSearchParams(_capturedHash.replace('#', ''));
+const _queryParams = new URLSearchParams(_capturedSearch);
+const _preCapturedTokens = {
+  accessToken: _hashParams.get('access_token') || _queryParams.get('access_token'),
+  refreshToken: _hashParams.get('refresh_token') || _queryParams.get('refresh_token'),
+  code: _queryParams.get('code'),
+  error: _hashParams.get('error') || _queryParams.get('error'),
+  errorDescription: _hashParams.get('error_description') || _queryParams.get('error_description'),
+};
+
+console.log('[OAuthCallback:module] Pre-captured tokens —', {
+  accessToken: !!_preCapturedTokens.accessToken,
+  refreshToken: !!_preCapturedTokens.refreshToken,
+  code: !!_preCapturedTokens.code,
+  error: !!_preCapturedTokens.error,
+  url: _capturedUrl,
+});
+
+/**
  * OAuth callback handler — supports both web and Despia native.
  *
  * Key flow:
- * 1. Parse URL for code, tokens, or errors
+ * 1. Parse URL for code, tokens, or errors (pre-captured at module load)
  * 2. If code present → explicitly call exchangeCodeForSession(code)
- * 3. If tokens present → call setSession
+ * 3. If tokens present → call setSession (implicit grant)
  * 4. Verify session exists before redirecting
  * 5. For Despia system browser → deep-link tokens back to native app
  */
