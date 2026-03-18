@@ -148,9 +148,9 @@ export function AuthForm() {
   const handleIframePopupOAuth = async (provider: 'google' | 'apple') => {
     await clearServiceWorkerCaches();
 
-    // Redirect popup back to the SAME origin as this iframe so BroadcastChannel works
-    const popupRedirectUri = `${window.location.origin}/auth/callback?popup=1&provider=${provider}`;
-    const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(popupRedirectUri)}`;
+    // Redirect popup through managed OAuth using the current origin.
+    const popupRedirectUri = window.location.origin;
+    const brokerUrl = buildBrokerUrl(provider, popupRedirectUri);
     console.log('[OAuth] Popup redirect_uri:', popupRedirectUri);
     console.log('[OAuth] Broker URL:', brokerUrl);
     const popup = window.open(brokerUrl, `hoopjournal_${provider}_oauth`, 'width=520,height=720');
