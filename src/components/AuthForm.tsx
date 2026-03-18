@@ -158,7 +158,16 @@ export function AuthForm() {
         return;
       }
 
-      // ── WEB: Use Lovable managed OAuth ──
+      // ── MOBILE WEB on custom domain: bypass Lovable broker ──
+      if (!isNativeApp() && isMobileWeb() && isCustomDomain()) {
+        console.log('[Auth:Apple] Mobile web on custom domain — using direct OAuth');
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
+        window.location.href = oauthUrl;
+        return;
+      }
+
+      // ── DESKTOP WEB: Use Lovable managed OAuth ──
       if (!isNativeApp()) {
         console.log('[Auth:Apple] Web flow via lovable.auth');
         const redirectUri = getOAuthRedirectUri();
