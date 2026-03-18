@@ -145,9 +145,7 @@ export function AuthForm() {
       // ── WEB: Use Lovable managed OAuth ──
       if (!isNativeApp()) {
         console.log('[Auth:Apple] Web flow via lovable.auth');
-        const redirectUri = isCustomDomain()
-          ? `${window.location.origin}/auth/callback`
-          : window.location.origin;
+        const redirectUri = getOAuthRedirectUri();
 
         const { error } = await lovable.auth.signInWithOAuth('apple', {
           redirect_uri: redirectUri,
