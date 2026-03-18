@@ -11,8 +11,9 @@ import { lovable } from '@/integrations/lovable';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
-import { isNativeApp, getPlatform } from '@/lib/platform';
+import { isNativeApp, getPlatform, isDespiaIOS } from '@/lib/platform';
 import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
+import { signInWithAppleNative, isAppleJSAvailable } from '@/lib/apple-auth';
 
 const CUSTOM_DOMAIN_ORIGIN = 'https://hoopjournal.me';
 const PUBLISHED_ORIGIN = 'https://hoopjournal123.lovable.app';
@@ -137,32 +138,41 @@ export function AuthForm() {
     setAppleLoading(true);
 
     try {
-      if (isNativeApp() || isCustomDomain()) {
-        // ── NATIVE / CUSTOM DOMAIN: Direct Supabase OAuth + skipBrowserRedirect ──
-        const redirectTo = isNativeApp()
-          ? `${PUBLISHED_ORIGIN}/auth/callback`
-          : `${CUSTOM_DOMAIN_ORIGIN}/auth/callback`;
-        console.log('[Auth] Direct Apple Sign-In, redirectTo:', redirectTo);
-
-        const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
-        await openOAuthInSystemBrowser(oauthUrl);
+      // ── iOS NATIVE: Use Apple JS SDK for native Face ID / Touch ID dialog ──
+      if (isDespiaIOS() && isAppleJSAvailable()) {
+        console.log('[Auth:Apple] iOS native — using Apple JS SDK');
+        await signInWithAppleNative();
+        // Session is set automatically by signInWithIdToken
         return;
       }
 
-      // ── STANDARD WEB ──
-      console.log('[Auth] Standard web Apple Sign-In (same-tab redirect)');
-      const redirectTo = `${window.location.origin}/auth/callback`;
+      // ── WEB: Use Lovable managed OAuth ──
+      if (!isNativeApp()) {
+        console.log('[Auth:Apple] Web flow via lovable.auth');
+        const redirectUri = isCustomDomain()
+          ? `${window.location.origin}/auth/callback`
+          : window.location.origin;
 
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: { redirectTo },
-      });
+        const { error } = await lovable.auth.signInWithOAuth('apple', {
+          redirect_uri: redirectUri,
+        });
 
-      if (error) throw error;
+        if (error) throw error;
+        return;
+      }
+
+      // ── ANDROID NATIVE / FALLBACK: Use OAuth redirect via system browser ──
+      console.log('[Auth:Apple] Native fallback — OAuth redirect');
+      const redirectTo = `${PUBLISHED_ORIGIN}/auth/callback`;
+      const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
+      await openOAuthInSystemBrowser(oauthUrl);
     } catch (error: unknown) {
-      console.error('[Auth] Apple sign-in error:', error);
+      console.error('[Auth:Apple] Sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Apple sign-in failed';
-      toast.error(message);
+      if (message !== 'Sign in cancelled') {
+        toast.error(message);
+      }
+    } finally {
       setAppleLoading(false);
     }
   };
