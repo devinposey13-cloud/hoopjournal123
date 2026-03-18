@@ -190,10 +190,11 @@ export function AuthForm() {
   const handleIframePopupOAuth = async (provider: 'google' | 'apple') => {
     await clearServiceWorkerCaches();
 
-    // In preview/iframe mode, always land the popup callback on the stable
-    // lovable.app callback page, then hand tokens back to the preview opener
-    // via postMessage using the current origin as target_origin.
-    const popupRedirectTo = `${LOVABLE_APP_ORIGIN}/auth/callback?popup=1&provider=${provider}&target_origin=${encodeURIComponent(window.location.origin)}`;
+    // In preview/iframe mode, land first on the stable lovable.app callback,
+    // then bounce back to the preview callback origin for same-origin popup
+    // handoff to the opener.
+    const popupTargetUrl = `${window.location.origin}/auth/callback?popup=1&provider=${provider}`;
+    const popupRedirectTo = `${LOVABLE_APP_ORIGIN}/auth/callback?popup=1&provider=${provider}&target_origin=${encodeURIComponent(window.location.origin)}&target_url=${encodeURIComponent(popupTargetUrl)}`;
     const oauthUrl = await getDirectOAuthUrl(provider, popupRedirectTo, 'popup');
     console.log('[OAuth] Popup redirectTo:', popupRedirectTo);
     console.log('[OAuth] OAuth URL:', oauthUrl.substring(0, 100) + '...');
