@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 interface CoachMemory {
   memory_type: string;
@@ -69,7 +65,47 @@ function formatMemoriesForRecap(memories: CoachMemory[]): string {
   return context;
 }
 
+// Sanitize a string for use in AI prompts: strip newlines, control chars, limit length
+function sanitizeString(value: unknown, maxLength = 100): string {
+  if (typeof value !== 'string') return '';
+  return value.replace(/[\n\r\t]/g, ' ').replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, '').trim().slice(0, maxLength);
+}
+
+// Clamp a numeric stat value to a safe range
+function clampStat(value: unknown, min = 0, max = 200): number {
+  const num = Number(value);
+  if (isNaN(num)) return 0;
+  return Math.max(min, Math.min(max, Math.round(num)));
+}
+
+// Validate and sanitize all game stats from client input
+function validateGameStats(raw: Record<string, unknown>) {
+  return {
+    points: clampStat(raw.points, 0, 150),
+    fgMade: clampStat(raw.fgMade, 0, 100),
+    fgAttempted: clampStat(raw.fgAttempted, 0, 100),
+    threePtMade: clampStat(raw.threePtMade, 0, 50),
+    threePtAttempted: clampStat(raw.threePtAttempted, 0, 50),
+    ftMade: clampStat(raw.ftMade, 0, 50),
+    ftAttempted: clampStat(raw.ftAttempted, 0, 50),
+    rebounds: clampStat(raw.rebounds, 0, 50),
+    offensiveRebounds: raw.offensiveRebounds != null ? clampStat(raw.offensiveRebounds, 0, 30) : undefined,
+    defensiveRebounds: raw.defensiveRebounds != null ? clampStat(raw.defensiveRebounds, 0, 30) : undefined,
+    assists: clampStat(raw.assists, 0, 50),
+    steals: clampStat(raw.steals, 0, 30),
+    blocks: clampStat(raw.blocks, 0, 30),
+    turnovers: clampStat(raw.turnovers, 0, 30),
+    isWin: typeof raw.isWin === 'boolean' ? raw.isWin : false,
+    opponent: sanitizeString(raw.opponent, 100) || 'Unknown',
+    halftimeScoreUs: raw.halftimeScoreUs != null ? clampStat(raw.halftimeScoreUs, 0, 300) : undefined,
+    halftimeScoreThem: raw.halftimeScoreThem != null ? clampStat(raw.halftimeScoreThem, 0, 300) : undefined,
+    finalScoreUs: raw.finalScoreUs != null ? clampStat(raw.finalScoreUs, 0, 300) : undefined,
+    finalScoreThem: raw.finalScoreThem != null ? clampStat(raw.finalScoreThem, 0, 300) : undefined,
+  };
+}
+
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -109,13 +145,26 @@ serve(async (req) => {
       });
     }
 
-    const { gameStats, earnedMilestones, playerName, courtRole, seasonGoals, halftimeScoreUs, halftimeScoreThem, finalScoreUs, finalScoreThem } = await req.json();
+    const { gameStats: rawGameStats, earnedMilestones, playerName, courtRole, seasonGoals, halftimeScoreUs, halftimeScoreThem, finalScoreUs, finalScoreThem } = await req.json();
     
-    // Merge team scores into gameStats for processing
-    if (halftimeScoreUs !== undefined) gameStats.halftimeScoreUs = halftimeScoreUs;
-    if (halftimeScoreThem !== undefined) gameStats.halftimeScoreThem = halftimeScoreThem;
-    if (finalScoreUs !== undefined) gameStats.finalScoreUs = finalScoreUs;
-    if (finalScoreThem !== undefined) gameStats.finalScoreThem = finalScoreThem;
+    // Validate and sanitize all client-supplied game stats
+    const rawWithScores = { ...rawGameStats };
+    if (halftimeScoreUs !== undefined) rawWithScores.halftimeScoreUs = halftimeScoreUs;
+    if (halftimeScoreThem !== undefined) rawWithScores.halftimeScoreThem = halftimeScoreThem;
+    if (finalScoreUs !== undefined) rawWithScores.finalScoreUs = finalScoreUs;
+    if (finalScoreThem !== undefined) rawWithScores.finalScoreThem = finalScoreThem;
+    const gameStats = validateGameStats(rawWithScores);
+
+    // Sanitize milestone names if provided
+    const safeMilestones = Array.isArray(earnedMilestones) 
+      ? earnedMilestones.slice(0, 20).map((m: unknown) => {
+          if (typeof m === 'object' && m !== null) {
+            const obj = m as Record<string, unknown>;
+            return { name: sanitizeString(obj.name, 80), rarity: sanitizeString(obj.rarity, 30) };
+          }
+          return { name: 'Unknown', rarity: 'common' };
+        })
+      : [];
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -173,10 +222,10 @@ serve(async (req) => {
       ? Math.round((gameStats.ftMade / gameStats.ftAttempted) * 100) 
       : 0;
 
-    // Build milestone section for the prompt
+    // Build milestone section for the prompt (using sanitized milestones)
     let milestoneSection = '';
-    if (earnedMilestones && earnedMilestones.length > 0) {
-      const milestoneNames = earnedMilestones.map((m: any) => `${m.name} (${m.rarity})`).join(', ');
+    if (safeMilestones.length > 0) {
+      const milestoneNames = safeMilestones.map((m: { name: string; rarity: string }) => `${m.name} (${m.rarity})`).join(', ');
       milestoneSection = `
 
 MILESTONES UNLOCKED THIS GAME:
@@ -228,7 +277,7 @@ CRITICAL GUIDELINES:
 STRUCTURE YOUR RESPONSE:
 1. **Great Job Today, ${verifiedName || 'Champ'}!** - Start with 2-3 specific things the player did well based on their stats
 2. **Highlight Reel** - Call out their best stat or achievement from this game
-${earnedMilestones && earnedMilestones.length > 0 ? '3. **🏆 Milestones Unlocked!** - Celebrate each milestone they earned with specific praise\n4. **Level Up Tips** - 1-2 friendly suggestions for improvement\n5. **Keep Going!** - End with encouragement and motivation' : '3. **Level Up Tips** - 1-2 friendly suggestions for improvement (frame as exciting opportunities, not weaknesses)\n4. **Keep Going!** - End with encouragement and motivation'}
+${safeMilestones.length > 0 ? '3. **🏆 Milestones Unlocked!** - Celebrate each milestone they earned with specific praise\n4. **Level Up Tips** - 1-2 friendly suggestions for improvement\n5. **Keep Going!** - End with encouragement and motivation' : '3. **Level Up Tips** - 1-2 friendly suggestions for improvement (frame as exciting opportunities, not weaknesses)\n4. **Keep Going!** - End with encouragement and motivation'}
 
 Keep the response under 300 words but make every word count!`;
 
