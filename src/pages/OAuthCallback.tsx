@@ -79,12 +79,38 @@ export default function OAuthCallback() {
         }
       }
 
-      // Popup handoff flow — support BOTH implicit token callbacks and PKCE code callbacks.
-      // In the preview iframe flow we use signInWithOAuth(... skipBrowserRedirect: true),
-      // which returns a PKCE code. The Supabase client auto-exchanges that code on this
-      // callback page, so we must read the resulting session and relay its tokens back
-      // to the opener before closing the popup.
+      // Popup handoff flow — if the provider returned to a different origin
+      // (for example lovable.app), first bounce back to the target callback URL
+      // so opener messaging can complete in the preview's same-origin context.
       if (popupMode) {
+        const codeParam = queryParams.get('code') || hashParams.get('code');
+        const hasCallbackPayload = Boolean(accessToken || refreshToken || errorParam || codeParam);
+        const shouldBounceToTargetCallback =
+          hasCallbackPayload &&
+          targetUrlParam &&
+          targetOrigin !== window.location.origin &&
+          queryParams.get('popup_forwarded') !== '1';
+
+        if (shouldBounceToTargetCallback) {
+          try {
+            const bounceUrl = new URL(targetUrl);
+            bounceUrl.searchParams.set('popup_forwarded', '1');
+            bounceUrl.searchParams.set('popup', '1');
+            bounceUrl.searchParams.set('provider', provider);
+            if (errorParam) bounceUrl.searchParams.set('error', errorParam);
+            if (errorDescription) bounceUrl.searchParams.set('error_description', errorDescription);
+            if (codeParam) bounceUrl.searchParams.set('code', codeParam);
+            console.log('[OAuthCallback] Bouncing popup callback to target origin:', bounceUrl.toString());
+            if (window.location.hash) {
+              bounceUrl.hash = window.location.hash;
+            }
+            window.location.replace(bounceUrl.toString());
+            return;
+          } catch (bounceError) {
+            console.warn('[OAuthCallback] Failed to bounce popup callback:', bounceError);
+          }
+        }
+
         const sendViaOpener = (msg: Record<string, string>) => {
           try {
             if (window.opener) {
@@ -115,37 +141,6 @@ export default function OAuthCallback() {
           setTimeout(() => window.close(), 300);
         };
 
-        const waitForSession = async () => {
-          const existingSession = (await supabase.auth.getSession()).data.session;
-          if (existingSession?.access_token && existingSession?.refresh_token) {
-            return existingSession;
-          }
-
-          return await new Promise<Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session']>((resolve) => {
-            let settled = false;
-
-            const finish = (session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'] | null) => {
-              if (settled) return;
-              settled = true;
-              clearTimeout(timeoutId);
-              subscription.data.subscription.unsubscribe();
-              resolve(session);
-            };
-
-            const subscription = supabase.auth.onAuthStateChange((event, session) => {
-              if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.access_token && session?.refresh_token) {
-                console.log('[OAuthCallback] Popup mode: session established via auth state change');
-                finish(session);
-              }
-            });
-
-            const timeoutId = window.setTimeout(async () => {
-              const latestSession = (await supabase.auth.getSession()).data.session;
-              finish(latestSession ?? null);
-            }, 6000);
-          });
-        };
-
         if (errorParam) {
           completePopupAuth({ type: 'oauth-error', provider, error: errorDescription || errorParam });
           return;
@@ -157,40 +152,8 @@ export default function OAuthCallback() {
           return;
         }
 
-        const codeParam = queryParams.get('code') || hashParams.get('code');
         if (codeParam) {
-          console.log('[OAuthCallback] Popup mode: found PKCE code, exchanging for session');
-
-          try {
-            const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(codeParam);
-            if (exchangeError) {
-              console.warn('[OAuthCallback] Popup mode: exchangeCodeForSession failed:', exchangeError.message);
-            } else if (exchangeData.session?.access_token && exchangeData.session?.refresh_token) {
-              completePopupAuth({
-                type: 'oauth-complete',
-                provider,
-                accessToken: exchangeData.session.access_token,
-                refreshToken: exchangeData.session.refresh_token,
-              });
-              return;
-            }
-          } catch (exchangeErr) {
-            console.warn('[OAuthCallback] Popup mode: explicit code exchange threw:', exchangeErr);
-          }
-
-          const session = await waitForSession();
-
-          if (session?.access_token && session?.refresh_token) {
-            completePopupAuth({
-              type: 'oauth-complete',
-              provider,
-              accessToken: session.access_token,
-              refreshToken: session.refresh_token,
-            });
-            return;
-          }
-
-          console.error('[OAuthCallback] Popup mode: PKCE code present but no session was established');
+          console.error('[OAuthCallback] Popup mode: unexpected PKCE code callback in token flow');
           completePopupAuth({
             type: 'oauth-error',
             provider,
