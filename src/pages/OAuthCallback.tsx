@@ -6,12 +6,38 @@ import { isNativeApp, getPlatform } from '@/lib/platform';
 import { buildNativeOAuthReturnUrl, isMobileSystemBrowserOAuthReturn } from '@/lib/oauthCallback';
 
 /**
+ * PRE-CAPTURE: Grab tokens from the URL immediately at module load time,
+ * BEFORE the Supabase client's detectSessionInUrl can consume/clear the hash.
+ * This prevents the "Auth session missing" error in implicit grant flows.
+ */
+const _capturedUrl = window.location.href;
+const _capturedHash = window.location.hash;
+const _capturedSearch = window.location.search;
+const _hashParams = new URLSearchParams(_capturedHash.replace('#', ''));
+const _queryParams = new URLSearchParams(_capturedSearch);
+const _preCapturedTokens = {
+  accessToken: _hashParams.get('access_token') || _queryParams.get('access_token'),
+  refreshToken: _hashParams.get('refresh_token') || _queryParams.get('refresh_token'),
+  code: _queryParams.get('code'),
+  error: _hashParams.get('error') || _queryParams.get('error'),
+  errorDescription: _hashParams.get('error_description') || _queryParams.get('error_description'),
+};
+
+console.log('[OAuthCallback:module] Pre-captured tokens —', {
+  accessToken: !!_preCapturedTokens.accessToken,
+  refreshToken: !!_preCapturedTokens.refreshToken,
+  code: !!_preCapturedTokens.code,
+  error: !!_preCapturedTokens.error,
+  url: _capturedUrl,
+});
+
+/**
  * OAuth callback handler — supports both web and Despia native.
  *
  * Key flow:
- * 1. Parse URL for code, tokens, or errors
+ * 1. Parse URL for code, tokens, or errors (pre-captured at module load)
  * 2. If code present → explicitly call exchangeCodeForSession(code)
- * 3. If tokens present → call setSession
+ * 3. If tokens present → call setSession (implicit grant)
  * 4. Verify session exists before redirecting
  * 5. For Despia system browser → deep-link tokens back to native app
  */
@@ -36,24 +62,28 @@ export default function OAuthCallback() {
   };
 
   const handleCallback = async (isRetry = false) => {
-    const fullUrl = window.location.href;
-    const hash = window.location.hash;
-    const search = window.location.search;
     const platform = getPlatform();
     const native = isNativeApp();
 
     log(`--- ${isRetry ? 'RETRY' : 'START'} ---`);
     log(`Platform: ${platform}, isNative: ${native}`);
-    log(`Full URL: ${fullUrl}`);
+    log(`Pre-captured URL: ${_capturedUrl}`);
 
-    const hashParams = new URLSearchParams(hash.replace('#', ''));
-    const queryParams = new URLSearchParams(search);
+    // Use pre-captured tokens (grabbed at module load before Supabase could clear them)
+    // On retry, also re-check current URL in case hash is still present
+    const currentHash = new URLSearchParams(window.location.hash.replace('#', ''));
+    const currentQuery = new URLSearchParams(window.location.search);
 
-    const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
-    const code = queryParams.get('code');
-    const errorParam = hashParams.get('error') || queryParams.get('error');
-    const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
+    const accessToken = _preCapturedTokens.accessToken
+      || currentHash.get('access_token') || currentQuery.get('access_token');
+    const refreshToken = _preCapturedTokens.refreshToken
+      || currentHash.get('refresh_token') || currentQuery.get('refresh_token');
+    const code = _preCapturedTokens.code || currentQuery.get('code');
+    const errorParam = _preCapturedTokens.error
+      || currentHash.get('error') || currentQuery.get('error');
+    const errorDescription = _preCapturedTokens.errorDescription
+      || currentHash.get('error_description') || currentQuery.get('error_description');
+
     const isSystemBrowserReturn = isMobileSystemBrowserOAuthReturn({
       hostname: window.location.hostname,
       native,
@@ -61,7 +91,8 @@ export default function OAuthCallback() {
     });
 
     log(`Code present: ${!!code}`);
-    log(`Tokens present: access=${!!accessToken}, refresh=${!!refreshToken}`);
+    log(`access_token exists: ${!!accessToken}`);
+    log(`refresh_token exists: ${!!refreshToken}`);
     log(`Error present: ${!!errorParam}`);
     log(`System browser return: ${isSystemBrowserReturn}`);
 
@@ -141,30 +172,57 @@ export default function OAuthCallback() {
 
     // ── Tokens in URL (implicit grant) ──
     if (accessToken && refreshToken) {
-      log('Tokens found in URL, calling setSession...');
+      log('Both access_token and refresh_token found — implicit grant flow');
+
+      // First check if detectSessionInUrl already established a session
+      const existingSession = await tryGetExistingSession();
+      if (existingSession) {
+        log('detectSessionInUrl already restored session — skipping manual setSession');
+        log(`Session user: ${existingSession.user?.id}, provider: ${existingSession.user?.app_metadata?.provider}`);
+        await handleSessionEstablished(existingSession.access_token, existingSession.refresh_token);
+        return;
+      }
+
+      log('No existing session found — calling supabase.auth.setSession...');
       try {
-        const { error: sessionError } = await supabase.auth.setSession({
+        const { data, error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         });
 
         if (sessionError) {
-          logError(`setSession error: ${sessionError.message}`);
-          setError(sessionError.message);
+          logError(`setSession failed: ${sessionError.message}`);
+          setError(`Session restore failed: ${sessionError.message}`);
           setShowRetry(true);
           return;
         }
 
-        log('setSession succeeded');
-        await handleSessionEstablished(accessToken, refreshToken);
+        if (data?.session) {
+          log(`setSession succeeded — user: ${data.session.user.id}`);
+          log(`Provider: ${data.session.user.app_metadata?.provider || 'unknown'}`);
+          await handleSessionEstablished(data.session.access_token, data.session.refresh_token);
+          return;
+        }
+
+        logError('setSession returned no error but also no session');
+        setError('Session could not be created. Please try again.');
+        setShowRetry(true);
         return;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
         logError(`setSession exception: ${msg}`);
-        setError(msg);
+        setError(`Session error: ${msg}`);
         setShowRetry(true);
         return;
       }
+    }
+
+    // ── Only access_token without refresh_token (or vice versa) ──
+    if (accessToken || refreshToken) {
+      logError(`Incomplete tokens — access_token: ${!!accessToken}, refresh_token: ${!!refreshToken}`);
+      setError('Incomplete authentication tokens received. Please try signing in again.');
+      setShowRetry(true);
+      return;
     }
 
     // ── No code or tokens — wait for detectSessionInUrl ──
