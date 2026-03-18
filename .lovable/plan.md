@@ -1,33 +1,71 @@
-## RevenueCat Integration — IMPLEMENTED
 
-### What was built
 
-1. **Platform Detection** (`src/lib/platform.ts`) — `isNativeApp()`, `getPlatform()`, `isIOS()` helpers
-2. **RevenueCat Hook** (`src/hooks/useRevenueCat.ts`) — SDK init, purchase, restore, offerings
-3. **RevenueCat Webhook** (`supabase/functions/revenuecat-webhook/index.ts`) — syncs purchases to `plan_overrides`
-4. **Conditional Routing** — `useSubscription`, `Pricing.tsx`, `Upgrade.tsx`, `UpgradeDrawer.tsx` all route to RevenueCat on native
+## Root Cause
 
-### Next steps (user action required)
+The code manually constructs URLs to Lovable's `/~oauth/initiate` broker via `buildBrokerUrl()`. This broker (`oauth.lovable.app`) is failing with "redirect_uri is required" because the manually-constructed parameters don't match what the broker expects internally. Since you have **your own Google OAuth credentials**, you don't need Lovable's broker at all.
 
-1. **Replace RevenueCat API key** in `src/hooks/useRevenueCat.ts` line 12 — replace `appl_REPLACE_WITH_YOUR_KEY` with your iOS public API key from RevenueCat dashboard
-2. **Create RevenueCat products** matching these IDs: `hj_starter_monthly`, `hj_starter_yearly`, `hj_pro_monthly`, `hj_pro_yearly`, `hj_elite_monthly`, `hj_elite_yearly`
-3. **Configure RevenueCat webhook** pointing to: `https://jwoupnumuotmwpwrkmob.supabase.co/functions/v1/revenuecat-webhook` with Authorization Bearer header matching the secret you just saved
-4. **Set up Capacitor** for native iOS builds (not yet added to the project)
+## Fix: Bypass the Lovable OAuth broker entirely
 
----
+Use `supabase.auth.signInWithOAuth` with `skipBrowserRedirect: true` to get the real Google OAuth URL directly from your backend, then open it via the existing bridge for native or redirect for web.
 
-## Native Google Sign-In — IMPLEMENTED
+### Changes to `src/components/AuthForm.tsx`
 
-### What was built
+**Replace `buildBrokerUrl` and `handleCustomDomainOAuth`** with a new approach:
 
-1. **Plugin** — `@codetrix-studio/capacitor-google-auth` installed
-2. **Native helper** (`src/lib/nativeGoogleAuth.ts`) — `initNativeGoogleAuth()` + `nativeGoogleSignIn()` using `signInWithIdToken`
-3. **AuthForm.tsx** — branches on `isNativeApp()`: native uses SDK, web keeps existing `lovable.auth.signInWithOAuth`
-4. **App.tsx** — initializes the Google Auth plugin on native startup
+1. Call `supabase.auth.signInWithOAuth({ provider, options: { redirectTo, skipBrowserRedirect: true } })` to get the actual Google/Apple OAuth URL.
+2. For **native**: wrap it in the `hoopjournal.me/oauth-bridge` trampoline (preserves the "hoopjournal.me" iOS dialog).
+3. For **web custom domain**: redirect directly to the OAuth URL.
 
-### User action required
+```text
+Native flow:
+  App → hoopjournal.me/oauth-bridge?broker_url=<google_oauth_url>
+       → iOS shows "hoopjournal.me"
+       → redirects to accounts.google.com/...
+       → Google redirects to Supabase callback
+       → Supabase redirects to hoopjournal123.lovable.app/auth/callback
+       → OAuthCallback deep-links tokens to native app
+```
 
-1. **Replace the Client ID** in `src/lib/nativeGoogleAuth.ts` line 10 — replace `REPLACE_WITH_YOUR_IOS_CLIENT_ID.apps.googleusercontent.com` with your iOS OAuth Client ID from [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-2. **Create an iOS OAuth Client ID** — type: iOS application, bundle ID: `app.lovable.2cd79f530f3e4e88858df49e60e86e08`
-3. **Add reversed client ID** as a URL scheme in Xcode (e.g. `com.googleusercontent.apps.XXXX`)
-4. Run `npm install` → `npx cap sync` → rebuild in Xcode → TestFlight
+Key code change in `handleCustomDomainOAuth`:
+```typescript
+const { data, error } = await supabase.auth.signInWithOAuth({
+  provider,
+  options: {
+    redirectTo: `${LOVABLE_APP_ORIGIN}/auth/callback`,
+    skipBrowserRedirect: true,
+  },
+});
+if (error || !data?.url) throw error || new Error('No OAuth URL');
+
+const urlToOpen = isNativeApp()
+  ? `${CUSTOM_DOMAIN_ORIGIN}/oauth-bridge?broker_url=${encodeURIComponent(data.url)}`
+  : data.url;
+
+await openOAuthInSystemBrowser(urlToOpen);
+```
+
+Remove `buildBrokerUrl` and `getManagedOAuthRedirectUri` helpers (no longer needed).
+
+Update `handleIframePopupOAuth` to also use `supabase.auth.signInWithOAuth` with `skipBrowserRedirect: true` instead of manually constructing broker URLs.
+
+### Required backend configuration
+
+You must verify these settings in your Google Cloud Console and backend auth config:
+
+1. **Google Cloud Console → Authorized redirect URIs:**
+   - `https://jwoupnumuotmwpwrkmob.supabase.co/auth/v1/callback`
+
+2. **Backend Auth → Redirect URLs (allow list):**
+   - `https://hoopjournal.me/**`
+   - `https://hoopjournal123.lovable.app/**`
+
+3. **Backend Auth → Site URL:**
+   - `https://hoopjournal.me`
+
+### No other files change
+
+- `main.tsx` (oauth-bridge trampoline) stays the same.
+- `OAuthCallback.tsx` stays the same — it already handles tokens from query/hash.
+- `nativeOAuth.ts` stays the same.
+- The "Hoop Journal wants to use hoopjournal.me to sign in" dialog remains unchanged because the initial URL opened is still `hoopjournal.me/oauth-bridge`.
+
