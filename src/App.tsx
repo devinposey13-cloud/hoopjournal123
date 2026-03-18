@@ -112,7 +112,7 @@ const App = () => (
                 
                 <Routes>
                   <Route path="/auth/callback" element={<OAuthCallback />} />
-                  <Route path="/oauth-bridge" element={<OAuthBridge />} />
+                  
                   <Route path="/" element={<Index />} />
                   <Route path="/log" element={<Log />} />
                   <Route path="/log/:subTab" element={<Log />} />
