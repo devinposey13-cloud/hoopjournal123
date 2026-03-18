@@ -69,6 +69,45 @@ function formatMemoriesForRecap(memories: CoachMemory[]): string {
   return context;
 }
 
+// Sanitize a string for use in AI prompts: strip newlines, control chars, limit length
+function sanitizeString(value: unknown, maxLength = 100): string {
+  if (typeof value !== 'string') return '';
+  return value.replace(/[\n\r\t]/g, ' ').replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, '').trim().slice(0, maxLength);
+}
+
+// Clamp a numeric stat value to a safe range
+function clampStat(value: unknown, min = 0, max = 200): number {
+  const num = Number(value);
+  if (isNaN(num)) return 0;
+  return Math.max(min, Math.min(max, Math.round(num)));
+}
+
+// Validate and sanitize all game stats from client input
+function validateGameStats(raw: Record<string, unknown>) {
+  return {
+    points: clampStat(raw.points, 0, 150),
+    fgMade: clampStat(raw.fgMade, 0, 100),
+    fgAttempted: clampStat(raw.fgAttempted, 0, 100),
+    threePtMade: clampStat(raw.threePtMade, 0, 50),
+    threePtAttempted: clampStat(raw.threePtAttempted, 0, 50),
+    ftMade: clampStat(raw.ftMade, 0, 50),
+    ftAttempted: clampStat(raw.ftAttempted, 0, 50),
+    rebounds: clampStat(raw.rebounds, 0, 50),
+    offensiveRebounds: raw.offensiveRebounds != null ? clampStat(raw.offensiveRebounds, 0, 30) : undefined,
+    defensiveRebounds: raw.defensiveRebounds != null ? clampStat(raw.defensiveRebounds, 0, 30) : undefined,
+    assists: clampStat(raw.assists, 0, 50),
+    steals: clampStat(raw.steals, 0, 30),
+    blocks: clampStat(raw.blocks, 0, 30),
+    turnovers: clampStat(raw.turnovers, 0, 30),
+    isWin: typeof raw.isWin === 'boolean' ? raw.isWin : false,
+    opponent: sanitizeString(raw.opponent, 100) || 'Unknown',
+    halftimeScoreUs: raw.halftimeScoreUs != null ? clampStat(raw.halftimeScoreUs, 0, 300) : undefined,
+    halftimeScoreThem: raw.halftimeScoreThem != null ? clampStat(raw.halftimeScoreThem, 0, 300) : undefined,
+    finalScoreUs: raw.finalScoreUs != null ? clampStat(raw.finalScoreUs, 0, 300) : undefined,
+    finalScoreThem: raw.finalScoreThem != null ? clampStat(raw.finalScoreThem, 0, 300) : undefined,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -109,13 +148,26 @@ serve(async (req) => {
       });
     }
 
-    const { gameStats, earnedMilestones, playerName, courtRole, seasonGoals, halftimeScoreUs, halftimeScoreThem, finalScoreUs, finalScoreThem } = await req.json();
+    const { gameStats: rawGameStats, earnedMilestones, playerName, courtRole, seasonGoals, halftimeScoreUs, halftimeScoreThem, finalScoreUs, finalScoreThem } = await req.json();
     
-    // Merge team scores into gameStats for processing
-    if (halftimeScoreUs !== undefined) gameStats.halftimeScoreUs = halftimeScoreUs;
-    if (halftimeScoreThem !== undefined) gameStats.halftimeScoreThem = halftimeScoreThem;
-    if (finalScoreUs !== undefined) gameStats.finalScoreUs = finalScoreUs;
-    if (finalScoreThem !== undefined) gameStats.finalScoreThem = finalScoreThem;
+    // Validate and sanitize all client-supplied game stats
+    const rawWithScores = { ...rawGameStats };
+    if (halftimeScoreUs !== undefined) rawWithScores.halftimeScoreUs = halftimeScoreUs;
+    if (halftimeScoreThem !== undefined) rawWithScores.halftimeScoreThem = halftimeScoreThem;
+    if (finalScoreUs !== undefined) rawWithScores.finalScoreUs = finalScoreUs;
+    if (finalScoreThem !== undefined) rawWithScores.finalScoreThem = finalScoreThem;
+    const gameStats = validateGameStats(rawWithScores);
+
+    // Sanitize milestone names if provided
+    const safeMilestones = Array.isArray(earnedMilestones) 
+      ? earnedMilestones.slice(0, 20).map((m: unknown) => {
+          if (typeof m === 'object' && m !== null) {
+            const obj = m as Record<string, unknown>;
+            return { name: sanitizeString(obj.name, 80), rarity: sanitizeString(obj.rarity, 30) };
+          }
+          return { name: 'Unknown', rarity: 'common' };
+        })
+      : [];
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
