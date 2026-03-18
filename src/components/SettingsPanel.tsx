@@ -26,6 +26,7 @@ import { useBilling } from '@/hooks/useBilling';
 import { isNativeApp, isDespia } from '@/lib/platform';
 import { track } from '@/lib/plans';
 import { RotateCcw } from 'lucide-react';
+import { AuthDebugPanel } from '@/components/settings/AuthDebugPanel';
 
 interface SettingsPanelProps {
   profile: PlayerProfile;
@@ -758,6 +759,10 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
               </p>
             </div>
           </div>
+
+          {/* ── Debug ── */}
+          <SectionHeader>Debug</SectionHeader>
+          <AuthDebugPanel />
 
           {/* ── Account ── */}
           <SectionHeader>Account</SectionHeader>

@@ -7,43 +7,23 @@ import { toast } from 'sonner';
 import { LogIn, UserPlus, Loader2, AtSign, Mail, Phone, Eye, EyeOff } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
 import { isNativeApp } from '@/lib/platform';
-import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
-import {
-  logOAuthInit,
-  logOAuthError,
-  logOAuthSuccess,
-  parseOAuthError,
-  formatErrorWithCode } from
-'@/utils/oauthErrors';
+import { nativeGoogleSignIn } from '@/lib/nativeGoogleAuth';
 
 // Normalize phone number to E.164 format (+1XXXXXXXXXX)
 const normalizePhoneNumber = (phone: string): string => {
-  // Remove all non-digit characters
   const digits = phone.replace(/\D/g, '');
-
-  // If it starts with 1 and has 11 digits, add +
-  if (digits.length === 11 && digits.startsWith('1')) {
-    return `+${digits}`;
-  }
-
-  // If it has 10 digits, assume US and add +1
-  if (digits.length === 10) {
-    return `+1${digits}`;
-  }
-
-  // Return as-is with + prefix if it doesn't match expected formats
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  if (digits.length === 10) return `+1${digits}`;
   return digits.startsWith('+') ? digits : `+${digits}`;
 };
 
-// Validate phone number format
 const isValidPhoneNumber = (phone: string): boolean => {
   const digits = phone.replace(/\D/g, '');
-  return digits.length === 10 || digits.length === 11 && digits.startsWith('1');
+  return digits.length === 10 || (digits.length === 11 && digits.startsWith('1'));
 };
 
 export function AuthForm() {
@@ -63,309 +43,11 @@ export function AuthForm() {
 
   useEffect(() => {
     return () => {
-      if (googleTimeoutRef.current) {
-        window.clearTimeout(googleTimeoutRef.current);
-      }
+      if (googleTimeoutRef.current) window.clearTimeout(googleTimeoutRef.current);
     };
   }, []);
 
-  // Debug logging for native OAuth diagnosis
-  const nativeDetected = isNativeApp();
-  console.log('[AuthForm] ===== RENDER DEBUG =====');
-  console.log('[AuthForm] isNativeApp():', nativeDetected);
-  console.log('[AuthForm] window.Capacitor:', (window as any).Capacitor);
-  console.log('[AuthForm] hostname:', window.location.hostname);
-  console.log('[AuthForm] origin:', window.location.origin);
-
-  // Clear service worker caches before OAuth to prevent redirect interception
-  const clearServiceWorkerCaches = async () => {
-    if ('caches' in window) {
-      try {
-        const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map((name) => caches.delete(name)));
-        console.log('[OAuth] Cleared all service worker caches');
-      } catch (e) {
-        console.warn('[OAuth] Failed to clear caches:', e);
-      }
-    }
-  };
-
-  // Detect if running on a custom domain (not lovable infrastructure)
-  // Also treat native apps as "custom domain" since their origin
-  // can't receive OAuth redirects directly.
-  const isCustomDomain =
-    isNativeApp() ||
-    !window.location.hostname.includes('lovable.app') &&
-    !window.location.hostname.includes('lovableproject.com') &&
-    window.location.hostname !== 'localhost';
-
-  const LOVABLE_APP_ORIGIN = 'https://hoopjournal123.lovable.app';
-  const CUSTOM_DOMAIN_ORIGIN = 'https://hoopjournal.me';
-
-  /**
-   * Get the direct OAuth URL from Supabase (bypasses Lovable broker entirely).
-   * Works with your own Google/Apple OAuth credentials configured in Supabase.
-   *
-   * - web: PKCE via SDK (best for normal browser redirects)
-   * - native/popup: implicit token return so the callback gets tokens directly.
-   *   This avoids PKCE verifier/session handoff problems across system-browser
-   *   and popup contexts.
-   */
-  const getDirectOAuthUrl = async (
-    provider: 'google' | 'apple',
-    redirectTo: string,
-    mode: 'web' | 'native' | 'popup' = 'web'
-  ) => {
-    if (mode === 'native' || mode === 'popup') {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const url = new URL(`${supabaseUrl}/auth/v1/authorize`);
-      url.searchParams.set('provider', provider);
-      url.searchParams.set('redirect_to', redirectTo);
-      url.searchParams.set('response_type', 'token');
-      url.searchParams.set('scope', provider === 'google' ? 'openid email profile' : 'name email');
-      console.log(`[OAuth] Built implicit-grant URL for ${mode}:`, url.toString().substring(0, 120) + '...');
-      return url.toString();
-    }
-
-    // Standard web flow: use SDK-managed PKCE in the same browser context
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo,
-        skipBrowserRedirect: true,
-      },
-    });
-    if (error) throw error;
-    if (!data?.url) throw new Error('No OAuth URL returned');
-    return data.url;
-  };
-
-  const handleCustomDomainOAuth = async (provider: 'google' | 'apple') => {
-    // Best-effort SW cache clear (non-blocking on failure)
-    try { await clearServiceWorkerCaches(); } catch (_) {}
-
-    const native = isNativeApp();
-
-    // IMPORTANT: Supabase CANNOT redirect to custom URL schemes (hoopjournal://).
-    //
-    // Native: redirect to the lovable.app callback page. OAuthCallback.tsx already
-    //   detects mobile user-agents on lovable.app and deep-links tokens into the
-    //   native app via hoopjournal://oauth/auth/callback. This is the only flow
-    //   that works reliably with Supabase + iOS system browser.
-    //
-    // Web (hoopjournal.me): redirect BACK to hoopjournal.me/auth/callback so the
-    //   user stays in the same browser tab. Previously this pointed at lovable.app,
-    //   which opened a new tab / context.
-    const redirectTo = native
-      ? `${LOVABLE_APP_ORIGIN}/auth/callback`
-      : `${CUSTOM_DOMAIN_ORIGIN}/auth/callback`;
-
-    const oauthUrl = await getDirectOAuthUrl(provider, redirectTo, native ? 'native' : 'web');
-
-    // On native, open hoopjournal.me/oauth-bridge first so iOS shows the custom
-    // domain in the auth sheet, then bounce into the actual Google/Apple OAuth URL.
-    const urlToOpen = native
-      ? `${CUSTOM_DOMAIN_ORIGIN}/oauth-bridge?broker_url=${encodeURIComponent(oauthUrl)}`
-      : oauthUrl;
-
-    console.log(`[OAuth] ===== ${provider.toUpperCase()} OAUTH DEBUG =====`);
-    console.log(`[OAuth] isNativeApp(): ${native}`);
-    console.log(`[OAuth] isCustomDomain: ${isCustomDomain}`);
-    console.log(`[OAuth] redirectTo: ${redirectTo}`);
-    console.log(`[OAuth] oauthUrl: ${oauthUrl.substring(0, 100)}...`);
-    console.log(`[OAuth] urlToOpen: ${urlToOpen.substring(0, 100)}...`);
-    console.log(`[OAuth] Code path: ${native ? 'NATIVE (system browser via bridge -> lovable.app -> deep link)' : 'WEB (direct redirect -> hoopjournal.me/auth/callback)'}`);
-
-    await openOAuthInSystemBrowser(urlToOpen);
-  };
-
-  const isInIframe = (() => {
-    try {
-      return window.self !== window.top;
-    } catch {
-      return true;
-    }
-  })();
-
-  const handleIframePopupOAuth = async (provider: 'google' | 'apple') => {
-    await clearServiceWorkerCaches();
-
-    // In preview/iframe mode, land first on the stable lovable.app callback,
-    // then bounce back to the preview callback origin for same-origin popup
-    // handoff to the opener.
-    const popupTargetUrl = `${window.location.origin}/auth/callback?popup=1&provider=${provider}`;
-    const popupRedirectTo = `${LOVABLE_APP_ORIGIN}/auth/callback?popup=1&provider=${provider}&target_origin=${encodeURIComponent(window.location.origin)}&target_url=${encodeURIComponent(popupTargetUrl)}`;
-    const oauthUrl = await getDirectOAuthUrl(provider, popupRedirectTo, 'popup');
-    console.log('[OAuth] Popup redirectTo:', popupRedirectTo);
-    console.log('[OAuth] OAuth URL:', oauthUrl.substring(0, 100) + '...');
-    const popup = window.open(oauthUrl, `hoopjournal_${provider}_oauth`, 'width=520,height=720');
-
-    if (!popup) {
-      throw new Error('Popup blocked. Please allow popups and try again.');
-    }
-
-    await new Promise<void>((resolve, reject) => {
-      let settled = false;
-      let bc: BroadcastChannel | null = null;
-
-      try {
-        bc = new BroadcastChannel('hoopjournal-oauth');
-      } catch {
-        // BroadcastChannel not supported — rely on postMessage only
-      }
-
-      const cleanup = () => {
-        window.removeEventListener('message', onMessage);
-        window.clearInterval(closeWatcher);
-        window.clearTimeout(timeoutId);
-        try { bc?.close(); } catch { /* ignore */ }
-      };
-
-      const settle = (fn: () => void) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        try {
-          if (!popup.closed) popup.close();
-        } catch {
-          // Best-effort popup close
-        }
-        fn();
-      };
-
-      const handlePayload = async (payload: {
-        type?: string;
-        provider?: string;
-        error?: string;
-        accessToken?: string;
-        refreshToken?: string;
-      }) => {
-        const isExpectedMessage = payload?.type === 'oauth-complete' || payload?.type === 'oauth-error';
-        if (!isExpectedMessage || (payload.provider && payload.provider !== provider)) {
-          return;
-        }
-
-        if (payload.type === 'oauth-error') {
-          settle(() => reject(new Error(payload.error || `${provider} sign-in failed.`)));
-          return;
-        }
-
-        if (!payload.accessToken || !payload.refreshToken) {
-          settle(() => reject(new Error(`Missing auth tokens from ${provider} callback.`)));
-          return;
-        }
-
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: payload.accessToken,
-          refresh_token: payload.refreshToken,
-        });
-
-        if (sessionError) {
-          settle(() => reject(sessionError));
-          return;
-        }
-
-        settle(() => resolve());
-      };
-
-      // Listen via postMessage (works when window.opener is preserved)
-      const onMessage = async (event: MessageEvent) => {
-        const isAllowedOrigin = [window.location.origin, LOVABLE_APP_ORIGIN].includes(event.origin);
-        if (!isAllowedOrigin) return;
-        await handlePayload(event.data);
-      };
-      window.addEventListener('message', onMessage);
-
-      // Listen via BroadcastChannel (fallback when window.opener is lost after cross-origin nav)
-      if (bc) {
-        bc.onmessage = async (event: MessageEvent) => {
-          console.log('[OAuth] Received token via BroadcastChannel');
-          await handlePayload(event.data);
-        };
-      }
-
-      const closeWatcher = window.setInterval(() => {
-        if (popup.closed) {
-          // Give BroadcastChannel a moment to deliver before failing
-          setTimeout(() => {
-            if (!settled) {
-              settle(() => reject(new Error(`${provider} sign-in was closed before completion.`)));
-            }
-          }, 1000);
-          window.clearInterval(closeWatcher);
-        }
-      }, 500);
-
-      const timeoutId = window.setTimeout(() => {
-        settle(() => reject(new Error(`${provider} sign-in timed out. Please try again.`)));
-      }, 120000);
-    });
-  };
-
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
-    const redirectTo = `${LOVABLE_APP_ORIGIN}/auth/callback`;
-
-    logOAuthInit('google', redirectTo);
-
-    try {
-      // Native (Despia) app: use system browser OAuth flow
-      // Note: We do NOT use the Capacitor Google Auth SDK here because
-      // Despia is not a Capacitor runtime and the plugin won't work.
-      if (isNativeApp()) {
-        googleTimeoutRef.current = window.setTimeout(() => {
-          setGoogleLoading(false);
-          toast.error('Google sign-in took too long. Please try again.');
-        }, 25000);
-
-        try {
-          await handleCustomDomainOAuth('google');
-        } catch {
-          if (googleTimeoutRef.current) {
-            window.clearTimeout(googleTimeoutRef.current);
-            googleTimeoutRef.current = null;
-          }
-          setGoogleLoading(false);
-        }
-        return;
-      }
-
-      // Preview iframe flow: complete OAuth in popup and hydrate session in the opener
-      if (isInIframe) {
-        await handleIframePopupOAuth('google');
-        logOAuthSuccess('google');
-        setGoogleLoading(false);
-        return;
-      }
-
-      if (isCustomDomain) {
-        try {
-          await handleCustomDomainOAuth('google');
-        } catch {
-          setGoogleLoading(false);
-        }
-        return;
-      }
-
-      await clearServiceWorkerCaches();
-
-      const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: redirectTo
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      logOAuthSuccess('google');
-    } catch (error: unknown) {
-      const parsedError = parseOAuthError(error);
-      logOAuthError('google', parsedError);
-      toast.error(formatErrorWithCode(parsedError));
-      setGoogleLoading(false);
-    }
-  };
-
+  // Reset loading when session arrives
   useEffect(() => {
     const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
@@ -374,60 +56,83 @@ export function AuthForm() {
           googleTimeoutRef.current = null;
         }
         setGoogleLoading(false);
+        setAppleLoading(false);
       }
     });
-
-    return () => {
-      subscription.subscription.unsubscribe();
-    };
+    return () => subscription.subscription.unsubscribe();
   }, []);
 
-  const handleAppleSignIn = async () => {
-    setAppleLoading(true);
-    const redirectTo = `${LOVABLE_APP_ORIGIN}/auth/callback`;
-
-    logOAuthInit('apple', redirectTo);
+  // ─── Google Sign-In ───────────────────────────────────────────────
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
 
     try {
-      if (!isNativeApp() && isInIframe) {
-        await handleIframePopupOAuth('apple');
-        logOAuthSuccess('apple');
-        setAppleLoading(false);
+      if (isNativeApp()) {
+        // ── MOBILE FLOW: Native Google Sign-In SDK ──
+        console.log('[Auth] Starting native Google Sign-In (Capacitor)');
+        googleTimeoutRef.current = window.setTimeout(() => {
+          setGoogleLoading(false);
+          toast.error('Google sign-in took too long. Please try again.');
+        }, 25000);
+
+        await nativeGoogleSignIn();
+        console.log('[Auth] Native Google Sign-In completed');
+        // Session will be picked up by onAuthStateChange
         return;
       }
 
-      if (isCustomDomain) {
-        try {
-          await handleCustomDomainOAuth('apple');
-        } catch {
-          setAppleLoading(false);
-        }
-        return;
-      }
+      // ── WEB FLOW: Supabase signInWithOAuth (same-tab redirect) ──
+      console.log('[Auth] Starting web Google Sign-In (same-tab redirect)');
+      const redirectTo = `${window.location.origin}/auth/callback`;
 
-      await clearServiceWorkerCaches();
-
-      const { error } = await lovable.auth.signInWithOAuth("apple", {
-        redirect_uri: redirectTo
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            prompt: 'select_account',
+          },
+        },
       });
 
-      if (error) {
-        throw error;
-      }
-
-      logOAuthSuccess('apple');
+      if (error) throw error;
+      // Browser will redirect — no need to set loading false
     } catch (error: unknown) {
-      const parsedError = parseOAuthError(error);
-      logOAuthError('apple', parsedError);
-      toast.error(formatErrorWithCode(parsedError));
+      console.error('[Auth] Google sign-in error:', error);
+      const message = error instanceof Error ? error.message : 'Google sign-in failed';
+      toast.error(message);
+      setGoogleLoading(false);
+    }
+  };
+
+  // ─── Apple Sign-In ────────────────────────────────────────────────
+  const handleAppleSignIn = async () => {
+    setAppleLoading(true);
+
+    try {
+      console.log('[Auth] Starting Apple Sign-In (same-tab redirect)');
+      const redirectTo = `${window.location.origin}/auth/callback`;
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo,
+        },
+      });
+
+      if (error) throw error;
+    } catch (error: unknown) {
+      console.error('[Auth] Apple sign-in error:', error);
+      const message = error instanceof Error ? error.message : 'Apple sign-in failed';
+      toast.error(message);
       setAppleLoading(false);
     }
   };
 
+  // ─── Username validation ──────────────────────────────────────────
   const validateUsername = (value: string) => {
     const cleaned = value.toLowerCase().replace(/[^a-z0-9]/g, '');
     setUsername(cleaned);
-
     if (cleaned.length < 3) {
       setUsernameError('Username must be at least 3 characters');
     } else if (cleaned.length > 20) {
@@ -438,20 +143,20 @@ export function AuthForm() {
   };
 
   const checkUsernameAvailable = async (usernameToCheck: string): Promise<boolean> => {
-    const { data } = await (supabase as any).
-    from('player_settings').
-    select('username').
-    eq('username', usernameToCheck).
-    maybeSingle();
+    const { data } = await (supabase as any)
+      .from('player_settings')
+      .select('username')
+      .eq('username', usernameToCheck)
+      .maybeSingle();
     return !data;
   };
 
+  // ─── Email/Phone form submit ──────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Validate phone number if using phone auth
       if (authMethod === 'phone' && !isValidPhoneNumber(phone)) {
         throw new Error('Please enter a valid 10-digit phone number');
       }
@@ -463,21 +168,13 @@ export function AuthForm() {
         if (error) throw error;
         toast.success('Welcome back!');
       } else {
-        // Validate username
-        if (username.length < 3) {
-          throw new Error('Username must be at least 3 characters');
-        }
-
-        // Check if username is available
+        if (username.length < 3) throw new Error('Username must be at least 3 characters');
         const isAvailable = await checkUsernameAvailable(username);
-        if (!isAvailable) {
-          throw new Error('Username is already taken');
-        }
+        if (!isAvailable) throw new Error('Username is already taken');
 
         const { error, data } = await signUp({ identifier, password, method: authMethod });
         if (error) throw error;
 
-        // Check approval mode from feature flags
         let approvalMode = 'automatic';
         if (data.user) {
           try {
@@ -487,12 +184,8 @@ export function AuthForm() {
               .eq('flag_key', 'user_approval_mode')
               .eq('is_enabled', true)
               .maybeSingle();
-            if (flagData?.flag_value) {
-              approvalMode = flagData.flag_value;
-            }
-          } catch {
-            // Default to automatic if flag check fails
-          }
+            if (flagData?.flag_value) approvalMode = flagData.flag_value;
+          } catch { /* default to automatic */ }
 
           const shouldAutoApprove = approvalMode === 'automatic' || approvalMode === 'conditional';
           const approvalMethod = shouldAutoApprove ? 'auto' : 'manual';
@@ -506,23 +199,16 @@ export function AuthForm() {
             number: 0,
             height: "5'8\"",
             grade: '1st Grade',
-            is_approved: shouldAutoApprove
+            is_approved: shouldAutoApprove,
           };
 
-          // Store phone number in player_settings if using phone auth
           if (authMethod === 'phone') {
             settingsData.phone = normalizePhoneNumber(phone);
           }
 
-          const { error: settingsError } = await supabase
-            .from('player_settings')
-            .insert(settingsData);
+          const { error: settingsError } = await supabase.from('player_settings').insert(settingsData);
+          if (settingsError) console.error('Error creating profile:', settingsError);
 
-          if (settingsError) {
-            console.error('Error creating profile:', settingsError);
-          }
-
-          // Create approval request for admin visibility
           const { error: approvalError } = await supabase
             .from('account_approval_requests')
             .insert({
@@ -530,28 +216,24 @@ export function AuthForm() {
               email: authMethod === 'email' ? identifier : null,
               username: username.toLowerCase(),
               status: shouldAutoApprove ? 'approved' : 'pending',
-              approval_method: approvalMethod
+              approval_method: approvalMethod,
             } as any);
+          if (approvalError) console.error('Error creating approval request:', approvalError);
 
-          if (approvalError) {
-            console.error('Error creating approval request:', approvalError);
-          }
-
-          // Notify admin of new signup
           try {
             await supabase.functions.invoke('notify-admin-signup', {
-              body: {
-                username: username.toLowerCase(),
-                email: authMethod === 'email' ? identifier : null
-              }
+              body: { username: username.toLowerCase(), email: authMethod === 'email' ? identifier : null },
             });
           } catch (notifyError) {
-            // Don't block signup if notification fails
             console.error('Error sending admin notification:', notifyError);
           }
         }
 
-        toast.success(approvalMode === 'manual' ? 'Account created! Awaiting admin approval.' : 'Account created! Welcome aboard! 🏀');
+        toast.success(
+          approvalMode === 'manual'
+            ? 'Account created! Awaiting admin approval.'
+            : 'Account created! Welcome aboard! 🏀'
+        );
       }
     } catch (error: any) {
       toast.error(error.message || 'Authentication failed');
@@ -572,15 +254,14 @@ export function AuthForm() {
             <h1 className="font-bold text-foreground text-4xl">Hoop Journal™</h1>
             <p
               className="text-muted-foreground mt-1 text-2xl uppercase tracking-wide"
-              style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}>
-              
+              style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}
+            >
               {isLogin ? 'Track Your Game. Improve Every Day.' : 'Create your account'}
             </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Auth Method Toggle */}
             <Tabs value={authMethod} onValueChange={(v) => setAuthMethod(v as 'email' | 'phone')} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="email" className="flex items-center gap-2">
@@ -595,8 +276,8 @@ export function AuthForm() {
               </TabsList>
             </Tabs>
 
-            {!isLogin &&
-            <div className="space-y-2">
+            {!isLogin && (
+              <div className="space-y-2">
                 <Label htmlFor="username">
                   Username
                   <span className="text-muted-foreground text-xs ml-1">(your public profile URL)</span>
@@ -604,55 +285,49 @@ export function AuthForm() {
                 <div className="relative">
                   <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => validateUsername(e.target.value)}
-                  placeholder="username"
-                  className="pl-9"
-                  required={!isLogin}
-                  maxLength={20} />
-                
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => validateUsername(e.target.value)}
+                    placeholder="username"
+                    className="pl-9"
+                    required={!isLogin}
+                    maxLength={20}
+                  />
                 </div>
-                {usernameError &&
-              <p className="text-xs text-destructive">{usernameError}</p>
-              }
-                {username.length >= 3 && !usernameError &&
-              <p className="text-xs text-muted-foreground">
-                    Your profile: hoopjournal.me/{username}
-                  </p>
-              }
+                {usernameError && <p className="text-xs text-destructive">{usernameError}</p>}
+                {username.length >= 3 && !usernameError && (
+                  <p className="text-xs text-muted-foreground">Your profile: hoopjournal.me/{username}</p>
+                )}
               </div>
-            }
+            )}
 
-            {authMethod === 'email' ?
-            <div className="space-y-2">
+            {authMethod === 'email' ? (
+              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                required={authMethod === 'email'} />
-              
-              </div> :
-
-            <div className="space-y-2">
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required={authMethod === 'email'}
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(555) 123-4567"
-                required={authMethod === 'phone'} />
-              
-                <p className="text-xs text-muted-foreground">
-                  Enter your 10-digit US phone number
-                </p>
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(555) 123-4567"
+                  required={authMethod === 'phone'}
+                />
+                <p className="text-xs text-muted-foreground">Enter your 10-digit US phone number</p>
               </div>
-            }
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -680,18 +355,14 @@ export function AuthForm() {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full gradient-primary font-semibold">
-              
-              {loading ?
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
-              isLogin ?
-              <LogIn className="w-4 h-4 mr-2" /> :
-
-              <UserPlus className="w-4 h-4 mr-2" />
-              }
+            <Button type="submit" disabled={loading} className="w-full gradient-primary font-semibold">
+              {loading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : isLogin ? (
+                <LogIn className="w-4 h-4 mr-2" />
+              ) : (
+                <UserPlus className="w-4 h-4 mr-2" />
+              )}
               {isLogin ? 'Sign In' : 'Create Account'}
             </Button>
           </form>
@@ -704,88 +375,59 @@ export function AuthForm() {
             </span>
           </div>
 
-          {/* Social Sign In Buttons */}
+          {/* Social Sign In */}
           <div className="space-y-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleGoogleSignIn}
-              disabled={googleLoading}
-              className="w-full">
-              
-              {googleLoading ?
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
-
-              <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
-                  <path
-                  fill="currentColor"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                
-                  <path
-                  fill="currentColor"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                
-                  <path
-                  fill="currentColor"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                
-                  <path
-                  fill="currentColor"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                
+            <Button type="button" variant="outline" onClick={handleGoogleSignIn} disabled={googleLoading} className="w-full">
+              {googleLoading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                  <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
-              }
+              )}
               Continue with Google
             </Button>
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleAppleSignIn}
-              disabled={appleLoading}
-              className="w-full">
-              
-              {appleLoading ?
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
-
-              <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+            <Button type="button" variant="outline" onClick={handleAppleSignIn} disabled={appleLoading} className="w-full">
+              {appleLoading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
                 </svg>
-              }
+              )}
               Continue with Apple
             </Button>
           </div>
 
-          {/* Forgot Password - only show on login */}
-          {isLogin &&
-          <div className="mt-4 text-center">
+          {/* Forgot Password */}
+          {isLogin && (
+            <div className="mt-4 text-center">
               <ForgotPasswordDialog
-              trigger={
-              <button
-                type="button"
-                className="text-sm text-primary hover:text-primary/80 transition-colors">
-                
+                trigger={
+                  <button type="button" className="text-sm text-primary hover:text-primary/80 transition-colors">
                     Forgot your password?
                   </button>
-              } />
-            
+                }
+              />
             </div>
-          }
+          )}
 
           {/* Toggle */}
           <div className="mt-4 text-center">
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors">
-              
-              {isLogin ?
-              "Don't have an account? Sign up" :
-              'Already have an account? Sign in'}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
           </div>
         </div>
       </div>
-    </div>);
-
+    </div>
+  );
 }
