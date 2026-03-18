@@ -111,6 +111,12 @@ export function AuthForm() {
     const redirectUri = `${callbackOrigin}/auth/callback`;
     const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
+    // On native, open hoopjournal.me/oauth-bridge first so iOS dialog shows
+    // "hoopjournal.me" instead of "lovable.app", then it redirects to the broker.
+    const urlToOpen = native
+      ? `${CUSTOM_DOMAIN_ORIGIN}/oauth-bridge?broker_url=${encodeURIComponent(brokerUrl)}`
+      : brokerUrl;
+
     console.log(`[OAuth] ===== ${provider.toUpperCase()} OAUTH DEBUG =====`);
     console.log(`[OAuth] isNativeApp(): ${native}`);
     console.log(`[OAuth] isCustomDomain: ${isCustomDomain}`);
