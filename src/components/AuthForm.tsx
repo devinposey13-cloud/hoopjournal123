@@ -157,7 +157,7 @@ export function AuthForm() {
 
       // ── ANDROID NATIVE / FALLBACK: Use OAuth redirect via system browser ──
       console.log('[Auth:Apple] Native fallback — OAuth redirect');
-      const redirectTo = `${PUBLISHED_ORIGIN}/auth/callback`;
+      const redirectTo = getOAuthRedirectUri({ forNative: true });
       const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
       await openOAuthInSystemBrowser(oauthUrl);
     } catch (error: unknown) {
