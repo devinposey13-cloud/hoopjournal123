@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { isNativeApp, getPlatform } from '@/lib/platform';
-
-const NATIVE_URL_SCHEME = 'hoopjournal';
+import { buildNativeOAuthReturnUrl, isMobileSystemBrowserOAuthReturn } from '@/lib/oauthCallback';
 
 /**
  * OAuth callback handler — supports both web and Despia native.
@@ -55,10 +54,28 @@ export default function OAuthCallback() {
     const code = queryParams.get('code');
     const errorParam = hashParams.get('error') || queryParams.get('error');
     const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
+    const isSystemBrowserReturn = isMobileSystemBrowserOAuthReturn({
+      hostname: window.location.hostname,
+      native,
+      userAgent: navigator.userAgent,
+    });
 
     log(`Code present: ${!!code}`);
     log(`Tokens present: access=${!!accessToken}, refresh=${!!refreshToken}`);
     log(`Error present: ${!!errorParam}`);
+    log(`System browser return: ${isSystemBrowserReturn}`);
+
+    if (isSystemBrowserReturn && (errorParam || code || (accessToken && refreshToken))) {
+      log('System browser callback detected — handing off auth payload to native app');
+      handoffToNativeApp({
+        code,
+        accessToken,
+        refreshToken,
+        error: errorParam,
+        errorDescription,
+      });
+      return;
+    }
 
     // ── Error from provider ──
     if (errorParam) {
