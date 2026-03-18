@@ -16,6 +16,7 @@ function getClientIP(req: Request): string {
 }
 
 serve(async (req: Request): Promise<Response> => {
+  const corsHeaders = getCorsHeaders(req);
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
