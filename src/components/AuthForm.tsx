@@ -102,37 +102,45 @@ export function AuthForm() {
   const LOVABLE_APP_ORIGIN = 'https://hoopjournal123.lovable.app';
   const CUSTOM_DOMAIN_ORIGIN = 'https://hoopjournal.me';
 
-  const getManagedOAuthRedirectUri = () => {
-    // Lovable Cloud managed OAuth expects the app origin here, not /auth/callback.
-    // For native shell flows, keep the managed callback on the lovable.app origin
-    // so the callback page can deep-link tokens back into the app.
-    return isNativeApp() ? LOVABLE_APP_ORIGIN : window.location.origin;
+  /**
+   * Get the direct OAuth URL from Supabase (bypasses Lovable broker entirely).
+   * Works with your own Google/Apple OAuth credentials configured in Supabase.
+   */
+  const getDirectOAuthUrl = async (provider: 'google' | 'apple', redirectTo: string) => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+      },
+    });
+    if (error) throw error;
+    if (!data?.url) throw new Error('No OAuth URL returned');
+    return data.url;
   };
-
-  const buildBrokerUrl = (provider: 'google' | 'apple', redirectUri: string) =>
-    `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
   const handleCustomDomainOAuth = async (provider: 'google' | 'apple') => {
     // Best-effort SW cache clear (non-blocking on failure)
     try { await clearServiceWorkerCaches(); } catch (_) {}
 
     const native = isNativeApp();
-    const redirectUri = getManagedOAuthRedirectUri();
-    const brokerUrl = buildBrokerUrl(provider, redirectUri);
+    // Redirect back to the lovable.app callback so OAuthCallback can handle tokens
+    const redirectTo = `${LOVABLE_APP_ORIGIN}/auth/callback`;
+    const oauthUrl = await getDirectOAuthUrl(provider, redirectTo);
 
     // On native, open hoopjournal.me/oauth-bridge first so iOS shows the custom
-    // domain in the auth sheet, then bounce into the lovable-managed broker.
+    // domain in the auth sheet, then bounce into the actual Google/Apple OAuth URL.
     const urlToOpen = native
-      ? `${CUSTOM_DOMAIN_ORIGIN}/oauth-bridge?broker_url=${encodeURIComponent(brokerUrl)}`
-      : brokerUrl;
+      ? `${CUSTOM_DOMAIN_ORIGIN}/oauth-bridge?broker_url=${encodeURIComponent(oauthUrl)}`
+      : oauthUrl;
 
     console.log(`[OAuth] ===== ${provider.toUpperCase()} OAUTH DEBUG =====`);
     console.log(`[OAuth] isNativeApp(): ${native}`);
     console.log(`[OAuth] isCustomDomain: ${isCustomDomain}`);
-    console.log(`[OAuth] redirect_uri: ${redirectUri}`);
-    console.log(`[OAuth] brokerUrl: ${brokerUrl}`);
-    console.log(`[OAuth] urlToOpen: ${urlToOpen}`);
-    console.log(`[OAuth] Code path: ${native ? 'NATIVE (system browser via bridge)' : 'WEB (window.location redirect)'}`);
+    console.log(`[OAuth] redirectTo: ${redirectTo}`);
+    console.log(`[OAuth] oauthUrl: ${oauthUrl.substring(0, 100)}...`);
+    console.log(`[OAuth] urlToOpen: ${urlToOpen.substring(0, 100)}...`);
+    console.log(`[OAuth] Code path: ${native ? 'NATIVE (system browser via bridge)' : 'WEB (direct redirect)'}`);
 
     await openOAuthInSystemBrowser(urlToOpen);
   };
