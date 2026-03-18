@@ -2,18 +2,17 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { isNativeApp } from '@/lib/platform';
 
-// URL scheme for redirecting back to native Capacitor app
 const NATIVE_URL_SCHEME = 'hoopjournal';
 
 /**
- * Dedicated OAuth callback route that handles token handoff.
+ * OAuth callback handler.
  * 
- * Two scenarios:
- * 1. Web/PWA: Tokens arrive in hash, set session, redirect to /
- * 2. Native app: This page runs in the system browser (Safari).
- *    After extracting tokens, redirect to hoopjournal://auth/callback 
- *    so the native app can pick them up via appUrlOpen listener.
+ * WEB: Supabase PKCE auto-exchanges the code via detectSessionInUrl,
+ *      then we redirect to /.
+ * NATIVE: If on web but mobile UA (system browser after OAuth),
+ *         deep-link tokens back to the native app.
  */
 export default function OAuthCallback() {
   const navigate = useNavigate();
@@ -26,9 +25,8 @@ export default function OAuthCallback() {
     const handleCallback = async () => {
       const hash = window.location.hash;
       const search = window.location.search;
-      
-      console.log('[OAuthCallback] Loaded. Hash present:', !!hash, 'Search present:', !!search);
-      console.log('[OAuthCallback] Full URL:', window.location.href);
+
+      console.log('[OAuthCallback] Processing callback...');
 
       const hashParams = new URLSearchParams(hash.replace('#', ''));
       const queryParams = new URLSearchParams(search);
@@ -37,133 +35,8 @@ export default function OAuthCallback() {
       const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
       const errorParam = hashParams.get('error') || queryParams.get('error');
       const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
-      const popupMode = queryParams.get('popup') === '1' || hashParams.get('popup') === '1';
-      const provider = queryParams.get('provider') || hashParams.get('provider') || 'apple';
-      const targetOriginParam = queryParams.get('target_origin') || hashParams.get('target_origin');
-      const targetUrlParam = queryParams.get('target_url') || hashParams.get('target_url');
 
-      const isTrustedOrigin = (origin: string) => {
-        try {
-          const host = new URL(origin).hostname;
-          return (
-            host === window.location.hostname ||
-            host === 'localhost' ||
-            host.endsWith('.lovable.app') ||
-            host.endsWith('.lovableproject.com')
-          );
-        } catch {
-          return false;
-        }
-      };
-
-      let targetOrigin = window.location.origin;
-      if (targetOriginParam) {
-        try {
-          const parsed = new URL(targetOriginParam).origin;
-          targetOrigin = isTrustedOrigin(parsed) ? parsed : window.location.origin;
-        } catch {
-          targetOrigin = window.location.origin;
-        }
-      }
-
-      let targetUrl = `${targetOrigin}/auth/callback`;
-      if (targetUrlParam) {
-        try {
-          const parsedTargetUrl = new URL(targetUrlParam);
-          if (isTrustedOrigin(parsedTargetUrl.origin)) {
-            targetOrigin = parsedTargetUrl.origin;
-            targetUrl = parsedTargetUrl.toString();
-          }
-        } catch {
-          targetUrl = `${targetOrigin}/auth/callback`;
-        }
-      }
-
-      // Popup handoff flow — if the provider returned to a different origin
-      // (for example lovable.app), first bounce back to the target callback URL
-      // so opener messaging can complete in the preview's same-origin context.
-      if (popupMode) {
-        const codeParam = queryParams.get('code') || hashParams.get('code');
-        const hasCallbackPayload = Boolean(accessToken || refreshToken || errorParam || codeParam);
-        const shouldBounceToTargetCallback =
-          hasCallbackPayload &&
-          targetUrlParam &&
-          targetOrigin !== window.location.origin &&
-          queryParams.get('popup_forwarded') !== '1';
-
-        if (shouldBounceToTargetCallback) {
-          try {
-            const bounceUrl = new URL(targetUrl);
-            bounceUrl.searchParams.set('popup_forwarded', '1');
-            bounceUrl.searchParams.set('popup', '1');
-            bounceUrl.searchParams.set('provider', provider);
-            if (errorParam) bounceUrl.searchParams.set('error', errorParam);
-            if (errorDescription) bounceUrl.searchParams.set('error_description', errorDescription);
-            if (codeParam) bounceUrl.searchParams.set('code', codeParam);
-            console.log('[OAuthCallback] Bouncing popup callback to target origin:', bounceUrl.toString());
-            if (window.location.hash) {
-              bounceUrl.hash = window.location.hash;
-            }
-            window.location.replace(bounceUrl.toString());
-            return;
-          } catch (bounceError) {
-            console.warn('[OAuthCallback] Failed to bounce popup callback:', bounceError);
-          }
-        }
-
-        const sendViaOpener = (msg: Record<string, string>) => {
-          try {
-            if (window.opener) {
-              window.opener.postMessage(msg, targetOrigin);
-              console.log('[OAuthCallback] Sent popup auth message via postMessage to opener');
-            } else {
-              console.log('[OAuthCallback] window.opener is null, skipping postMessage');
-            }
-          } catch (e) {
-            console.warn('[OAuthCallback] postMessage to opener failed:', e);
-          }
-        };
-
-        const sendViaBroadcast = (msg: Record<string, string>) => {
-          try {
-            const bc = new BroadcastChannel('hoopjournal-oauth');
-            bc.postMessage(msg);
-            console.log('[OAuthCallback] Sent popup auth message via BroadcastChannel');
-            setTimeout(() => bc.close(), 500);
-          } catch (e) {
-            console.warn('[OAuthCallback] BroadcastChannel failed:', e);
-          }
-        };
-
-        const completePopupAuth = (msg: Record<string, string>) => {
-          sendViaOpener(msg);
-          sendViaBroadcast(msg);
-          setTimeout(() => window.close(), 300);
-        };
-
-        if (errorParam) {
-          completePopupAuth({ type: 'oauth-error', provider, error: errorDescription || errorParam });
-          return;
-        }
-
-        if (accessToken && refreshToken) {
-          console.log('[OAuthCallback] Popup mode: found tokens in URL');
-          completePopupAuth({ type: 'oauth-complete', provider, accessToken, refreshToken });
-          return;
-        }
-
-        if (codeParam) {
-          console.error('[OAuthCallback] Popup mode: unexpected PKCE code callback in token flow');
-          completePopupAuth({
-            type: 'oauth-error',
-            provider,
-            error: 'Could not complete sign-in from popup callback.',
-          });
-          return;
-        }
-      }
-
-      // Handle error from OAuth provider
+      // ── Error from provider ──
       if (errorParam) {
         console.error('[OAuthCallback] OAuth error:', errorParam, errorDescription);
         setError(errorDescription || errorParam);
@@ -171,34 +44,27 @@ export default function OAuthCallback() {
         return;
       }
 
+      // ── Tokens in URL (implicit grant or native redirect) ──
       if (accessToken && refreshToken) {
-        console.log('[OAuthCallback] Tokens found');
-        
-        // Check if this callback was opened in a system browser by a native app
-        // If on the lovable.app domain and user-agent suggests mobile, redirect to app
+        console.log('[OAuthCallback] Tokens found in URL');
+
+        // Check if system browser opened by native app
         const isMobileUA = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        const isOnLovableApp = window.location.hostname.includes('lovable.app');
-        
-        if (isMobileUA && isOnLovableApp) {
-          // Despia expects the oauth/ prefix so it closes the native browser
-          // session and routes the WebView to /auth/callback with these params.
-          console.log('[OAuthCallback] Mobile browser on lovable.app - redirecting to native app');
+        const isOnPublishedDomain = window.location.hostname.includes('lovable.app') || 
+                                     window.location.hostname.includes('hoopjournal.me');
+
+        if (isMobileUA && isOnPublishedDomain && !isNativeApp()) {
+          console.log('[OAuthCallback] Mobile browser — redirecting to native app');
           setRedirectingToApp(true);
-          
+
           const deepLink = `${NATIVE_URL_SCHEME}://oauth/auth/callback?access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`;
           window.location.href = deepLink;
-          
-          // Fallback: if deep link doesn't work, show a manual button
+
+          // Fallback if deep link fails
           setTimeout(async () => {
-            console.log('[OAuthCallback] Deep link may have failed - showing manual return button');
-            // Pre-set the session on web so the button works
             try {
-              await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken,
-              });
-              console.log('[OAuthCallback] Session set on web as fallback');
-            } catch (e: unknown) {
+              await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+            } catch (e) {
               console.error('[OAuthCallback] Fallback session error:', e);
             }
             setRedirectingToApp(false);
@@ -207,10 +73,10 @@ export default function OAuthCallback() {
           }, 2500);
           return;
         }
-        
-        // Standard web flow: set session and redirect
+
+        // Standard web: set session and go home
         try {
-          const { data, error: sessionError } = await supabase.auth.setSession({
+          const { error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
@@ -222,28 +88,32 @@ export default function OAuthCallback() {
             return;
           }
 
-          console.log('[OAuthCallback] Session set successfully. User:', data.session?.user?.id);
+          console.log('[OAuthCallback] Session set successfully');
           window.history.replaceState({}, '', '/auth/callback');
           navigate('/', { replace: true });
-          return;
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : 'Failed to complete sign in';
-          console.error('[OAuthCallback] Unexpected error:', e);
           setError(msg);
           setTimeout(() => navigate('/', { replace: true }), 3000);
-          return;
         }
+        return;
       }
 
-      // No tokens and no error
-      console.log('[OAuthCallback] No tokens found, checking existing session...');
+      // ── PKCE flow: Supabase client auto-exchanges code via detectSessionInUrl ──
+      // Wait briefly for the auth state change to fire
+      console.log('[OAuthCallback] No tokens in URL — waiting for PKCE exchange...');
+      
+      // Give Supabase client time to detect and exchange the code
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        console.log('[OAuthCallback] Existing session found, redirecting home');
+        console.log('[OAuthCallback] Session established via PKCE');
+        navigate('/', { replace: true });
       } else {
-        console.log('[OAuthCallback] No session, redirecting to login');
+        console.log('[OAuthCallback] No session found, redirecting to login');
+        navigate('/', { replace: true });
       }
-      navigate('/', { replace: true });
     };
 
     handleCallback();
@@ -268,13 +138,14 @@ export default function OAuthCallback() {
             >
               Return to App
             </a>
-            <p className="text-muted-foreground text-xs mt-3">If the button doesn't work, open Hoop Journal manually — you're already signed in.</p>
+            <p className="text-muted-foreground text-xs mt-3">
+              If the button doesn't work, open Hoop Journal manually — you're already signed in.
+            </p>
           </>
         ) : redirectingToApp ? (
           <>
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
             <p className="text-muted-foreground">Opening Hoop Journal...</p>
-            <p className="text-muted-foreground text-xs">If the app doesn't open, please wait...</p>
           </>
         ) : (
           <>
