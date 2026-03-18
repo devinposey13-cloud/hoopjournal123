@@ -79,14 +79,17 @@ export default function OAuthCallback() {
         }
       }
 
-      // Popup handoff flow — popup is now on the same origin as the iframe opener,
-      // so both postMessage and BroadcastChannel work directly.
+      // Popup handoff flow — support BOTH implicit token callbacks and PKCE code callbacks.
+      // In the preview iframe flow we use signInWithOAuth(... skipBrowserRedirect: true),
+      // which returns a PKCE code. The Supabase client auto-exchanges that code on this
+      // callback page, so we must read the resulting session and relay its tokens back
+      // to the opener before closing the popup.
       if (popupMode) {
         const sendViaOpener = (msg: Record<string, string>) => {
           try {
             if (window.opener) {
-              window.opener.postMessage(msg, window.location.origin);
-              console.log('[OAuthCallback] Sent token via postMessage to opener');
+              window.opener.postMessage(msg, targetOrigin);
+              console.log('[OAuthCallback] Sent popup auth message via postMessage to opener');
             } else {
               console.log('[OAuthCallback] window.opener is null, skipping postMessage');
             }
@@ -99,27 +102,62 @@ export default function OAuthCallback() {
           try {
             const bc = new BroadcastChannel('hoopjournal-oauth');
             bc.postMessage(msg);
-            console.log('[OAuthCallback] Sent token via BroadcastChannel');
+            console.log('[OAuthCallback] Sent popup auth message via BroadcastChannel');
             setTimeout(() => bc.close(), 500);
           } catch (e) {
             console.warn('[OAuthCallback] BroadcastChannel failed:', e);
           }
         };
 
-        if (errorParam) {
-          const msg = { type: 'oauth-error', provider, error: errorDescription || errorParam };
+        const completePopupAuth = (msg: Record<string, string>) => {
           sendViaOpener(msg);
           sendViaBroadcast(msg);
           setTimeout(() => window.close(), 300);
+        };
+
+        const waitForSession = async () => {
+          for (let attempt = 0; attempt < 8; attempt += 1) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token && session?.refresh_token) {
+              return session;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 250));
+          }
+          return null;
+        };
+
+        if (errorParam) {
+          completePopupAuth({ type: 'oauth-error', provider, error: errorDescription || errorParam });
           return;
         }
 
         if (accessToken && refreshToken) {
-          console.log('[OAuthCallback] Popup mode: sending tokens via postMessage + BroadcastChannel');
-          const msg = { type: 'oauth-complete', provider, accessToken, refreshToken };
-          sendViaOpener(msg);
-          sendViaBroadcast(msg);
-          setTimeout(() => window.close(), 300);
+          console.log('[OAuthCallback] Popup mode: found tokens in URL');
+          completePopupAuth({ type: 'oauth-complete', provider, accessToken, refreshToken });
+          return;
+        }
+
+        const codeParam = queryParams.get('code') || hashParams.get('code');
+        if (codeParam) {
+          console.log('[OAuthCallback] Popup mode: found PKCE code, waiting for exchanged session');
+          const session = await waitForSession();
+
+          if (session?.access_token && session?.refresh_token) {
+            completePopupAuth({
+              type: 'oauth-complete',
+              provider,
+              accessToken: session.access_token,
+              refreshToken: session.refresh_token,
+            });
+            return;
+          }
+
+          console.error('[OAuthCallback] Popup mode: PKCE code present but no session was established');
+          completePopupAuth({
+            type: 'oauth-error',
+            provider,
+            error: 'Could not complete sign-in from popup callback.',
+          });
           return;
         }
       }
