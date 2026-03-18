@@ -103,8 +103,8 @@ export function AuthForm() {
 
     try {
       if (isNativeApp()) {
-        // ── MOBILE FLOW: Native Google Sign-In SDK ──
-        console.log('[Auth] Starting native Google Sign-In (Capacitor)');
+        // ── MOBILE: Native Google Sign-In SDK → idToken → Supabase ──
+        console.log('[Auth] Starting native Google Sign-In (Capacitor SDK)');
         googleTimeoutRef.current = window.setTimeout(() => {
           setGoogleLoading(false);
           toast.error('Google sign-in took too long. Please try again.');
@@ -112,26 +112,34 @@ export function AuthForm() {
 
         await nativeGoogleSignIn();
         console.log('[Auth] Native Google Sign-In completed');
-        // Session will be picked up by onAuthStateChange
         return;
       }
 
-      // ── WEB FLOW: Supabase signInWithOAuth (same-tab redirect) ──
-      console.log('[Auth] Starting web Google Sign-In (same-tab redirect)');
+      if (isCustomDomain()) {
+        // ── CUSTOM DOMAIN / PREVIEW: Direct Supabase OAuth + skipBrowserRedirect ──
+        // Redirect back to the custom domain callback so session stays in-context
+        const redirectTo = `${CUSTOM_DOMAIN_ORIGIN}/auth/callback`;
+        console.log('[Auth] Custom domain Google Sign-In, redirectTo:', redirectTo);
+
+        const oauthUrl = await getDirectOAuthUrl('google', redirectTo);
+        console.log('[Auth] Direct OAuth URL obtained, navigating...');
+        await openOAuthInSystemBrowser(oauthUrl);
+        return;
+      }
+
+      // ── STANDARD WEB: Supabase signInWithOAuth (same-tab redirect) ──
+      console.log('[Auth] Standard web Google Sign-In (same-tab redirect)');
       const redirectTo = `${window.location.origin}/auth/callback`;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo,
-          queryParams: {
-            prompt: 'select_account',
-          },
+          queryParams: { prompt: 'select_account' },
         },
       });
 
       if (error) throw error;
-      // Browser will redirect — no need to set loading false
     } catch (error: unknown) {
       console.error('[Auth] Google sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Google sign-in failed';
@@ -145,14 +153,25 @@ export function AuthForm() {
     setAppleLoading(true);
 
     try {
-      console.log('[Auth] Starting Apple Sign-In (same-tab redirect)');
+      if (isNativeApp() || isCustomDomain()) {
+        // ── NATIVE / CUSTOM DOMAIN: Direct Supabase OAuth + skipBrowserRedirect ──
+        const redirectTo = isNativeApp()
+          ? `${PUBLISHED_ORIGIN}/auth/callback`
+          : `${CUSTOM_DOMAIN_ORIGIN}/auth/callback`;
+        console.log('[Auth] Direct Apple Sign-In, redirectTo:', redirectTo);
+
+        const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
+        await openOAuthInSystemBrowser(oauthUrl);
+        return;
+      }
+
+      // ── STANDARD WEB ──
+      console.log('[Auth] Standard web Apple Sign-In (same-tab redirect)');
       const redirectTo = `${window.location.origin}/auth/callback`;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
-        options: {
-          redirectTo,
-        },
+        options: { redirectTo },
       });
 
       if (error) throw error;
