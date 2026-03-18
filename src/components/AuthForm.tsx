@@ -14,14 +14,12 @@ import { Separator } from '@/components/ui/separator';
 import { isNativeApp, getPlatform, isDespiaIOS } from '@/lib/platform';
 import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
 import { signInWithAppleNative, isAppleJSAvailable } from '@/lib/apple-auth';
-
-const CUSTOM_DOMAIN_ORIGIN = 'https://hoopjournal.me';
-const PUBLISHED_ORIGIN = 'https://hoopjournal123.lovable.app';
-
-const isCustomDomain = () =>
-  !window.location.hostname.includes('lovable.app') &&
-  !window.location.hostname.includes('lovableproject.com') &&
-  window.location.hostname !== 'localhost';
+import {
+  APP_ORIGIN,
+  PUBLISHED_ORIGIN,
+  isCustomDomain,
+  getOAuthRedirectUri,
+} from '@/lib/authConfig';
 
 const getDirectOAuthUrl = async (
   provider: 'google' | 'apple',
