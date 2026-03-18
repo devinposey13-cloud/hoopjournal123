@@ -38,50 +38,33 @@ const queryClient = new QueryClient();
 // Check for OAuth errors in URL on app load
 function OAuthErrorHandler() {
   useEffect(() => {
-    const oauthError = checkUrlForOAuthError();
-    if (oauthError) {
+    const url = new URL(window.location.href);
+    const error = url.searchParams.get('error') || new URLSearchParams(url.hash.slice(1)).get('error');
+    const errorDesc = url.searchParams.get('error_description') || new URLSearchParams(url.hash.slice(1)).get('error_description');
+    if (error) {
+      console.error('[OAuth] URL error:', error, errorDesc);
       setTimeout(() => {
-        toast.error(formatErrorWithCode(oauthError));
+        toast.error(errorDesc || error || 'Sign-in failed');
       }, 100);
+      url.searchParams.delete('error');
+      url.searchParams.delete('error_description');
+      window.history.replaceState({}, '', url.toString());
     }
   }, []);
   
   return null;
 }
 
-// Initialize native Google Auth + listen for native OAuth deep link callbacks
-function NativeOAuthHandler() {
+// Initialize native Google Auth on startup
+function NativeAuthInitializer() {
   useEffect(() => {
     if (!isNativeApp()) return;
-
-    console.log('[NativeOAuth] Initializing native auth handlers for Despia runtime');
-
-    let cleanup: (() => void) | null = null;
-
-    setupNativeOAuthListener(
-      async (accessToken, refreshToken) => {
-        console.log('[NativeOAuth] Received tokens, setting session...');
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-        if (error) {
-          console.error('[NativeOAuth] setSession error:', error.message);
-          toast.error('Sign-in failed: ' + error.message);
-        } else {
-          console.log('[NativeOAuth] Session set successfully');
-          toast.success('Signed in successfully!');
-        }
-      },
-      (error) => {
-        console.error('[NativeOAuth] Error:', error);
-        toast.error('Sign-in failed: ' + error);
-      }
-    ).then((c) => {
-      cleanup = c;
+    console.log('[NativeAuth] Initializing native Google Auth SDK');
+    import('@/lib/nativeGoogleAuth').then(({ initNativeGoogleAuth }) => {
+      initNativeGoogleAuth();
+    }).catch(err => {
+      console.warn('[NativeAuth] Failed to init native Google Auth:', err);
     });
-
-    return () => cleanup?.();
   }, []);
   
   return null;
