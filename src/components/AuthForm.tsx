@@ -96,7 +96,7 @@ export function AuthForm() {
     try {
       if (isNativeApp()) {
         // ── DESPIA NATIVE: Open system browser via Despia bridge ──
-        const redirectTo = `${CUSTOM_DOMAIN_ORIGIN}/auth/callback`;
+        const redirectTo = getOAuthRedirectUri({ forNative: true });
         console.log(`[Auth:Google] Despia native flow, redirectTo: ${redirectTo}`);
 
         googleTimeoutRef.current = window.setTimeout(() => {
