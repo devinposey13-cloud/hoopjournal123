@@ -259,7 +259,7 @@ export function AuthForm() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    const redirectUri = LOVABLE_APP_ORIGIN;
+    const redirectUri = getManagedOAuthRedirectUri();
 
     logOAuthInit('google', redirectUri);
 
@@ -339,7 +339,7 @@ export function AuthForm() {
 
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
-    const redirectUri = LOVABLE_APP_ORIGIN;
+    const redirectUri = getManagedOAuthRedirectUri();
 
     logOAuthInit('apple', redirectUri);
 
