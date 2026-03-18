@@ -144,7 +144,7 @@ export function AuthForm() {
     const native = isNativeApp();
     // Redirect back to the lovable.app callback so OAuthCallback can handle tokens
     const redirectTo = `${LOVABLE_APP_ORIGIN}/auth/callback`;
-    const oauthUrl = await getDirectOAuthUrl(provider, redirectTo);
+    const oauthUrl = await getDirectOAuthUrl(provider, redirectTo, native);
 
     // On native, open hoopjournal.me/oauth-bridge first so iOS shows the custom
     // domain in the auth sheet, then bounce into the actual Google/Apple OAuth URL.
