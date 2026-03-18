@@ -91,28 +91,37 @@ export function AuthForm() {
   };
 
   // Detect if running on a custom domain (not lovable infrastructure)
-  // Also treat native Capacitor apps as "custom domain" since their origin
-  // (capacitor://localhost) can't receive OAuth redirects
+  // Also treat native apps as "custom domain" since their origin
+  // can't receive OAuth redirects directly.
   const isCustomDomain =
-  isNativeApp() ||
-  !window.location.hostname.includes('lovable.app') &&
-  !window.location.hostname.includes('lovableproject.com') &&
-  window.location.hostname !== 'localhost';
+    isNativeApp() ||
+    !window.location.hostname.includes('lovable.app') &&
+    !window.location.hostname.includes('lovableproject.com') &&
+    window.location.hostname !== 'localhost';
 
   const LOVABLE_APP_ORIGIN = 'https://hoopjournal123.lovable.app';
   const CUSTOM_DOMAIN_ORIGIN = 'https://hoopjournal.me';
 
+  const getManagedOAuthRedirectUri = () => {
+    // Lovable Cloud managed OAuth expects the app origin here, not /auth/callback.
+    // For native shell flows, keep the managed callback on the lovable.app origin
+    // so the callback page can deep-link tokens back into the app.
+    return isNativeApp() ? LOVABLE_APP_ORIGIN : window.location.origin;
+  };
+
+  const buildBrokerUrl = (provider: 'google' | 'apple', redirectUri: string) =>
+    `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
   const handleCustomDomainOAuth = async (provider: 'google' | 'apple') => {
     // Best-effort SW cache clear (non-blocking on failure)
-    try {await clearServiceWorkerCaches();} catch (_) {}
+    try { await clearServiceWorkerCaches(); } catch (_) {}
 
     const native = isNativeApp();
-    const callbackOrigin = native ? CUSTOM_DOMAIN_ORIGIN : window.location.origin;
-    const redirectUri = `${callbackOrigin}/auth/callback`;
-    const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    const redirectUri = getManagedOAuthRedirectUri();
+    const brokerUrl = buildBrokerUrl(provider, redirectUri);
 
-    // On native, open hoopjournal.me/oauth-bridge first so iOS dialog shows
-    // "hoopjournal.me" instead of "lovable.app", then it redirects to the broker.
+    // On native, open hoopjournal.me/oauth-bridge first so iOS shows the custom
+    // domain in the auth sheet, then bounce into the lovable-managed broker.
     const urlToOpen = native
       ? `${CUSTOM_DOMAIN_ORIGIN}/oauth-bridge?broker_url=${encodeURIComponent(brokerUrl)}`
       : brokerUrl;
@@ -120,7 +129,6 @@ export function AuthForm() {
     console.log(`[OAuth] ===== ${provider.toUpperCase()} OAUTH DEBUG =====`);
     console.log(`[OAuth] isNativeApp(): ${native}`);
     console.log(`[OAuth] isCustomDomain: ${isCustomDomain}`);
-    console.log(`[OAuth] callbackOrigin: ${callbackOrigin}`);
     console.log(`[OAuth] redirect_uri: ${redirectUri}`);
     console.log(`[OAuth] brokerUrl: ${brokerUrl}`);
     console.log(`[OAuth] urlToOpen: ${urlToOpen}`);
@@ -140,9 +148,9 @@ export function AuthForm() {
   const handleIframePopupOAuth = async (provider: 'google' | 'apple') => {
     await clearServiceWorkerCaches();
 
-    // Redirect popup back to the SAME origin as this iframe so BroadcastChannel works
-    const popupRedirectUri = `${window.location.origin}/auth/callback?popup=1&provider=${provider}`;
-    const brokerUrl = `${LOVABLE_APP_ORIGIN}/~oauth/initiate?provider=${provider}&redirect_uri=${encodeURIComponent(popupRedirectUri)}`;
+    // Redirect popup through managed OAuth using the current origin.
+    const popupRedirectUri = window.location.origin;
+    const brokerUrl = buildBrokerUrl(provider, popupRedirectUri);
     console.log('[OAuth] Popup redirect_uri:', popupRedirectUri);
     console.log('[OAuth] Broker URL:', brokerUrl);
     const popup = window.open(brokerUrl, `hoopjournal_${provider}_oauth`, 'width=520,height=720');
@@ -251,7 +259,7 @@ export function AuthForm() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    const redirectUri = LOVABLE_APP_ORIGIN;
+    const redirectUri = getManagedOAuthRedirectUri();
 
     logOAuthInit('google', redirectUri);
 
@@ -331,7 +339,7 @@ export function AuthForm() {
 
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
-    const redirectUri = LOVABLE_APP_ORIGIN;
+    const redirectUri = getManagedOAuthRedirectUri();
 
     logOAuthInit('apple', redirectUri);
 
