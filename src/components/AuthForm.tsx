@@ -112,9 +112,7 @@ export function AuthForm() {
 
       // ── WEB: Use Lovable managed OAuth ──
       console.log('[Auth:Google] Web flow via lovable.auth');
-      const redirectUri = isCustomDomain()
-        ? `${window.location.origin}/auth/callback`
-        : window.location.origin;
+      const redirectUri = getOAuthRedirectUri();
       console.log(`[Auth:Google] Redirect URI: ${redirectUri}`);
 
       const { error } = await lovable.auth.signInWithOAuth('google', {
