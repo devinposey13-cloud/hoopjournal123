@@ -172,30 +172,57 @@ export default function OAuthCallback() {
 
     // ── Tokens in URL (implicit grant) ──
     if (accessToken && refreshToken) {
-      log('Tokens found in URL, calling setSession...');
+      log('Both access_token and refresh_token found — implicit grant flow');
+
+      // First check if detectSessionInUrl already established a session
+      const existingSession = await tryGetExistingSession();
+      if (existingSession) {
+        log('detectSessionInUrl already restored session — skipping manual setSession');
+        log(`Session user: ${existingSession.user?.id}, provider: ${existingSession.user?.app_metadata?.provider}`);
+        await handleSessionEstablished(existingSession.access_token, existingSession.refresh_token);
+        return;
+      }
+
+      log('No existing session found — calling supabase.auth.setSession...');
       try {
-        const { error: sessionError } = await supabase.auth.setSession({
+        const { data, error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         });
 
         if (sessionError) {
-          logError(`setSession error: ${sessionError.message}`);
-          setError(sessionError.message);
+          logError(`setSession failed: ${sessionError.message}`);
+          setError(`Session restore failed: ${sessionError.message}`);
           setShowRetry(true);
           return;
         }
 
-        log('setSession succeeded');
-        await handleSessionEstablished(accessToken, refreshToken);
+        if (data?.session) {
+          log(`setSession succeeded — user: ${data.session.user.id}`);
+          log(`Provider: ${data.session.user.app_metadata?.provider || 'unknown'}`);
+          await handleSessionEstablished(data.session.access_token, data.session.refresh_token);
+          return;
+        }
+
+        logError('setSession returned no error but also no session');
+        setError('Session could not be created. Please try again.');
+        setShowRetry(true);
         return;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
         logError(`setSession exception: ${msg}`);
-        setError(msg);
+        setError(`Session error: ${msg}`);
         setShowRetry(true);
         return;
       }
+    }
+
+    // ── Only access_token without refresh_token (or vice versa) ──
+    if (accessToken || refreshToken) {
+      logError(`Incomplete tokens — access_token: ${!!accessToken}, refresh_token: ${!!refreshToken}`);
+      setError('Incomplete authentication tokens received. Please try signing in again.');
+      setShowRetry(true);
+      return;
     }
 
     // ── No code or tokens — wait for detectSessionInUrl ──
