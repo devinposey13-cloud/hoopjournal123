@@ -371,7 +371,7 @@ export function AuthForm() {
       await clearServiceWorkerCaches();
 
       const { error } = await lovable.auth.signInWithOAuth("apple", {
-        redirect_uri: redirectUri
+        redirect_uri: redirectTo
       });
 
       if (error) {
