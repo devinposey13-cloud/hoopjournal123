@@ -116,14 +116,34 @@ export default function OAuthCallback() {
         };
 
         const waitForSession = async () => {
-          for (let attempt = 0; attempt < 8; attempt += 1) {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.access_token && session?.refresh_token) {
-              return session;
-            }
-            await new Promise((resolve) => setTimeout(resolve, 250));
+          const existingSession = (await supabase.auth.getSession()).data.session;
+          if (existingSession?.access_token && existingSession?.refresh_token) {
+            return existingSession;
           }
-          return null;
+
+          return await new Promise<Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session']>((resolve) => {
+            let settled = false;
+
+            const finish = (session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'] | null) => {
+              if (settled) return;
+              settled = true;
+              clearTimeout(timeoutId);
+              subscription.data.subscription.unsubscribe();
+              resolve(session);
+            };
+
+            const subscription = supabase.auth.onAuthStateChange((event, session) => {
+              if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.access_token && session?.refresh_token) {
+                console.log('[OAuthCallback] Popup mode: session established via auth state change');
+                finish(session);
+              }
+            });
+
+            const timeoutId = window.setTimeout(async () => {
+              const latestSession = (await supabase.auth.getSession()).data.session;
+              finish(latestSession ?? null);
+            }, 6000);
+          });
         };
 
         if (errorParam) {
@@ -139,7 +159,25 @@ export default function OAuthCallback() {
 
         const codeParam = queryParams.get('code') || hashParams.get('code');
         if (codeParam) {
-          console.log('[OAuthCallback] Popup mode: found PKCE code, waiting for exchanged session');
+          console.log('[OAuthCallback] Popup mode: found PKCE code, exchanging for session');
+
+          try {
+            const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(codeParam);
+            if (exchangeError) {
+              console.warn('[OAuthCallback] Popup mode: exchangeCodeForSession failed:', exchangeError.message);
+            } else if (exchangeData.session?.access_token && exchangeData.session?.refresh_token) {
+              completePopupAuth({
+                type: 'oauth-complete',
+                provider,
+                accessToken: exchangeData.session.access_token,
+                refreshToken: exchangeData.session.refresh_token,
+              });
+              return;
+            }
+          } catch (exchangeErr) {
+            console.warn('[OAuthCallback] Popup mode: explicit code exchange threw:', exchangeErr);
+          }
+
           const session = await waitForSession();
 
           if (session?.access_token && session?.refresh_token) {
