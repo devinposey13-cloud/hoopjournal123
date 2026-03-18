@@ -87,11 +87,17 @@ export function AuthForm() {
     return () => subscription.subscription.unsubscribe();
   }, []);
 
+  const isMobileWeb = (): boolean => {
+    return !isNativeApp() && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  };
+
   // ─── Google Sign-In ───────────────────────────────────────────────
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     const platform = getPlatform();
-    console.log(`[Auth:Google] Platform: ${platform}, isNative: ${isNativeApp()}`);
+    const mobileWeb = isMobileWeb();
+    const customDomain = isCustomDomain();
+    console.log(`[Auth:Google] Platform: ${platform}, isNative: ${isNativeApp()}, mobileWeb: ${mobileWeb}, customDomain: ${customDomain}`);
 
     try {
       if (isNativeApp()) {
@@ -110,7 +116,17 @@ export function AuthForm() {
         return;
       }
 
-      // ── WEB: Use Lovable managed OAuth ──
+      // ── MOBILE WEB on custom domain: bypass Lovable broker, use direct Supabase OAuth ──
+      if (mobileWeb && customDomain) {
+        console.log('[Auth:Google] Mobile web on custom domain — using direct OAuth (bypassing broker)');
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        const oauthUrl = await getDirectOAuthUrl('google', redirectTo);
+        console.log(`[Auth:Google] Direct OAuth URL generated, redirecting same-tab`);
+        window.location.href = oauthUrl;
+        return;
+      }
+
+      // ── DESKTOP WEB: Use Lovable managed OAuth ──
       console.log('[Auth:Google] Web flow via lovable.auth');
       const redirectUri = getOAuthRedirectUri();
       console.log(`[Auth:Google] Redirect URI: ${redirectUri}`);
@@ -142,7 +158,16 @@ export function AuthForm() {
         return;
       }
 
-      // ── WEB: Use Lovable managed OAuth ──
+      // ── MOBILE WEB on custom domain: bypass Lovable broker ──
+      if (!isNativeApp() && isMobileWeb() && isCustomDomain()) {
+        console.log('[Auth:Apple] Mobile web on custom domain — using direct OAuth');
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
+        window.location.href = oauthUrl;
+        return;
+      }
+
+      // ── DESKTOP WEB: Use Lovable managed OAuth ──
       if (!isNativeApp()) {
         console.log('[Auth:Apple] Web flow via lovable.auth');
         const redirectUri = getOAuthRedirectUri();
