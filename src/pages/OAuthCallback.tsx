@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { isNativeApp, getPlatform } from '@/lib/platform';
-
-const NATIVE_URL_SCHEME = 'hoopjournal';
+import { buildNativeOAuthReturnUrl, isMobileSystemBrowserOAuthReturn } from '@/lib/oauthCallback';
 
 /**
  * OAuth callback handler — supports both web and Despia native.
@@ -55,10 +54,28 @@ export default function OAuthCallback() {
     const code = queryParams.get('code');
     const errorParam = hashParams.get('error') || queryParams.get('error');
     const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
+    const isSystemBrowserReturn = isMobileSystemBrowserOAuthReturn({
+      hostname: window.location.hostname,
+      native,
+      userAgent: navigator.userAgent,
+    });
 
     log(`Code present: ${!!code}`);
     log(`Tokens present: access=${!!accessToken}, refresh=${!!refreshToken}`);
     log(`Error present: ${!!errorParam}`);
+    log(`System browser return: ${isSystemBrowserReturn}`);
+
+    if (isSystemBrowserReturn && (errorParam || code || (accessToken && refreshToken))) {
+      log('System browser callback detected — handing off auth payload to native app');
+      handoffToNativeApp({
+        code,
+        accessToken,
+        refreshToken,
+        error: errorParam,
+        errorDescription,
+      });
+      return;
+    }
 
     // ── Error from provider ──
     if (errorParam) {
@@ -167,6 +184,37 @@ export default function OAuthCallback() {
     setShowRetry(true);
   };
 
+  const handoffToNativeApp = ({
+    code,
+    accessToken,
+    refreshToken,
+    error,
+    errorDescription,
+  }: {
+    code?: string | null;
+    accessToken?: string | null;
+    refreshToken?: string | null;
+    error?: string | null;
+    errorDescription?: string | null;
+  }) => {
+    const deepLink = buildNativeOAuthReturnUrl({
+      code,
+      accessToken,
+      refreshToken,
+      error,
+      errorDescription,
+    });
+
+    setRedirectingToApp(true);
+    setDeepLinkUrl(deepLink);
+    window.location.href = deepLink;
+
+    setTimeout(() => {
+      setRedirectingToApp(false);
+      setShowReturnButton(true);
+    }, 3000);
+  };
+
   /** After session is confirmed, decide where to go */
   const handleSessionEstablished = async (accessToken: string, refreshToken: string) => {
     // Verify session is actually retrievable
@@ -180,9 +228,12 @@ export default function OAuthCallback() {
 
     log(`Session verified — user: ${session.user.id}, provider: ${session.user.app_metadata?.provider}`);
 
-    const isMobileUA = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const isOnCustomDomain = window.location.hostname.includes('hoopjournal.me');
     const native = isNativeApp();
+    const isSystemBrowserReturn = isMobileSystemBrowserOAuthReturn({
+      hostname: window.location.hostname,
+      native,
+      userAgent: navigator.userAgent,
+    });
 
     // Inside Despia shell — just navigate home
     if (native) {
@@ -192,18 +243,9 @@ export default function OAuthCallback() {
     }
 
     // System browser on mobile + custom domain — deep-link back to native app
-    if (isMobileUA && isOnCustomDomain) {
+    if (isSystemBrowserReturn) {
       log('System browser on custom domain — deep-linking to native app');
-      setRedirectingToApp(true);
-
-      const deepLink = `${NATIVE_URL_SCHEME}://oauth/auth/callback?access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`;
-      setDeepLinkUrl(deepLink);
-      window.location.href = deepLink;
-
-      setTimeout(() => {
-        setRedirectingToApp(false);
-        setShowReturnButton(true);
-      }, 3000);
+      handoffToNativeApp({ accessToken, refreshToken });
       return;
     }
 
