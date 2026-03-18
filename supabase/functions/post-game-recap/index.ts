@@ -225,10 +225,10 @@ serve(async (req) => {
       ? Math.round((gameStats.ftMade / gameStats.ftAttempted) * 100) 
       : 0;
 
-    // Build milestone section for the prompt
+    // Build milestone section for the prompt (using sanitized milestones)
     let milestoneSection = '';
-    if (earnedMilestones && earnedMilestones.length > 0) {
-      const milestoneNames = earnedMilestones.map((m: any) => `${m.name} (${m.rarity})`).join(', ');
+    if (safeMilestones.length > 0) {
+      const milestoneNames = safeMilestones.map((m: { name: string; rarity: string }) => `${m.name} (${m.rarity})`).join(', ');
       milestoneSection = `
 
 MILESTONES UNLOCKED THIS GAME:
