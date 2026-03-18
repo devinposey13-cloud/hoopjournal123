@@ -22,7 +22,7 @@ export function isMobileSystemBrowserOAuthReturn({
   native,
   userAgent,
 }: SystemBrowserReturnParams): boolean {
-  return !native && /iPhone|iPad|iPod|Android/i.test(userAgent) && hostname.includes('hoopjournal.me');
+  return !native && /iPhone|iPad|iPod|Android/i.test(userAgent) && hostname.includes(APP_DOMAIN);
 }
 
 export function buildNativeOAuthReturnUrl({
