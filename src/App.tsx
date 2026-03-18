@@ -55,12 +55,17 @@ function OAuthErrorHandler() {
   return null;
 }
 
-// Log runtime environment on startup
+// Log runtime environment on startup and initialize Apple Auth
 function RuntimeLogger() {
   useEffect(() => {
     const platform = getPlatform();
     const native = isNativeApp();
     console.log(`[Runtime] Platform: ${platform}, isNative: ${native}, UA: ${navigator.userAgent}`);
+
+    // Initialize Apple JS SDK for native iOS/Web sign in
+    import('@/lib/apple-auth').then(({ initAppleAuth }) => {
+      initAppleAuth();
+    });
   }, []);
   
   return null;
