@@ -74,10 +74,14 @@ export async function signInWithAppleNative(): Promise<void> {
   try {
     response = await window.AppleID.auth.signIn();
   } catch (error: any) {
-    if (error?.error === 'popup_closed_by_user') {
+    if (error?.error === 'popup_closed_by_user' || error?.error === 'user_cancelled_authorize') {
       throw new Error('Sign in cancelled');
     }
     throw error;
+  }
+
+  if (!response?.authorization) {
+    throw new Error('Sign in cancelled');
   }
 
   const idToken = response.authorization.id_token;
