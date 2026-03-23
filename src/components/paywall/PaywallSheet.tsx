@@ -68,53 +68,15 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   const navigate = useNavigate();
   const config = reason ? paywallConfigs[reason] : null;
 
-  // Loading & error states
-  const [isSlowLoad, setIsSlowLoad] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const [loadFailed, setLoadFailed] = useState(false);
   const [purchasingPlan, setPurchasingPlan] = useState<PlanId | null>(null);
 
-  // Determine if we're still loading (native only — web doesn't need entitlement pre-check)
-  const isLoading = isNative && !entitlementsLoaded && isCheckingEntitlements;
-
-  // Reset state when sheet opens
+  // Entitlements load in the background — never block the paywall UI.
+  // Plans are static catalog data; no need to wait for entitlement checks.
   useEffect(() => {
-    if (open) {
-      setIsSlowLoad(false);
-      setRetryCount(0);
-      setLoadFailed(false);
-      setPurchasingPlan(null);
-      if (isNative) {
-        refreshEntitlements();
-      }
+    if (open && isNative) {
+      refreshEntitlements();
     }
   }, [open, isNative, refreshEntitlements]);
-
-  // Slow load detection
-  useEffect(() => {
-    if (!open || !isLoading) {
-      setIsSlowLoad(false);
-      return;
-    }
-    const timer = setTimeout(() => setIsSlowLoad(true), SLOW_LOAD_MS);
-    return () => clearTimeout(timer);
-  }, [open, isLoading]);
-
-  // Auto-retry on native entitlement error
-  useEffect(() => {
-    if (!open || !isNative || !entitlementError || retryCount >= MAX_RETRIES) {
-      if (entitlementError && retryCount >= MAX_RETRIES) {
-        setLoadFailed(true);
-      }
-      return;
-    }
-    const timer = setTimeout(() => {
-      console.log(`[Paywall] Auto-retry ${retryCount + 1}/${MAX_RETRIES}`);
-      setRetryCount((c) => c + 1);
-      refreshEntitlements();
-    }, RETRY_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [open, isNative, entitlementError, retryCount, refreshEntitlements]);
 
   const handleRetry = useCallback(() => {
     setRetryCount(0);
