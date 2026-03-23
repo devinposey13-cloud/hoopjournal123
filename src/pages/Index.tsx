@@ -85,7 +85,7 @@ export default function Index() {
   const [hasShownRingOfHonorModal, setHasShownRingOfHonorModal] = useState(false);
   const [coachPrefillPrompt, setCoachPrefillPrompt] = useState<string | undefined>();
   const [autoOpenAddGame, setAutoOpenAddGame] = useState(false);
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading, signOut, isGuest } = useAuth();
   const { teams } = usePlayerTeams();
   const { isAdmin } = useAdmin();
   const { totalPending: adminNotificationCount } = useAdminNotifications();
