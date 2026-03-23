@@ -12,6 +12,15 @@ const RC_PRODUCT_TO_PLAN: Record<string, string> = {
   HoopJ_pro_yearly: "pro",
   HoopJ_elite_monthly: "elite",
   HoopJ_elite_yearly: "elite",
+  hj_starter_monthly: "pro",
+  hj_starter_yearly: "pro",
+  hj_pro_monthly: "pro",
+  hj_pro_yearly: "pro",
+  hj_elite_monthly: "elite",
+  hj_elite_yearly: "elite",
+  monthly: "pro",
+  yearly: "pro",
+  lifetime: "elite",
 };
 
 serve(async (req) => {

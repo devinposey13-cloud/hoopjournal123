@@ -15,15 +15,31 @@ import { toast } from 'sonner';
 // ─── Product ID mapping ───────────────────────────────────────────────
 // Store product IDs → internal plan
 export const PRODUCT_TO_PLAN: Record<string, PlanId> = {
+  // Current HoopJ product IDs
   HoopJ_pro_monthly: 'pro',
   HoopJ_pro_yearly: 'pro',
   HoopJ_elite_monthly: 'elite',
   HoopJ_elite_yearly: 'elite',
+  // New hj_ product IDs
+  hj_starter_monthly: 'pro',
+  hj_starter_yearly: 'pro',
+  hj_pro_monthly: 'pro',
+  hj_pro_yearly: 'pro',
+  hj_elite_monthly: 'elite',
+  hj_elite_yearly: 'elite',
+  // Generic IDs
+  monthly: 'pro',
+  yearly: 'pro',
+  lifetime: 'elite',
   // Android prefixed variants
   'premium:HoopJ_pro_monthly': 'pro',
   'premium:HoopJ_pro_yearly': 'pro',
   'premium:HoopJ_elite_monthly': 'elite',
   'premium:HoopJ_elite_yearly': 'elite',
+  'premium:hj_pro_monthly': 'pro',
+  'premium:hj_pro_yearly': 'pro',
+  'premium:hj_elite_monthly': 'elite',
+  'premium:hj_elite_yearly': 'elite',
 };
 
 // Internal plan + billing → store product ID
