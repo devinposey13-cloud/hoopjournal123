@@ -78,11 +78,6 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
     }
   }, [open, isNative, refreshEntitlements]);
 
-  const handleRetry = useCallback(() => {
-    setRetryCount(0);
-    setLoadFailed(false);
-    refreshEntitlements();
-  }, [refreshEntitlements]);
 
   if (!config) return null;
 
