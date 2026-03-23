@@ -49,6 +49,45 @@ function getNativeProductId(planId: PlanId, billingCycle: BillingCycle): string 
   return base;
 }
 
+// ─── User-facing error messages ─────────────────────────────────────
+const USER_ERRORS: Record<string, string> = {
+  product_not_found: "This plan isn't available right now. Please try again in a moment.",
+  network: 'No internet connection. Please reconnect and try again.',
+  payment_failed: "We couldn't complete the purchase right now. Please try again.",
+  unknown: "Something went wrong. Please try again in a moment.",
+};
+
+/** Check if an error indicates user cancellation */
+function isUserCancellation(err: unknown): boolean {
+  if (!err) return false;
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  return (
+    msg.includes('cancel') ||
+    msg.includes('cancelled') ||
+    msg.includes('canceled') ||
+    msg.includes('user cancelled') ||
+    msg.includes('skcancel') ||
+    msg.includes('purchasecancellederror') ||
+    msg.includes('usercancelledpurchase') ||
+    msg.includes('billing_response_result_user_canceled')
+  );
+}
+
+/** Map raw error to user-friendly message */
+function getUserErrorMessage(err: unknown): string {
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  if (msg.includes('product') && (msg.includes('not found') || msg.includes('missing'))) {
+    return USER_ERRORS.product_not_found;
+  }
+  if (msg.includes('network') || msg.includes('offline') || msg.includes('internet')) {
+    return USER_ERRORS.network;
+  }
+  if (msg.includes('payment') || msg.includes('billing') || msg.includes('declined')) {
+    return USER_ERRORS.payment_failed;
+  }
+  return USER_ERRORS.unknown;
+}
+
 // ─── Diagnostics ──────────────────────────────────────────────────────
 export interface BillingDiagnostics {
   isDespia: boolean;
@@ -90,6 +129,8 @@ export interface RestoredPurchase {
 export interface UseBillingReturn {
   /** Purchase a plan. Routes to Despia/RC on native, Stripe on web. */
   purchasePlan: (planId: PlanId, billingCycle: BillingCycle) => Promise<void>;
+  /** Launch RevenueCat native paywall (Despia launchPaywall). */
+  launchNativePaywall: (offering?: string) => Promise<void>;
   /** Restore purchases (native only). */
   restorePurchases: () => Promise<RestoredPurchase[]>;
   /** Refresh subscription status from backend. */
@@ -104,6 +145,8 @@ export interface UseBillingReturn {
   isRestoring: boolean;
   /** Whether we're on a native platform. */
   isNative: boolean;
+  /** The last purchase result status */
+  lastPurchaseResult: 'idle' | 'success' | 'cancelled' | 'error';
 }
 
 export function useBilling(): UseBillingReturn {
@@ -111,8 +154,10 @@ export function useBilling(): UseBillingReturn {
   const { createCheckout, checkSubscription } = useSubscription();
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [lastPurchaseResult, setLastPurchaseResult] = useState<'idle' | 'success' | 'cancelled' | 'error'>('idle');
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const despiaRef = useRef<any>(null);
+  const purchaseInFlightRef = useRef(false);
 
   const log = useCallback((msg: string) => {
     const entry = `${new Date().toISOString().slice(11, 19)} ${msg}`;
@@ -133,23 +178,39 @@ export function useBilling(): UseBillingReturn {
     }
   }, [log]);
 
+  // Poll backend for subscription update
+  const pollSubscriptionStatus = useCallback(async (maxAttempts: number, delayMs: number) => {
+    for (let i = 0; i < maxAttempts; i++) {
+      log(`[Billing] Polling backend (${i + 1}/${maxAttempts})…`);
+      await checkSubscription();
+      if (i < maxAttempts - 1) {
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+  }, [checkSubscription, log]);
+
   // ─── Native purchase via Despia + RevenueCat ──────────────────────
   const purchaseNative = useCallback(async (planId: PlanId, billingCycle: BillingCycle) => {
     if (!user?.id) throw new Error('User not authenticated');
 
+    // Prevent double purchases
+    if (purchaseInFlightRef.current) {
+      log('[Billing] ⚠ Purchase already in progress — ignoring duplicate tap');
+      return;
+    }
+    purchaseInFlightRef.current = true;
+
     const productId = getNativeProductId(planId, billingCycle);
-    log(`[Billing] Native purchase: plan=${planId}, cycle=${billingCycle}, productId=${productId}, userId=${user.id.slice(0, 8)}…`);
+    log(`[Billing] Native purchase: plan=${planId}, cycle=${billingCycle}, productId=${productId}`);
 
     const despia = await getDespia();
     const url = `revenuecat://purchase?external_id=${encodeURIComponent(user.id)}&product=${encodeURIComponent(productId)}`;
-    log(`[Billing] Calling despia("${url}")`);
+    log(`[Billing] Calling despia purchase URL`);
 
-    // Set up the global callback BEFORE triggering purchase
     return new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         log('[Billing] ⚠ Native purchase callback timed out (120s). Checking backend…');
         cleanup();
-        // Don't reject — just refresh and let user know
         checkSubscription().then(() => {
           log('[Billing] Backend refresh completed after timeout');
           resolve();
@@ -159,45 +220,72 @@ export function useBilling(): UseBillingReturn {
       const cleanup = () => {
         clearTimeout(timeout);
         window.onRevenueCatPurchase = undefined;
+        purchaseInFlightRef.current = false;
       };
 
       window.onRevenueCatPurchase = () => {
-        log('[Billing] ✓ onRevenueCatPurchase callback fired — refreshing backend status…');
+        log('[Billing] ✓ onRevenueCatPurchase callback fired');
         cleanup();
-        // Don't unlock immediately — wait for backend confirmation
         pollSubscriptionStatus(5, 2000)
           .then(() => {
             log('[Billing] ✓ Backend confirmed subscription update');
             resolve();
           })
           .catch((err) => {
-            log(`[Billing] ⚠ Backend polling failed: ${err}. User should check status manually.`);
-            resolve(); // still resolve — the webhook will catch up
+            log(`[Billing] ⚠ Backend polling failed: ${err}`);
+            resolve(); // still resolve — webhook will catch up
           });
       };
 
       try {
         despia(url);
-        log('[Billing] despia() call dispatched — waiting for onRevenueCatPurchase callback…');
+        log('[Billing] despia() call dispatched — waiting for callback…');
       } catch (err) {
         cleanup();
         log(`[Billing] ❌ despia() call failed: ${err}`);
         reject(err);
       }
     });
-  }, [user?.id, log, getDespia, checkSubscription]);
+  }, [user?.id, log, getDespia, checkSubscription, pollSubscriptionStatus]);
 
-  // Poll backend for subscription update
-  const pollSubscriptionStatus = useCallback(async (maxAttempts: number, delayMs: number) => {
-    for (let i = 0; i < maxAttempts; i++) {
-      log(`[Billing] Polling backend (${i + 1}/${maxAttempts})…`);
-      await checkSubscription();
-      // Small delay between polls
-      if (i < maxAttempts - 1) {
-        await new Promise((r) => setTimeout(r, delayMs));
+  // ─── Launch native RevenueCat paywall ─────────────────────────────
+  const launchNativePaywall = useCallback(async (offering = 'default') => {
+    if (!user?.id) throw new Error('User not authenticated');
+    if (!isDespia()) throw new Error('Native paywall only available on mobile');
+
+    log(`[Billing] Launching native paywall: offering=${offering}`);
+    const despia = await getDespia();
+
+    return new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        log('[Billing] ⚠ Native paywall callback timed out (180s)');
+        cleanup();
+        checkSubscription().then(() => resolve()).catch(reject);
+      }, 180000);
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+        window.onRevenueCatPurchase = undefined;
+      };
+
+      window.onRevenueCatPurchase = () => {
+        log('[Billing] ✓ Purchase via native paywall');
+        cleanup();
+        pollSubscriptionStatus(5, 2000).then(() => resolve()).catch(() => resolve());
+      };
+
+      try {
+        despia(`revenuecat://launchPaywall?external_id=${encodeURIComponent(user.id)}&offering=${encodeURIComponent(offering)}`);
+        log('[Billing] Native paywall launched');
+        // Resolve immediately since user may dismiss without purchasing
+        // The onRevenueCatPurchase callback handles actual purchases
+      } catch (err) {
+        cleanup();
+        log(`[Billing] ❌ launchPaywall failed: ${err}`);
+        reject(err);
       }
-    }
-  }, [checkSubscription, log]);
+    });
+  }, [user?.id, log, getDespia, checkSubscription, pollSubscriptionStatus]);
 
   // ─── Web purchase via Stripe ──────────────────────────────────────
   const purchaseWeb = useCallback(async (planId: PlanId, billingCycle: BillingCycle) => {
@@ -209,28 +297,45 @@ export function useBilling(): UseBillingReturn {
   // ─── Unified purchase ─────────────────────────────────────────────
   const purchasePlan = useCallback(async (planId: PlanId, billingCycle: BillingCycle) => {
     const diag = getDiagnostics();
-    log(`[Billing] purchasePlan: plan=${planId}, cycle=${billingCycle}, platform=${diag.platform}, isDespia=${diag.isDespia}`);
+    log(`[Billing] purchasePlan: plan=${planId}, cycle=${billingCycle}, platform=${diag.platform}`);
+
+    // Prevent double taps
+    if (isPurchasing || purchaseInFlightRef.current) {
+      log('[Billing] ⚠ Already purchasing — ignoring');
+      return;
+    }
 
     setIsPurchasing(true);
+    setLastPurchaseResult('idle');
     try {
       if (diag.isDespia) {
         await purchaseNative(planId, billingCycle);
-        toast.success('Purchase successful! 🎉');
+        setLastPurchaseResult('success');
+        toast.success(`You're now subscribed to ${planId === 'elite' ? 'Elite' : 'Pro'}! 🎉`);
       } else {
         await purchaseWeb(planId, billingCycle);
+        setLastPurchaseResult('success');
         toast.success('Redirecting to checkout…');
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Purchase failed';
-      log(`[Billing] ❌ Purchase error: ${msg}`);
-      if (!msg.includes('cancelled') && !msg.includes('canceled')) {
-        toast.error(msg);
+      if (isUserCancellation(err)) {
+        log('[Billing] Purchase cancelled by user');
+        setLastPurchaseResult('cancelled');
+        // Don't show error for user cancellation — show nothing or subtle message
+        return;
       }
+
+      const friendlyMsg = getUserErrorMessage(err);
+      const rawMsg = err instanceof Error ? err.message : String(err);
+      log(`[Billing] ❌ Purchase error: ${rawMsg}`);
+      setLastPurchaseResult('error');
+      toast.error(friendlyMsg);
       throw err;
     } finally {
       setIsPurchasing(false);
+      purchaseInFlightRef.current = false;
     }
-  }, [log, purchaseNative, purchaseWeb]);
+  }, [log, purchaseNative, purchaseWeb, isPurchasing]);
 
   // ─── Restore purchases (native only) ─────────────────────────────
   const restorePurchases = useCallback(async (): Promise<RestoredPurchase[]> => {
@@ -246,11 +351,12 @@ export function useBilling(): UseBillingReturn {
       const despia = await getDespia();
       const data = await despia('getpurchasehistory://', ['restoredData']);
       const purchases: RestoredPurchase[] = data?.restoredData ?? [];
+      const activePurchases = purchases.filter((p) => p.isActive);
 
-      log(`[Billing] Restore returned ${purchases.length} purchase(s)`);
+      log(`[Billing] Restore returned ${purchases.length} total, ${activePurchases.length} active`);
 
-      purchases.forEach((p, i) => {
-        log(`[Billing]   [${i}] productId=${p.productId}, isActive=${p.isActive}, willRenew=${p.willRenew}, expires=${p.expirationDate}`);
+      activePurchases.forEach((p, i) => {
+        log(`[Billing]   [${i}] entitlementId=${p.entitlementId}, productId=${p.productId}, isActive=${p.isActive}`);
       });
 
       // Trigger backend reconciliation
@@ -282,6 +388,7 @@ export function useBilling(): UseBillingReturn {
 
   return {
     purchasePlan,
+    launchNativePaywall,
     restorePurchases,
     refreshSubscriptionStatus,
     diagnostics: getDiagnostics(),
@@ -289,5 +396,6 @@ export function useBilling(): UseBillingReturn {
     isPurchasing,
     isRestoring,
     isNative: isDespia(),
+    lastPurchaseResult,
   };
 }
