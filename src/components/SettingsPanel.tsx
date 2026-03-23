@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { LegalPolicyViewer, PrivacyPolicyContent, TermsOfServiceContent } from '@/components/settings/LegalPolicyViewer';
+import { AIDisclosureScreen } from '@/components/settings/AIDisclosureScreen';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { PlayerProfile } from '@/types/basketball';
