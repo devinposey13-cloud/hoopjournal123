@@ -77,6 +77,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
   };
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsOfService, setShowTermsOfService] = useState(false);
+  const [showAIDisclosure, setShowAIDisclosure] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
