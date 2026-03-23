@@ -117,6 +117,7 @@ const App = () => (
                   <Route path="/parent/:token" element={<ParentDashboard />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
                   <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/eula" element={<EULA />} />
                   <Route path="/:username" element={<PublicProfile />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
