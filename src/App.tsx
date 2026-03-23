@@ -32,6 +32,7 @@ import OAuthCallback from "./pages/OAuthCallback";
 import ParentDashboard from "./pages/ParentDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import EULA from "./pages/EULA";
 
 const queryClient = new QueryClient();
 
