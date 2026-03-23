@@ -11,7 +11,7 @@
  * - Compliance links (Terms, Privacy, EULA)
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Drawer,
   DrawerContent,
