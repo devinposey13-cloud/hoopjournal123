@@ -496,10 +496,7 @@ export function AuthForm() {
             type="button"
             variant="outline"
             className="w-full h-12 text-base font-medium"
-            onClick={() => {
-              const { enterGuestMode } = useAuthRef.current;
-              enterGuestMode();
-            }}
+            onClick={() => enterGuestMode()}
           >
             Continue as Guest
           </Button>

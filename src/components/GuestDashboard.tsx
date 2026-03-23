@@ -15,30 +15,23 @@ import { GameStats, PlayerProfile, SeasonStats } from '@/types/basketball';
 // ─── Sample Data ────────────────────────────────────────────────────
 
 const SAMPLE_PROFILE: PlayerProfile = {
-  id: 'demo',
   name: 'Demo Player',
   team: 'Demo High School',
   position: 'Guard',
   number: 23,
   height: "6'1\"",
   grade: '10th Grade',
-  avatarUrl: null,
   isProfilePublic: false,
   coachPersona: null,
   coachVoiceGender: 'male',
   courtRole: 'scorer',
   playingLevel: 'high_school',
   seasonGoals: ['Improve 3PT%', 'Lead team in assists'],
-  parentEmail: null,
   onboardingCompletedAt: new Date().toISOString(),
   username: 'demoplayer',
   displayName: 'Demo Player',
-  instagramUrl: null,
   ringOfHonorOptIn: false,
   receiveGameSummaries: false,
-  themeMusicUrl: null,
-  phone: null,
-  avatarSkippedAt: null,
 };
 
 const SAMPLE_GAMES: GameStats[] = [
