@@ -20,7 +20,7 @@ export const PRODUCT_TO_PLAN: Record<string, PlanId> = {
   HoopJ_pro_yearly: 'pro',
   HoopJ_elite_monthly: 'elite',
   HoopJ_elite_yearly: 'elite',
-  // New hj_ product IDs
+  // hj_ product IDs (starter maps to pro entitlement)
   hj_starter_monthly: 'pro',
   hj_starter_yearly: 'pro',
   hj_pro_monthly: 'pro',
