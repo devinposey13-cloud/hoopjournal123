@@ -63,7 +63,7 @@ export function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, enterGuestMode } = useAuth();
   const googleTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
