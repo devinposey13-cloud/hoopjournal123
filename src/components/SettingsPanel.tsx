@@ -817,6 +817,11 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
       >
         <TermsOfServiceContent />
       </LegalPolicyViewer>
+
+      <AIDisclosureScreen
+        open={showAIDisclosure}
+        onClose={() => setShowAIDisclosure(false)}
+      />
     </div>
   );
 }
