@@ -731,6 +731,18 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
             </button>
+            <button
+              onClick={() => setShowAIDisclosure(true)}
+              className="w-full stat-card bg-secondary/30 p-4 rounded-lg hover:bg-secondary/50 transition-colors text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Brain className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Third-Party AI Services</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </button>
           </div>
 
           {/* Feedback */}
