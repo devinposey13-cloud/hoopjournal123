@@ -1,9 +1,17 @@
 /**
- * NativePurchaseSheet — now uses Despia billing instead of RevenueCat Capacitor plugin.
- * Simplified since Despia handles the native purchase UI.
+ * NativePurchaseSheet — hardened native purchase flow via Despia + RevenueCat.
+ *
+ * Features:
+ * - Loading state while entitlements pre-check
+ * - Graceful fallback when products unavailable
+ * - Retry logic
+ * - Restore purchases with clear messaging
+ * - Cancel detection (no error on user cancel)
+ * - Double-tap prevention
+ * - Compliance links (Terms, Privacy, EULA)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Drawer,
   DrawerContent,
@@ -15,12 +23,15 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, ArrowRight, Sparkles, Loader2, RotateCcw } from 'lucide-react';
+import { Check, ArrowRight, Sparkles, Loader2, RotateCcw, WifiOff, AlertCircle } from 'lucide-react';
 import { FeatureList } from '@/components/pricing/FeatureList';
-import { type BillingCycle, type PlanId, planCatalog, planOrder, getPlanPrice } from '@/lib/plans';
+import { type BillingCycle, type PlanId, planCatalog, planOrder, getPlanPrice, getTrialConfig, getTrialCopy, getTrialCta } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
+import { useNativeEntitlements } from '@/hooks/useNativeEntitlements';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface NativePurchaseSheetProps {
   open: boolean;
@@ -32,6 +43,10 @@ interface NativePurchaseSheetProps {
   initialBillingCycle?: BillingCycle;
 }
 
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1500;
+const SLOW_LOAD_MS = 4000;
+
 export function NativePurchaseSheet({
   open,
   onClose,
@@ -41,19 +56,60 @@ export function NativePurchaseSheet({
   recommendedPlan = 'pro',
   initialBillingCycle = 'monthly',
 }: NativePurchaseSheetProps) {
-  const { purchasePlan, restorePurchases, isPurchasing, isRestoring } = useBilling();
+  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
+  const { isChecking, isLoaded, error: entitlementError, refresh: refreshEntitlements } = useNativeEntitlements();
+  const { isOnline } = useOnlineStatus();
+  const navigate = useNavigate();
+
   const [cycle, setCycle] = useState<BillingCycle>(initialBillingCycle);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(recommendedPlan);
+  const [isSlowLoad, setIsSlowLoad] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  const isLoading = isNative && !isLoaded && isChecking;
 
   useEffect(() => {
     if (!open) return;
     setSelectedPlan(recommendedPlan);
     setCycle(initialBillingCycle);
-  }, [open, recommendedPlan, initialBillingCycle]);
+    setIsSlowLoad(false);
+    setRetryCount(0);
+    setLoadFailed(false);
+    if (isNative) refreshEntitlements();
+  }, [open, recommendedPlan, initialBillingCycle, isNative, refreshEntitlements]);
+
+  // Slow load detection
+  useEffect(() => {
+    if (!open || !isLoading) { setIsSlowLoad(false); return; }
+    const t = setTimeout(() => setIsSlowLoad(true), SLOW_LOAD_MS);
+    return () => clearTimeout(t);
+  }, [open, isLoading]);
+
+  // Auto-retry
+  useEffect(() => {
+    if (!open || !isNative || !entitlementError || retryCount >= MAX_RETRIES) {
+      if (entitlementError && retryCount >= MAX_RETRIES) setLoadFailed(true);
+      return;
+    }
+    const t = setTimeout(() => { setRetryCount(c => c + 1); refreshEntitlements(); }, RETRY_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [open, isNative, entitlementError, retryCount, refreshEntitlements]);
+
+  const handleRetry = useCallback(() => {
+    setRetryCount(0);
+    setLoadFailed(false);
+    refreshEntitlements();
+  }, [refreshEntitlements]);
 
   const tiers = planOrder.filter((id) => id !== 'free') as PlanId[];
 
   const handlePurchase = async () => {
+    if (isPurchasing) return;
+    if (!isOnline) {
+      toast.error('No internet connection. Please reconnect and try again.');
+      return;
+    }
     try {
       await purchasePlan(selectedPlan, cycle);
       onPurchaseComplete?.(selectedPlan);
@@ -65,15 +121,198 @@ export function NativePurchaseSheet({
 
   const handleRestore = async () => {
     try {
-      await restorePurchases();
-      toast.success('Purchases restored!');
+      const purchases = await restorePurchases();
+      const hasActive = purchases.some(p => p.isActive);
+      if (hasActive) {
+        toast.success('Your subscription has been restored.');
+        onClose();
+      } else {
+        toast.info('No previous subscription was found for this account.');
+      }
     } catch {
-      toast.error('Failed to restore purchases');
+      toast.error("We couldn't restore purchases right now. Please try again.");
     }
   };
 
+  const trialConfig = getTrialConfig(selectedPlan, cycle);
+  const trialCopy = getTrialCopy(selectedPlan, cycle);
+  const trialCta = getTrialCta(selectedPlan, cycle);
+
+  const renderContent = () => {
+    // Offline
+    if (!isOnline && isNative) {
+      return (
+        <div className="py-12 text-center space-y-4">
+          <WifiOff className="w-8 h-8 text-muted-foreground mx-auto" />
+          <p className="text-sm text-muted-foreground">No internet connection. Please reconnect and try again.</p>
+          <DrawerClose asChild>
+            <Button variant="ghost" className="text-muted-foreground">Close</Button>
+          </DrawerClose>
+        </div>
+      );
+    }
+
+    // Loading
+    if (isLoading) {
+      return (
+        <div className="py-16 text-center space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto" />
+          <p className="text-sm text-muted-foreground">
+            {isSlowLoad ? 'Still connecting to subscriptions…' : 'Loading plans…'}
+          </p>
+        </div>
+      );
+    }
+
+    // Fallback
+    if (isNative && loadFailed) {
+      return (
+        <div className="py-12 text-center space-y-5">
+          <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto" />
+          <div>
+            <p className="text-sm font-semibold mb-1">Subscriptions Temporarily Unavailable</p>
+            <p className="text-xs text-muted-foreground">Please try again in a moment.</p>
+          </div>
+          <div className="space-y-2 px-4">
+            <Button onClick={handleRetry} className="w-full">
+              <RotateCcw className="w-4 h-4 mr-2" />Try Again
+            </Button>
+            <Button variant="ghost" onClick={handleRestore} disabled={isRestoring} className="w-full text-xs">
+              {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+              Restore Purchases
+            </Button>
+            <DrawerClose asChild>
+              <Button variant="ghost" className="w-full text-muted-foreground text-xs">Continue on Free Plan</Button>
+            </DrawerClose>
+          </div>
+        </div>
+      );
+    }
+
+    // Normal content
+    return (
+      <>
+        <div className="px-6 pb-2 space-y-4">
+          <div className="flex justify-center">
+            <div className="inline-flex rounded-full bg-muted p-1 gap-1">
+              <button
+                onClick={() => setCycle('monthly')}
+                disabled={isPurchasing}
+                className={cn(
+                  'px-4 py-1.5 rounded-full text-sm font-medium transition-all',
+                  cycle === 'monthly' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setCycle('yearly')}
+                disabled={isPurchasing}
+                className={cn(
+                  'px-4 py-1.5 rounded-full text-sm font-medium transition-all',
+                  cycle === 'yearly' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                Yearly
+              </button>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            {tiers.map((id) => {
+              const plan = planCatalog[id];
+              const price = getPlanPrice(id, cycle);
+              const isRecommended = id === recommendedPlan;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setSelectedPlan(id)}
+                  disabled={isPurchasing}
+                  className={cn(
+                    'flex-1 rounded-xl border-2 p-3 text-center transition-all duration-200',
+                    isPurchasing && selectedPlan !== id && 'opacity-50',
+                    selectedPlan === id ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
+                  )}
+                >
+                  <div className="text-xs font-semibold mb-1">{plan.name}</div>
+                  <div className="text-lg font-extrabold">${price}</div>
+                  <div className="text-[10px] text-muted-foreground">/{cycle === 'monthly' ? 'mo' : 'yr'}</div>
+                  {isRecommended && (
+                    <Badge className="mt-1.5 text-[9px] px-1.5 py-0 bg-primary/20 text-primary border-0">
+                      Recommended
+                    </Badge>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="bg-muted/50 rounded-lg p-4">
+            <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+              What you get with {planCatalog[selectedPlan].name}
+            </p>
+            <FeatureList features={planCatalog[selectedPlan].features.filter((f) => f.included)} />
+          </div>
+        </div>
+
+        <DrawerFooter className="pt-2">
+          <Button
+            onClick={handlePurchase}
+            disabled={isPurchasing}
+            className="w-full gradient-primary text-primary-foreground font-semibold h-12"
+          >
+            {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+            {isPurchasing
+              ? 'Processing purchase…'
+              : trialCta || `Subscribe — $${getPlanPrice(selectedPlan, cycle)}/${cycle === 'monthly' ? 'mo' : 'yr'}`}
+            {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
+          </Button>
+
+          {trialCopy && (
+            <p className="text-center text-[11px] text-muted-foreground">{trialCopy}</p>
+          )}
+
+          <Button
+            variant="ghost"
+            className="text-muted-foreground text-xs"
+            onClick={handleRestore}
+            disabled={isRestoring || isPurchasing}
+          >
+            {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+            Restore Purchases
+          </Button>
+
+          <DrawerClose asChild>
+            <Button variant="ghost" className="text-muted-foreground" disabled={isPurchasing}>
+              Not now
+            </Button>
+          </DrawerClose>
+
+          <p className="text-center text-[10px] text-muted-foreground mt-1">
+            Cancel anytime. Your data stays yours.
+          </p>
+
+          {/* Compliance links */}
+          <div className="flex items-center justify-center gap-3 text-[10px] text-muted-foreground/60 mt-1">
+            <button onClick={() => { onClose(); navigate('/terms'); }} className="hover:text-muted-foreground transition-colors">
+              Terms of Service
+            </button>
+            <span>·</span>
+            <button onClick={() => { onClose(); navigate('/privacy'); }} className="hover:text-muted-foreground transition-colors">
+              Privacy Policy
+            </button>
+            <span>·</span>
+            <button onClick={() => { onClose(); navigate('/eula'); }} className="hover:text-muted-foreground transition-colors">
+              EULA
+            </button>
+          </div>
+        </DrawerFooter>
+      </>
+    );
+  };
+
   return (
-    <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
+    <Drawer open={open} onOpenChange={(v) => !v && !isPurchasing && onClose()}>
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader className="text-center pb-2">
@@ -86,103 +325,7 @@ export function NativePurchaseSheet({
             <DrawerDescription className="text-sm">{description}</DrawerDescription>
           </DrawerHeader>
 
-          <div className="px-6 pb-2 space-y-4">
-            <div className="flex justify-center">
-              <div className="inline-flex rounded-full bg-muted p-1 gap-1">
-                <button
-                  onClick={() => setCycle('monthly')}
-                  className={cn(
-                    'px-4 py-1.5 rounded-full text-sm font-medium transition-all',
-                    cycle === 'monthly'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  Monthly
-                </button>
-                <button
-                  onClick={() => setCycle('yearly')}
-                  className={cn(
-                    'px-4 py-1.5 rounded-full text-sm font-medium transition-all',
-                    cycle === 'yearly'
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  Yearly
-                </button>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              {tiers.map((id) => {
-                const plan = planCatalog[id];
-                const price = getPlanPrice(id, cycle);
-                const isRecommended = id === recommendedPlan;
-                return (
-                  <button
-                    key={id}
-                    onClick={() => setSelectedPlan(id)}
-                    className={cn(
-                      'flex-1 rounded-xl border-2 p-3 text-center transition-all duration-200',
-                      selectedPlan === id
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border hover:border-primary/40'
-                    )}
-                  >
-                    <div className="text-xs font-semibold mb-1">{plan.name}</div>
-                    <div className="text-lg font-extrabold">${price}</div>
-                    <div className="text-[10px] text-muted-foreground">
-                      /{cycle === 'monthly' ? 'mo' : 'yr'}
-                    </div>
-                    {isRecommended && (
-                      <Badge className="mt-1.5 text-[9px] px-1.5 py-0 bg-primary/20 text-primary border-0">
-                        Recommended
-                      </Badge>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="bg-muted/50 rounded-lg p-4">
-              <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-                What you get with {planCatalog[selectedPlan].name}
-              </p>
-              <FeatureList features={planCatalog[selectedPlan].features.filter((f) => f.included)} />
-            </div>
-          </div>
-
-          <DrawerFooter className="pt-2">
-            <Button
-              onClick={handlePurchase}
-              disabled={isPurchasing}
-              className="w-full gradient-primary text-primary-foreground font-semibold h-12"
-            >
-              {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              Subscribe — ${getPlanPrice(selectedPlan, cycle)}/{cycle === 'monthly' ? 'mo' : 'yr'}
-              {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
-            </Button>
-
-            <Button
-              variant="ghost"
-              className="text-muted-foreground text-xs"
-              onClick={handleRestore}
-              disabled={isRestoring}
-            >
-              {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
-              Restore Purchases
-            </Button>
-
-            <DrawerClose asChild>
-              <Button variant="ghost" className="text-muted-foreground">
-                Not now
-              </Button>
-            </DrawerClose>
-            <p className="text-center text-[10px] text-muted-foreground mt-1">
-              Cancel anytime. Your data stays yours.
-            </p>
-          </DrawerFooter>
+          {renderContent()}
         </div>
       </DrawerContent>
     </Drawer>

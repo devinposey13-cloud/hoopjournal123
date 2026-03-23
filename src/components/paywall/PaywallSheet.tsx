@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Lock, Check, ArrowRight, RotateCcw, Loader2, Sparkles } from 'lucide-react';
+import { X, Lock, Check, ArrowRight, RotateCcw, Loader2, Sparkles, WifiOff, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
@@ -18,6 +18,8 @@ import {
   track,
 } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
+import { useNativeEntitlements } from '@/hooks/useNativeEntitlements';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -52,12 +54,73 @@ const PDF_VALUE_BULLETS = [
   { icon: '🧠', label: 'Full AI game recap included' },
 ];
 
+// ─── Loading timeout thresholds ────────────────────────────────────
+const SLOW_LOAD_MS = 4000;
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1500;
+
 export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: PaywallSheetProps) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('elite');
-  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
+  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
+  const { isChecking: isCheckingEntitlements, isLoaded: entitlementsLoaded, error: entitlementError, refresh: refreshEntitlements } = useNativeEntitlements();
+  const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
   const config = reason ? paywallConfigs[reason] : null;
+
+  // Loading & error states
+  const [isSlowLoad, setIsSlowLoad] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [purchasingPlan, setPurchasingPlan] = useState<PlanId | null>(null);
+
+  // Determine if we're still loading (native only — web doesn't need entitlement pre-check)
+  const isLoading = isNative && !entitlementsLoaded && isCheckingEntitlements;
+
+  // Reset state when sheet opens
+  useEffect(() => {
+    if (open) {
+      setIsSlowLoad(false);
+      setRetryCount(0);
+      setLoadFailed(false);
+      setPurchasingPlan(null);
+      if (isNative) {
+        refreshEntitlements();
+      }
+    }
+  }, [open, isNative, refreshEntitlements]);
+
+  // Slow load detection
+  useEffect(() => {
+    if (!open || !isLoading) {
+      setIsSlowLoad(false);
+      return;
+    }
+    const timer = setTimeout(() => setIsSlowLoad(true), SLOW_LOAD_MS);
+    return () => clearTimeout(timer);
+  }, [open, isLoading]);
+
+  // Auto-retry on native entitlement error
+  useEffect(() => {
+    if (!open || !isNative || !entitlementError || retryCount >= MAX_RETRIES) {
+      if (entitlementError && retryCount >= MAX_RETRIES) {
+        setLoadFailed(true);
+      }
+      return;
+    }
+    const timer = setTimeout(() => {
+      console.log(`[Paywall] Auto-retry ${retryCount + 1}/${MAX_RETRIES}`);
+      setRetryCount((c) => c + 1);
+      refreshEntitlements();
+    }, RETRY_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [open, isNative, entitlementError, retryCount, refreshEntitlements]);
+
+  const handleRetry = useCallback(() => {
+    setRetryCount(0);
+    setLoadFailed(false);
+    refreshEntitlements();
+  }, [refreshEntitlements]);
 
   if (!config) return null;
 
@@ -71,6 +134,13 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   const trialCta = getTrialCta(selectedPlan, cycle);
 
   const handleUpgrade = async () => {
+    if (isPurchasing) return; // prevent double tap
+    if (!isOnline) {
+      toast.error('No internet connection. Please reconnect and try again.');
+      return;
+    }
+
+    setPurchasingPlan(selectedPlan);
     track('upgrade_clicked', { planId: selectedPlan, reason, cycle, hasTrial: trialConfig.hasTrial });
     if (trialConfig.hasTrial) {
       track('trial_started', { planId: selectedPlan, cycle, trialDays: trialConfig.trialDays });
@@ -80,11 +150,14 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
       track(trialConfig.hasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
       onUpgrade(selectedPlan);
     } catch {
-      // Error handled by useBilling
+      // Error handled by useBilling with user-friendly messages
+    } finally {
+      setPurchasingPlan(null);
     }
   };
-  // Track trial visibility analytics
+
   const handlePlanSelect = (id: PlanId) => {
+    if (isPurchasing) return;
     setSelectedPlan(id);
     const t = getTrialConfig(id, cycle);
     if (t.hasTrial) {
@@ -96,11 +169,340 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
 
   const handleRestore = async () => {
     try {
-      await restorePurchases();
-      toast.success('Purchases restored!');
+      const purchases = await restorePurchases();
+      const hasActive = purchases.some((p) => p.isActive);
+      if (hasActive) {
+        toast.success('Your subscription has been restored.');
+        onClose();
+      } else {
+        toast.info('No previous subscription was found for this account.');
+      }
     } catch {
-      toast.error('Failed to restore purchases');
+      toast.error("We couldn't restore purchases right now. Please try again.");
     }
+  };
+
+  // ─── Offline state ──────────────────────────────────────────────
+  const renderOffline = () => (
+    <div className="px-6 py-12 text-center space-y-4">
+      <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center bg-white/5">
+        <WifiOff className="w-7 h-7 text-white/40" />
+      </div>
+      <h2 className="text-lg font-bold text-white">No Internet Connection</h2>
+      <p className="text-sm text-white/50 max-w-xs mx-auto">
+        Please reconnect and try again.
+      </p>
+      <Button
+        variant="ghost"
+        onClick={onClose}
+        className="text-white/40 hover:text-white/60 text-sm"
+      >
+        Close
+      </Button>
+    </div>
+  );
+
+  // ─── Loading state ──────────────────────────────────────────────
+  const renderLoading = () => (
+    <div className="px-6 py-16 text-center space-y-4">
+      <Loader2 className="w-8 h-8 animate-spin text-white/40 mx-auto" />
+      <p className="text-sm text-white/50">
+        {isSlowLoad ? 'Still connecting to subscriptions…' : 'Loading plans…'}
+      </p>
+    </div>
+  );
+
+  // ─── Fallback state (products failed to load) ───────────────────
+  const renderFallback = () => (
+    <div className="px-6 py-12 text-center space-y-5">
+      <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center bg-white/5">
+        <AlertCircle className="w-7 h-7 text-white/40" />
+      </div>
+      <div>
+        <h2 className="text-lg font-bold text-white mb-2">Subscriptions Temporarily Unavailable</h2>
+        <p className="text-sm text-white/50 max-w-xs mx-auto">
+          Please try again in a moment.
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Button
+          onClick={handleRetry}
+          className="w-full h-11 rounded-xl font-semibold border-0"
+          style={{
+            background: 'linear-gradient(135deg, hsl(24 100% 50%), hsl(35 100% 55%))',
+            color: 'white',
+          }}
+        >
+          <RotateCcw className="w-4 h-4 mr-2" />
+          Try Again
+        </Button>
+        {isNative && (
+          <Button
+            variant="ghost"
+            onClick={handleRestore}
+            disabled={isRestoring}
+            className="w-full text-white/40 hover:text-white/60 text-sm h-10"
+          >
+            {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+            Restore Purchases
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          onClick={onClose}
+          className="w-full text-white/30 hover:text-white/50 text-xs h-9"
+        >
+          Continue on Free Plan
+        </Button>
+      </div>
+    </div>
+  );
+
+  // ─── Determine what content to render ───────────────────────────
+  const renderContent = () => {
+    // Offline check first
+    if (!isOnline && isNative) return renderOffline();
+    // Native loading
+    if (isLoading) return renderLoading();
+    // Native load failure (after retries)
+    if (isNative && loadFailed) return renderFallback();
+
+    // Normal paywall content
+    return (
+      <>
+        {/* === HERO SECTION === */}
+        <div className="relative px-6 pt-10 pb-6 text-center overflow-hidden">
+          <div
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full opacity-20 blur-3xl pointer-events-none"
+            style={{ background: 'hsl(24 100% 50%)' }}
+          />
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="relative"
+          >
+            <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, hsl(24 100% 50%), hsl(35 100% 55%))' }}
+            >
+              <Sparkles className="w-7 h-7 text-white" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
+              Unlock Your Full Game
+            </h1>
+            <p className="text-white/60 text-sm max-w-xs mx-auto">
+              Track your progress, improve faster, and stand out
+            </p>
+            {dynamicSubline && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mt-3 inline-flex items-center gap-2 rounded-full px-4 py-1.5"
+                style={{ background: 'hsl(24 100% 50% / 0.15)', border: '1px solid hsl(24 100% 50% / 0.3)' }}
+              >
+                <Lock className="w-3 h-3" style={{ color: 'hsl(24 100% 50%)' }} />
+                <span className="text-xs font-medium" style={{ color: 'hsl(24 100% 65%)' }}>
+                  {dynamicSubline}
+                </span>
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
+
+        {/* === VISUAL PROOF === */}
+        <div className="mx-6 mb-5 rounded-xl overflow-hidden relative" style={{ background: 'hsl(220 20% 14%)' }}>
+          <div className="p-4 blur-[2px] opacity-50 select-none pointer-events-none">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg" style={{ background: 'hsl(24 100% 50% / 0.3)' }} />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3 w-24 rounded-full bg-white/20" />
+                <div className="h-2 w-16 rounded-full bg-white/10" />
+              </div>
+              <div className="text-2xl font-extrabold text-white/30">A</div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {['PTS', 'REB', 'AST', 'STL'].map((s) => (
+                <div key={s} className="text-center py-2 rounded-lg" style={{ background: 'hsl(220 20% 18%)' }}>
+                  <div className="text-xs text-white/30">{s}</div>
+                  <div className="text-lg font-bold text-white/20">--</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex items-center gap-2 rounded-full px-4 py-2" style={{ background: 'hsl(220 20% 10% / 0.9)', border: '1px solid hsl(24 100% 50% / 0.4)' }}>
+              <Lock className="w-3.5 h-3.5" style={{ color: 'hsl(24 100% 50%)' }} />
+              <span className="text-xs font-semibold text-white">Upgrade to unlock full breakdown</span>
+            </div>
+          </div>
+        </div>
+
+        {/* === VALUE STACK === */}
+        <div className="px-6 mb-5">
+          <p className="text-[10px] uppercase tracking-widest text-white/40 font-semibold mb-3">
+            Everything you unlock
+          </p>
+          <div className="space-y-2.5">
+            {bullets.map((b) => (
+              <div key={b.label} className="flex items-center gap-3">
+                <span className="text-base">{b.icon}</span>
+                <span className="text-sm text-white/80">{b.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* === PLAN OPTIONS === */}
+        <div className="px-6 mb-4">
+          <div className="flex justify-center mb-4">
+            <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {(['pro', 'elite'] as PlanId[]).map((id) => {
+              const plan = planCatalog[id];
+              const price = getPlanPrice(id, cycle);
+              const savings = cycle === 'yearly' ? getYearlySavingsPercent(id) : 0;
+              const isSelected = selectedPlan === id;
+              const isElite = id === 'elite';
+              const isBeingPurchased = purchasingPlan === id;
+
+              return (
+                <button
+                  key={id}
+                  onClick={() => handlePlanSelect(id)}
+                  disabled={isPurchasing}
+                  className={cn(
+                    'relative rounded-2xl p-4 text-left transition-all duration-200',
+                    isPurchasing && !isBeingPurchased && 'opacity-50',
+                    isSelected
+                      ? 'ring-2'
+                      : 'ring-1 ring-white/10 hover:ring-white/20',
+                  )}
+                  style={{
+                    background: isSelected
+                      ? isElite
+                        ? 'linear-gradient(135deg, hsl(24 100% 50% / 0.15), hsl(35 100% 55% / 0.08))'
+                        : 'hsl(220 20% 16%)'
+                      : 'hsl(220 20% 12%)',
+                    ...(isSelected ? { '--tw-ring-color': isElite ? 'hsl(24 100% 50%)' : 'hsl(220 60% 60%)' } as any : {}),
+                  }}
+                >
+                  {isElite && (
+                    <Badge
+                      className="absolute -top-2.5 right-3 text-[9px] px-2 py-0.5 border-0"
+                      style={{
+                        background: 'linear-gradient(135deg, hsl(24 100% 50%), hsl(35 100% 55%))',
+                        color: 'white',
+                      }}
+                    >
+                      Most Popular
+                    </Badge>
+                  )}
+                  <div className="text-xs font-semibold text-white/60 mb-1">{plan.name}</div>
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="text-2xl font-extrabold text-white">${price}</span>
+                    <span className="text-[10px] text-white/40">/{cycle === 'monthly' ? 'mo' : 'yr'}</span>
+                  </div>
+                  {savings > 0 && (
+                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 mb-2 border-green-500/30 text-green-400">
+                      Save {savings}%
+                    </Badge>
+                  )}
+                  <p className="text-[10px] text-white/50 leading-relaxed">
+                    {(() => {
+                      const t = getTrialConfig(id, cycle);
+                      if (t.hasTrial) return `${t.trialDays}-day free trial`;
+                      return id === 'pro'
+                        ? 'For players consistently working on their game'
+                        : 'For serious players who want to stand out';
+                    })()}
+                  </p>
+                  {isSelected && (
+                    <div className="absolute top-3 right-3">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ background: isElite ? 'hsl(24 100% 50%)' : 'hsl(220 60% 60%)' }}
+                      >
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* === CTA SECTION === */}
+        <div className="px-6 pb-2">
+          <Button
+            onClick={handleUpgrade}
+            disabled={isPurchasing}
+            className="w-full h-13 text-base font-bold rounded-xl border-0"
+            style={{
+              background: isPurchasing
+                ? 'hsl(24 100% 50% / 0.5)'
+                : 'linear-gradient(135deg, hsl(24 100% 50%), hsl(35 100% 55%))',
+              color: 'white',
+              boxShadow: isPurchasing ? 'none' : '0 4px 20px hsl(24 100% 50% / 0.4)',
+            }}
+          >
+            {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+            {isPurchasing ? 'Processing purchase…' : (trialCta || `Upgrade to ${planCatalog[selectedPlan].name}`)}
+            {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
+          </Button>
+
+          {trialCopy ? (
+            <p className="text-center mt-3 text-[11px] text-white/50">
+              {trialCopy}
+            </p>
+          ) : (
+            <div className="flex items-center justify-center gap-3 mt-3 text-[11px] text-white/40">
+              <span>Cancel anytime</span>
+              <span className="w-1 h-1 rounded-full bg-white/20" />
+              <span>No commitment</span>
+            </div>
+          )}
+        </div>
+
+        {/* === TRUST === */}
+        <div className="px-6 py-3 text-center">
+          <p className="text-[10px] text-white/30">
+            Built for players and parents
+          </p>
+        </div>
+
+        {/* === RESTORE + LEGAL FOOTER === */}
+        <div className="px-6 pb-8 flex flex-col items-center gap-2">
+          {isNative && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRestore}
+              disabled={isRestoring || isPurchasing}
+              className="text-white/30 hover:text-white/50 text-[11px] h-8"
+            >
+              {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+              Restore Purchases
+            </Button>
+          )}
+
+          <div className="flex items-center gap-3 text-[10px] text-white/25">
+            <button onClick={() => { onClose(); navigate('/terms'); }} className="hover:text-white/40 transition-colors">
+              Terms of Service
+            </button>
+            <span>·</span>
+            <button onClick={() => { onClose(); navigate('/privacy'); }} className="hover:text-white/40 transition-colors">
+              Privacy Policy
+            </button>
+            <span>·</span>
+            <button onClick={() => { onClose(); navigate('/eula'); }} className="hover:text-white/40 transition-colors">
+              EULA
+            </button>
+          </div>
+        </div>
+      </>
+    );
   };
 
   return (
@@ -140,235 +542,7 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
               <X className="w-4 h-4" />
             </button>
 
-            {/* === HERO SECTION === */}
-            <div className="relative px-6 pt-10 pb-6 text-center overflow-hidden">
-              {/* Glow effect */}
-              <div
-                className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full opacity-20 blur-3xl pointer-events-none"
-                style={{ background: 'hsl(24 100% 50%)' }}
-              />
-
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="relative"
-              >
-                <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, hsl(24 100% 50%), hsl(35 100% 55%))' }}
-                >
-                  <Sparkles className="w-7 h-7 text-white" />
-                </div>
-
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
-                  Unlock Your Full Game
-                </h1>
-                <p className="text-white/60 text-sm max-w-xs mx-auto">
-                  Track your progress, improve faster, and stand out
-                </p>
-
-                {dynamicSubline && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="mt-3 inline-flex items-center gap-2 rounded-full px-4 py-1.5"
-                    style={{ background: 'hsl(24 100% 50% / 0.15)', border: '1px solid hsl(24 100% 50% / 0.3)' }}
-                  >
-                    <Lock className="w-3 h-3" style={{ color: 'hsl(24 100% 50%)' }} />
-                    <span className="text-xs font-medium" style={{ color: 'hsl(24 100% 65%)' }}>
-                      {dynamicSubline}
-                    </span>
-                  </motion.div>
-                )}
-              </motion.div>
-            </div>
-
-            {/* === VISUAL PROOF (blurred preview) === */}
-            <div className="mx-6 mb-5 rounded-xl overflow-hidden relative" style={{ background: 'hsl(220 20% 14%)' }}>
-              <div className="p-4 blur-[2px] opacity-50 select-none pointer-events-none">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg" style={{ background: 'hsl(24 100% 50% / 0.3)' }} />
-                  <div className="flex-1 space-y-1.5">
-                    <div className="h-3 w-24 rounded-full bg-white/20" />
-                    <div className="h-2 w-16 rounded-full bg-white/10" />
-                  </div>
-                  <div className="text-2xl font-extrabold text-white/30">A</div>
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {['PTS', 'REB', 'AST', 'STL'].map((s) => (
-                    <div key={s} className="text-center py-2 rounded-lg" style={{ background: 'hsl(220 20% 18%)' }}>
-                      <div className="text-xs text-white/30">{s}</div>
-                      <div className="text-lg font-bold text-white/20">--</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="flex items-center gap-2 rounded-full px-4 py-2" style={{ background: 'hsl(220 20% 10% / 0.9)', border: '1px solid hsl(24 100% 50% / 0.4)' }}>
-                  <Lock className="w-3.5 h-3.5" style={{ color: 'hsl(24 100% 50%)' }} />
-                  <span className="text-xs font-semibold text-white">Upgrade to unlock full breakdown</span>
-                </div>
-              </div>
-            </div>
-
-            {/* === VALUE STACK === */}
-            <div className="px-6 mb-5">
-              <p className="text-[10px] uppercase tracking-widest text-white/40 font-semibold mb-3">
-                Everything you unlock
-              </p>
-              <div className="space-y-2.5">
-                {bullets.map((b) => (
-                  <div key={b.label} className="flex items-center gap-3">
-                    <span className="text-base">{b.icon}</span>
-                    <span className="text-sm text-white/80">{b.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* === PLAN OPTIONS === */}
-            <div className="px-6 mb-4">
-              <div className="flex justify-center mb-4">
-                <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                {(['pro', 'elite'] as PlanId[]).map((id) => {
-                  const plan = planCatalog[id];
-                  const price = getPlanPrice(id, cycle);
-                  const savings = cycle === 'yearly' ? getYearlySavingsPercent(id) : 0;
-                  const isSelected = selectedPlan === id;
-                  const isElite = id === 'elite';
-
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => handlePlanSelect(id)}
-                      className={cn(
-                        'relative rounded-2xl p-4 text-left transition-all duration-200',
-                        isSelected
-                          ? 'ring-2'
-                          : 'ring-1 ring-white/10 hover:ring-white/20',
-                      )}
-                      style={{
-                        background: isSelected
-                          ? isElite
-                            ? 'linear-gradient(135deg, hsl(24 100% 50% / 0.15), hsl(35 100% 55% / 0.08))'
-                            : 'hsl(220 20% 16%)'
-                          : 'hsl(220 20% 12%)',
-                        ...(isSelected ? { '--tw-ring-color': isElite ? 'hsl(24 100% 50%)' : 'hsl(220 60% 60%)' } as any : {}),
-                      }}
-                    >
-                      {isElite && (
-                        <Badge
-                          className="absolute -top-2.5 right-3 text-[9px] px-2 py-0.5 border-0"
-                          style={{
-                            background: 'linear-gradient(135deg, hsl(24 100% 50%), hsl(35 100% 55%))',
-                            color: 'white',
-                          }}
-                        >
-                          Most Popular
-                        </Badge>
-                      )}
-
-                      <div className="text-xs font-semibold text-white/60 mb-1">{plan.name}</div>
-                      <div className="flex items-baseline gap-1 mb-1">
-                        <span className="text-2xl font-extrabold text-white">${price}</span>
-                        <span className="text-[10px] text-white/40">/{cycle === 'monthly' ? 'mo' : 'yr'}</span>
-                      </div>
-                      {savings > 0 && (
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 mb-2 border-green-500/30 text-green-400">
-                          Save {savings}%
-                        </Badge>
-                      )}
-                      <p className="text-[10px] text-white/50 leading-relaxed">
-                        {(() => {
-                          const t = getTrialConfig(id, cycle);
-                          if (t.hasTrial) return `${t.trialDays}-day free trial`;
-                          return id === 'pro'
-                            ? 'For players consistently working on their game'
-                            : 'For serious players who want to stand out';
-                        })()}
-                      </p>
-
-                      {isSelected && (
-                        <div className="absolute top-3 right-3">
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center"
-                            style={{ background: isElite ? 'hsl(24 100% 50%)' : 'hsl(220 60% 60%)' }}
-                          >
-                            <Check className="w-3 h-3 text-white" />
-                          </div>
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* === CTA SECTION === */}
-            <div className="px-6 pb-2">
-              <Button
-                onClick={handleUpgrade}
-                disabled={isPurchasing}
-                className="w-full h-13 text-base font-bold rounded-xl border-0"
-                style={{
-                  background: 'linear-gradient(135deg, hsl(24 100% 50%), hsl(35 100% 55%))',
-                  color: 'white',
-                  boxShadow: '0 4px 20px hsl(24 100% 50% / 0.4)',
-                }}
-              >
-                {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {isPurchasing ? 'Processing...' : (trialCta || `Upgrade to ${planCatalog[selectedPlan].name}`)}
-                {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
-              </Button>
-
-              {trialCopy ? (
-                <p className="text-center mt-3 text-[11px] text-white/50">
-                  {trialCopy}
-                </p>
-              ) : (
-                <div className="flex items-center justify-center gap-3 mt-3 text-[11px] text-white/40">
-                  <span>Cancel anytime</span>
-                  <span className="w-1 h-1 rounded-full bg-white/20" />
-                  <span>No commitment</span>
-                </div>
-              )}
-            </div>
-
-            {/* === TRUST === */}
-            <div className="px-6 py-3 text-center">
-              <p className="text-[10px] text-white/30">
-                Built for players and parents
-              </p>
-            </div>
-
-            {/* === RESTORE + LEGAL FOOTER === */}
-            <div className="px-6 pb-8 flex flex-col items-center gap-2">
-              {isNative && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRestore}
-                  disabled={isRestoring}
-                  className="text-white/30 hover:text-white/50 text-[11px] h-8"
-                >
-                  {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
-                  Restore Purchases
-                </Button>
-              )}
-
-              <div className="flex items-center gap-3 text-[10px] text-white/25">
-                <button onClick={() => { onClose(); navigate('/terms'); }} className="hover:text-white/40 transition-colors">
-                  Terms of Service
-                </button>
-                <span>·</span>
-                <button onClick={() => { onClose(); navigate('/privacy'); }} className="hover:text-white/40 transition-colors">
-                  Privacy Policy
-                </button>
-              </div>
-            </div>
+            {renderContent()}
           </motion.div>
         </motion.div>
       )}
