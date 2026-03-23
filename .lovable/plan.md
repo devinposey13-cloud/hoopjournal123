@@ -1,43 +1,98 @@
-## OAuth Fix — Bypass Lovable Broker (IMPLEMENTED)
 
-### What was changed
-- `src/components/AuthForm.tsx`: Replaced `buildBrokerUrl()` / `getManagedOAuthRedirectUri()` with `getDirectOAuthUrl()` using `supabase.auth.signInWithOAuth({ skipBrowserRedirect: true })`. Native and custom domain flows now get the real Google/Apple OAuth URL directly from Supabase, bypassing the Lovable `/~oauth/initiate` broker entirely.
 
-### Required backend config (user must verify)
-1. **Google Cloud Console → Authorized redirect URIs:** `https://jwoupnumuotmwpwrkmob.supabase.co/auth/v1/callback`
-2. **Backend Auth → Redirect URLs (allow list):** `https://hoopjournal.me/**` and `https://hoopjournal123.lovable.app/**`
-3. **Backend Auth → Site URL:** `https://hoopjournal.me`
+## Plan: Guest Mode for Apple App Review Guideline 5.1.1
 
----
+### Summary
+Add a "Continue as Guest" option to the launch screen so Apple reviewers (and real users) can explore the app without registering. Guest mode provides a read-only demo experience with sample data. Account-gating is applied only when users attempt cloud-dependent actions.
 
-## RevenueCat Integration — IMPLEMENTED
+### Architecture
 
-1. **Platform Detection** (`src/lib/platform.ts`) — `isNativeApp()`, `getPlatform()`, `isIOS()` helpers
-2. **RevenueCat Hook** (`src/hooks/useRevenueCat.ts`) — SDK init, purchase, restore, offerings
-3. **RevenueCat Webhook** (`supabase/functions/revenuecat-webhook/index.ts`) — syncs purchases to `plan_overrides`
-4. **Conditional Routing** — `useSubscription`, `Pricing.tsx`, `Upgrade.tsx`, `UpgradeDrawer.tsx` all route to RevenueCat on native
+```text
+AuthForm
+├── Sign Up
+├── Log In
+└── Continue as Guest  ← NEW (sets localStorage flag, no Supabase auth)
 
-### Next steps (user action required)
+useAuth hook
+├── user: User | null
+├── isGuest: boolean        ← NEW (from context)
+└── enterGuestMode()        ← NEW
+    exitGuestMode()         ← NEW
 
-1. **Replace RevenueCat API key** in `src/hooks/useRevenueCat.ts` line 12 — replace `appl_REPLACE_WITH_YOUR_KEY` with your iOS public API key from RevenueCat dashboard
-2. **Create RevenueCat products** matching these IDs: `hj_starter_monthly`, `hj_starter_yearly`, `hj_pro_monthly`, `hj_pro_yearly`, `hj_elite_monthly`, `hj_elite_yearly`
-3. **Configure RevenueCat webhook** pointing to: `https://jwoupnumuotmwpwrkmob.supabase.co/functions/v1/revenuecat-webhook` with Authorization Bearer header matching the secret you just saved
-4. **Set up Capacitor** for native iOS builds (not yet added to the project)
+Index.tsx
+├── if authLoading → spinner
+├── if !user && !isGuest → AuthForm
+├── if isGuest → GuestDashboard  ← NEW (sample data, no cloud calls)
+├── if user → normal authenticated flow
+```
 
----
+### Changes
 
-## Native Google Sign-In — IMPLEMENTED
+**1. `src/hooks/useAuth.tsx` — Add guest state to AuthContext**
+- Add `isGuest` boolean, `enterGuestMode()`, and `exitGuestMode()` to context.
+- `enterGuestMode` sets `localStorage.setItem('hj_guest_mode', 'true')` and updates state.
+- `exitGuestMode` clears the flag.
+- On mount, check localStorage to restore guest state (so page refresh keeps guest mode).
 
-### What was built
+**2. `src/components/AuthForm.tsx` — Add "Continue as Guest" button**
+- Add a prominent "Continue as Guest" button below the OAuth buttons (same visual weight, not hidden).
+- Calls `enterGuestMode()` from useAuth.
+- Include Privacy Policy and Terms links at the bottom of the auth form.
 
-1. **Plugin** — `@codetrix-studio/capacitor-google-auth` installed
-2. **Native helper** (`src/lib/nativeGoogleAuth.ts`) — `initNativeGoogleAuth()` + `nativeGoogleSignIn()` using `signInWithIdToken`
-3. **AuthForm.tsx** — branches on `isNativeApp()`: native uses SDK, web keeps existing `lovable.auth.signInWithOAuth`
-4. **App.tsx** — initializes the Google Auth plugin on native startup
+**3. `src/components/GuestDashboard.tsx` — NEW: Demo experience**
+- Self-contained component with hardcoded sample data (sample player profile, 3-4 sample games with stats, a sample schedule).
+- Renders the same visual layout as the real dashboard: PlayerHeader, DashboardQuickStats, TodayCard, RecentActivity, PlayerCard — but fed with static demo data.
+- Navigation tabs work (dashboard, games, stats views) but show sample content.
+- "Coach" tab shows a teaser message prompting account creation.
+- Settings tab shows Privacy Policy, Terms, EULA links (accessible without auth).
+- All action buttons (Add Game, Log Stats, etc.) trigger the account-gate modal instead of performing real actions.
 
-### User action required
+**4. `src/components/GuestAccountGate.tsx` — NEW: Prompt modal**
+- Polished dialog shown when a guest taps any account-gated action.
+- Message: "Create a free account to save your progress, sync your data, and unlock all features."
+- Two buttons: "Sign Up" (calls `exitGuestMode()` and shows AuthForm in signup mode) and "Not Now" (dismisses).
 
-1. **Replace the Client ID** in `src/lib/nativeGoogleAuth.ts` line 10 — replace `REPLACE_WITH_YOUR_IOS_CLIENT_ID.apps.googleusercontent.com` with your iOS OAuth Client ID from [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-2. **Create an iOS OAuth Client ID** — type: iOS application, bundle ID: `app.lovable.2cd79f530f3e4e88858df49e60e86e08`
-3. **Add reversed client ID** as a URL scheme in Xcode (e.g. `com.googleusercontent.apps.XXXX`)
-4. Run `npm install` → `npx cap sync` → rebuild in Xcode → TestFlight
+**5. `src/pages/Index.tsx` — Route guests to GuestDashboard**
+- After the auth loading check, add: `if (!user && isGuest) return <GuestDashboard />;`
+- This goes before the `if (!user) return <AuthForm />;` check.
+
+**6. `src/components/BottomNavigation.tsx` & `src/components/Navigation.tsx` — Guest awareness**
+- In guest mode, render tabs but gate account-specific actions through GuestAccountGate.
+
+**7. Legal accessibility in guest mode**
+- Privacy Policy (`/privacy`), Terms (`/terms`), and EULA (`/eula`) routes already exist as public pages — no changes needed there.
+- Add links to these in the GuestDashboard settings/footer area.
+
+### Sample Data (hardcoded in GuestDashboard)
+- Player: "Demo Player", #23, Guard, "Demo High School"
+- 3 sample games with realistic stats (points, rebounds, assists, etc.)
+- 1 upcoming scheduled game
+- Season averages computed from sample data
+
+### What Gets Gated (triggers GuestAccountGate modal)
+- Add Game / Log Game
+- Save any data
+- Coach Chat
+- Profile editing
+- Subscription/upgrade flows
+- Any Supabase write operation
+
+### What Remains Open in Guest Mode
+- Viewing demo dashboard, stats, schedule
+- Navigating between tabs
+- Viewing Privacy Policy, Terms, EULA
+- Viewing the pricing page (read-only)
+
+### Review Safety
+- No special hidden route needed — "Continue as Guest" is the first-launch escape hatch.
+- Apple reviewer taps "Continue as Guest" and immediately sees a functional basketball stats dashboard with sample data.
+
+### Files to Create
+- `src/components/GuestDashboard.tsx`
+- `src/components/GuestAccountGate.tsx`
+
+### Files to Modify
+- `src/hooks/useAuth.tsx` (add isGuest, enterGuestMode, exitGuestMode)
+- `src/components/AuthForm.tsx` (add Continue as Guest button)
+- `src/pages/Index.tsx` (route guests to GuestDashboard)
+
