@@ -195,6 +195,17 @@ export default function Pricing() {
           )}
         </div>
       </div>
+
+      {/* Native hardened purchase sheet */}
+      <NativePurchaseSheet
+        open={nativeSheetOpen}
+        onClose={() => setNativeSheetOpen(false)}
+        onPurchaseComplete={() => {
+          toast.success('Subscription activated! 🎉');
+        }}
+        recommendedPlan={nativeSheetPlan}
+        initialBillingCycle={cycle}
+      />
     </div>
   );
 }
