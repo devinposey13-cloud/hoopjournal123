@@ -70,7 +70,7 @@ export default function Upgrade() {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
