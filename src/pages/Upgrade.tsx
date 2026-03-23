@@ -70,6 +70,10 @@ export default function Upgrade() {
     }
   };
 
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="border-b border-border">
