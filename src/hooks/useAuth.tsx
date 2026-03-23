@@ -34,6 +34,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(() => {
+    try { return localStorage.getItem('hj_guest_mode') === 'true'; } catch { return false; }
+  });
+
+  const enterGuestMode = () => {
+    try { localStorage.setItem('hj_guest_mode', 'true'); } catch {}
+    setIsGuest(true);
+  };
+
+  const exitGuestMode = () => {
+    try { localStorage.removeItem('hj_guest_mode'); } catch {}
+    setIsGuest(false);
+  };
 
   useEffect(() => {
     // Detect if we're on a callback URL with tokens - delay loading=false until resolved
