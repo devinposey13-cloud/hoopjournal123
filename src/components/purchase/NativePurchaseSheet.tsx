@@ -57,44 +57,17 @@ export function NativePurchaseSheet({
   initialBillingCycle = 'monthly',
 }: NativePurchaseSheetProps) {
   const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
-  const { isChecking, isLoaded, error: entitlementError, refresh: refreshEntitlements } = useNativeEntitlements();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
 
   const [cycle, setCycle] = useState<BillingCycle>(initialBillingCycle);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(recommendedPlan);
-  const [isSlowLoad, setIsSlowLoad] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const [loadFailed, setLoadFailed] = useState(false);
-
-  const isLoading = isNative && !isLoaded && isChecking;
 
   useEffect(() => {
     if (!open) return;
     setSelectedPlan(recommendedPlan);
     setCycle(initialBillingCycle);
-    setIsSlowLoad(false);
-    setRetryCount(0);
-    setLoadFailed(false);
-    if (isNative) refreshEntitlements();
-  }, [open, recommendedPlan, initialBillingCycle, isNative, refreshEntitlements]);
-
-  // Slow load detection
-  useEffect(() => {
-    if (!open || !isLoading) { setIsSlowLoad(false); return; }
-    const t = setTimeout(() => setIsSlowLoad(true), SLOW_LOAD_MS);
-    return () => clearTimeout(t);
-  }, [open, isLoading]);
-
-  // Auto-retry
-  useEffect(() => {
-    if (!open || !isNative || !entitlementError || retryCount >= MAX_RETRIES) {
-      if (entitlementError && retryCount >= MAX_RETRIES) setLoadFailed(true);
-      return;
-    }
-    const t = setTimeout(() => { setRetryCount(c => c + 1); refreshEntitlements(); }, RETRY_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [open, isNative, entitlementError, retryCount, refreshEntitlements]);
+  }, [open, recommendedPlan, initialBillingCycle]);
 
   const handleRetry = useCallback(() => {
     setRetryCount(0);
