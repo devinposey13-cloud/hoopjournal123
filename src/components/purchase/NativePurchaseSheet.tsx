@@ -245,7 +245,7 @@ export function NativePurchaseSheet({
   };
 
   return (
-    <Drawer open={open} onOpenChange={(v) => !v && !isPurchasing && onClose()}>
+    <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader className="text-center pb-2">
