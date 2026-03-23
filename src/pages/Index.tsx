@@ -33,6 +33,7 @@ import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { PendingApproval } from '@/components/PendingApproval';
 import { OnboardingFlow, OnboardingData, OnboardingCompletionAction } from '@/components/OnboardingFlow';
 import { EmptyDashboardWelcome } from '@/components/EmptyDashboardWelcome';
+import { GuestDashboard } from '@/components/GuestDashboard';
 import { TodayCard } from '@/components/dashboard/TodayCard';
 import { DashboardQuickStats } from '@/components/dashboard/DashboardQuickStats';
 import { DailyInsight } from '@/components/dashboard/DailyInsight';
@@ -84,7 +85,7 @@ export default function Index() {
   const [hasShownRingOfHonorModal, setHasShownRingOfHonorModal] = useState(false);
   const [coachPrefillPrompt, setCoachPrefillPrompt] = useState<string | undefined>();
   const [autoOpenAddGame, setAutoOpenAddGame] = useState(false);
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading, signOut, isGuest } = useAuth();
   const { teams } = usePlayerTeams();
   const { isAdmin } = useAdmin();
   const { totalPending: adminNotificationCount } = useAdminNotifications();
@@ -219,6 +220,10 @@ export default function Index() {
   // Show auth form if not logged in
   if (authLoading || approvalLoading || introLoading) {
     return <LoadingSpinner fullScreen size="lg" />;
+  }
+
+  if (!user && isGuest) {
+    return <GuestDashboard />;
   }
 
   if (!user) {
