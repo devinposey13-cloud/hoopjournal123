@@ -120,42 +120,7 @@ export function NativePurchaseSheet({
       );
     }
 
-    // Loading
-    if (isLoading) {
-      return (
-        <div className="py-16 text-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto" />
-          <p className="text-sm text-muted-foreground">
-            {isSlowLoad ? 'Still connecting to subscriptions…' : 'Loading plans…'}
-          </p>
-        </div>
-      );
-    }
-
-    // Fallback
-    if (isNative && loadFailed) {
-      return (
-        <div className="py-12 text-center space-y-5">
-          <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto" />
-          <div>
-            <p className="text-sm font-semibold mb-1">Subscriptions Temporarily Unavailable</p>
-            <p className="text-xs text-muted-foreground">Please try again in a moment.</p>
-          </div>
-          <div className="space-y-2 px-4">
-            <Button onClick={handleRetry} className="w-full">
-              <RotateCcw className="w-4 h-4 mr-2" />Try Again
-            </Button>
-            <Button variant="ghost" onClick={handleRestore} disabled={isRestoring} className="w-full text-xs">
-              {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
-              Restore Purchases
-            </Button>
-            <DrawerClose asChild>
-              <Button variant="ghost" className="w-full text-muted-foreground text-xs">Continue on Free Plan</Button>
-            </DrawerClose>
-          </div>
-        </div>
-      );
-    }
+    // Plans always render immediately from static catalog — no blocking
 
     // Normal content
     return (
