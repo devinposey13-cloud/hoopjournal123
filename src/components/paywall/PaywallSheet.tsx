@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Lock, Check, ArrowRight, RotateCcw, Loader2, Sparkles, WifiOff, AlertCircle } from 'lucide-react';
+import { X, Lock, Check, ArrowRight, RotateCcw, Loader2, Sparkles, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
@@ -54,73 +54,25 @@ const PDF_VALUE_BULLETS = [
   { icon: '🧠', label: 'Full AI game recap included' },
 ];
 
-// ─── Loading timeout thresholds ────────────────────────────────────
-const SLOW_LOAD_MS = 4000;
-const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 1500;
-
 export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: PaywallSheetProps) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('elite');
   const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
-  const { isChecking: isCheckingEntitlements, isLoaded: entitlementsLoaded, error: entitlementError, refresh: refreshEntitlements } = useNativeEntitlements();
+  const { refresh: refreshEntitlements } = useNativeEntitlements();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
   const config = reason ? paywallConfigs[reason] : null;
 
-  // Loading & error states
-  const [isSlowLoad, setIsSlowLoad] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const [loadFailed, setLoadFailed] = useState(false);
   const [purchasingPlan, setPurchasingPlan] = useState<PlanId | null>(null);
 
-  // Determine if we're still loading (native only — web doesn't need entitlement pre-check)
-  const isLoading = isNative && !entitlementsLoaded && isCheckingEntitlements;
-
-  // Reset state when sheet opens
+  // Entitlements load in the background — never block the paywall UI.
+  // Plans are static catalog data; no need to wait for entitlement checks.
   useEffect(() => {
-    if (open) {
-      setIsSlowLoad(false);
-      setRetryCount(0);
-      setLoadFailed(false);
-      setPurchasingPlan(null);
-      if (isNative) {
-        refreshEntitlements();
-      }
+    if (open && isNative) {
+      refreshEntitlements();
     }
   }, [open, isNative, refreshEntitlements]);
 
-  // Slow load detection
-  useEffect(() => {
-    if (!open || !isLoading) {
-      setIsSlowLoad(false);
-      return;
-    }
-    const timer = setTimeout(() => setIsSlowLoad(true), SLOW_LOAD_MS);
-    return () => clearTimeout(timer);
-  }, [open, isLoading]);
-
-  // Auto-retry on native entitlement error
-  useEffect(() => {
-    if (!open || !isNative || !entitlementError || retryCount >= MAX_RETRIES) {
-      if (entitlementError && retryCount >= MAX_RETRIES) {
-        setLoadFailed(true);
-      }
-      return;
-    }
-    const timer = setTimeout(() => {
-      console.log(`[Paywall] Auto-retry ${retryCount + 1}/${MAX_RETRIES}`);
-      setRetryCount((c) => c + 1);
-      refreshEntitlements();
-    }, RETRY_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [open, isNative, entitlementError, retryCount, refreshEntitlements]);
-
-  const handleRetry = useCallback(() => {
-    setRetryCount(0);
-    setLoadFailed(false);
-    refreshEntitlements();
-  }, [refreshEntitlements]);
 
   if (!config) return null;
 
@@ -182,90 +134,23 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
     }
   };
 
-  // ─── Offline state ──────────────────────────────────────────────
-  const renderOffline = () => (
-    <div className="px-6 py-12 text-center space-y-4">
-      <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center bg-white/5">
-        <WifiOff className="w-7 h-7 text-white/40" />
-      </div>
-      <h2 className="text-lg font-bold text-white">No Internet Connection</h2>
-      <p className="text-sm text-white/50 max-w-xs mx-auto">
-        Please reconnect and try again.
-      </p>
-      <Button
-        variant="ghost"
-        onClick={onClose}
-        className="text-white/40 hover:text-white/60 text-sm"
-      >
-        Close
-      </Button>
-    </div>
-  );
-
-  // ─── Loading state ──────────────────────────────────────────────
-  const renderLoading = () => (
-    <div className="px-6 py-16 text-center space-y-4">
-      <Loader2 className="w-8 h-8 animate-spin text-white/40 mx-auto" />
-      <p className="text-sm text-white/50">
-        {isSlowLoad ? 'Still connecting to subscriptions…' : 'Loading plans…'}
-      </p>
-    </div>
-  );
-
-  // ─── Fallback state (products failed to load) ───────────────────
-  const renderFallback = () => (
-    <div className="px-6 py-12 text-center space-y-5">
-      <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center bg-white/5">
-        <AlertCircle className="w-7 h-7 text-white/40" />
-      </div>
-      <div>
-        <h2 className="text-lg font-bold text-white mb-2">Subscriptions Temporarily Unavailable</h2>
-        <p className="text-sm text-white/50 max-w-xs mx-auto">
-          Please try again in a moment.
-        </p>
-      </div>
-      <div className="space-y-2">
-        <Button
-          onClick={handleRetry}
-          className="w-full h-11 rounded-xl font-semibold border-0"
-          style={{
-            background: 'linear-gradient(135deg, hsl(24 100% 50%), hsl(35 100% 55%))',
-            color: 'white',
-          }}
-        >
-          <RotateCcw className="w-4 h-4 mr-2" />
-          Try Again
-        </Button>
-        {isNative && (
-          <Button
-            variant="ghost"
-            onClick={handleRestore}
-            disabled={isRestoring}
-            className="w-full text-white/40 hover:text-white/60 text-sm h-10"
-          >
-            {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
-            Restore Purchases
-          </Button>
-        )}
-        <Button
-          variant="ghost"
-          onClick={onClose}
-          className="w-full text-white/30 hover:text-white/50 text-xs h-9"
-        >
-          Continue on Free Plan
-        </Button>
-      </div>
-    </div>
-  );
-
   // ─── Determine what content to render ───────────────────────────
   const renderContent = () => {
-    // Offline check first
-    if (!isOnline && isNative) return renderOffline();
-    // Native loading
-    if (isLoading) return renderLoading();
-    // Native load failure (after retries)
-    if (isNative && loadFailed) return renderFallback();
+    // Offline — show message but still allow closing
+    if (!isOnline && isNative) {
+      return (
+        <div className="px-6 py-12 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center bg-white/5">
+            <WifiOff className="w-7 h-7 text-white/40" />
+          </div>
+          <h2 className="text-lg font-bold text-white">No Internet Connection</h2>
+          <p className="text-sm text-white/50 max-w-xs mx-auto">Please reconnect and try again.</p>
+          <Button variant="ghost" onClick={onClose} className="text-white/40 hover:text-white/60 text-sm">Close</Button>
+        </div>
+      );
+    }
+
+    // Plans always render immediately from static catalog — no blocking
 
     // Normal paywall content
     return (

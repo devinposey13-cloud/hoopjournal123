@@ -11,7 +11,7 @@
  * - Compliance links (Terms, Privacy, EULA)
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Drawer,
   DrawerContent,
@@ -23,11 +23,11 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, ArrowRight, Sparkles, Loader2, RotateCcw, WifiOff, AlertCircle } from 'lucide-react';
+import { Check, ArrowRight, Sparkles, Loader2, RotateCcw, WifiOff } from 'lucide-react';
 import { FeatureList } from '@/components/pricing/FeatureList';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, getPlanPrice, getTrialConfig, getTrialCopy, getTrialCta } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
-import { useNativeEntitlements } from '@/hooks/useNativeEntitlements';
+
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -43,9 +43,6 @@ interface NativePurchaseSheetProps {
   initialBillingCycle?: BillingCycle;
 }
 
-const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 1500;
-const SLOW_LOAD_MS = 4000;
 
 export function NativePurchaseSheet({
   open,
@@ -57,50 +54,18 @@ export function NativePurchaseSheet({
   initialBillingCycle = 'monthly',
 }: NativePurchaseSheetProps) {
   const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
-  const { isChecking, isLoaded, error: entitlementError, refresh: refreshEntitlements } = useNativeEntitlements();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
 
   const [cycle, setCycle] = useState<BillingCycle>(initialBillingCycle);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(recommendedPlan);
-  const [isSlowLoad, setIsSlowLoad] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const [loadFailed, setLoadFailed] = useState(false);
-
-  const isLoading = isNative && !isLoaded && isChecking;
 
   useEffect(() => {
     if (!open) return;
     setSelectedPlan(recommendedPlan);
     setCycle(initialBillingCycle);
-    setIsSlowLoad(false);
-    setRetryCount(0);
-    setLoadFailed(false);
-    if (isNative) refreshEntitlements();
-  }, [open, recommendedPlan, initialBillingCycle, isNative, refreshEntitlements]);
+  }, [open, recommendedPlan, initialBillingCycle]);
 
-  // Slow load detection
-  useEffect(() => {
-    if (!open || !isLoading) { setIsSlowLoad(false); return; }
-    const t = setTimeout(() => setIsSlowLoad(true), SLOW_LOAD_MS);
-    return () => clearTimeout(t);
-  }, [open, isLoading]);
-
-  // Auto-retry
-  useEffect(() => {
-    if (!open || !isNative || !entitlementError || retryCount >= MAX_RETRIES) {
-      if (entitlementError && retryCount >= MAX_RETRIES) setLoadFailed(true);
-      return;
-    }
-    const t = setTimeout(() => { setRetryCount(c => c + 1); refreshEntitlements(); }, RETRY_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [open, isNative, entitlementError, retryCount, refreshEntitlements]);
-
-  const handleRetry = useCallback(() => {
-    setRetryCount(0);
-    setLoadFailed(false);
-    refreshEntitlements();
-  }, [refreshEntitlements]);
 
   const tiers = planOrder.filter((id) => id !== 'free') as PlanId[];
 
@@ -152,42 +117,7 @@ export function NativePurchaseSheet({
       );
     }
 
-    // Loading
-    if (isLoading) {
-      return (
-        <div className="py-16 text-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto" />
-          <p className="text-sm text-muted-foreground">
-            {isSlowLoad ? 'Still connecting to subscriptions…' : 'Loading plans…'}
-          </p>
-        </div>
-      );
-    }
-
-    // Fallback
-    if (isNative && loadFailed) {
-      return (
-        <div className="py-12 text-center space-y-5">
-          <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto" />
-          <div>
-            <p className="text-sm font-semibold mb-1">Subscriptions Temporarily Unavailable</p>
-            <p className="text-xs text-muted-foreground">Please try again in a moment.</p>
-          </div>
-          <div className="space-y-2 px-4">
-            <Button onClick={handleRetry} className="w-full">
-              <RotateCcw className="w-4 h-4 mr-2" />Try Again
-            </Button>
-            <Button variant="ghost" onClick={handleRestore} disabled={isRestoring} className="w-full text-xs">
-              {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
-              Restore Purchases
-            </Button>
-            <DrawerClose asChild>
-              <Button variant="ghost" className="w-full text-muted-foreground text-xs">Continue on Free Plan</Button>
-            </DrawerClose>
-          </div>
-        </div>
-      );
-    }
+    // Plans always render immediately from static catalog — no blocking
 
     // Normal content
     return (
@@ -312,7 +242,7 @@ export function NativePurchaseSheet({
   };
 
   return (
-    <Drawer open={open} onOpenChange={(v) => !v && !isPurchasing && onClose()}>
+    <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader className="text-center pb-2">
