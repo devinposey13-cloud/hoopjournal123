@@ -163,11 +163,22 @@ export function AuthForm() {
         return;
       }
 
-      // ── ALL WEB (mobile & desktop): Use direct Supabase OAuth ──
-      console.log('[Auth:Apple] Web flow — direct Supabase OAuth');
-      const redirectTo = `${window.location.origin}/auth/callback`;
-      const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
-      window.location.href = oauthUrl;
+      // ── WEB on custom domain: Direct Supabase OAuth ──
+      if (isCustomDomain()) {
+        console.log('[Auth:Apple] Custom domain — direct Supabase OAuth');
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
+        window.location.href = oauthUrl;
+        return;
+      }
+
+      // ── WEB on preview/lovable.app: Use Lovable broker ──
+      console.log('[Auth:Apple] Preview domain — using Lovable broker');
+      const redirectUri = getOAuthRedirectUri();
+      const { error } = await lovable.auth.signInWithOAuth('apple', {
+        redirect_uri: redirectUri,
+      });
+      if (error) throw error;
     } catch (error: unknown) {
       console.error('[Auth:Apple] Sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Apple sign-in failed';
