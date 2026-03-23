@@ -487,6 +487,32 @@ export function AuthForm() {
               {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
           </div>
+
+          {/* Continue as Guest */}
+          <div className="relative my-5">
+            <Separator />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-12 text-base font-medium"
+            onClick={() => {
+              const { enterGuestMode } = useAuthRef.current;
+              enterGuestMode();
+            }}
+          >
+            Continue as Guest
+          </Button>
+          <p className="text-xs text-muted-foreground text-center mt-2">
+            Explore the app with sample data — no account needed
+          </p>
+
+          {/* Legal links */}
+          <div className="flex justify-center gap-4 mt-4">
+            <a href="/privacy" className="text-xs text-muted-foreground hover:text-primary transition-colors">Privacy</a>
+            <a href="/terms" className="text-xs text-muted-foreground hover:text-primary transition-colors">Terms</a>
+            <a href="/eula" className="text-xs text-muted-foreground hover:text-primary transition-colors">EULA</a>
+          </div>
         </div>
       </div>
     </div>
