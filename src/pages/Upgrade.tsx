@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Lock, RotateCcw, Loader2 } from 'lucide-react';
 import { PlanCard } from '@/components/pricing/PlanCard';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
+import { NativePurchaseSheet } from '@/components/purchase/NativePurchaseSheet';
 import {
   type BillingCycle,
   type PlanId,
@@ -29,6 +30,11 @@ export default function Upgrade() {
   const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, diagnostics, debugLog } = useBilling();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [showDebug, setShowDebug] = useState(false);
+  const native = isNativeApp();
+
+  // Native purchase sheet state
+  const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
+  const [nativeSheetPlan, setNativeSheetPlan] = useState<PlanId>('pro');
 
   const upgradePlans = planOrder.filter(
     (id) => id !== 'free' && planOrder.indexOf(id) > planOrder.indexOf(currentPlan)
@@ -37,6 +43,13 @@ export default function Upgrade() {
   const handleSelect = async (planId: PlanId) => {
     console.log('[Upgrade] handleSelect', { planId, cycle, isNative, platform: diagnostics.platform });
     track('upgrade_clicked', { planId, cycle, isNative });
+
+    // On native, open the hardened purchase sheet
+    if (native) {
+      setNativeSheetPlan(planId);
+      setNativeSheetOpen(true);
+      return;
+    }
 
     setLoadingPlan(planId);
     try {
