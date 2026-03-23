@@ -139,90 +139,23 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
     }
   };
 
-  // ─── Offline state ──────────────────────────────────────────────
-  const renderOffline = () => (
-    <div className="px-6 py-12 text-center space-y-4">
-      <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center bg-white/5">
-        <WifiOff className="w-7 h-7 text-white/40" />
-      </div>
-      <h2 className="text-lg font-bold text-white">No Internet Connection</h2>
-      <p className="text-sm text-white/50 max-w-xs mx-auto">
-        Please reconnect and try again.
-      </p>
-      <Button
-        variant="ghost"
-        onClick={onClose}
-        className="text-white/40 hover:text-white/60 text-sm"
-      >
-        Close
-      </Button>
-    </div>
-  );
-
-  // ─── Loading state ──────────────────────────────────────────────
-  const renderLoading = () => (
-    <div className="px-6 py-16 text-center space-y-4">
-      <Loader2 className="w-8 h-8 animate-spin text-white/40 mx-auto" />
-      <p className="text-sm text-white/50">
-        {isSlowLoad ? 'Still connecting to subscriptions…' : 'Loading plans…'}
-      </p>
-    </div>
-  );
-
-  // ─── Fallback state (products failed to load) ───────────────────
-  const renderFallback = () => (
-    <div className="px-6 py-12 text-center space-y-5">
-      <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center bg-white/5">
-        <AlertCircle className="w-7 h-7 text-white/40" />
-      </div>
-      <div>
-        <h2 className="text-lg font-bold text-white mb-2">Subscriptions Temporarily Unavailable</h2>
-        <p className="text-sm text-white/50 max-w-xs mx-auto">
-          Please try again in a moment.
-        </p>
-      </div>
-      <div className="space-y-2">
-        <Button
-          onClick={handleRetry}
-          className="w-full h-11 rounded-xl font-semibold border-0"
-          style={{
-            background: 'linear-gradient(135deg, hsl(24 100% 50%), hsl(35 100% 55%))',
-            color: 'white',
-          }}
-        >
-          <RotateCcw className="w-4 h-4 mr-2" />
-          Try Again
-        </Button>
-        {isNative && (
-          <Button
-            variant="ghost"
-            onClick={handleRestore}
-            disabled={isRestoring}
-            className="w-full text-white/40 hover:text-white/60 text-sm h-10"
-          >
-            {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
-            Restore Purchases
-          </Button>
-        )}
-        <Button
-          variant="ghost"
-          onClick={onClose}
-          className="w-full text-white/30 hover:text-white/50 text-xs h-9"
-        >
-          Continue on Free Plan
-        </Button>
-      </div>
-    </div>
-  );
-
   // ─── Determine what content to render ───────────────────────────
   const renderContent = () => {
-    // Offline check first
-    if (!isOnline && isNative) return renderOffline();
-    // Native loading
-    if (isLoading) return renderLoading();
-    // Native load failure (after retries)
-    if (isNative && loadFailed) return renderFallback();
+    // Offline — show message but still allow closing
+    if (!isOnline && isNative) {
+      return (
+        <div className="px-6 py-12 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center bg-white/5">
+            <WifiOff className="w-7 h-7 text-white/40" />
+          </div>
+          <h2 className="text-lg font-bold text-white">No Internet Connection</h2>
+          <p className="text-sm text-white/50 max-w-xs mx-auto">Please reconnect and try again.</p>
+          <Button variant="ghost" onClick={onClose} className="text-white/40 hover:text-white/60 text-sm">Close</Button>
+        </div>
+      );
+    }
+
+    // Plans always render immediately from static catalog — no blocking
 
     // Normal paywall content
     return (
