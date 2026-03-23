@@ -116,27 +116,14 @@ export function AuthForm() {
         return;
       }
 
-      // ── MOBILE WEB on custom domain: bypass Lovable broker, use direct Supabase OAuth ──
-      if (mobileWeb && customDomain) {
-        console.log('[Auth:Google] Mobile web on custom domain — using direct OAuth (bypassing broker)');
-        const redirectTo = `${window.location.origin}/auth/callback`;
-        const oauthUrl = await getDirectOAuthUrl('google', redirectTo);
-        console.log(`[Auth:Google] Direct OAuth URL generated, redirecting same-tab`);
-        window.location.href = oauthUrl;
-        return;
-      }
-
-      // ── DESKTOP WEB: Use Lovable managed OAuth ──
-      console.log('[Auth:Google] Web flow via lovable.auth');
-      const redirectUri = getOAuthRedirectUri();
-      console.log(`[Auth:Google] Redirect URI: ${redirectUri}`);
-
-      const { error } = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: redirectUri,
-        extraParams: { prompt: 'select_account' },
-      });
-
-      if (error) throw error;
+      // ── ALL WEB (mobile & desktop): Use direct Supabase OAuth ──
+      // Custom Google credentials are configured, so bypass the Lovable broker
+      // to avoid redirect_uri mismatch errors.
+      console.log('[Auth:Google] Web flow — direct Supabase OAuth (custom credentials)');
+      const redirectTo = `${window.location.origin}/auth/callback`;
+      const oauthUrl = await getDirectOAuthUrl('google', redirectTo);
+      console.log(`[Auth:Google] Direct OAuth URL generated, redirecting same-tab`);
+      window.location.href = oauthUrl;
     } catch (error: unknown) {
       console.error('[Auth:Google] Sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Google sign-in failed';
