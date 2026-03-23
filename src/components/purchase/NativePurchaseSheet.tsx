@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, ArrowRight, Sparkles, Loader2, RotateCcw, WifiOff, AlertCircle } from 'lucide-react';
+import { Check, ArrowRight, Sparkles, Loader2, RotateCcw, WifiOff } from 'lucide-react';
 import { FeatureList } from '@/components/pricing/FeatureList';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, getPlanPrice, getTrialConfig, getTrialCopy, getTrialCta } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
