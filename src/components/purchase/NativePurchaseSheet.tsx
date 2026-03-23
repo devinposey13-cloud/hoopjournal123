@@ -43,9 +43,6 @@ interface NativePurchaseSheetProps {
   initialBillingCycle?: BillingCycle;
 }
 
-const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 1500;
-const SLOW_LOAD_MS = 4000;
 
 export function NativePurchaseSheet({
   open,

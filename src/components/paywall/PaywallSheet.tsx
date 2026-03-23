@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Lock, Check, ArrowRight, RotateCcw, Loader2, Sparkles, WifiOff, AlertCircle } from 'lucide-react';
+import { X, Lock, Check, ArrowRight, RotateCcw, Loader2, Sparkles, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
