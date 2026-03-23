@@ -20,6 +20,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isGuest: boolean;
+  enterGuestMode: () => void;
+  exitGuestMode: () => void;
   signUp: (params: SignUpParams) => Promise<{ error: Error | null; data: { user: User | null } }>;
   signIn: (params: SignInParams) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
