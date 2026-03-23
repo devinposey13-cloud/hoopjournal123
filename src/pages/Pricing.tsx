@@ -54,6 +54,10 @@ export default function Pricing() {
   const canceled = searchParams.get('canceled');
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     if (canceled === 'true') {
       toast.info("Checkout canceled — you're still on the Free plan.");
     }
