@@ -33,6 +33,7 @@ import { QuickLiveStatsDialog } from '@/components/QuickLiveStatsDialog';
 import { PendingApproval } from '@/components/PendingApproval';
 import { OnboardingFlow, OnboardingData, OnboardingCompletionAction } from '@/components/OnboardingFlow';
 import { EmptyDashboardWelcome } from '@/components/EmptyDashboardWelcome';
+import { GuestDashboard } from '@/components/GuestDashboard';
 import { TodayCard } from '@/components/dashboard/TodayCard';
 import { DashboardQuickStats } from '@/components/dashboard/DashboardQuickStats';
 import { DailyInsight } from '@/components/dashboard/DailyInsight';
