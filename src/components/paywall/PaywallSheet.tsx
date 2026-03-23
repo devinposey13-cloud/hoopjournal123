@@ -54,16 +54,11 @@ const PDF_VALUE_BULLETS = [
   { icon: '🧠', label: 'Full AI game recap included' },
 ];
 
-// ─── Loading timeout thresholds ────────────────────────────────────
-const SLOW_LOAD_MS = 4000;
-const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 1500;
-
 export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: PaywallSheetProps) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('elite');
   const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
-  const { isChecking: isCheckingEntitlements, isLoaded: entitlementsLoaded, error: entitlementError, refresh: refreshEntitlements } = useNativeEntitlements();
+  const { refresh: refreshEntitlements } = useNativeEntitlements();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
   const config = reason ? paywallConfigs[reason] : null;
