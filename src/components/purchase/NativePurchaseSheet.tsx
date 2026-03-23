@@ -27,7 +27,7 @@ import { Check, ArrowRight, Sparkles, Loader2, RotateCcw, WifiOff } from 'lucide
 import { FeatureList } from '@/components/pricing/FeatureList';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, getPlanPrice, getTrialConfig, getTrialCopy, getTrialCta } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
-import { useNativeEntitlements } from '@/hooks/useNativeEntitlements';
+
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
