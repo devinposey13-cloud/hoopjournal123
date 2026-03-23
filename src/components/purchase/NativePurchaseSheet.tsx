@@ -69,11 +69,6 @@ export function NativePurchaseSheet({
     setCycle(initialBillingCycle);
   }, [open, recommendedPlan, initialBillingCycle]);
 
-  const handleRetry = useCallback(() => {
-    setRetryCount(0);
-    setLoadFailed(false);
-    refreshEntitlements();
-  }, [refreshEntitlements]);
 
   const tiers = planOrder.filter((id) => id !== 'free') as PlanId[];
 
