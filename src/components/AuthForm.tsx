@@ -145,33 +145,20 @@ export function AuthForm() {
         return;
       }
 
-      // ── MOBILE WEB on custom domain: bypass Lovable broker ──
-      if (!isNativeApp() && isMobileWeb() && isCustomDomain()) {
-        console.log('[Auth:Apple] Mobile web on custom domain — using direct OAuth');
-        const redirectTo = `${window.location.origin}/auth/callback`;
+      // ── NATIVE (Android / fallback): Use OAuth redirect via system browser ──
+      if (isNativeApp()) {
+        console.log('[Auth:Apple] Native fallback — OAuth redirect');
+        const redirectTo = getOAuthRedirectUri({ forNative: true });
         const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
-        window.location.href = oauthUrl;
+        await openOAuthInSystemBrowser(oauthUrl);
         return;
       }
 
-      // ── DESKTOP WEB: Use Lovable managed OAuth ──
-      if (!isNativeApp()) {
-        console.log('[Auth:Apple] Web flow via lovable.auth');
-        const redirectUri = getOAuthRedirectUri();
-
-        const { error } = await lovable.auth.signInWithOAuth('apple', {
-          redirect_uri: redirectUri,
-        });
-
-        if (error) throw error;
-        return;
-      }
-
-      // ── ANDROID NATIVE / FALLBACK: Use OAuth redirect via system browser ──
-      console.log('[Auth:Apple] Native fallback — OAuth redirect');
-      const redirectTo = getOAuthRedirectUri({ forNative: true });
+      // ── ALL WEB (mobile & desktop): Use direct Supabase OAuth ──
+      console.log('[Auth:Apple] Web flow — direct Supabase OAuth');
+      const redirectTo = `${window.location.origin}/auth/callback`;
       const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
-      await openOAuthInSystemBrowser(oauthUrl);
+      window.location.href = oauthUrl;
     } catch (error: unknown) {
       console.error('[Auth:Apple] Sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Apple sign-in failed';
