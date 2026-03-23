@@ -222,6 +222,10 @@ export default function Index() {
     return <LoadingSpinner fullScreen size="lg" />;
   }
 
+  if (!user && isGuest) {
+    return <GuestDashboard />;
+  }
+
   if (!user) {
     return <AuthForm />;
   }
