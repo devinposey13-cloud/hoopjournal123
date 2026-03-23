@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { LogIn, UserPlus, Loader2, AtSign, Mail, Phone, Eye, EyeOff } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import { supabase } from '@/integrations/supabase/client';
-// lovable broker no longer used for OAuth — custom credentials route directly through Supabase
+import { lovable } from '@/integrations/lovable';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
