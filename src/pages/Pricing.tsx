@@ -9,6 +9,7 @@ import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import { PlanCompareTable } from '@/components/pricing/PlanCompareTable';
 import { FAQAccordion } from '@/components/pricing/FAQAccordion';
 import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
+import { NativePurchaseSheet } from '@/components/purchase/NativePurchaseSheet';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, track } from '@/lib/plans';
 import { usePlan } from '@/hooks/usePlanState';
 import { useBilling } from '@/hooks/useBilling';
@@ -26,6 +27,10 @@ export default function Pricing() {
   const [promoApplied, setPromoApplied] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
   const native = isNativeApp();
+
+  // Native purchase sheet state
+  const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
+  const [nativeSheetPlan, setNativeSheetPlan] = useState<PlanId>('pro');
 
   // Check if user already has promo_eligible in plan_overrides
   useEffect(() => {
@@ -68,6 +73,13 @@ export default function Pricing() {
     }
     console.log('[Pricing] handleSelectPlan', { planId, cycle, native, platform: diagnostics.platform });
     track('upgrade_clicked', { planId, cycle, native });
+
+    // On native, open the hardened purchase sheet instead of raw purchase
+    if (native) {
+      setNativeSheetPlan(planId);
+      setNativeSheetOpen(true);
+      return;
+    }
 
     setLoadingPlan(planId);
     try {
