@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { LogIn, UserPlus, Loader2, AtSign, Mail, Phone, Eye, EyeOff } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import { supabase } from '@/integrations/supabase/client';
-// lovable broker no longer used for OAuth — custom credentials route directly through Supabase
+import { lovable } from '@/integrations/lovable';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
@@ -116,14 +116,23 @@ export function AuthForm() {
         return;
       }
 
-      // ── ALL WEB (mobile & desktop): Use direct Supabase OAuth ──
-      // Custom Google credentials are configured, so bypass the Lovable broker
-      // to avoid redirect_uri mismatch errors.
-      console.log('[Auth:Google] Web flow — direct Supabase OAuth (custom credentials)');
-      const redirectTo = `${window.location.origin}/auth/callback`;
-      const oauthUrl = await getDirectOAuthUrl('google', redirectTo);
-      console.log(`[Auth:Google] Direct OAuth URL generated, redirecting same-tab`);
-      window.location.href = oauthUrl;
+      // ── WEB on custom domain: Direct Supabase OAuth (custom credentials) ──
+      if (customDomain) {
+        console.log('[Auth:Google] Custom domain — direct Supabase OAuth');
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        const oauthUrl = await getDirectOAuthUrl('google', redirectTo);
+        window.location.href = oauthUrl;
+        return;
+      }
+
+      // ── WEB on preview/lovable.app: Use Lovable broker (handles redirect URIs) ──
+      console.log('[Auth:Google] Preview domain — using Lovable broker');
+      const redirectUri = getOAuthRedirectUri();
+      const { error } = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: redirectUri,
+        extraParams: { prompt: 'select_account' },
+      });
+      if (error) throw error;
     } catch (error: unknown) {
       console.error('[Auth:Google] Sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Google sign-in failed';
@@ -154,11 +163,22 @@ export function AuthForm() {
         return;
       }
 
-      // ── ALL WEB (mobile & desktop): Use direct Supabase OAuth ──
-      console.log('[Auth:Apple] Web flow — direct Supabase OAuth');
-      const redirectTo = `${window.location.origin}/auth/callback`;
-      const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
-      window.location.href = oauthUrl;
+      // ── WEB on custom domain: Direct Supabase OAuth ──
+      if (isCustomDomain()) {
+        console.log('[Auth:Apple] Custom domain — direct Supabase OAuth');
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
+        window.location.href = oauthUrl;
+        return;
+      }
+
+      // ── WEB on preview/lovable.app: Use Lovable broker ──
+      console.log('[Auth:Apple] Preview domain — using Lovable broker');
+      const redirectUri = getOAuthRedirectUri();
+      const { error } = await lovable.auth.signInWithOAuth('apple', {
+        redirect_uri: redirectUri,
+      });
+      if (error) throw error;
     } catch (error: unknown) {
       console.error('[Auth:Apple] Sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Apple sign-in failed';
