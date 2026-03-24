@@ -308,21 +308,31 @@ export function AuthForm() {
       <div className="w-full max-w-md">
         <div className="stat-card">
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-4 shadow-glow">
               <img src={hoopJournalLogo} alt="Hoop Journal" className="w-full h-full object-cover" />
             </div>
             <h1 className="font-bold text-foreground text-4xl">Hoop Journal™</h1>
             <p
-              className="text-muted-foreground mt-1 text-2xl uppercase tracking-wide"
-              style={{ fontFamily: "'Teko', sans-serif", fontWeight: 600 }}
+              className="text-muted-foreground mt-2 text-lg leading-snug"
             >
-              {isLogin ? 'Track Your Game. Improve Every Day.' : 'Create your account'}
+              Track stats. Get AI feedback. Improve your game every day.
             </p>
           </div>
 
-          {/* Social Sign In — fastest path */}
+          {/* Primary actions: Apple → Google → Guest */}
           <div className="space-y-3">
+            <Button type="button" variant="outline" onClick={handleAppleSignIn} disabled={appleLoading} className="w-full h-12 text-base font-medium">
+              {appleLoading ? (
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              ) : (
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+                </svg>
+              )}
+              Continue with Apple
+            </Button>
+
             <Button type="button" variant="outline" onClick={handleGoogleSignIn} disabled={googleLoading} className="w-full h-12 text-base font-medium">
               {googleLoading ? (
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
@@ -337,16 +347,17 @@ export function AuthForm() {
               Continue with Google
             </Button>
 
-            <Button type="button" variant="outline" onClick={handleAppleSignIn} disabled={appleLoading} className="w-full h-12 text-base font-medium">
-              {appleLoading ? (
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              ) : (
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-                </svg>
-              )}
-              Continue with Apple
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-12 text-base font-medium"
+              onClick={() => enterGuestMode()}
+            >
+              Continue as Guest
             </Button>
+            <p className="text-sm text-muted-foreground text-center">
+              Start exploring instantly — no signup required
+            </p>
           </div>
 
           {/* Divider */}
@@ -488,24 +499,8 @@ export function AuthForm() {
             </button>
           </div>
 
-          {/* Continue as Guest */}
-          <div className="relative my-5">
-            <Separator />
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full h-12 text-base font-medium"
-            onClick={() => enterGuestMode()}
-          >
-            Continue as Guest
-          </Button>
-          <p className="text-xs text-muted-foreground text-center mt-2">
-            Explore the app with sample data — no account needed
-          </p>
-
           {/* Legal links */}
-          <div className="flex justify-center gap-4 mt-4">
+          <div className="flex justify-center gap-4 mt-6">
             <a href="/privacy" className="text-xs text-muted-foreground hover:text-primary transition-colors">Privacy</a>
             <a href="/terms" className="text-xs text-muted-foreground hover:text-primary transition-colors">Terms</a>
             <a href="/eula" className="text-xs text-muted-foreground hover:text-primary transition-colors">EULA</a>
