@@ -313,10 +313,8 @@ export function AuthForm() {
               <img src={hoopJournalLogo} alt="Hoop Journal" className="w-full h-full object-cover" />
             </div>
             <h1 className="font-bold text-foreground text-4xl">Hoop Journal™</h1>
-            <p
-              className="text-muted-foreground mt-2 text-lg leading-snug"
-            >
-              Track stats. Get AI feedback. Improve your game every day.
+            <p className="text-muted-foreground mt-2 text-lg leading-snug">
+              Track your game. Improve every day.
             </p>
           </div>
 
