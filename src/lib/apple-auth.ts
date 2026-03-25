@@ -1,8 +1,9 @@
 /**
  * Apple Sign In — platform-aware implementation following Despia architecture.
  *
- * iOS (Despia): Apple JS SDK → Native Face ID dialog → POST to edge function → setSession
- * Android (Despia): oauth:// protocol → form_post to edge function → deeplink return
+ * iOS (Despia): Direct redirect to Apple authorize URL → native WebKit dialog →
+ *               form_post to edge function → redirect back with tokens
+ * Android (Despia): oauth:// protocol → browser → form_post to edge function → deeplink
  * Web: Apple JS SDK → browser dialog → POST to edge function → setSession
  *
  * The edge function (auth-apple-callback) handles token verification and user
@@ -12,7 +13,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import { getPlatform } from '@/lib/platform';
+import { getPlatform, isDespiaIOS } from '@/lib/platform';
 import { APPLE_CLIENT_ID, APPLE_REDIRECT_URI } from '@/lib/authConfig';
 import {
   logAppleAuthEvent,
@@ -45,12 +46,14 @@ declare global {
   }
 }
 
-/** Initialize Apple JS SDK (call once on app boot — iOS and Web only) */
+/** Initialize Apple JS SDK (call once on app boot — Web only, NOT iOS Despia) */
 export function initAppleAuth(): void {
   const platform = getPlatform();
 
   // Android uses oauth:// flow, no JS SDK needed
+  // iOS Despia uses direct redirect, no JS SDK needed
   if (platform === 'android') return;
+  if (isDespiaIOS()) return;
   if (!APPLE_CLIENT_ID) return;
 
   if (window.AppleID) {
@@ -71,13 +74,57 @@ export function initAppleAuth(): void {
 }
 
 /**
- * Sign in using the Apple JS SDK (iOS and Web).
+ * Build the Apple authorize URL for direct redirect flows (iOS Despia).
+ * The redirect_uri points to our edge function which handles form_post.
+ */
+function buildAppleAuthorizeUrl(state: string): string {
+  const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-apple-callback`;
+  
+  const params = new URLSearchParams({
+    client_id: APPLE_CLIENT_ID,
+    response_type: 'code id_token',
+    response_mode: 'form_post',
+    scope: 'name email',
+    redirect_uri: edgeFunctionUrl,
+    state: state,
+  });
+
+  return `https://appleid.apple.com/auth/authorize?${params.toString()}`;
+}
+
+/**
+ * iOS Despia: Direct redirect to Apple's authorize URL.
+ * This triggers the native WebKit Apple Sign In dialog (Face ID).
+ * Apple will form_post the response to our edge function.
+ */
+export function signInWithAppleRedirect(): void {
+  const state = `${crypto.randomUUID()}|ios|hoopjournal`;
+  const appleAuthUrl = buildAppleAuthorizeUrl(state);
+
+  logAppleAuthEvent('flow_selected', {
+    flow: 'direct_redirect',
+    reason: 'iOS Despia — WebKit native dialog via redirect',
+    redirectUri: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-apple-callback`,
+  });
+  updateAppleAuthMetadata({
+    flowType: 'direct_redirect',
+    redirectUri: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-apple-callback`,
+  });
+
+  logAppleAuthEvent('redirect_started', {
+    url: appleAuthUrl.slice(0, 100) + '...',
+    state: state.slice(0, 20) + '...',
+  });
+
+  console.log('[AppleAuth] iOS Despia — direct redirect to Apple authorize URL');
+  window.location.href = appleAuthUrl;
+}
+
+/**
+ * Sign in using the Apple JS SDK (Web only — NOT iOS Despia).
  *
- * Triggers the native Apple dialog (Face ID on iOS, browser popup on web),
- * then POSTs the id_token to our auth-apple-callback edge function to
- * verify the token and create a Supabase session.
- *
- * Each stage is logged to the Apple Auth Audit trail.
+ * Triggers the browser Apple dialog, then POSTs the id_token to our
+ * auth-apple-callback edge function to verify and create a session.
  */
 export async function signInWithAppleNative(): Promise<void> {
   // Stage: JS SDK invocation
@@ -92,12 +139,11 @@ export async function signInWithAppleNative(): Promise<void> {
     throw new Error('Apple Sign In SDK not loaded');
   }
 
-  // 1. Trigger native Apple Sign In dialog via JS SDK
+  // 1. Trigger Apple Sign In dialog via JS SDK
   let response;
   try {
     response = await window.AppleID.auth.signIn();
   } catch (error: any) {
-    // Stage: JS SDK error response
     const errorCode = error?.error || 'unknown';
     const errorMsg = error?.message || error?.error || String(error);
 
@@ -155,7 +201,7 @@ export async function signInWithAppleNative(): Promise<void> {
 
   console.log('[AppleAuth] Got id_token from Apple JS SDK, posting to edge function...');
 
-  // 2. POST to our custom edge function (NOT supabase.auth.signInWithIdToken)
+  // 2. POST to our custom edge function
   logAppleAuthEvent('token_exchange_started', {
     provider: 'apple',
     tokenLength: idToken.length,
@@ -240,7 +286,6 @@ export async function signInWithAppleNative(): Promise<void> {
     throw new Error('No session returned after Apple sign in');
   }
 
-  // Stage: Session creation succeeded
   logAppleAuthEvent('session_verified', {
     success: true,
     userId: sessionData.session.user.id.slice(0, 8),
@@ -252,7 +297,7 @@ export async function signInWithAppleNative(): Promise<void> {
   console.log('[AppleAuth] Session established — user:', sessionData.session.user.id);
 }
 
-/** Returns true if the Apple JS SDK is available (iOS/Web) */
+/** Returns true if the Apple JS SDK is available (Web only) */
 export function isAppleJSAvailable(): boolean {
   return !!window.AppleID;
 }
