@@ -33,6 +33,14 @@
   </head>
 
   <body>
+    <!-- Pre-hydration loading shell: dark bg prevents white flash on iOS native -->
+    <div id="prehydration-shell" style="position:fixed;inset:0;z-index:9999;background:#0a0a0a;display:flex;align-items:center;justify-content:center;">
+      <div style="text-align:center;">
+        <div style="font-family:Teko,sans-serif;font-size:28px;font-weight:600;color:#f97316;letter-spacing:1px;">HOOP JOURNAL</div>
+        <div style="margin-top:16px;width:32px;height:32px;border:3px solid rgba(249,115,22,0.3);border-top-color:#f97316;border-radius:50%;animation:hjspin 0.8s linear infinite;margin-left:auto;margin-right:auto;"></div>
+      </div>
+      <style>@keyframes hjspin{to{transform:rotate(360deg)}}</style>
+    </div>
     <div id="root"></div>
     <script>
       // Ensure OAuth callback routes bypass service worker cache

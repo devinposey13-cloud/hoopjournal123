@@ -50,13 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Detect if we're on a callback URL with tokens - delay loading=false until resolved
+    // Detect if we're on a callback URL with tokens
     const hash = window.location.hash || '';
-    const isCallbackWithTokens = hash.includes('access_token') || 
-      window.location.pathname === '/auth/callback';
+    const isCallbackWithTokens = hash.includes('access_token');
+    const isCallbackRoute = window.location.pathname === '/auth/callback';
     
     if (isCallbackWithTokens) {
-      console.log('[Auth] Detected token-bearing callback URL, waiting for session hydration...');
+      console.log('[Auth] Detected token-bearing URL, waiting for session hydration...');
     }
 
     // Set up auth state listener FIRST
@@ -85,15 +85,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setSession(session);
       setUser(session?.user ?? null);
-      // Only set loading=false immediately if we're NOT on a callback URL
-      // On callback URLs, wait for onAuthStateChange to fire after setSession
-      if (!isCallbackWithTokens) {
+      // On callback route, let OAuthCallback handle loading state via its own flow.
+      // On token-bearing non-callback URLs, wait briefly for onAuthStateChange.
+      // Otherwise set loading=false immediately.
+      if (isCallbackRoute) {
+        // OAuthCallback.tsx manages its own session establishment — let it drive.
+        // Set loading=false so the page can render its skeleton.
         setLoading(false);
-      } else {
-        // Safety timeout: if no auth event fires within 5s, stop loading anyway
+      } else if (isCallbackWithTokens) {
+        // Safety timeout: if no auth event fires within 3s, stop loading anyway
         setTimeout(() => {
           setLoading(false);
-        }, 5000);
+        }, 3000);
+      } else {
+        setLoading(false);
       }
     });
 
