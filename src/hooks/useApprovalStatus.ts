@@ -28,7 +28,10 @@ export function useApprovalStatus() {
           .eq('is_enabled', true)
           .maybeSingle();
         
-        if (flagData?.flag_value === 'automatic') {
+        const mode = flagData?.flag_value || 'manual';
+        localStorage.setItem(APPROVAL_MODE_KEY, mode);
+        
+        if (mode === 'automatic') {
           setIsApproved(true);
           setLoading(false);
           return;
