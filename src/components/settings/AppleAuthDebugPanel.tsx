@@ -99,6 +99,23 @@ function AttemptCard({ attempt }: { attempt: AppleAuthAttempt }) {
         </div>
       </div>
 
+      {/* Flow path label */}
+      <div className="flex items-center gap-2 text-[11px]">
+        <span className="text-muted-foreground">Flow:</span>
+        <Badge
+          variant={attempt.metadata.flowType === 'native_oauth_redirect' ? 'default' : 'outline'}
+          className="text-[10px]"
+        >
+          {attempt.metadata.flowType === 'native_oauth_redirect' ? 'OAuth Redirect'
+            : attempt.metadata.flowType === 'js_sdk' ? 'JS SDK'
+            : attempt.metadata.flowType === 'lovable_broker' ? 'Lovable Broker'
+            : attempt.metadata.flowType || 'Unknown'}
+        </Badge>
+        {attempt.success === true && (
+          <Badge variant="outline" className="text-[10px] text-green-400 border-green-400/30">Native Return Complete</Badge>
+        )}
+      </div>
+
       {/* Summary */}
       <div className="flex items-center gap-2 text-[11px]">
         <span className="text-muted-foreground">Last stage:</span>

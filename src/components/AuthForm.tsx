@@ -150,24 +150,31 @@ export function AuthForm() {
     const attemptId = startAppleAuthAttempt();
 
     try {
-      // ── iOS NATIVE: Use Apple JS SDK for native Face ID / Touch ID dialog ──
-      if (isDespiaIOS() && isAppleJSAvailable()) {
-        logAppleAuthEvent('flow_selected', { flow: 'js_sdk', reason: 'isDespiaIOS && jsSDK available' });
-        updateAppleAuthMetadata({ flowType: 'js_sdk' });
+      // ── iOS NATIVE: OAuth redirect via Despia system browser ──
+      // The Apple JS SDK does NOT work inside Despia WebView (resolves instantly
+      // with empty authorization). Use the same oauth:// bridge as Google.
+      if (isDespiaIOS()) {
+        const redirectTo = getOAuthRedirectUri({ forNative: true });
+        logAppleAuthEvent('flow_selected', {
+          flow: 'native_oauth_redirect',
+          reason: 'isDespiaIOS — JS SDK unsupported in WebView',
+          redirectTo,
+          configuredCallback: `${APP_ORIGIN}/auth/callback`,
+        });
+        updateAppleAuthMetadata({ flowType: 'native_oauth_redirect', redirectUri: redirectTo });
 
-        console.log('[Auth:Apple] iOS native — using Apple JS SDK');
-        await signInWithAppleNative();
-        // Session is set automatically by signInWithIdToken
-        completeAppleAuthSuccess();
+        console.log(`[Auth:Apple] iOS native — OAuth redirect, redirectTo: ${redirectTo}`);
+        logAppleAuthEvent('oauth_url_requested', { provider: 'apple', redirectTo });
+        const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
+        logAppleAuthEvent('oauth_url_received', { urlLength: oauthUrl.length, urlPrefix: oauthUrl.slice(0, 80) });
+
+        logAppleAuthEvent('system_browser_opened');
+        await openOAuthInSystemBrowser(oauthUrl);
+        // Attempt stays in-progress — callback handler will complete it
         return;
       }
 
-      // Log why JS SDK was not used on native
-      if (isDespiaIOS() && !isAppleJSAvailable()) {
-        logAppleAuthEvent('flow_selected', { flow: 'oauth_redirect', reason: 'isDespiaIOS but JS SDK NOT available' });
-      }
-
-      // ── NATIVE (Android / fallback): Use OAuth redirect via system browser ──
+      // ── NATIVE (Android): Use OAuth redirect via system browser ──
       if (isNativeApp()) {
         const redirectTo = getOAuthRedirectUri({ forNative: true });
         logAppleAuthEvent('flow_selected', { flow: 'native_oauth_redirect', reason: 'isNativeApp (non-iOS or SDK fallback)', redirectTo });
