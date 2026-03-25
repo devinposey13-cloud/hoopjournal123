@@ -1,39 +1,39 @@
 
-Goal: remove the brief “white page” feeling after mobile auth by shortening the post-auth path and showing the dashboard shell immediately while data finishes loading.
 
-1. Tighten the callback handoff
-- Update `src/pages/OAuthCallback.tsx` so it stops doing extra verification work after a successful token restore.
-- Use the session returned by `setSession` / code exchange as the success signal instead of re-checking multiple times with `getSession()`.
-- Navigate to `/` immediately with a lightweight “post-auth transition” flag in router state.
+## Fix: Eliminate White Screen After Apple Auth on iOS
 
-2. Split auth readiness from app-data readiness
-- Refine `src/hooks/useAuth.tsx` so the app can distinguish:
-  - auth session restored
-  - dashboard data still loading
-- Keep `onAuthStateChange` simple and non-blocking.
-- Add a small “auth ready” signal so downstream hooks only start once session hydration is complete, instead of multiple parts of the app each waiting on their own timing.
+### Root Cause
 
-3. Reduce dashboard startup latency
-- Optimize `src/hooks/useCloudData.ts` by parallelizing independent reads after the active profile is known.
-- Keep the current profile lookup as the first dependency, then fetch seasons/games/schedule/clips/profile settings in parallel where possible.
-- Avoid redundant post-login reads that don’t affect the first paint.
+The white screen happens in two stages:
 
-4. Replace full-screen blank/loading with immediate dashboard skeleton
-- In `src/pages/Index.tsx`, render a branded dashboard shell/skeleton immediately after auth instead of a blank callback-looking screen.
-- For the first post-auth load on mobile, keep navigation chrome and skeleton cards visible right away so users feel they are already “in” the app.
-- Preserve current guards for approval/onboarding, but make the default path feel like a transition into the dashboard rather than a white hold screen.
+1. **OAuthCallback page** (`/auth/callback`): After Apple's edge function redirects back with tokens, this page renders a plain white background with a small spinner while it calls `setSession()` and navigates to `/`. Even though this is fast, it's visually jarring — a blank white page with a generic spinner.
 
-5. Make loading visuals lighter
-- Review `src/components/ui/loading-spinner.tsx` and reduce reliance on the heavier full-screen Lottie spinner during auth-to-dashboard transition.
-- Use a simpler lightweight skeleton/spinner for this specific route so the handoff feels faster and avoids a “stuck” impression on mobile.
+2. **Index page loading gates**: Once at `/`, the `approvalLoading` and `introLoading` hooks need to resolve before the dashboard skeleton appears. There's a brief moment where the background renders but hooks haven't initialized yet.
 
-Expected result
-- Best case: the delay is mostly eliminated.
-- If network/profile reads still take a moment, users will see the dashboard frame and skeleton instantly instead of a white page, which makes the transition feel smooth.
+### Changes
 
-Technical notes
-- Main bottlenecks in the current flow appear to be:
-  - extra callback verification in `OAuthCallback.tsx`
-  - sequential profile/auth/data gating across `useAuth`, `useActiveProfile`, `useCloudData`, `useApprovalStatus`, and `useFirstLogin`
-- I would keep the auth listener non-blocking and avoid awaiting auth calls inside `onAuthStateChange`.
-- The practical UX fix is not only “faster auth,” but also “show the dashboard shell before all backend reads complete.”
+#### 1. `src/pages/OAuthCallback.tsx` — Branded loading state
+- Replace the plain white `bg-background` + generic `Loader2` spinner with a branded transition screen that matches the app's dark theme
+- Add the app logo/icon and "Signing you in..." text so it feels like part of the app, not a blank redirect page
+- This is what the user sees during the ~1-2s token processing window
+
+#### 2. `src/pages/OAuthCallback.tsx` — Skip `tryGetExistingSession` for direct token flows
+- When `access_token` and `refresh_token` are both present (the Apple redirect case), skip the 100ms `tryGetExistingSession()` delay and go straight to `setSession()`
+- This saves ~100-200ms on every Apple auth
+
+#### 3. `src/pages/OAuthCallback.tsx` — Preload Index route
+- Add `router.prefetch` or dynamic import of Index page while tokens are being processed so the next page is ready to render immediately after navigation
+
+#### 4. `src/hooks/useApprovalStatus.ts` + `src/hooks/useFirstLogin.ts` — Faster initial resolution
+- Review these hooks for unnecessary delays or sequential awaits that could be parallelized
+- If either hook waits for auth state that's already available, skip the wait
+
+### Technical Detail
+
+The most impactful change is making the OAuthCallback page visually identical to the DashboardSkeleton, so the user perceives a single continuous loading experience rather than "white page → skeleton → dashboard." Combined with removing the 100ms `tryGetExistingSession` delay for direct-token flows, this should make the transition feel seamless.
+
+Files changed: 2-4
+- `src/pages/OAuthCallback.tsx` (branded UI + skip redundant session check)
+- `src/hooks/useApprovalStatus.ts` (review for faster resolution)
+- `src/hooks/useFirstLogin.ts` (review for faster resolution)
+
