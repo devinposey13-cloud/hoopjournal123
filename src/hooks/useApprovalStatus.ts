@@ -2,10 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
+const APPROVAL_MODE_KEY = 'hj_approval_mode';
+
 export function useApprovalStatus() {
   const { user } = useAuth();
-  const [isApproved, setIsApproved] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cachedMode = localStorage.getItem(APPROVAL_MODE_KEY);
+  const [isApproved, setIsApproved] = useState<boolean | null>(cachedMode === 'automatic' ? true : null);
+  const [loading, setLoading] = useState(cachedMode !== 'automatic');
   const notificationSentRef = useRef<Set<string>>(new Set());
 
   const checkApprovalStatus = useCallback(async () => {
