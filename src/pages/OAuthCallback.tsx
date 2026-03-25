@@ -155,7 +155,7 @@ export default function OAuthCallback() {
           const fallbackSession = await tryGetExistingSession();
           if (fallbackSession) {
             log('Fallback: session found via getSession');
-            await handleSessionEstablished(fallbackSession.access_token, fallbackSession.refresh_token);
+            handleSessionEstablished(fallbackSession.access_token, fallbackSession.refresh_token, fallbackSession.user?.id, fallbackSession.user?.app_metadata?.provider);
             return;
           }
 
@@ -167,7 +167,7 @@ export default function OAuthCallback() {
         if (data.session) {
           log(`exchangeCodeForSession succeeded — user: ${data.session.user.id}`);
           log(`Provider: ${data.session.user.app_metadata?.provider || 'unknown'}`);
-          await handleSessionEstablished(data.session.access_token, data.session.refresh_token);
+          handleSessionEstablished(data.session.access_token, data.session.refresh_token, data.session.user.id, data.session.user.app_metadata?.provider);
           return;
         }
 
@@ -184,7 +184,7 @@ export default function OAuthCallback() {
         const fallbackSession = await tryGetExistingSession();
         if (fallbackSession) {
           log('Exception fallback: session found');
-          await handleSessionEstablished(fallbackSession.access_token, fallbackSession.refresh_token);
+          handleSessionEstablished(fallbackSession.access_token, fallbackSession.refresh_token, fallbackSession.user?.id, fallbackSession.user?.app_metadata?.provider);
           return;
         }
 
@@ -203,7 +203,7 @@ export default function OAuthCallback() {
       if (existingSession) {
         log('detectSessionInUrl already restored session — skipping manual setSession');
         log(`Session user: ${existingSession.user?.id}, provider: ${existingSession.user?.app_metadata?.provider}`);
-        await handleSessionEstablished(existingSession.access_token, existingSession.refresh_token);
+        handleSessionEstablished(existingSession.access_token, existingSession.refresh_token, existingSession.user?.id, existingSession.user?.app_metadata?.provider);
         return;
       }
 
@@ -224,7 +224,7 @@ export default function OAuthCallback() {
         if (data?.session) {
           log(`setSession succeeded — user: ${data.session.user.id}`);
           log(`Provider: ${data.session.user.app_metadata?.provider || 'unknown'}`);
-          await handleSessionEstablished(data.session.access_token, data.session.refresh_token);
+          handleSessionEstablished(data.session.access_token, data.session.refresh_token, data.session.user.id, data.session.user.app_metadata?.provider);
           return;
         }
 
@@ -256,7 +256,7 @@ export default function OAuthCallback() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         log(`Auto-detected session — user: ${session.user.id}`);
-        await handleSessionEstablished(session.access_token, session.refresh_token);
+        handleSessionEstablished(session.access_token, session.refresh_token, session.user.id, session.user.app_metadata?.provider);
         return;
       }
     }

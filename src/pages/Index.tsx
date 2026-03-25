@@ -218,8 +218,14 @@ export default function Index() {
   });
 
   // Show auth form if not logged in
+  // Show loading skeleton while auth/approval/intro is loading (branded, not white screen)
   if (authLoading || approvalLoading || introLoading) {
-    return <LoadingSpinner fullScreen size="lg" />;
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardSkeleton />
+        <BottomNavigation activeTab="dashboard" onTabChange={() => {}} />
+      </div>
+    );
   }
 
   if (!user && isGuest) {
