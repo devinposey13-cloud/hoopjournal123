@@ -43,13 +43,11 @@ console.log('[OAuthCallback:module] Pre-captured tokens —', {
  */
 function safeHardRedirect(url: string): void {
   console.log(`[OAuthCallback] safeHardRedirect → ${url}`);
-  setTimeout(() => {
-    try {
-      window.location.replace(url);
-    } catch {
-      window.location.href = url;
-    }
-  }, 0);
+  try {
+    window.location.replace(url);
+  } catch {
+    window.location.href = url;
+  }
 }
 
 export default function OAuthCallback() {

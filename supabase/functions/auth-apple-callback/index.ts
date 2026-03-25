@@ -245,15 +245,15 @@ Deno.serve(async (req) => {
 
       // Return a self-executing HTML page instead of a bare 302 redirect.
       // iOS WKWebView can hang on 302 chains (Apple form_post → edge fn → app).
-      // A fresh HTML document gives the webview a clean navigation context,
-      // preventing the white-screen hang during React hydration.
+      // Uses meta refresh as primary (most reliable in WKWebView) with JS fallback.
       const targetUrl = `${appUrl}/auth/callback?${params}`;
       const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="0;url=${targetUrl}">
 <style>body{background:#0a0a0a;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:system-ui}
 p{color:#888;font-size:14px}</style></head>
 <body><p>Signing you in…</p>
-<script>window.location.replace(${JSON.stringify(targetUrl)});</script>
+<script>try{window.location.replace(${JSON.stringify(targetUrl)})}catch(e){window.location.href=${JSON.stringify(targetUrl)}}</script>
 </body></html>`;
 
       return new Response(html, {
