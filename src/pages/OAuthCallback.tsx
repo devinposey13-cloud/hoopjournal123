@@ -73,29 +73,7 @@ export default function OAuthCallback() {
     log(`Platform: ${platform}, isNative: ${native}`);
     log(`Pre-captured URL: ${_capturedUrl}`);
 
-    // Apple Auth Audit: log callback receipt if this is an Apple flow
-    try {
-      const { logAppleAuthEvent, updateAppleAuthMetadata, getCurrentAttempt, completeAppleAuthSuccess, completeAppleAuthFailure } = await import('@/lib/appleAuthAudit');
-      const currentAttempt = getCurrentAttempt();
-      if (currentAttempt) {
-        const hasCode = !!(_preCapturedTokens.code || new URLSearchParams(window.location.search).get('code'));
-        const hasTokens = !!_preCapturedTokens.accessToken;
-        const hasError = !!_preCapturedTokens.error;
 
-        logAppleAuthEvent('callback_received', {
-          url: _capturedUrl.slice(0, 120),
-          hostname: window.location.hostname,
-          pathname: window.location.pathname,
-          platform,
-          isNative: native,
-          authCodePresent: hasCode,
-          tokensPresent: hasTokens,
-          errorPresent: hasError,
-          flowType: currentAttempt.metadata?.flowType || 'unknown',
-        });
-        updateAppleAuthMetadata({ callbackUriReturned: _capturedUrl.slice(0, 200) });
-      }
-    } catch { /* audit trail not critical */ }
 
     // Use pre-captured tokens (grabbed at module load before Supabase could clear them)
     // On retry, also re-check current URL in case hash is still present
@@ -294,17 +272,6 @@ export default function OAuthCallback() {
   /** After session is confirmed, decide where to go — navigate immediately without re-verification */
   const handleSessionEstablished = (accessToken: string, refreshToken: string, userId?: string, provider?: string) => {
     log(`Session established${userId ? ` — user: ${userId}` : ''}${provider ? `, provider: ${provider}` : ''}`);
-
-    // Apple Auth Audit: complete success if this was an Apple flow (fire-and-forget)
-    if (provider === 'apple') {
-      import('@/lib/appleAuthAudit').then(({ getCurrentAttempt, completeAppleAuthSuccess, logAppleAuthEvent }) => {
-        const currentAttempt = getCurrentAttempt();
-        if (currentAttempt) {
-          logAppleAuthEvent('navigation_complete', { userId: userId?.slice(0, 8), provider: 'apple' });
-          completeAppleAuthSuccess();
-        }
-      }).catch(() => {});
-    }
 
     const native = isNativeApp();
     const isSystemBrowserReturn = isMobileSystemBrowserOAuthReturn({

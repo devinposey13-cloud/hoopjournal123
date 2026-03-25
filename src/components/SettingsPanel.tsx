@@ -28,7 +28,7 @@ import { isNativeApp, isDespia } from '@/lib/platform';
 import { track } from '@/lib/plans';
 import { RotateCcw } from 'lucide-react';
 import { useAdmin } from '@/hooks/useAdmin';
-const AppleAuthDebugPanel = lazy(() => import('@/components/settings/AppleAuthDebugPanel').then(m => ({ default: m.AppleAuthDebugPanel })));
+
 
 
 interface SettingsPanelProps {
@@ -777,15 +777,6 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
             </div>
           </div>
 
-          {/* ── Apple Auth Debug (admin only) ── */}
-          {isAdmin && (
-            <>
-              <SectionHeader>Apple Auth Diagnostics</SectionHeader>
-              <Suspense fallback={<div className="text-xs text-muted-foreground">Loading...</div>}>
-                <AppleAuthDebugPanel />
-              </Suspense>
-            </>
-          )}
 
           {/* ── Account ── */}
           <SectionHeader>Account</SectionHeader>
