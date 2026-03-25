@@ -1,9 +1,12 @@
 /**
- * Apple Sign In — platform-aware implementation using Lovable Cloud managed auth.
+ * Apple Sign In — platform-aware implementation following Despia architecture.
  *
- * iOS (Despia): Apple JS SDK → native Face ID dialog → signInWithIdToken
- * Android (Despia): lovable.auth.signInWithOAuth via oauth:// bridge
- * Web: lovable.auth.signInWithOAuth (managed redirect)
+ * iOS (Despia): Apple JS SDK → Native Face ID dialog → POST to edge function → setSession
+ * Android (Despia): oauth:// protocol → form_post to edge function → deeplink return
+ * Web: Apple JS SDK → browser dialog → POST to edge function → setSession
+ *
+ * The edge function (auth-apple-callback) handles token verification and user
+ * creation, NOT Supabase's built-in signInWithIdToken.
  *
  * INSTRUMENTED: All stages log to appleAuthAudit for diagnostics.
  */
@@ -58,7 +61,7 @@ export function initAppleAuth(): void {
         redirectURI: APPLE_REDIRECT_URI,
         usePopup: false,
       });
-      console.log('[AppleAuth] JS SDK initialized');
+      console.log('[AppleAuth] JS SDK initialized with clientId:', APPLE_CLIENT_ID);
     } catch (err) {
       console.warn('[AppleAuth] JS SDK init error:', err);
     }
@@ -68,21 +71,15 @@ export function initAppleAuth(): void {
 }
 
 /**
- * Web-only: Sign in using the Apple JS SDK (popup/redirect dialog).
- * Gets id_token then exchanges it for a Supabase session via signInWithIdToken.
+ * Sign in using the Apple JS SDK (iOS and Web).
  *
- * ⚠️ DO NOT call this from Despia iOS — the JS SDK resolves instantly with
- * empty authorization inside the WebView. iOS native uses the OAuth redirect
- * flow instead (routed in AuthForm.tsx).
+ * Triggers the native Apple dialog (Face ID on iOS, browser popup on web),
+ * then POSTs the id_token to our auth-apple-callback edge function to
+ * verify the token and create a Supabase session.
  *
  * Each stage is logged to the Apple Auth Audit trail.
  */
 export async function signInWithAppleNative(): Promise<void> {
-  // Guard: block accidental calls from Despia iOS
-  if (typeof navigator !== 'undefined' && /despia/i.test(navigator.userAgent) && /iphone|ipad/i.test(navigator.userAgent)) {
-    console.error('[AppleAuth] signInWithAppleNative called from Despia iOS — this is unsupported. Use OAuth redirect instead.');
-    throw new Error('Apple JS SDK is not supported on native iOS. Use OAuth redirect flow.');
-  }
   // Stage: JS SDK invocation
   logAppleAuthEvent('js_sdk_invoked', {
     sdkAvailable: !!window.AppleID,
@@ -95,7 +92,7 @@ export async function signInWithAppleNative(): Promise<void> {
     throw new Error('Apple Sign In SDK not loaded');
   }
 
-  // 1. Trigger native Apple Sign In dialog
+  // 1. Trigger native Apple Sign In dialog via JS SDK
   let response;
   try {
     response = await window.AppleID.auth.signIn();
@@ -144,6 +141,7 @@ export async function signInWithAppleNative(): Promise<void> {
   }
 
   const idToken = response.authorization.id_token;
+  const code = response.authorization.code;
 
   if (!idToken) {
     updateAppleAuthMetadata({ providerErrorMessage: 'No id_token in Apple authorization' });
@@ -155,52 +153,103 @@ export async function signInWithAppleNative(): Promise<void> {
     tokenLength: idToken.length,
   });
 
-  console.log('[AppleAuth] Got id_token from Apple JS SDK, exchanging for session...');
+  console.log('[AppleAuth] Got id_token from Apple JS SDK, posting to edge function...');
 
-  // Stage: Token exchange
+  // 2. POST to our custom edge function (NOT supabase.auth.signInWithIdToken)
   logAppleAuthEvent('token_exchange_started', {
     provider: 'apple',
     tokenLength: idToken.length,
+    method: 'edge_function',
   });
 
-  // 2. Exchange Apple id_token for a Supabase session
-  const { data, error } = await supabase.auth.signInWithIdToken({
-    provider: 'apple',
-    token: idToken,
-  });
+  const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-apple-callback`;
 
-  logAppleAuthEvent('token_exchange_result', {
-    success: !error,
-    hasSession: !!data?.session,
-    errorMessage: error?.message,
-    errorStatus: (error as any)?.status,
-    userId: data?.session?.user?.id?.slice(0, 8),
-  });
-
-  if (error) {
-    updateAppleAuthMetadata({
-      sdkErrorMessage: error.message,
-      providerErrorCode: (error as any)?.code || (error as any)?.status?.toString(),
+  let edgeResponse: Response;
+  try {
+    edgeResponse = await fetch(edgeFunctionUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_token: idToken,
+        code,
+        user: response.user ? JSON.stringify(response.user) : null,
+        platform: getPlatform(),
+      }),
     });
-    console.error('[AppleAuth] signInWithIdToken error:', error);
-    throw error;
+  } catch (fetchError: any) {
+    logAppleAuthEvent('token_exchange_result', {
+      success: false,
+      errorMessage: fetchError.message,
+      errorType: 'network',
+    });
+    updateAppleAuthMetadata({ sdkErrorMessage: `Edge function network error: ${fetchError.message}` });
+    throw new Error(`Apple auth failed: network error contacting server`);
   }
 
-  if (!data.session) {
-    updateAppleAuthMetadata({ sdkErrorMessage: 'No session returned after signInWithIdToken' });
+  const edgeData = await edgeResponse.json();
+
+  logAppleAuthEvent('token_exchange_result', {
+    success: edgeResponse.ok,
+    status: edgeResponse.status,
+    hasAccessToken: !!edgeData.access_token,
+    hasRefreshToken: !!edgeData.refresh_token,
+    errorMessage: edgeData.error,
+    userId: edgeData.user_id?.slice(0, 8),
+  });
+
+  if (!edgeResponse.ok || edgeData.error) {
+    const errorMsg = edgeData.error || `Edge function returned ${edgeResponse.status}`;
+    updateAppleAuthMetadata({ sdkErrorMessage: errorMsg });
+    console.error('[AppleAuth] Edge function error:', errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  if (!edgeData.access_token || !edgeData.refresh_token) {
+    updateAppleAuthMetadata({ sdkErrorMessage: 'No tokens returned from edge function' });
+    throw new Error('No session tokens returned from server');
+  }
+
+  // 3. Set the Supabase session with the tokens from our edge function
+  logAppleAuthEvent('session_creation_started', {
+    method: 'setSession',
+  });
+
+  const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+    access_token: edgeData.access_token,
+    refresh_token: edgeData.refresh_token,
+  });
+
+  logAppleAuthEvent('session_creation_result', {
+    success: !sessionError,
+    hasSession: !!sessionData?.session,
+    errorMessage: sessionError?.message,
+    userId: sessionData?.session?.user?.id?.slice(0, 8),
+  });
+
+  if (sessionError) {
+    updateAppleAuthMetadata({
+      sdkErrorMessage: sessionError.message,
+      providerErrorCode: (sessionError as any)?.code || (sessionError as any)?.status?.toString(),
+    });
+    console.error('[AppleAuth] setSession error:', sessionError);
+    throw sessionError;
+  }
+
+  if (!sessionData.session) {
+    updateAppleAuthMetadata({ sdkErrorMessage: 'No session returned after setSession' });
     throw new Error('No session returned after Apple sign in');
   }
 
   // Stage: Session creation succeeded
-  logAppleAuthEvent('session_creation_result', {
+  logAppleAuthEvent('session_verified', {
     success: true,
-    userId: data.session.user.id.slice(0, 8),
-    provider: data.session.user.app_metadata?.provider,
-    expiresAt: data.session.expires_at,
+    userId: sessionData.session.user.id.slice(0, 8),
+    provider: sessionData.session.user.app_metadata?.provider,
+    expiresAt: sessionData.session.expires_at,
   });
   updateAppleAuthMetadata({ sessionEstablished: true });
 
-  console.log('[AppleAuth] Session established — user:', data.session.user.id);
+  console.log('[AppleAuth] Session established — user:', sessionData.session.user.id);
 }
 
 /** Returns true if the Apple JS SDK is available (iOS/Web) */
