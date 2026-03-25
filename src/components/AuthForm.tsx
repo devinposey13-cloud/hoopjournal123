@@ -97,6 +97,11 @@ export function AuthForm() {
     const customDomain = isCustomDomain();
     console.log(`[Auth:Google] Platform: ${platform}, isNative: ${isNativeApp()}, mobileWeb: ${mobileWeb}, customDomain: ${customDomain}`);
 
+    // TEMPORARY: Debug instrumentation for baseline comparison
+    const tracker = await import('@/lib/appleAuthDebugTracker');
+    tracker.startAttempt('google');
+    tracker.logEvent('environment_detected', { platform, isNative: isNativeApp(), mobileWeb, customDomain });
+
     try {
       if (isNativeApp()) {
         // ── DESPIA NATIVE: Open system browser via Despia bridge ──
@@ -134,6 +139,7 @@ export function AuthForm() {
     } catch (error: unknown) {
       console.error('[Auth:Google] Sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Google sign-in failed';
+      tracker.completeAttempt('error', message);
       toast.error(message);
       setGoogleLoading(false);
     }
@@ -143,32 +149,43 @@ export function AuthForm() {
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
 
+    // TEMPORARY: Debug instrumentation
+    const tracker = await import('@/lib/appleAuthDebugTracker');
+    tracker.startAttempt('apple');
+
     try {
       const platform = getPlatform();
       const isIOSNative = isDespiaIOS();
 
+      tracker.logEvent('environment_detected', { platform, isIOSNative, isNative: isNativeApp() });
+
       // ── ANDROID NATIVE: Use OAuth redirect via system browser ──
       if (platform === 'android' && isNativeApp()) {
+        tracker.logEvent('flow_selected', { flow: 'android_native_oauth' });
         const redirectTo = getOAuthRedirectUri({ forNative: true });
-        console.log('[Auth:Apple] Android native — OAuth redirect');
+        tracker.logEvent('redirect_url_generated', { redirectTo });
         const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
+        tracker.persistBeforeRedirect();
         await openOAuthInSystemBrowser(oauthUrl);
         return;
       }
 
       // ── iOS DESPIA: Direct redirect to Apple authorize URL ──
       if (isIOSNative) {
-        console.log('[Auth:Apple] iOS Despia — direct redirect to Apple');
+        tracker.logEvent('flow_selected', { flow: 'ios_despia_redirect' });
+        tracker.persistBeforeRedirect();
         signInWithAppleRedirect();
         return;
       }
 
       // ── WEB: Apple JS SDK → Edge Function ──
-      console.log('[Auth:Apple] Using JS SDK → edge function flow');
+      tracker.logEvent('flow_selected', { flow: 'web_js_sdk' });
       await signInWithAppleNative();
+      tracker.completeAttempt('success');
     } catch (error: unknown) {
       console.error('[Auth:Apple] Sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Apple sign-in failed';
+      tracker.completeAttempt('error', message);
       if (message !== 'Sign in cancelled') {
         toast.error(message);
       }

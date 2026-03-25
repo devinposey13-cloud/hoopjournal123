@@ -33,6 +33,7 @@ import ParentDashboard from "./pages/ParentDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import EULA from "./pages/EULA";
+import { AppleAuthDebugOverlay } from "./components/settings/AppleAuthDebugOverlay";
 
 const queryClient = new QueryClient();
 
@@ -90,6 +91,7 @@ const App = () => (
               <Sonner />
               <OAuthErrorHandler />
               <RuntimeLogger />
+              <AppleAuthDebugOverlay />
               <BrowserRouter>
                 <GlobalPaywall />
                 
