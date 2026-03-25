@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { LegalPolicyViewer, PrivacyPolicyContent, TermsOfServiceContent } from '@/components/settings/LegalPolicyViewer';
 import { AIDisclosureScreen } from '@/components/settings/AIDisclosureScreen';
 import { useNavigate, Link } from 'react-router-dom';
@@ -773,6 +773,14 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
               </p>
             </div>
           </div>
+
+          {/* ── Apple Auth Debug (admin only) ── */}
+          {isAdmin && (
+            <>
+              <SectionHeader>Apple Auth Diagnostics</SectionHeader>
+              <AppleAuthDebugPanel />
+            </>
+          )}
 
           {/* ── Account ── */}
           <SectionHeader>Account</SectionHeader>
