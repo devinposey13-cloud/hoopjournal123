@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
       const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="refresh" content="0;url=${targetUrl}">
-<style>body{background:#0a0a0a;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:system-ui}
+<style>body{background:#141a23;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:system-ui}
 p{color:#888;font-size:14px}</style></head>
 <body><p>Signing you in…</p>
 <script>try{window.location.replace(${JSON.stringify(targetUrl)})}catch(e){window.location.href=${JSON.stringify(targetUrl)}}</script>
