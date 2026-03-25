@@ -145,9 +145,12 @@ Deno.serve(async (req) => {
 
     if (createError?.message?.includes('already been registered')) {
       // User exists — find them
-      console.log('[auth-apple-callback] User already registered, looking up...');
-      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-      const existingUser = existingUsers?.users.find(
+      console.log('[auth-apple-callback] User already registered, looking up by email...');
+      const { data: filteredData } = await supabaseAdmin.auth.admin.listUsers({
+        filter: userEmail,
+        perPage: 1,
+      });
+      const existingUser = filteredData?.users?.find(
         (u) => u.email === userEmail || u.user_metadata?.apple_user_id === appleUserId
       );
 
@@ -279,6 +282,17 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('[auth-apple-callback] Error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
+    const contentType = req.headers.get('content-type') || '';
+    const appUrl = Deno.env.get('APP_URL') || 'https://hoopjournal.me';
+
+    // For form_post flows (iOS redirect), redirect to app error page instead of raw JSON
+    if (!contentType.includes('application/json')) {
+      return new Response(null, {
+        status: 302,
+        headers: { 'Location': `${appUrl}/auth/callback?error=${encodeURIComponent(message)}` },
+      });
+    }
+
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
