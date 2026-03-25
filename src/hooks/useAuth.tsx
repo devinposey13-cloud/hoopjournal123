@@ -20,6 +20,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  authReady: boolean;
   isGuest: boolean;
   enterGuestMode: () => void;
   exitGuestMode: () => void;

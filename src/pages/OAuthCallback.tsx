@@ -297,28 +297,20 @@ export default function OAuthCallback() {
     }, 3000);
   };
 
-  /** After session is confirmed, decide where to go */
-  const handleSessionEstablished = async (accessToken: string, refreshToken: string) => {
-    // Verify session is actually retrievable
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      logError('Session verification failed — getSession returned null after exchange');
-      setError('Session was created but could not be verified. Please try again.');
-      setShowRetry(true);
-      return;
+  /** After session is confirmed, decide where to go — navigate immediately without re-verification */
+  const handleSessionEstablished = (accessToken: string, refreshToken: string, userId?: string, provider?: string) => {
+    log(`Session established${userId ? ` — user: ${userId}` : ''}${provider ? `, provider: ${provider}` : ''}`);
+
+    // Apple Auth Audit: complete success if this was an Apple flow (fire-and-forget)
+    if (provider === 'apple') {
+      import('@/lib/appleAuthAudit').then(({ getCurrentAttempt, completeAppleAuthSuccess, logAppleAuthEvent }) => {
+        const currentAttempt = getCurrentAttempt();
+        if (currentAttempt) {
+          logAppleAuthEvent('navigation_complete', { userId: userId?.slice(0, 8), provider: 'apple' });
+          completeAppleAuthSuccess();
+        }
+      }).catch(() => {});
     }
-
-    log(`Session verified — user: ${session.user.id}, provider: ${session.user.app_metadata?.provider}`);
-
-    // Apple Auth Audit: complete success if this was an Apple flow
-    try {
-      const { getCurrentAttempt, completeAppleAuthSuccess, logAppleAuthEvent } = await import('@/lib/appleAuthAudit');
-      const currentAttempt = getCurrentAttempt();
-      if (currentAttempt && session.user.app_metadata?.provider === 'apple') {
-        logAppleAuthEvent('navigation_complete', { userId: session.user.id.slice(0, 8), provider: 'apple' });
-        completeAppleAuthSuccess();
-      }
-    } catch { /* non-critical */ }
 
     const native = isNativeApp();
     const isSystemBrowserReturn = isMobileSystemBrowserOAuthReturn({
@@ -327,7 +319,7 @@ export default function OAuthCallback() {
       userAgent: navigator.userAgent,
     });
 
-    // Inside Despia shell — just navigate home
+    // Inside Despia shell — just navigate home immediately
     if (native) {
       log('Inside Despia shell — navigating to /');
       navigate('/', { replace: true });
@@ -341,9 +333,8 @@ export default function OAuthCallback() {
       return;
     }
 
-    // Standard web — go home
+    // Standard web — go home immediately
     log('Web flow — navigating to /');
-    window.history.replaceState({}, '', '/auth/callback');
     navigate('/', { replace: true });
   };
 
