@@ -141,48 +141,86 @@ export function AuthForm() {
     }
   };
 
-  // ─── Apple Sign-In ────────────────────────────────────────────────
+  // ─── Apple Sign-In (instrumented with audit trail) ─────────────────
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
+
+    // Start audit trail
+    const { startAppleAuthAttempt, logAppleAuthEvent, updateAppleAuthMetadata, completeAppleAuthSuccess, completeAppleAuthFailure, completeAppleAuthCancelled } = await import('@/lib/appleAuthAudit');
+    const attemptId = startAppleAuthAttempt();
 
     try {
       // ── iOS NATIVE: Use Apple JS SDK for native Face ID / Touch ID dialog ──
       if (isDespiaIOS() && isAppleJSAvailable()) {
+        logAppleAuthEvent('flow_selected', { flow: 'js_sdk', reason: 'isDespiaIOS && jsSDK available' });
+        updateAppleAuthMetadata({ flowType: 'js_sdk' });
+
         console.log('[Auth:Apple] iOS native — using Apple JS SDK');
         await signInWithAppleNative();
         // Session is set automatically by signInWithIdToken
+        completeAppleAuthSuccess();
         return;
+      }
+
+      // Log why JS SDK was not used on native
+      if (isDespiaIOS() && !isAppleJSAvailable()) {
+        logAppleAuthEvent('flow_selected', { flow: 'oauth_redirect', reason: 'isDespiaIOS but JS SDK NOT available' });
       }
 
       // ── NATIVE (Android / fallback): Use OAuth redirect via system browser ──
       if (isNativeApp()) {
-        console.log('[Auth:Apple] Native fallback — OAuth redirect');
         const redirectTo = getOAuthRedirectUri({ forNative: true });
+        logAppleAuthEvent('flow_selected', { flow: 'native_oauth_redirect', reason: 'isNativeApp (non-iOS or SDK fallback)', redirectTo });
+        updateAppleAuthMetadata({ flowType: 'oauth_redirect', redirectUri: redirectTo });
+
+        console.log('[Auth:Apple] Native fallback — OAuth redirect');
+        logAppleAuthEvent('oauth_url_requested', { provider: 'apple', redirectTo });
         const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
+        logAppleAuthEvent('oauth_url_received', { urlLength: oauthUrl.length, urlPrefix: oauthUrl.slice(0, 80) });
+
+        logAppleAuthEvent('system_browser_opened');
         await openOAuthInSystemBrowser(oauthUrl);
+        // Note: attempt stays in-progress — callback handler will complete it
         return;
       }
 
       // ── WEB on custom domain: Direct Supabase OAuth ──
       if (isCustomDomain()) {
-        console.log('[Auth:Apple] Custom domain — direct Supabase OAuth');
         const redirectTo = `${window.location.origin}/auth/callback`;
+        logAppleAuthEvent('flow_selected', { flow: 'custom_domain_oauth', redirectTo });
+        updateAppleAuthMetadata({ flowType: 'oauth_redirect', redirectUri: redirectTo });
+
+        console.log('[Auth:Apple] Custom domain — direct Supabase OAuth');
+        logAppleAuthEvent('oauth_url_requested', { provider: 'apple', redirectTo });
         const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
+        logAppleAuthEvent('oauth_url_received', { urlLength: oauthUrl.length, urlPrefix: oauthUrl.slice(0, 80) });
+
+        logAppleAuthEvent('redirect_started', { target: 'direct_oauth' });
         window.location.href = oauthUrl;
+        // Attempt stays in-progress — callback handler will complete it
         return;
       }
 
       // ── WEB on preview/lovable.app: Use Lovable broker ──
-      console.log('[Auth:Apple] Preview domain — using Lovable broker');
       const redirectUri = getOAuthRedirectUri();
+      logAppleAuthEvent('flow_selected', { flow: 'lovable_broker', redirectUri });
+      updateAppleAuthMetadata({ flowType: 'lovable_broker', redirectUri });
+
+      console.log('[Auth:Apple] Preview domain — using Lovable broker');
+      logAppleAuthEvent('broker_invoked', { redirectUri });
       const { error } = await lovable.auth.signInWithOAuth('apple', {
         redirect_uri: redirectUri,
       });
       if (error) throw error;
+      // Attempt stays in-progress — callback handler will complete it
     } catch (error: unknown) {
       console.error('[Auth:Apple] Sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Apple sign-in failed';
-      if (message !== 'Sign in cancelled') {
+
+      if (message === 'Sign in cancelled' || message === 'Sign in cancelled') {
+        completeAppleAuthCancelled();
+      } else {
+        completeAppleAuthFailure(error);
         toast.error(message);
       }
     } finally {
