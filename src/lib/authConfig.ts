@@ -32,7 +32,7 @@
  *
  *  3. APPLE SIGN IN (Services ID)
  *     - Apple Developer → Certificates, Identifiers & Profiles →
- *       Services IDs → your Service ID (com.hoopjournal.web)
+ *       Services IDs → your Service ID (com.despia.hoopjourney.AppleAuth)
  *     - Under "Sign In with Apple" → Website URLs:
  *         Return URL: https://auth.hoopjournal.me/auth/v1/callback
  *     - Also keep https://hoopjournal.me/auth/apple/callback for
@@ -130,7 +130,7 @@ export function getOAuthRedirectUri(options?: { forNative?: boolean }): string {
  * Must match what's configured in both Apple Developer Console
  * and Lovable Cloud Auth Settings.
  */
-export const APPLE_CLIENT_ID = 'com.hoopjournal.web';
+export const APPLE_CLIENT_ID = 'com.despia.hoopjourney.AppleAuth';
 
 /**
  * Apple JS SDK redirect URI for the popup/redirect flow.
