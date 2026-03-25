@@ -4,22 +4,17 @@
  * Accepts both JSON (iOS/Web JS SDK) and form_post (Android oauth://).
  * Verifies Apple id_token against Apple's JWKS, creates/finds user via
  * Supabase Admin API, and returns session tokens.
- *
- * Following Despia's recommended architecture:
- * https://setup.despia.com/lovable/native-features/o-auth-2-0/apple-auth
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import * as jose from "https://deno.land/x/jose@v4.14.4/index.ts";
 
-// CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, authorization, x-client-info, apikey',
 };
 
-// Cache Apple's JWKS
 let applePublicKeys: jose.JWTVerifyGetKey | null = null;
 let keysLastFetched = 0;
 
@@ -41,7 +36,6 @@ async function verifyAppleToken(idToken: string, clientId: string): Promise<jose
 }
 
 Deno.serve(async (req) => {
-  // CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -63,14 +57,12 @@ Deno.serve(async (req) => {
     let platform = 'web';
     let deeplinkScheme: string | undefined;
 
-    // Handle both JSON (from JS SDK) and form_post (from iOS/Android redirect)
     if (contentType.includes('application/json')) {
       const body = await req.json();
       idToken = body.id_token;
       userJson = body.user;
       platform = body.platform || 'web';
     } else {
-      // iOS/Android: form_post from Apple authorize redirect
       const formData = await req.formData();
       idToken = formData.get('id_token') as string;
       userJson = formData.get('user') as string;
@@ -125,11 +117,10 @@ Deno.serve(async (req) => {
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
-    // Public client for OTP verification (generates proper session)
     const supabasePublic = createClient(supabaseUrl, anonKey);
 
-    // Create or find user
-    let userId: string;
+    // Try to create user — if they already exist, that's fine
+    let isNewUser = false;
     const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: userEmail,
       email_confirm: true,
@@ -143,47 +134,8 @@ Deno.serve(async (req) => {
       },
     });
 
-    if (createError?.message?.includes('already been registered')) {
-      // User exists — find them
-      console.log('[auth-apple-callback] User already registered, looking up by email...');
-      const { data: filteredData } = await supabaseAdmin.auth.admin.listUsers({
-        filter: userEmail,
-        perPage: 1,
-      });
-      const existingUser = filteredData?.users?.find(
-        (u) => u.email === userEmail || u.user_metadata?.apple_user_id === appleUserId
-      );
-
-      if (!existingUser) {
-        const errorMsg = 'User not found after registration conflict';
-        console.error(`[auth-apple-callback] ${errorMsg}`);
-        if (contentType.includes('application/json')) {
-          return new Response(JSON.stringify({ error: errorMsg }), {
-            status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        return new Response(null, {
-          status: 302,
-          headers: { 'Location': `${appUrl}/auth/callback?error=${encodeURIComponent(errorMsg)}` },
-        });
-      }
-
-      userId = existingUser.id;
-      console.log(`[auth-apple-callback] Found existing user: ${userId.slice(0, 8)}...`);
-
-      // Update name if provided (Apple only sends name on first sign-in)
-      if (firstName || lastName) {
-        await supabaseAdmin.auth.admin.updateUserById(userId, {
-          user_metadata: {
-            display_name: displayName,
-            first_name: firstName,
-            last_name: lastName,
-            full_name: displayName,
-          },
-        });
-      }
-    } else if (createError) {
+    if (createError && !createError.message?.includes('already been registered')) {
+      // Genuine creation error (not a duplicate)
       const errorMsg = `Failed to create user: ${createError.message}`;
       console.error(`[auth-apple-callback] ${errorMsg}`);
       if (contentType.includes('application/json')) {
@@ -196,13 +148,17 @@ Deno.serve(async (req) => {
         status: 302,
         headers: { 'Location': `${appUrl}/auth/callback?error=${encodeURIComponent(errorMsg)}` },
       });
-    } else {
-      userId = createData.user.id;
-      console.log(`[auth-apple-callback] Created new user: ${userId.slice(0, 8)}...`);
     }
 
-    // Generate session via magiclink + OTP verification
-    console.log('[auth-apple-callback] Generating session...');
+    if (!createError) {
+      isNewUser = true;
+      console.log(`[auth-apple-callback] Created new user: ${createData.user.id.slice(0, 8)}...`);
+    } else {
+      console.log('[auth-apple-callback] User already registered, proceeding to session...');
+    }
+
+    // Generate session via magiclink — works for both new and existing users
+    console.log('[auth-apple-callback] Generating session via magiclink...');
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email: userEmail,
@@ -243,13 +199,26 @@ Deno.serve(async (req) => {
       });
     }
 
+    const userId = sessionData.session.user.id;
     const accessToken = sessionData.session.access_token;
     const refreshToken = sessionData.session.refresh_token;
     console.log(`[auth-apple-callback] Session created for user: ${userId.slice(0, 8)}...`);
 
+    // Update Apple metadata for existing users (name is only sent on first Apple sign-in)
+    if (!isNewUser && (firstName || lastName)) {
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: {
+          apple_user_id: appleUserId,
+          display_name: displayName,
+          first_name: firstName,
+          last_name: lastName,
+          full_name: displayName,
+        },
+      });
+    }
+
     // Return tokens based on request type
     if (contentType.includes('application/json')) {
-      // iOS/Web: Return JSON
       return new Response(
         JSON.stringify({
           access_token: accessToken,
@@ -262,7 +231,6 @@ Deno.serve(async (req) => {
         }
       );
     } else {
-      // iOS/Android form_post: Redirect with tokens
       const params = new URLSearchParams({
         access_token: accessToken,
         refresh_token: refreshToken,
@@ -273,7 +241,6 @@ Deno.serve(async (req) => {
           headers: { 'Location': `${deeplinkScheme}://oauth/auth?${params}` },
         });
       }
-      // iOS Despia & fallback: redirect to /auth/callback with tokens as query params
       return new Response(null, {
         status: 302,
         headers: { 'Location': `${appUrl}/auth/callback?${params}` },
@@ -283,9 +250,7 @@ Deno.serve(async (req) => {
     console.error('[auth-apple-callback] Error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     const contentType = req.headers.get('content-type') || '';
-    const appUrl = Deno.env.get('APP_URL') || 'https://hoopjournal.me';
 
-    // For form_post flows (iOS redirect), redirect to app error page instead of raw JSON
     if (!contentType.includes('application/json')) {
       return new Response(null, {
         status: 302,
