@@ -1,25 +1,30 @@
 
 
-## Fix: Hide Pre-hydration Shell on Auth Callback
+## Fix: Hide Pre-hydration Shell on Post-Auth Reload
 
 ### Problem
-The pre-hydration shell in `index.html` displays "HOOP JOURNAL" text + spinner on **every** page load. When the Apple auth edge function redirects to `/auth/callback`, it triggers a full page reload, briefly showing this branded skeleton before React mounts and removes it.
+The "HOOP JOURNAL" branded skeleton still flashes during Apple Sign-In on iOS because the auth flow triggers **two** full page reloads:
+
+1. `/auth/callback?access_token=...` — shell is already hidden here (our previous fix)
+2. `/?postAuth=1&ts=...` — shell is **NOT** hidden here, so the branded text + spinner shows until React mounts and removes it
+
+Step 2 happens because `handleSessionEstablished` in `OAuthCallback.tsx` calls `window.location.replace('/?postAuth=1&ts=...')` for native iOS to force a webview repaint.
 
 ### Fix
 
-**`index.html`** — Add an inline script inside the pre-hydration shell that immediately hides it if the current path is `/auth/callback`. This way, the auth callback route shows only a plain dark background (matching the `bg-background` div in OAuthCallback.tsx), eliminating the branded flash.
+**`index.html`** (line 43) — Expand the inline script to also hide the shell when `postAuth` is present in the URL query params:
 
-```html
-<div id="prehydration-shell" style="...">
-  <!-- existing content -->
-  <script>
-    if (window.location.pathname === '/auth/callback') {
-      document.getElementById('prehydration-shell').style.display = 'none';
-    }
-  </script>
-</div>
+```javascript
+if (
+  window.location.pathname === '/auth/callback' ||
+  window.location.search.includes('postAuth')
+) {
+  document.getElementById('prehydration-shell').style.display = 'none';
+}
 ```
 
+This covers both page loads in the iOS Apple auth flow, eliminating the branded flash entirely.
+
 ### Files
-- `index.html` — one small inline script addition
+- `index.html` — expand the existing inline script condition (line 43)
 
