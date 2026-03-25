@@ -13,7 +13,7 @@ import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
 import { isNativeApp, getPlatform, isDespiaIOS } from '@/lib/platform';
 import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
-import { signInWithAppleNative, isAppleJSAvailable } from '@/lib/apple-auth';
+import { signInWithAppleNative, signInWithAppleRedirect, isAppleJSAvailable } from '@/lib/apple-auth';
 import { APPLE_CLIENT_ID } from '@/lib/authConfig';
 import {
   isCustomDomain,
@@ -149,22 +149,21 @@ export function AuthForm() {
     const attemptId = startAppleAuthAttempt();
 
     try {
-      // Debug: print Apple auth config before any flow selection
       const platform = getPlatform();
-      const selectedFlow = platform === 'android' ? 'native_oauth_redirect' : 'js_sdk_edge_function';
+      const isIOSNative = isDespiaIOS();
+      const selectedFlow = platform === 'android' ? 'native_oauth_redirect' : isIOSNative ? 'direct_redirect' : 'js_sdk_edge_function';
+      
       console.log('[Auth:Apple] ── PRE-AUTH DEBUG ──', {
         selectedFlow,
-        clientIdSource: 'authConfig.ts → APPLE_CLIENT_ID',
         clientIdValue: APPLE_CLIENT_ID,
         platform,
-        isDespiaIOS: isDespiaIOS(),
+        isDespiaIOS: isIOSNative,
         isNative: isNativeApp(),
         isCustomDomain: isCustomDomain(),
         appleJSAvailable: isAppleJSAvailable(),
       });
 
       // ── ANDROID NATIVE: Use OAuth redirect via system browser ──
-      // Android has no native Apple Sign In — must use oauth:// bridge
       if (platform === 'android' && isNativeApp()) {
         const redirectTo = getOAuthRedirectUri({ forNative: true });
         logAppleAuthEvent('flow_selected', { flow: 'native_oauth_redirect', reason: 'Android — no native Apple support', redirectTo });
@@ -177,19 +176,26 @@ export function AuthForm() {
         return;
       }
 
-      // ── ALL OTHER PLATFORMS (iOS, Web): Apple JS SDK → Edge Function ──
-      // iOS Despia: JS SDK triggers native Face ID dialog inside WebView
-      // Web: JS SDK triggers browser Apple dialog
+      // ── iOS DESPIA: Direct redirect to Apple authorize URL ──
+      // WebKit handles the native Apple Sign In dialog automatically
+      // Apple form_posts to our edge function, which redirects back with tokens
+      if (isIOSNative) {
+        console.log('[Auth:Apple] iOS Despia — direct redirect to Apple');
+        signInWithAppleRedirect();
+        // Page will navigate away — don't reset loading
+        return;
+      }
+
+      // ── WEB: Apple JS SDK → Edge Function ──
       logAppleAuthEvent('flow_selected', {
         flow: 'js_sdk_edge_function',
-        reason: `${isDespiaIOS() ? 'iOS Despia — Face ID dialog' : 'Web — browser dialog'}`,
+        reason: 'Web — browser dialog',
         sdkAvailable: isAppleJSAvailable(),
       });
       updateAppleAuthMetadata({ flowType: 'js_sdk' });
 
       console.log('[Auth:Apple] Using JS SDK → edge function flow');
       await signInWithAppleNative();
-      // signInWithAppleNative handles: JS SDK → edge function → setSession
       completeAppleAuthSuccess();
     } catch (error: unknown) {
       console.error('[Auth:Apple] Sign-in error:', error);
