@@ -65,6 +65,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
   const effectiveBillingSource = billingSource || (isDespia() && isSubscribed ? 'ios_app_store' : 'stripe');
   const { currentPlan, accessInfo, accessBadge, loading: planLoading } = usePlan();
   const { theme, setTheme } = useTheme();
+  const { isAdmin } = useAdmin();
   const { progress: xpProgress } = useXpProgress();
   const ringOfHonorEligibility = useRingOfHonorEligibility(xpProgress?.current_level || 1);
   const [showRingOfHonorModal, setShowRingOfHonorModal] = useState(false);
