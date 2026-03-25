@@ -1,98 +1,79 @@
 
 
-## Plan: Guest Mode for Apple App Review Guideline 5.1.1
+## Fix: Route iOS Despia Apple Sign In Through OAuth Redirect
 
-### Summary
-Add a "Continue as Guest" option to the launch screen so Apple reviewers (and real users) can explore the app without registering. Guest mode provides a read-only demo experience with sample data. Account-gating is applied only when users attempt cloud-dependent actions.
+### Problem
+The Apple JS SDK's `signIn()` resolves instantly (1ms) inside the Despia iOS WebView with no authorization data. The native Apple dialog never appears.
 
-### Architecture
-
-```text
-AuthForm
-├── Sign Up
-├── Log In
-└── Continue as Guest  ← NEW (sets localStorage flag, no Supabase auth)
-
-useAuth hook
-├── user: User | null
-├── isGuest: boolean        ← NEW (from context)
-└── enterGuestMode()        ← NEW
-    exitGuestMode()         ← NEW
-
-Index.tsx
-├── if authLoading → spinner
-├── if !user && !isGuest → AuthForm
-├── if isGuest → GuestDashboard  ← NEW (sample data, no cloud calls)
-├── if user → normal authenticated flow
-```
+### Solution
+For `isDespiaIOS()`, bypass the JS SDK entirely and route through the same OAuth redirect flow already used for Google Sign In on native iOS (via Despia's `oauth://` bridge).
 
 ### Changes
 
-**1. `src/hooks/useAuth.tsx` — Add guest state to AuthContext**
-- Add `isGuest` boolean, `enterGuestMode()`, and `exitGuestMode()` to context.
-- `enterGuestMode` sets `localStorage.setItem('hj_guest_mode', 'true')` and updates state.
-- `exitGuestMode` clears the flag.
-- On mount, check localStorage to restore guest state (so page refresh keeps guest mode).
+#### 1. `src/components/AuthForm.tsx` — Reorder Apple flow logic (~15 lines changed)
 
-**2. `src/components/AuthForm.tsx` — Add "Continue as Guest" button**
-- Add a prominent "Continue as Guest" button below the OAuth buttons (same visual weight, not hidden).
-- Calls `enterGuestMode()` from useAuth.
-- Include Privacy Policy and Terms links at the bottom of the auth form.
+Replace lines 152–168 (the iOS JS SDK block) with:
 
-**3. `src/components/GuestDashboard.tsx` — NEW: Demo experience**
-- Self-contained component with hardcoded sample data (sample player profile, 3-4 sample games with stats, a sample schedule).
-- Renders the same visual layout as the real dashboard: PlayerHeader, DashboardQuickStats, TodayCard, RecentActivity, PlayerCard — but fed with static demo data.
-- Navigation tabs work (dashboard, games, stats views) but show sample content.
-- "Coach" tab shows a teaser message prompting account creation.
-- Settings tab shows Privacy Policy, Terms, EULA links (accessible without auth).
-- All action buttons (Add Game, Log Stats, etc.) trigger the account-gate modal instead of performing real actions.
+```typescript
+// ── iOS NATIVE: OAuth redirect via Despia system browser ──
+// The Apple JS SDK does NOT work inside Despia WebView (resolves instantly
+// with empty authorization). Use the same oauth:// bridge as Google.
+if (isDespiaIOS()) {
+  const redirectTo = getOAuthRedirectUri({ forNative: true });
+  logAppleAuthEvent('flow_selected', {
+    flow: 'native_oauth_redirect',
+    reason: 'isDespiaIOS — JS SDK unsupported in WebView',
+    redirectTo,
+    configuredCallback: `${APP_ORIGIN}/auth/callback`,
+  });
+  updateAppleAuthMetadata({ flowType: 'native_oauth_redirect', redirectUri: redirectTo });
 
-**4. `src/components/GuestAccountGate.tsx` — NEW: Prompt modal**
-- Polished dialog shown when a guest taps any account-gated action.
-- Message: "Create a free account to save your progress, sync your data, and unlock all features."
-- Two buttons: "Sign Up" (calls `exitGuestMode()` and shows AuthForm in signup mode) and "Not Now" (dismisses).
+  logAppleAuthEvent('oauth_url_requested', { provider: 'apple', redirectTo });
+  const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
+  logAppleAuthEvent('oauth_url_received', { urlLength: oauthUrl.length, urlPrefix: oauthUrl.slice(0, 80) });
 
-**5. `src/pages/Index.tsx` — Route guests to GuestDashboard**
-- After the auth loading check, add: `if (!user && isGuest) return <GuestDashboard />;`
-- This goes before the `if (!user) return <AuthForm />;` check.
+  logAppleAuthEvent('system_browser_opened');
+  await openOAuthInSystemBrowser(oauthUrl);
+  return;
+}
+```
 
-**6. `src/components/BottomNavigation.tsx` & `src/components/Navigation.tsx` — Guest awareness**
-- In guest mode, render tabs but gate account-specific actions through GuestAccountGate.
+Remove the `isDespiaIOS() && isAppleJSAvailable()` branch entirely — iOS Despia will **never** use the JS SDK. The existing Android native block (lines 170–185) remains unchanged. The JS SDK import (`signInWithAppleNative`) stays for potential future web use but is no longer called on iOS native.
 
-**7. Legal accessibility in guest mode**
-- Privacy Policy (`/privacy`), Terms (`/terms`), and EULA (`/eula`) routes already exist as public pages — no changes needed there.
-- Add links to these in the GuestDashboard settings/footer area.
+#### 2. `src/pages/OAuthCallback.tsx` — Add Apple-specific diagnostic logging
 
-### Sample Data (hardcoded in GuestDashboard)
-- Player: "Demo Player", #23, Guard, "Demo High School"
-- 3 sample games with realistic stats (points, rebounds, assists, etc.)
-- 1 upcoming scheduled game
-- Season averages computed from sample data
+In the existing callback handler, add logging that captures:
+- Whether the callback is from Apple (check URL params/provider)
+- Auth code presence
+- Token exchange start/result
+- Session established or failed
+- The flow label: `native_oauth_redirect` vs `js_sdk`
 
-### What Gets Gated (triggers GuestAccountGate modal)
-- Add Game / Log Game
-- Save any data
-- Coach Chat
-- Profile editing
-- Subscription/upgrade flows
-- Any Supabase write operation
+This uses the existing `logAppleAuthEvent` imports already in OAuthCallback.tsx.
 
-### What Remains Open in Guest Mode
-- Viewing demo dashboard, stats, schedule
-- Navigating between tabs
-- Viewing Privacy Policy, Terms, EULA
-- Viewing the pricing page (read-only)
+#### 3. `src/components/settings/AppleAuthDebugPanel.tsx` — Show flow path label
 
-### Review Safety
-- No special hidden route needed — "Continue as Guest" is the first-launch escape hatch.
-- Apple reviewer taps "Continue as Guest" and immediately sees a functional basketball stats dashboard with sample data.
+Add a "Flow Used" badge/label in the attempt detail view showing:
+- `JS SDK` / `OAuth Redirect` / `Native Return Complete`
 
-### Files to Create
-- `src/components/GuestDashboard.tsx`
-- `src/components/GuestAccountGate.tsx`
+This is already partially there via `metadata.flowType` — just surface it more prominently.
 
-### Files to Modify
-- `src/hooks/useAuth.tsx` (add isGuest, enterGuestMode, exitGuestMode)
-- `src/components/AuthForm.tsx` (add Continue as Guest button)
-- `src/pages/Index.tsx` (route guests to GuestDashboard)
+#### 4. `src/lib/apple-auth.ts` — Add guard comment
+
+Add a comment at the top of `signInWithAppleNative()` noting it must NOT be called from Despia iOS. No runtime guard needed since the call site in AuthForm.tsx no longer routes there.
+
+### Final Flow Summary
+
+| Platform | Flow | Callback Path |
+|----------|------|---------------|
+| iPhone (Despia) | OAuth redirect via `oauth://` bridge → system browser → Apple native dialog | `https://hoopjournal.me/auth/callback` |
+| iPad (Despia) | Same as iPhone | `https://hoopjournal.me/auth/callback` |
+| Web (hoopjournal.me) | Direct Supabase OAuth redirect | `https://hoopjournal.me/auth/callback` |
+| Web (lovable.app) | Lovable broker | Current origin |
+
+### Apple Client ID / Callback Audit
+- **Client ID**: `com.hoopjournal.web` — used consistently everywhere
+- **Callback for OAuth redirect**: `https://hoopjournal.me/auth/callback` — this goes to Supabase which uses its own callback (`supabase.co/auth/v1/callback`) configured in Apple Developer Console
+- **JS SDK redirect** (`/auth/apple/callback`): No longer used on iOS native; only relevant if JS SDK is used on web
+- **No conflicts**: The OAuth redirect flow uses Supabase's managed Apple callback, not the JS SDK callback
 
