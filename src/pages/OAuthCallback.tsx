@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { isNativeApp, getPlatform, isDespiaIOS } from '@/lib/platform';
 import { buildNativeOAuthReturnUrl, isMobileSystemBrowserOAuthReturn } from '@/lib/oauthCallback';
-import { DashboardSkeleton } from '@/components/skeletons/DashboardSkeleton';
+
 
 // Preload the Index page so it's ready when we navigate
 const _preloadIndex = lazy(() => import('./Index'));
@@ -391,7 +391,7 @@ export default function OAuthCallback() {
             window.location.replace('/?postAuth=1&recovery=1&ts=' + Date.now());
           }
         } catch { /* ignore */ }
-      }, 6000);
+      }, 2000);
       return () => clearTimeout(recoveryTimer);
     }
   }, []);
@@ -444,10 +444,6 @@ export default function OAuthCallback() {
     );
   }
 
-  // Default: show branded dashboard skeleton so the transition feels seamless
-  return (
-    <div className="min-h-screen bg-background">
-      <DashboardSkeleton />
-    </div>
-  );
+  // Default: minimal dark div — pre-hydration shell covers the visual gap
+  return <div className="min-h-screen bg-background" />;
 }
