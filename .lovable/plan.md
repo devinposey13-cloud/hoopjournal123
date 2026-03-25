@@ -1,25 +1,25 @@
 
 
-## Fix: "User not found after registration conflict" in Apple Auth
+## Fix: Hide Pre-hydration Shell on Auth Callback
 
-### Root Cause
-
-The `listUsers({ filter: userEmail, perPage: 1 })` call on line 149 doesn't work — the Supabase Admin JS SDK's `listUsers` does **not** support a `filter` parameter. It's silently ignored, so `perPage: 1` just returns the first user in the database alphabetically. That user doesn't match the email, so the lookup fails with "User not found after registration conflict."
-
-This affects any existing user (like your Google-registered account) trying to sign in with Apple using the same email.
+### Problem
+The pre-hydration shell in `index.html` displays "HOOP JOURNAL" text + spinner on **every** page load. When the Apple auth edge function redirects to `/auth/callback`, it triggers a full page reload, briefly showing this branded skeleton before React mounts and removes it.
 
 ### Fix
 
-**`supabase/functions/auth-apple-callback/index.ts`** — Eliminate the broken `listUsers` lookup entirely. Instead:
+**`index.html`** — Add an inline script inside the pre-hydration shell that immediately hides it if the current path is `/auth/callback`. This way, the auth callback route shows only a plain dark background (matching the `bg-background` div in OAuthCallback.tsx), eliminating the branded flash.
 
-1. **Skip the user lookup** — Since we already know the email exists (the "already been registered" error confirms it), go straight to `generateLink({ type: 'magiclink', email: userEmail })`. This works regardless of how the user originally registered (Google, email, etc.) because it targets the email, not a user ID.
-
-2. **Get `userId` from the session** — After `verifyOtp`, extract `userId` from `sessionData.session.user.id` instead of from the lookup. This is always accurate.
-
-3. **Move the metadata update after session creation** — Use the `userId` obtained from the session to update Apple-specific metadata (display name, apple_user_id) if needed.
-
-This removes the fragile user-lookup step entirely and makes Apple sign-in work for any existing account regardless of original provider.
+```html
+<div id="prehydration-shell" style="...">
+  <!-- existing content -->
+  <script>
+    if (window.location.pathname === '/auth/callback') {
+      document.getElementById('prehydration-shell').style.display = 'none';
+    }
+  </script>
+</div>
+```
 
 ### Files
-- `supabase/functions/auth-apple-callback/index.ts`
+- `index.html` — one small inline script addition
 
