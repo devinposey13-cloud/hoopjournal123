@@ -1,22 +1,25 @@
 
 
-## Hide Pending Approval Screen While Auto-Approval Is Active
+## Fix: Apple Auth Edge Function Timeout
 
-The `useApprovalStatus` hook already has a fast-path that checks the `user_approval_mode` feature flag. When it's `"automatic"`, it sets `isApproved = true` immediately. However, there's a brief window where `approvalLoading` is `true` and then `isApproved` resolves — during which the pending screen can flash.
+### Root Cause
 
-### Change
+The screenshot shows `{"error":"request timed out"}` rendered as raw text in the iOS webview. This happens in the `auth-apple-callback` edge function at **line 149**:
 
-**`src/hooks/useApprovalStatus.ts`** — One targeted fix:
+```typescript
+const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+```
 
-- Move the `"automatic"` mode check to happen **synchronously before any async work**. Cache the last-known approval mode in `localStorage` so returning users skip the loading state entirely.
-- On first load, immediately set `isApproved = true` and `loading = false` if the cached mode is `"automatic"`, then verify in the background.
-- This eliminates the brief flash of the pending approval screen for all logins while auto-approval is active.
-- The `PendingApproval` component, the `useApprovalStatus` hook logic for manual/conditional modes, and the gate in `Index.tsx` all remain intact and ready to re-enable.
+When your existing user signs in, `createUser` returns "already been registered", and the function then calls `listUsers()` which fetches **ALL users** without any filter. As the user base grows, this call gets progressively slower until it exceeds the edge function timeout — causing the raw JSON error to display in the webview.
 
-### Why not just remove the gate in Index.tsx?
+### Fix
 
-That would work but would require re-adding it later. Instead, making the hook resolve instantly for automatic mode keeps the gate in place — it just never triggers because `isApproved` is `true` before the first render.
+**`supabase/functions/auth-apple-callback/index.ts`** — Two changes:
+
+1. **Replace `listUsers()` with a direct email lookup** — Use `supabaseAdmin.auth.admin.listUsers({ filter: userEmail })` or the `getUserById` approach. The Admin API supports filtering by email, turning an O(n) scan into a fast indexed query. This eliminates the timeout.
+
+2. **Handle edge function errors gracefully for form_post flows** — When the function is called via form_post (iOS redirect), any unhandled timeout or crash renders raw JSON in the webview. Add a top-level catch that redirects to `/auth/callback?error=...` for non-JSON requests, so the user sees the app's error UI instead of raw JSON.
 
 ### Files
-- `src/hooks/useApprovalStatus.ts` (only file changed)
+- `supabase/functions/auth-apple-callback/index.ts`
 
