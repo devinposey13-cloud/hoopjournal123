@@ -295,17 +295,6 @@ export default function OAuthCallback() {
   const handleSessionEstablished = (accessToken: string, refreshToken: string, userId?: string, provider?: string) => {
     log(`Session established${userId ? ` — user: ${userId}` : ''}${provider ? `, provider: ${provider}` : ''}`);
 
-    // Apple Auth Audit: complete success if this was an Apple flow (fire-and-forget)
-    if (provider === 'apple') {
-      import('@/lib/appleAuthAudit').then(({ getCurrentAttempt, completeAppleAuthSuccess, logAppleAuthEvent }) => {
-        const currentAttempt = getCurrentAttempt();
-        if (currentAttempt) {
-          logAppleAuthEvent('navigation_complete', { userId: userId?.slice(0, 8), provider: 'apple' });
-          completeAppleAuthSuccess();
-        }
-      }).catch(() => {});
-    }
-
     const native = isNativeApp();
     const isSystemBrowserReturn = isMobileSystemBrowserOAuthReturn({
       hostname: window.location.hostname,

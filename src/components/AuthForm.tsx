@@ -140,71 +140,37 @@ export function AuthForm() {
     }
   };
 
-  // ─── Apple Sign-In (instrumented with audit trail) ─────────────────
+  // ─── Apple Sign-In ─────────────────────────────────────────────────
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
-
-    // Start audit trail
-    const { startAppleAuthAttempt, logAppleAuthEvent, updateAppleAuthMetadata, completeAppleAuthSuccess, completeAppleAuthFailure, completeAppleAuthCancelled } = await import('@/lib/appleAuthAudit');
-    const attemptId = startAppleAuthAttempt();
 
     try {
       const platform = getPlatform();
       const isIOSNative = isDespiaIOS();
-      const selectedFlow = platform === 'android' ? 'native_oauth_redirect' : isIOSNative ? 'direct_redirect' : 'js_sdk_edge_function';
-      
-      console.log('[Auth:Apple] ── PRE-AUTH DEBUG ──', {
-        selectedFlow,
-        clientIdValue: APPLE_CLIENT_ID,
-        platform,
-        isDespiaIOS: isIOSNative,
-        isNative: isNativeApp(),
-        isCustomDomain: isCustomDomain(),
-        appleJSAvailable: isAppleJSAvailable(),
-      });
 
       // ── ANDROID NATIVE: Use OAuth redirect via system browser ──
       if (platform === 'android' && isNativeApp()) {
         const redirectTo = getOAuthRedirectUri({ forNative: true });
-        logAppleAuthEvent('flow_selected', { flow: 'native_oauth_redirect', reason: 'Android — no native Apple support', redirectTo });
-        updateAppleAuthMetadata({ flowType: 'native_oauth_redirect', redirectUri: redirectTo });
-
         console.log('[Auth:Apple] Android native — OAuth redirect');
         const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
-        logAppleAuthEvent('system_browser_opened');
         await openOAuthInSystemBrowser(oauthUrl);
         return;
       }
 
       // ── iOS DESPIA: Direct redirect to Apple authorize URL ──
-      // WebKit handles the native Apple Sign In dialog automatically
-      // Apple form_posts to our edge function, which redirects back with tokens
       if (isIOSNative) {
         console.log('[Auth:Apple] iOS Despia — direct redirect to Apple');
         signInWithAppleRedirect();
-        // Page will navigate away — don't reset loading
         return;
       }
 
       // ── WEB: Apple JS SDK → Edge Function ──
-      logAppleAuthEvent('flow_selected', {
-        flow: 'js_sdk_edge_function',
-        reason: 'Web — browser dialog',
-        sdkAvailable: isAppleJSAvailable(),
-      });
-      updateAppleAuthMetadata({ flowType: 'js_sdk' });
-
       console.log('[Auth:Apple] Using JS SDK → edge function flow');
       await signInWithAppleNative();
-      completeAppleAuthSuccess();
     } catch (error: unknown) {
       console.error('[Auth:Apple] Sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Apple sign-in failed';
-
-      if (message === 'Sign in cancelled' || message === 'Sign in cancelled') {
-        completeAppleAuthCancelled();
-      } else {
-        completeAppleAuthFailure(error);
+      if (message !== 'Sign in cancelled') {
         toast.error(message);
       }
     } finally {
