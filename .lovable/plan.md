@@ -1,25 +1,22 @@
 
 
-## Speed Up iOS Auth Recovery — Drop Skeleton, Shorten Fallback
+## Hide Pending Approval Screen While Auto-Approval Is Active
 
-You're right — the skeleton is just adding visual noise when the real fix is the hard redirect. The white page is the iOS webview stalling before React even paints, so showing a skeleton doesn't help. The fix is to get out of `/auth/callback` faster.
+The `useApprovalStatus` hook already has a fast-path that checks the `user_approval_mode` feature flag. When it's `"automatic"`, it sets `isApproved = true` immediately. However, there's a brief window where `approvalLoading` is `true` and then `isApproved` resolves — during which the pending screen can flash.
 
-### Changes
+### Change
 
-**`src/pages/OAuthCallback.tsx`**
+**`src/hooks/useApprovalStatus.ts`** — One targeted fix:
 
-1. **Shorten the recovery fallback from 6s to 2s** — If the primary `handleCallback` flow stalls (intermittent iOS webview issue), the watchdog kicks in much sooner. 2 seconds is enough time for `handleCallback` to complete normally, but short enough to catch the hang quickly.
+- Move the `"automatic"` mode check to happen **synchronously before any async work**. Cache the last-known approval mode in `localStorage` so returning users skip the loading state entirely.
+- On first load, immediately set `isApproved = true` and `loading = false` if the cached mode is `"automatic"`, then verify in the background.
+- This eliminates the brief flash of the pending approval screen for all logins while auto-approval is active.
+- The `PendingApproval` component, the `useApprovalStatus` hook logic for manual/conditional modes, and the gate in `Index.tsx` all remain intact and ready to re-enable.
 
-2. **Remove the DashboardSkeleton** from the default render — Replace it with a minimal dark `div` (just `bg-background`) so there's no extra component to mount. The pre-hydration shell in `index.html` already covers the visual gap. The callback page's job is just to process tokens and redirect, not to look like the dashboard.
+### Why not just remove the gate in Index.tsx?
 
-3. **Keep everything else the same** — The hard `window.location.replace('/?postAuth=1')` approach is correct and matches the pull-to-refresh behavior that works.
-
-### Summary of the change
-
-- Recovery timer: `6000` → `2000`
-- Default render: `<DashboardSkeleton />` → empty dark div
-- Net effect: worst-case white screen drops from ~6s to ~2s before auto-recovery kicks in
+That would work but would require re-adding it later. Instead, making the hook resolve instantly for automatic mode keeps the gate in place — it just never triggers because `isApproved` is `true` before the first render.
 
 ### Files
-- `src/pages/OAuthCallback.tsx` (only file changed)
+- `src/hooks/useApprovalStatus.ts` (only file changed)
 
