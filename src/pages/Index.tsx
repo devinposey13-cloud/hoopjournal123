@@ -223,7 +223,6 @@ export default function Index() {
     return (
       <div className="min-h-screen bg-background">
         <DashboardSkeleton />
-        <BottomNavigation activeTab="dashboard" onTabChange={() => {}} />
       </div>
     );
   }
