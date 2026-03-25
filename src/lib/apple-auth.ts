@@ -68,12 +68,21 @@ export function initAppleAuth(): void {
 }
 
 /**
- * iOS/Web: Sign in using the Apple JS SDK (native dialog).
+ * Web-only: Sign in using the Apple JS SDK (popup/redirect dialog).
  * Gets id_token then exchanges it for a Supabase session via signInWithIdToken.
+ *
+ * ⚠️ DO NOT call this from Despia iOS — the JS SDK resolves instantly with
+ * empty authorization inside the WebView. iOS native uses the OAuth redirect
+ * flow instead (routed in AuthForm.tsx).
  *
  * Each stage is logged to the Apple Auth Audit trail.
  */
 export async function signInWithAppleNative(): Promise<void> {
+  // Guard: block accidental calls from Despia iOS
+  if (typeof navigator !== 'undefined' && /despia/i.test(navigator.userAgent) && /iphone|ipad/i.test(navigator.userAgent)) {
+    console.error('[AppleAuth] signInWithAppleNative called from Despia iOS — this is unsupported. Use OAuth redirect instead.');
+    throw new Error('Apple JS SDK is not supported on native iOS. Use OAuth redirect flow.');
+  }
   // Stage: JS SDK invocation
   logAppleAuthEvent('js_sdk_invoked', {
     sdkAvailable: !!window.AppleID,

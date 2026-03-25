@@ -74,12 +74,20 @@ export default function OAuthCallback() {
       const { logAppleAuthEvent, updateAppleAuthMetadata, getCurrentAttempt, completeAppleAuthSuccess, completeAppleAuthFailure } = await import('@/lib/appleAuthAudit');
       const currentAttempt = getCurrentAttempt();
       if (currentAttempt) {
+        const hasCode = !!(_preCapturedTokens.code || new URLSearchParams(window.location.search).get('code'));
+        const hasTokens = !!_preCapturedTokens.accessToken;
+        const hasError = !!_preCapturedTokens.error;
+
         logAppleAuthEvent('callback_received', {
           url: _capturedUrl.slice(0, 120),
           hostname: window.location.hostname,
           pathname: window.location.pathname,
           platform,
           isNative: native,
+          authCodePresent: hasCode,
+          tokensPresent: hasTokens,
+          errorPresent: hasError,
+          flowType: currentAttempt.metadata?.flowType || 'unknown',
         });
         updateAppleAuthMetadata({ callbackUriReturned: _capturedUrl.slice(0, 200) });
       }
