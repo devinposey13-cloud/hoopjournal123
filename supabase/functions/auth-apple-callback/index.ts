@@ -9,7 +9,7 @@
  * https://setup.despia.com/lovable/native-features/o-auth-2-0/apple-auth
  */
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import * as jose from "https://deno.land/x/jose@v4.14.4/index.ts";
 
 // CORS headers
