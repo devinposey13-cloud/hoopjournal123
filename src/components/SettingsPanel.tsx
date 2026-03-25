@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { LegalPolicyViewer, PrivacyPolicyContent, TermsOfServiceContent } from '@/components/settings/LegalPolicyViewer';
 import { AIDisclosureScreen } from '@/components/settings/AIDisclosureScreen';
 import { useNavigate, Link } from 'react-router-dom';
@@ -27,6 +27,8 @@ import { useBilling } from '@/hooks/useBilling';
 import { isNativeApp, isDespia } from '@/lib/platform';
 import { track } from '@/lib/plans';
 import { RotateCcw } from 'lucide-react';
+import { useAdmin } from '@/hooks/useAdmin';
+const AppleAuthDebugPanel = lazy(() => import('@/components/settings/AppleAuthDebugPanel').then(m => ({ default: m.AppleAuthDebugPanel })));
 
 
 interface SettingsPanelProps {
@@ -63,6 +65,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
   const effectiveBillingSource = billingSource || (isDespia() && isSubscribed ? 'ios_app_store' : 'stripe');
   const { currentPlan, accessInfo, accessBadge, loading: planLoading } = usePlan();
   const { theme, setTheme } = useTheme();
+  const { isAdmin } = useAdmin();
   const { progress: xpProgress } = useXpProgress();
   const ringOfHonorEligibility = useRingOfHonorEligibility(xpProgress?.current_level || 1);
   const [showRingOfHonorModal, setShowRingOfHonorModal] = useState(false);
@@ -773,6 +776,16 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
               </p>
             </div>
           </div>
+
+          {/* ── Apple Auth Debug (admin only) ── */}
+          {isAdmin && (
+            <>
+              <SectionHeader>Apple Auth Diagnostics</SectionHeader>
+              <Suspense fallback={<div className="text-xs text-muted-foreground">Loading...</div>}>
+                <AppleAuthDebugPanel />
+              </Suspense>
+            </>
+          )}
 
           {/* ── Account ── */}
           <SectionHeader>Account</SectionHeader>
