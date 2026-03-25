@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { isNativeApp, getPlatform } from '@/lib/platform';
+import { isNativeApp, getPlatform, isDespiaIOS } from '@/lib/platform';
 import { buildNativeOAuthReturnUrl, isMobileSystemBrowserOAuthReturn } from '@/lib/oauthCallback';
 import { DashboardSkeleton } from '@/components/skeletons/DashboardSkeleton';
 
@@ -313,10 +313,11 @@ export default function OAuthCallback() {
       userAgent: navigator.userAgent,
     });
 
-    // Inside Despia shell — just navigate home immediately
+    // Inside Despia shell — use hard redirect to force webview repaint
+    // This fixes iOS webview "stuck white page" after Apple auth
     if (native) {
-      log('Inside Despia shell — navigating to /');
-      navigate('/', { replace: true });
+      log('Inside Despia shell — hard redirect to / (forces webview repaint)');
+      window.location.replace('/?postAuth=1&ts=' + Date.now());
       return;
     }
 
@@ -378,6 +379,21 @@ export default function OAuthCallback() {
     if (hasRun.current) return;
     hasRun.current = true;
     handleCallback();
+
+    // iOS native recovery fallback: if we're still on /auth/callback after 6s
+    // and a session exists, force a hard redirect to break the white-screen hang
+    if (isNativeApp() && isDespiaIOS()) {
+      const recoveryTimer = setTimeout(async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            console.log('[OAuthCallback] Recovery fallback — session exists, forcing hard redirect');
+            window.location.replace('/?postAuth=1&recovery=1&ts=' + Date.now());
+          }
+        } catch { /* ignore */ }
+      }, 6000);
+      return () => clearTimeout(recoveryTimer);
+    }
   }, []);
 
   // Error or native handoff states use a centered card; default state shows branded skeleton

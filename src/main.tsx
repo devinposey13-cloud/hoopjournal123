@@ -16,5 +16,8 @@ if (window.location.pathname === '/oauth-bridge') {
     window.location.replace('/');
   }
 } else {
+  // Remove pre-hydration shell once React mounts
+  const shell = document.getElementById('prehydration-shell');
+  if (shell) shell.remove();
   createRoot(document.getElementById("root")!).render(<App />);
 }
