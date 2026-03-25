@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
         }
         return new Response(null, {
           status: 302,
-          headers: { 'Location': `${appUrl}/auth?error=${encodeURIComponent(errorMsg)}` },
+          headers: { 'Location': `${appUrl}/auth/callback?error=${encodeURIComponent(errorMsg)}` },
         });
       }
 
@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
       }
       return new Response(null, {
         status: 302,
-        headers: { 'Location': `${appUrl}/auth?error=${encodeURIComponent(errorMsg)}` },
+        headers: { 'Location': `${appUrl}/auth/callback?error=${encodeURIComponent(errorMsg)}` },
       });
     } else {
       userId = createData.user.id;
@@ -216,7 +216,7 @@ Deno.serve(async (req) => {
       }
       return new Response(null, {
         status: 302,
-        headers: { 'Location': `${appUrl}/auth?error=${encodeURIComponent(errorMsg)}` },
+        headers: { 'Location': `${appUrl}/auth/callback?error=${encodeURIComponent(errorMsg)}` },
       });
     }
 
@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
       }
       return new Response(null, {
         status: 302,
-        headers: { 'Location': `${appUrl}/auth?error=${encodeURIComponent(errorMsg)}` },
+        headers: { 'Location': `${appUrl}/auth/callback?error=${encodeURIComponent(errorMsg)}` },
       });
     }
 
