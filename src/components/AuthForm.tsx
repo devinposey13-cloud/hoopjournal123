@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { isNativeApp, getPlatform, isDespiaIOS } from '@/lib/platform';
 import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
 import { signInWithAppleNative, isAppleJSAvailable } from '@/lib/apple-auth';
+import { APPLE_CLIENT_ID } from '@/lib/authConfig';
 import {
   APP_ORIGIN,
   PUBLISHED_ORIGIN,
@@ -150,6 +151,27 @@ export function AuthForm() {
     const attemptId = startAppleAuthAttempt();
 
     try {
+      // Debug: print Apple auth config before any flow selection
+      const selectedFlow = isDespiaIOS() ? 'native_oauth_redirect'
+        : isNativeApp() ? 'native_oauth_redirect'
+        : isCustomDomain() ? 'custom_domain_oauth'
+        : 'lovable_broker';
+      const redirectForLog = isDespiaIOS() || isNativeApp()
+        ? getOAuthRedirectUri({ forNative: true })
+        : isCustomDomain()
+        ? `${window.location.origin}/auth/callback`
+        : getOAuthRedirectUri();
+      console.log('[Auth:Apple] ── PRE-AUTH DEBUG ──', {
+        selectedFlow,
+        clientIdSource: 'authConfig.ts → APPLE_CLIENT_ID',
+        clientIdValue: APPLE_CLIENT_ID,
+        redirectUri: redirectForLog,
+        platform: getPlatform(),
+        isDespiaIOS: isDespiaIOS(),
+        isNative: isNativeApp(),
+        isCustomDomain: isCustomDomain(),
+      });
+
       // ── iOS NATIVE: OAuth redirect via Despia system browser ──
       // The Apple JS SDK does NOT work inside Despia WebView (resolves instantly
       // with empty authorization). Use the same oauth:// bridge as Google.
