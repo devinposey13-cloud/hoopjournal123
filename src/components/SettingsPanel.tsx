@@ -27,6 +27,8 @@ import { useBilling } from '@/hooks/useBilling';
 import { isNativeApp, isDespia } from '@/lib/platform';
 import { track } from '@/lib/plans';
 import { RotateCcw } from 'lucide-react';
+import { useAdmin } from '@/hooks/useAdmin';
+const AppleAuthDebugPanel = lazy(() => import('@/components/settings/AppleAuthDebugPanel').then(m => ({ default: m.AppleAuthDebugPanel })));
 
 
 interface SettingsPanelProps {
