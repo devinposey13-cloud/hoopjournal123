@@ -4,6 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
 import { isNativeApp, getPlatform, isDespiaIOS } from '@/lib/platform';
 import { buildNativeOAuthReturnUrl, isMobileSystemBrowserOAuthReturn } from '@/lib/oauthCallback';
+import {
+  resumeOrCreateCallbackAttempt,
+  logEvent,
+  logTokenPresence,
+  updateMetadata,
+  completeAttempt,
+  isDebugEnabled,
+} from '@/lib/appleAuthDebugTracker';
 
 /**
  * PRE-CAPTURE: Grab tokens from the URL immediately at module load time,
@@ -32,19 +40,13 @@ console.log('[OAuthCallback:module] Pre-captured tokens —', {
 
 /**
  * Safely navigate away from the callback page.
- *
- * Uses setTimeout(0) to escape the current React render/microtask cycle
- * before calling window.location.replace. This prevents iOS WKWebView from
- * stalling when a navigation is triggered mid-render.
  */
 function safeHardRedirect(url: string): void {
   console.log(`[OAuthCallback] safeHardRedirect → ${url}`);
-  // Break out of React's synchronous render cycle
   setTimeout(() => {
     try {
       window.location.replace(url);
     } catch {
-      // Fallback if replace throws (rare but possible in WKWebView)
       window.location.href = url;
     }
   }, 0);
@@ -74,7 +76,6 @@ export default function OAuthCallback() {
 
   /** After session is confirmed, navigate to the app */
   const handleSessionEstablished = (accessToken: string, refreshToken: string, userId?: string, provider?: string) => {
-    // Guard against double-navigation
     if (navigationTriggered.current) {
       log('Navigation already triggered — skipping duplicate');
       return;
@@ -84,6 +85,11 @@ export default function OAuthCallback() {
 
     log(`Session established${userId ? ` — user: ${userId}` : ''}${provider ? `, provider: ${provider}` : ''}`);
 
+    // TEMPORARY: Debug tracking
+    logEvent('session_established', { userId, provider });
+    updateMetadata('sessionEstablished', true);
+    updateMetadata('sessionUserId', userId || 'unknown');
+
     const native = isNativeApp();
     const isSystemBrowserReturn = isMobileSystemBrowserOAuthReturn({
       hostname: window.location.hostname,
@@ -91,23 +97,36 @@ export default function OAuthCallback() {
       userAgent: navigator.userAgent,
     });
 
-    // System browser on mobile + custom domain — deep-link back to native app
     if (isSystemBrowserReturn) {
       log('System browser on custom domain — deep-linking to native app');
+      logEvent('navigation_started', { method: 'system_browser_deeplink' });
       handoffToNativeApp({ accessToken, refreshToken });
       return;
     }
 
-    // Inside Despia shell — use hard redirect to force webview repaint
     if (native) {
       log('Inside Despia shell — hard redirect to /');
+      logEvent('navigation_started', { method: 'despia_hard_redirect' });
       safeHardRedirect('/?postAuth=1&ts=' + Date.now());
+
+      // TEMPORARY: Track whether redirect actually worked
+      setTimeout(() => {
+        logEvent('navigation_stall_check', {
+          stillOnCallback: window.location.pathname === '/auth/callback',
+        });
+        if (window.location.pathname === '/auth/callback') {
+          logEvent('navigation_fallback_forced', { method: 'window.location.href' });
+          window.location.href = '/?postAuth=1&fallback=1&ts=' + Date.now();
+        }
+      }, 3000);
       return;
     }
 
-    // Standard web — go home immediately
     log('Web flow — navigating to /');
+    logEvent('navigation_started', { method: 'react_navigate' });
     navigate('/', { replace: true });
+    logEvent('navigation_completed', { method: 'react_navigate' });
+    completeAttempt('success');
   };
 
   const handleCallback = async (isRetry = false) => {
@@ -118,7 +137,11 @@ export default function OAuthCallback() {
     log(`Platform: ${platform}, isNative: ${native}, isDespiaIOS: ${isDespiaIOS()}`);
     log(`Pre-captured URL: ${_capturedUrl}`);
 
-    // Use pre-captured tokens
+    // TEMPORARY: Resume or create debug attempt
+    resumeOrCreateCallbackAttempt();
+    logEvent('callback_processing_started', { isRetry, platform, native });
+    updateMetadata('callbackUrl', _capturedUrl);
+
     const currentHash = new URLSearchParams(window.location.hash.replace('#', ''));
     const currentQuery = new URLSearchParams(window.location.search);
 
@@ -139,10 +162,20 @@ export default function OAuthCallback() {
     });
 
     log(`Code: ${!!code}, access_token: ${!!accessToken}, refresh_token: ${!!refreshToken}, error: ${!!errorParam}`);
-    log(`System browser return: ${isSystemBrowserReturn}`);
+
+    // TEMPORARY: Debug tracking
+    logTokenPresence({ accessToken, refreshToken, code, error: errorParam });
+    logEvent('query_params_parsed', {
+      hasCode: !!code,
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      hasError: !!errorParam,
+      isSystemBrowserReturn,
+    });
 
     if (isSystemBrowserReturn && (errorParam || code || (accessToken && refreshToken))) {
       log('System browser callback — handing off to native app');
+      logEvent('handoff_to_native', { reason: 'system_browser_return' });
       handoffToNativeApp({ code, accessToken, refreshToken, error: errorParam, errorDescription });
       return;
     }
@@ -152,6 +185,7 @@ export default function OAuthCallback() {
       logError(`OAuth error: ${errorParam} — ${errorDescription}`);
       setPhase('error');
       setError(errorDescription || errorParam);
+      completeAttempt('error', `${errorParam}: ${errorDescription}`);
       setTimeout(() => navigate('/', { replace: true }), 4000);
       return;
     }
@@ -159,27 +193,32 @@ export default function OAuthCallback() {
     // ── PKCE code exchange ──
     if (code) {
       setPhase('exchanging');
+      logEvent('session_exchange_started', { method: 'exchangeCodeForSession' });
       log('Attempting exchangeCodeForSession...');
       try {
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
         if (exchangeError) {
           logError(`exchangeCodeForSession failed: ${exchangeError.message}`);
+          logEvent('session_exchange_failed', { error: exchangeError.message });
           log('Falling back to session detection...');
           const fallbackSession = await tryGetExistingSession();
           if (fallbackSession) {
             log('Fallback: session found via getSession');
+            logEvent('session_exchange_completed', { method: 'fallback_getSession' });
             handleSessionEstablished(fallbackSession.access_token, fallbackSession.refresh_token, fallbackSession.user?.id, fallbackSession.user?.app_metadata?.provider);
             return;
           }
           setPhase('error');
           setError(`Code exchange failed: ${exchangeError.message}`);
+          completeAttempt('error', exchangeError.message);
           setShowRetry(true);
           return;
         }
 
         if (data.session) {
-          log(`exchangeCodeForSession succeeded — user: ${data.session.user.id}, provider: ${data.session.user.app_metadata?.provider || 'unknown'}`);
+          logEvent('session_exchange_completed', { method: 'exchangeCodeForSession', userId: data.session.user.id });
+          log(`exchangeCodeForSession succeeded — user: ${data.session.user.id}`);
           handleSessionEstablished(data.session.access_token, data.session.refresh_token, data.session.user.id, data.session.user.app_metadata?.provider);
           return;
         }
@@ -187,19 +226,23 @@ export default function OAuthCallback() {
         logError('exchangeCodeForSession returned no session and no error');
         setPhase('error');
         setError('Authentication completed but no session was returned.');
+        completeAttempt('error', 'No session returned');
         setShowRetry(true);
         return;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
         logError(`exchangeCodeForSession exception: ${msg}`);
+        logEvent('session_exchange_exception', { error: msg });
         const fallbackSession = await tryGetExistingSession();
         if (fallbackSession) {
           log('Exception fallback: session found');
+          logEvent('session_exchange_completed', { method: 'exception_fallback' });
           handleSessionEstablished(fallbackSession.access_token, fallbackSession.refresh_token, fallbackSession.user?.id, fallbackSession.user?.app_metadata?.provider);
           return;
         }
         setPhase('error');
         setError(`Code exchange error: ${msg}`);
+        completeAttempt('error', msg);
         setShowRetry(true);
         return;
       }
@@ -208,6 +251,7 @@ export default function OAuthCallback() {
     // ── Tokens in URL (implicit grant — Apple iOS uses this path) ──
     if (accessToken && refreshToken) {
       setPhase('exchanging');
+      logEvent('session_exchange_started', { method: 'setSession_tokens' });
       log('Tokens found — calling setSession...');
       try {
         const { data, error: sessionError } = await supabase.auth.setSession({
@@ -217,14 +261,17 @@ export default function OAuthCallback() {
 
         if (sessionError) {
           logError(`setSession failed: ${sessionError.message}`);
+          logEvent('session_exchange_failed', { error: sessionError.message });
           setPhase('error');
           setError(`Session restore failed: ${sessionError.message}`);
+          completeAttempt('error', sessionError.message);
           setShowRetry(true);
           return;
         }
 
         if (data?.session) {
-          log(`setSession succeeded — user: ${data.session.user.id}, provider: ${data.session.user.app_metadata?.provider || 'unknown'}`);
+          logEvent('session_exchange_completed', { method: 'setSession', userId: data.session.user.id });
+          log(`setSession succeeded — user: ${data.session.user.id}`);
           handleSessionEstablished(data.session.access_token, data.session.refresh_token, data.session.user.id, data.session.user.app_metadata?.provider);
           return;
         }
@@ -232,13 +279,16 @@ export default function OAuthCallback() {
         logError('setSession returned no error but also no session');
         setPhase('error');
         setError('Session could not be created. Please try again.');
+        completeAttempt('error', 'setSession returned no session');
         setShowRetry(true);
         return;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
         logError(`setSession exception: ${msg}`);
+        logEvent('session_exchange_exception', { error: msg });
         setPhase('error');
         setError(`Session error: ${msg}`);
+        completeAttempt('error', msg);
         setShowRetry(true);
         return;
       }
@@ -247,28 +297,34 @@ export default function OAuthCallback() {
     // ── Incomplete tokens ──
     if (accessToken || refreshToken) {
       logError(`Incomplete tokens — access_token: ${!!accessToken}, refresh_token: ${!!refreshToken}`);
+      logEvent('incomplete_tokens');
       setPhase('error');
       setError('Incomplete authentication tokens received. Please try signing in again.');
+      completeAttempt('error', 'Incomplete tokens');
       setShowRetry(true);
       return;
     }
 
     // ── No code or tokens — wait for detectSessionInUrl ──
     setPhase('exchanging');
+    logEvent('waiting_for_auto_detection');
     log('No code or tokens in URL — waiting for auto-detection...');
     const detected = await waitForSession(8000);
     if (detected) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         log(`Auto-detected session — user: ${session.user.id}`);
+        logEvent('session_exchange_completed', { method: 'auto_detection', userId: session.user.id });
         handleSessionEstablished(session.access_token, session.refresh_token, session.user.id, session.user.app_metadata?.provider);
         return;
       }
     }
 
     logError('No session established after waiting');
+    logEvent('session_wait_timeout');
     setPhase('error');
     setError('Session could not be restored. Please try signing in again.');
+    completeAttempt('timeout', 'No session after 8s wait');
     setShowRetry(true);
   };
 
@@ -302,6 +358,7 @@ export default function OAuthCallback() {
       let resolved = false;
       const { data: sub } = supabase.auth.onAuthStateChange((event) => {
         log(`Auth state change: ${event}`);
+        logEvent('auth_state_change', { event });
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (!resolved) {
             resolved = true;
@@ -315,6 +372,7 @@ export default function OAuthCallback() {
           resolved = true;
           sub.subscription.unsubscribe();
           log(`waitForSession timed out after ${timeoutMs}ms`);
+          logEvent('wait_for_session_timeout', { timeoutMs });
           resolve(false);
         }
       }, timeoutMs);
@@ -334,29 +392,25 @@ export default function OAuthCallback() {
     if (hasRun.current) return;
     hasRun.current = true;
 
-    // Wrap the entire flow in a top-level try/catch so an unhandled
-    // exception never leaves the user on a blank white screen.
     handleCallback().catch((err) => {
       const msg = err instanceof Error ? err.message : String(err);
       logError(`Unhandled callback error: ${msg}`);
+      logEvent('unhandled_error', { error: msg });
       setPhase('error');
       setError(`Unexpected error: ${msg}`);
+      completeAttempt('error', msg);
       setShowRetry(true);
     });
 
     // ── Aggressive watchdog for iOS native ──
-    // If we're still on /auth/callback after 4s AND a session exists,
-    // force-navigate to home. This catches every edge case where the
-    // main flow completed setSession but navigation stalled.
     if (isNativeApp() && isDespiaIOS()) {
       const watchdogInterval = setInterval(async () => {
         if (navigationTriggered.current) {
-          // Navigation was already triggered — give it a moment then force
-          // This handles the case where window.location.replace silently failed
           try {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-              console.log('[OAuthCallback] Watchdog — session exists, navigation was triggered but page still here. Forcing redirect.');
+              logEvent('watchdog_force_redirect', { reason: 'navigation_stalled' });
+              console.log('[OAuthCallback] Watchdog — session exists, forcing redirect.');
               window.location.href = '/?postAuth=1&watchdog=1&ts=' + Date.now();
             }
           } catch { /* ignore */ }
@@ -367,15 +421,16 @@ export default function OAuthCallback() {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
+            logEvent('watchdog_session_found', { userId: session.user.id });
             console.log('[OAuthCallback] Watchdog — session found, forcing redirect');
             navigationTriggered.current = true;
+            completeAttempt('success');
             window.location.href = '/?postAuth=1&watchdog=1&ts=' + Date.now();
             clearInterval(watchdogInterval);
           }
         } catch { /* ignore */ }
       }, 2000);
 
-      // Clean up after 15s regardless
       const watchdogCleanup = setTimeout(() => clearInterval(watchdogInterval), 15000);
 
       return () => {
@@ -385,9 +440,10 @@ export default function OAuthCallback() {
     }
   }, []);
 
-  // ── Render ──
+  // ── Debug mode: show inline diagnostics ──
+  const showDebug = isDebugEnabled();
 
-  // Error / native handoff states
+  // ── Render ──
   if (error || showReturnButton || redirectingToApp) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -430,12 +486,23 @@ export default function OAuthCallback() {
           ) : (
             <p className="text-muted-foreground">Opening Hoop Journal...</p>
           )}
+
+          {/* TEMPORARY: Debug log for error/handoff states */}
+          {showDebug && debugInfo.length > 0 && (
+            <div className="mt-4 text-left bg-muted/50 rounded p-2 max-h-40 overflow-y-auto">
+              <p className="text-[10px] font-mono text-muted-foreground">
+                {debugInfo.map((line, i) => (
+                  <span key={i} className="block">{line}</span>
+                ))}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
-  // Default: visible loading state so there's NEVER a blank white screen
+  // Default: visible loading state
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center space-y-3">
@@ -443,6 +510,18 @@ export default function OAuthCallback() {
         <p className="text-muted-foreground text-sm">
           {phase === 'navigating' ? 'Opening app…' : 'Signing you in…'}
         </p>
+
+        {/* TEMPORARY: Debug info visible only with flag */}
+        {showDebug && (
+          <div className="mt-4 text-left bg-muted/50 rounded p-2 max-w-xs mx-auto max-h-48 overflow-y-auto">
+            <p className="text-[10px] font-mono text-muted-foreground mb-1">
+              Phase: <span className="text-foreground">{phase}</span>
+            </p>
+            {debugInfo.map((line, i) => (
+              <p key={i} className="text-[10px] font-mono text-muted-foreground">{line}</p>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

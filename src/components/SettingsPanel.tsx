@@ -781,6 +781,29 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
           {/* ── Account ── */}
           <SectionHeader>Account</SectionHeader>
 
+          {/* TEMPORARY: Apple Auth Debug Toggle (admin only) */}
+          {isAdmin && (
+            <div className="rounded-lg border border-border bg-card/50 p-4 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Shield className="w-4 h-4 text-primary" />
+                Apple Auth Debug
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">Show floating debug overlay for Apple Sign-In diagnostics</p>
+                <Switch
+                  checked={(() => { try { return localStorage.getItem('hj_apple_auth_debug_enabled') === 'true'; } catch { return false; } })()}
+                  onCheckedChange={(checked) => {
+                    try {
+                      if (checked) localStorage.setItem('hj_apple_auth_debug_enabled', 'true');
+                      else localStorage.removeItem('hj_apple_auth_debug_enabled');
+                      toast.success(checked ? 'Debug overlay enabled — reload to see it' : 'Debug overlay disabled');
+                    } catch {}
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Danger Zone */}
           {userId && (
             <DangerZoneSection userId={userId} onStartOver={onStartOver} />
