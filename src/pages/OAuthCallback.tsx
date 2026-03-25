@@ -69,6 +69,22 @@ export default function OAuthCallback() {
     log(`Platform: ${platform}, isNative: ${native}`);
     log(`Pre-captured URL: ${_capturedUrl}`);
 
+    // Apple Auth Audit: log callback receipt if this is an Apple flow
+    try {
+      const { logAppleAuthEvent, updateAppleAuthMetadata, getCurrentAttempt, completeAppleAuthSuccess, completeAppleAuthFailure } = await import('@/lib/appleAuthAudit');
+      const currentAttempt = getCurrentAttempt();
+      if (currentAttempt) {
+        logAppleAuthEvent('callback_received', {
+          url: _capturedUrl.slice(0, 120),
+          hostname: window.location.hostname,
+          pathname: window.location.pathname,
+          platform,
+          isNative: native,
+        });
+        updateAppleAuthMetadata({ callbackUriReturned: _capturedUrl.slice(0, 200) });
+      }
+    } catch { /* audit trail not critical */ }
+
     // Use pre-captured tokens (grabbed at module load before Supabase could clear them)
     // On retry, also re-check current URL in case hash is still present
     const currentHash = new URLSearchParams(window.location.hash.replace('#', ''));
@@ -285,6 +301,16 @@ export default function OAuthCallback() {
     }
 
     log(`Session verified — user: ${session.user.id}, provider: ${session.user.app_metadata?.provider}`);
+
+    // Apple Auth Audit: complete success if this was an Apple flow
+    try {
+      const { getCurrentAttempt, completeAppleAuthSuccess, logAppleAuthEvent } = await import('@/lib/appleAuthAudit');
+      const currentAttempt = getCurrentAttempt();
+      if (currentAttempt && session.user.app_metadata?.provider === 'apple') {
+        logAppleAuthEvent('navigation_complete', { userId: session.user.id.slice(0, 8), provider: 'apple' });
+        completeAppleAuthSuccess();
+      }
+    } catch { /* non-critical */ }
 
     const native = isNativeApp();
     const isSystemBrowserReturn = isMobileSystemBrowserOAuthReturn({
