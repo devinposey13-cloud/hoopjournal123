@@ -63,14 +63,14 @@ Deno.serve(async (req) => {
     let platform = 'web';
     let deeplinkScheme: string | undefined;
 
-    // Handle both JSON (from JS SDK) and form_post (from Android oauth://)
+    // Handle both JSON (from JS SDK) and form_post (from iOS/Android redirect)
     if (contentType.includes('application/json')) {
       const body = await req.json();
       idToken = body.id_token;
       userJson = body.user;
       platform = body.platform || 'web';
     } else {
-      // Android: form_post from oauth://
+      // iOS/Android: form_post from Apple authorize redirect
       const formData = await req.formData();
       idToken = formData.get('id_token') as string;
       userJson = formData.get('user') as string;
@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       }
       return new Response(null, {
         status: 302,
-        headers: { 'Location': `${appUrl}/auth?error=${encodeURIComponent(errorMsg)}` },
+        headers: { 'Location': `${appUrl}/auth/callback?error=${encodeURIComponent(errorMsg)}` },
       });
     }
 
@@ -259,7 +259,7 @@ Deno.serve(async (req) => {
         }
       );
     } else {
-      // Android: Redirect to deeplink or app URL
+      // iOS/Android form_post: Redirect with tokens
       const params = new URLSearchParams({
         access_token: accessToken,
         refresh_token: refreshToken,
@@ -270,9 +270,10 @@ Deno.serve(async (req) => {
           headers: { 'Location': `${deeplinkScheme}://oauth/auth?${params}` },
         });
       }
+      // iOS Despia & fallback: redirect to /auth/callback with tokens as query params
       return new Response(null, {
         status: 302,
-        headers: { 'Location': `${appUrl}/auth?${params}` },
+        headers: { 'Location': `${appUrl}/auth/callback?${params}` },
       });
     }
   } catch (error) {
