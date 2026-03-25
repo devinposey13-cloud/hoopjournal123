@@ -1,24 +1,24 @@
 
 
-## Fix: Apple Auth Edge Function Timeout
+## Fix: "User not found after registration conflict" in Apple Auth
 
 ### Root Cause
 
-The screenshot shows `{"error":"request timed out"}` rendered as raw text in the iOS webview. This happens in the `auth-apple-callback` edge function at **line 149**:
+The `listUsers({ filter: userEmail, perPage: 1 })` call on line 149 doesn't work — the Supabase Admin JS SDK's `listUsers` does **not** support a `filter` parameter. It's silently ignored, so `perPage: 1` just returns the first user in the database alphabetically. That user doesn't match the email, so the lookup fails with "User not found after registration conflict."
 
-```typescript
-const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-```
-
-When your existing user signs in, `createUser` returns "already been registered", and the function then calls `listUsers()` which fetches **ALL users** without any filter. As the user base grows, this call gets progressively slower until it exceeds the edge function timeout — causing the raw JSON error to display in the webview.
+This affects any existing user (like your Google-registered account) trying to sign in with Apple using the same email.
 
 ### Fix
 
-**`supabase/functions/auth-apple-callback/index.ts`** — Two changes:
+**`supabase/functions/auth-apple-callback/index.ts`** — Eliminate the broken `listUsers` lookup entirely. Instead:
 
-1. **Replace `listUsers()` with a direct email lookup** — Use `supabaseAdmin.auth.admin.listUsers({ filter: userEmail })` or the `getUserById` approach. The Admin API supports filtering by email, turning an O(n) scan into a fast indexed query. This eliminates the timeout.
+1. **Skip the user lookup** — Since we already know the email exists (the "already been registered" error confirms it), go straight to `generateLink({ type: 'magiclink', email: userEmail })`. This works regardless of how the user originally registered (Google, email, etc.) because it targets the email, not a user ID.
 
-2. **Handle edge function errors gracefully for form_post flows** — When the function is called via form_post (iOS redirect), any unhandled timeout or crash renders raw JSON in the webview. Add a top-level catch that redirects to `/auth/callback?error=...` for non-JSON requests, so the user sees the app's error UI instead of raw JSON.
+2. **Get `userId` from the session** — After `verifyOtp`, extract `userId` from `sessionData.session.user.id` instead of from the lookup. This is always accurate.
+
+3. **Move the metadata update after session creation** — Use the `userId` obtained from the session to update Apple-specific metadata (display name, apple_user_id) if needed.
+
+This removes the fragile user-lookup step entirely and makes Apple sign-in work for any existing account regardless of original provider.
 
 ### Files
 - `supabase/functions/auth-apple-callback/index.ts`
