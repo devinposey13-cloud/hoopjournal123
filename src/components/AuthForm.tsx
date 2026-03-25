@@ -152,96 +152,47 @@ export function AuthForm() {
 
     try {
       // Debug: print Apple auth config before any flow selection
-      const selectedFlow = isDespiaIOS() ? 'native_oauth_redirect'
-        : isNativeApp() ? 'native_oauth_redirect'
-        : isCustomDomain() ? 'custom_domain_oauth'
-        : 'lovable_broker';
-      const redirectForLog = isDespiaIOS() || isNativeApp()
-        ? getOAuthRedirectUri({ forNative: true })
-        : isCustomDomain()
-        ? `${window.location.origin}/auth/callback`
-        : getOAuthRedirectUri();
+      const platform = getPlatform();
+      const selectedFlow = platform === 'android' ? 'native_oauth_redirect' : 'js_sdk_edge_function';
       console.log('[Auth:Apple] ── PRE-AUTH DEBUG ──', {
         selectedFlow,
         clientIdSource: 'authConfig.ts → APPLE_CLIENT_ID',
         clientIdValue: APPLE_CLIENT_ID,
-        redirectUri: redirectForLog,
-        platform: getPlatform(),
+        platform,
         isDespiaIOS: isDespiaIOS(),
         isNative: isNativeApp(),
         isCustomDomain: isCustomDomain(),
+        appleJSAvailable: isAppleJSAvailable(),
       });
 
-      // ── iOS NATIVE: OAuth redirect via Despia system browser ──
-      // The Apple JS SDK does NOT work inside Despia WebView (resolves instantly
-      // with empty authorization). Use the same oauth:// bridge as Google.
-      if (isDespiaIOS()) {
+      // ── ANDROID NATIVE: Use OAuth redirect via system browser ──
+      // Android has no native Apple Sign In — must use oauth:// bridge
+      if (platform === 'android' && isNativeApp()) {
         const redirectTo = getOAuthRedirectUri({ forNative: true });
-        logAppleAuthEvent('flow_selected', {
-          flow: 'native_oauth_redirect',
-          reason: 'isDespiaIOS — JS SDK unsupported in WebView',
-          redirectTo,
-          configuredCallback: `${APP_ORIGIN}/auth/callback`,
-        });
+        logAppleAuthEvent('flow_selected', { flow: 'native_oauth_redirect', reason: 'Android — no native Apple support', redirectTo });
         updateAppleAuthMetadata({ flowType: 'native_oauth_redirect', redirectUri: redirectTo });
 
-        console.log(`[Auth:Apple] iOS native — OAuth redirect, redirectTo: ${redirectTo}`);
-        logAppleAuthEvent('oauth_url_requested', { provider: 'apple', redirectTo });
+        console.log('[Auth:Apple] Android native — OAuth redirect');
         const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
-        logAppleAuthEvent('oauth_url_received', { urlLength: oauthUrl.length, urlPrefix: oauthUrl.slice(0, 80) });
-
         logAppleAuthEvent('system_browser_opened');
         await openOAuthInSystemBrowser(oauthUrl);
-        // Attempt stays in-progress — callback handler will complete it
         return;
       }
 
-      // ── NATIVE (Android): Use OAuth redirect via system browser ──
-      if (isNativeApp()) {
-        const redirectTo = getOAuthRedirectUri({ forNative: true });
-        logAppleAuthEvent('flow_selected', { flow: 'native_oauth_redirect', reason: 'isNativeApp (non-iOS or SDK fallback)', redirectTo });
-        updateAppleAuthMetadata({ flowType: 'oauth_redirect', redirectUri: redirectTo });
-
-        console.log('[Auth:Apple] Native fallback — OAuth redirect');
-        logAppleAuthEvent('oauth_url_requested', { provider: 'apple', redirectTo });
-        const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
-        logAppleAuthEvent('oauth_url_received', { urlLength: oauthUrl.length, urlPrefix: oauthUrl.slice(0, 80) });
-
-        logAppleAuthEvent('system_browser_opened');
-        await openOAuthInSystemBrowser(oauthUrl);
-        // Note: attempt stays in-progress — callback handler will complete it
-        return;
-      }
-
-      // ── WEB on custom domain: Direct Supabase OAuth ──
-      if (isCustomDomain()) {
-        const redirectTo = `${window.location.origin}/auth/callback`;
-        logAppleAuthEvent('flow_selected', { flow: 'custom_domain_oauth', redirectTo });
-        updateAppleAuthMetadata({ flowType: 'oauth_redirect', redirectUri: redirectTo });
-
-        console.log('[Auth:Apple] Custom domain — direct Supabase OAuth');
-        logAppleAuthEvent('oauth_url_requested', { provider: 'apple', redirectTo });
-        const oauthUrl = await getDirectOAuthUrl('apple', redirectTo);
-        logAppleAuthEvent('oauth_url_received', { urlLength: oauthUrl.length, urlPrefix: oauthUrl.slice(0, 80) });
-
-        logAppleAuthEvent('redirect_started', { target: 'direct_oauth' });
-        window.location.href = oauthUrl;
-        // Attempt stays in-progress — callback handler will complete it
-        return;
-      }
-
-      // ── WEB on preview/lovable.app: Use Lovable broker ──
-      const redirectUri = getOAuthRedirectUri();
-      logAppleAuthEvent('flow_selected', { flow: 'lovable_broker', redirectUri });
-      updateAppleAuthMetadata({ flowType: 'lovable_broker', redirectUri });
-
-      console.log('[Auth:Apple] Preview domain — using Lovable broker');
-      logAppleAuthEvent('broker_invoked', { redirectUri });
-      const { error } = await lovable.auth.signInWithOAuth('apple', {
-        redirect_uri: redirectUri,
+      // ── ALL OTHER PLATFORMS (iOS, Web): Apple JS SDK → Edge Function ──
+      // iOS Despia: JS SDK triggers native Face ID dialog inside WebView
+      // Web: JS SDK triggers browser Apple dialog
+      logAppleAuthEvent('flow_selected', {
+        flow: 'js_sdk_edge_function',
+        reason: `${isDespiaIOS() ? 'iOS Despia — Face ID dialog' : 'Web — browser dialog'}`,
+        sdkAvailable: isAppleJSAvailable(),
       });
-      if (error) throw error;
-      // Attempt stays in-progress — callback handler will complete it
+      updateAppleAuthMetadata({ flowType: 'js_sdk' });
+
+      console.log('[Auth:Apple] Using JS SDK → edge function flow');
+      await signInWithAppleNative();
+      // signInWithAppleNative handles: JS SDK → edge function → setSession
+      completeAppleAuthSuccess();
     } catch (error: unknown) {
       console.error('[Auth:Apple] Sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Apple sign-in failed';
