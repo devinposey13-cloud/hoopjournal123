@@ -781,7 +781,9 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
           {isAdmin && (
             <>
               <SectionHeader>Apple Auth Diagnostics</SectionHeader>
-              <AppleAuthDebugPanel />
+              <Suspense fallback={<div className="text-xs text-muted-foreground">Loading...</div>}>
+                <AppleAuthDebugPanel />
+              </Suspense>
             </>
           )}
 
