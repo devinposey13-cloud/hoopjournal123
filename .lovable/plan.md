@@ -1,55 +1,33 @@
 
 
-## Simplify Apple Auth Flow
+## Restore Basketball GIF Preload Screen
 
-### Problem
-The Apple Sign-In code has accumulated significant diagnostic/audit overhead that runs on every login attempt. The `appleAuthAudit.ts` module (379 lines) is dynamically imported and executed at multiple points — in `AuthForm.tsx`, `OAuthCallback.tsx`, and `apple-auth.ts`. This adds latency through:
+The pre-hydration shell in `index.html` (lines 37-43) currently shows "HOOP JOURNAL" text with a CSS spinner. This needs to be replaced with the bouncing basketball animation that was there previously.
 
-1. **Dynamic imports** of the audit module at tap time (`await import('@/lib/appleAuthAudit')`) — blocks the login flow
-2. **Excessive logging** at every stage (10+ audit calls per login)
-3. **379-line audit module** that was explicitly marked as "TEMPORARY: Remove after Apple Sign In issues are resolved"
-4. **Apple JS SDK initialization** on app boot even on iOS where it's never used (already guarded but still imported)
+### Change
 
-Google auth works well because it has none of this overhead.
+**`index.html`** — Replace the text+spinner content inside `#prehydration-shell` with a centered basketball GIF/animation. Since this is a pre-React shell (no JS frameworks available), we'll use an `<img>` tag pointing to a basketball bounce GIF hosted in `/public`, keeping the dark background and the auth-callback suppression script.
 
-### Plan
+The shell content (lines 38-42) changes from:
+```html
+<div style="text-align:center;">
+  <div style="font-family:Teko,sans-serif;...">HOOP JOURNAL</div>
+  <div style="...border-radius:50%;animation:hjspin..."></div>
+</div>
+<style>@keyframes hjspin{to{transform:rotate(360deg)}}</style>
+```
 
-**1. Remove the audit trail system** (`src/lib/appleAuthAudit.ts`)
-- Delete the file entirely — it was marked temporary
-- Remove the admin debug panel (`src/components/settings/AppleAuthDebugPanel.tsx`) and its references in settings
+To:
+```html
+<img src="/basketball-loading.gif" alt="" style="width:80px;height:80px;" />
+```
 
-**2. Strip audit calls from `AuthForm.tsx` (handleAppleSignIn)**
-- Remove the `await import('@/lib/appleAuthAudit')` dynamic import at the top of the handler (this blocks before any auth work starts)
-- Remove all `logAppleAuthEvent`, `updateAppleAuthMetadata`, `startAppleAuthAttempt`, `completeAppleAuth*` calls
-- Keep the 3 platform branches (Android/iOS/Web) — those are the actual auth logic
+We'll need to either:
+- Use the same Lottie basketball animation URL already used throughout the app (but Lottie requires JS, which won't work in a pre-React shell)
+- Add a lightweight basketball bounce GIF to `/public`
 
-**3. Strip audit calls from `OAuthCallback.tsx`**
-- Remove the `await import('@/lib/appleAuthAudit')` block (lines 77-98) that runs on every callback
-- Remove the Apple audit completion in `handleSessionEstablished` (lines 299-307)
-- Keep all session establishment logic unchanged
+I'll create a simple CSS-only bouncing basketball animation as a fallback (no external dependency, instant render), using an emoji or SVG basketball with a CSS bounce keyframe — matching the `animate-[bounce_3s_ease-in-out_infinite]` style already used in `JournalHeader.tsx`.
 
-**4. Strip audit calls from `apple-auth.ts`**
-- Remove `logAppleAuthEvent`, `updateAppleAuthMetadata`, `maskToken` imports and all their calls
-- Keep the actual auth logic (token exchange, setSession, redirect URL building)
-
-**5. Remove `AppleAuthDebugPanel` from settings**
-- Remove import and usage from `src/components/SettingsPanel.tsx` (or wherever it's referenced)
-
-### Files to modify
-- **Delete**: `src/lib/appleAuthAudit.ts`
-- **Delete**: `src/components/settings/AppleAuthDebugPanel.tsx`
-- **Edit**: `src/components/AuthForm.tsx` — remove audit imports/calls from `handleAppleSignIn`
-- **Edit**: `src/pages/OAuthCallback.tsx` — remove audit imports/calls
-- **Edit**: `src/lib/apple-auth.ts` — remove audit imports/calls
-- **Edit**: `src/components/SettingsPanel.tsx` — remove debug panel reference
-
-### What stays the same
-- The 3 platform-specific Apple auth paths (iOS redirect, Android OAuth, Web JS SDK)
-- The `auth-apple-callback` edge function
-- The `OAuthCallback` session establishment logic
-- Google auth (untouched)
-- The pre-hydration shell suppression fix
-
-### Result
-The Apple sign-in tap will go directly to the platform-appropriate auth flow without awaiting dynamic imports or writing audit logs, matching the simplicity and speed of the Google flow.
+### Files
+- `index.html` — replace shell content with bouncing basketball CSS animation
 
