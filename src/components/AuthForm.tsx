@@ -13,8 +13,7 @@ import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { Separator } from '@/components/ui/separator';
 import { isNativeApp, getPlatform, isDespiaIOS } from '@/lib/platform';
 import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
-import { signInWithAppleNative, signInWithAppleRedirect, isAppleJSAvailable } from '@/lib/apple-auth';
-import { APPLE_CLIENT_ID } from '@/lib/authConfig';
+import { signInWithAppleNative, signInWithAppleRedirect } from '@/lib/apple-auth';
 import {
   isCustomDomain,
   getOAuthRedirectUri,
