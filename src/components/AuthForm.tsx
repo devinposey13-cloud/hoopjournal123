@@ -16,8 +16,6 @@ import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
 import { signInWithAppleNative, isAppleJSAvailable } from '@/lib/apple-auth';
 import { APPLE_CLIENT_ID } from '@/lib/authConfig';
 import {
-  APP_ORIGIN,
-  PUBLISHED_ORIGIN,
   isCustomDomain,
   getOAuthRedirectUri,
 } from '@/lib/authConfig';
