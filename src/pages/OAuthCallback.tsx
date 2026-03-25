@@ -155,7 +155,7 @@ export default function OAuthCallback() {
           const fallbackSession = await tryGetExistingSession();
           if (fallbackSession) {
             log('Fallback: session found via getSession');
-            await handleSessionEstablished(fallbackSession.access_token, fallbackSession.refresh_token);
+            handleSessionEstablished(fallbackSession.access_token, fallbackSession.refresh_token, fallbackSession.user?.id, fallbackSession.user?.app_metadata?.provider);
             return;
           }
 
@@ -167,7 +167,7 @@ export default function OAuthCallback() {
         if (data.session) {
           log(`exchangeCodeForSession succeeded — user: ${data.session.user.id}`);
           log(`Provider: ${data.session.user.app_metadata?.provider || 'unknown'}`);
-          await handleSessionEstablished(data.session.access_token, data.session.refresh_token);
+          handleSessionEstablished(data.session.access_token, data.session.refresh_token, data.session.user.id, data.session.user.app_metadata?.provider);
           return;
         }
 
@@ -184,7 +184,7 @@ export default function OAuthCallback() {
         const fallbackSession = await tryGetExistingSession();
         if (fallbackSession) {
           log('Exception fallback: session found');
-          await handleSessionEstablished(fallbackSession.access_token, fallbackSession.refresh_token);
+          handleSessionEstablished(fallbackSession.access_token, fallbackSession.refresh_token, fallbackSession.user?.id, fallbackSession.user?.app_metadata?.provider);
           return;
         }
 
@@ -203,7 +203,7 @@ export default function OAuthCallback() {
       if (existingSession) {
         log('detectSessionInUrl already restored session — skipping manual setSession');
         log(`Session user: ${existingSession.user?.id}, provider: ${existingSession.user?.app_metadata?.provider}`);
-        await handleSessionEstablished(existingSession.access_token, existingSession.refresh_token);
+        handleSessionEstablished(existingSession.access_token, existingSession.refresh_token, existingSession.user?.id, existingSession.user?.app_metadata?.provider);
         return;
       }
 
@@ -224,7 +224,7 @@ export default function OAuthCallback() {
         if (data?.session) {
           log(`setSession succeeded — user: ${data.session.user.id}`);
           log(`Provider: ${data.session.user.app_metadata?.provider || 'unknown'}`);
-          await handleSessionEstablished(data.session.access_token, data.session.refresh_token);
+          handleSessionEstablished(data.session.access_token, data.session.refresh_token, data.session.user.id, data.session.user.app_metadata?.provider);
           return;
         }
 
@@ -256,7 +256,7 @@ export default function OAuthCallback() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         log(`Auto-detected session — user: ${session.user.id}`);
-        await handleSessionEstablished(session.access_token, session.refresh_token);
+        handleSessionEstablished(session.access_token, session.refresh_token, session.user.id, session.user.app_metadata?.provider);
         return;
       }
     }
@@ -297,28 +297,20 @@ export default function OAuthCallback() {
     }, 3000);
   };
 
-  /** After session is confirmed, decide where to go */
-  const handleSessionEstablished = async (accessToken: string, refreshToken: string) => {
-    // Verify session is actually retrievable
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      logError('Session verification failed — getSession returned null after exchange');
-      setError('Session was created but could not be verified. Please try again.');
-      setShowRetry(true);
-      return;
+  /** After session is confirmed, decide where to go — navigate immediately without re-verification */
+  const handleSessionEstablished = (accessToken: string, refreshToken: string, userId?: string, provider?: string) => {
+    log(`Session established${userId ? ` — user: ${userId}` : ''}${provider ? `, provider: ${provider}` : ''}`);
+
+    // Apple Auth Audit: complete success if this was an Apple flow (fire-and-forget)
+    if (provider === 'apple') {
+      import('@/lib/appleAuthAudit').then(({ getCurrentAttempt, completeAppleAuthSuccess, logAppleAuthEvent }) => {
+        const currentAttempt = getCurrentAttempt();
+        if (currentAttempt) {
+          logAppleAuthEvent('navigation_complete', { userId: userId?.slice(0, 8), provider: 'apple' });
+          completeAppleAuthSuccess();
+        }
+      }).catch(() => {});
     }
-
-    log(`Session verified — user: ${session.user.id}, provider: ${session.user.app_metadata?.provider}`);
-
-    // Apple Auth Audit: complete success if this was an Apple flow
-    try {
-      const { getCurrentAttempt, completeAppleAuthSuccess, logAppleAuthEvent } = await import('@/lib/appleAuthAudit');
-      const currentAttempt = getCurrentAttempt();
-      if (currentAttempt && session.user.app_metadata?.provider === 'apple') {
-        logAppleAuthEvent('navigation_complete', { userId: session.user.id.slice(0, 8), provider: 'apple' });
-        completeAppleAuthSuccess();
-      }
-    } catch { /* non-critical */ }
 
     const native = isNativeApp();
     const isSystemBrowserReturn = isMobileSystemBrowserOAuthReturn({
@@ -327,7 +319,7 @@ export default function OAuthCallback() {
       userAgent: navigator.userAgent,
     });
 
-    // Inside Despia shell — just navigate home
+    // Inside Despia shell — just navigate home immediately
     if (native) {
       log('Inside Despia shell — navigating to /');
       navigate('/', { replace: true });
@@ -341,9 +333,8 @@ export default function OAuthCallback() {
       return;
     }
 
-    // Standard web — go home
+    // Standard web — go home immediately
     log('Web flow — navigating to /');
-    window.history.replaceState({}, '', '/auth/callback');
     navigate('/', { replace: true });
   };
 

@@ -20,6 +20,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  authReady: boolean;
   isGuest: boolean;
   enterGuestMode: () => void;
   exitGuestMode: () => void;
@@ -128,8 +129,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const authReady = !loading;
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, isGuest, enterGuestMode, exitGuestMode, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, authReady, isGuest, enterGuestMode, exitGuestMode, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
