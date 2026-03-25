@@ -37,7 +37,10 @@
     <div id="prehydration-shell" style="position:fixed;inset:0;z-index:9999;background:#0a0a0a;display:flex;align-items:center;justify-content:center;">
       <div style="font-size:64px;animation:hjbounce 1s infinite;">🏀</div>
       <style>@keyframes hjbounce{0%,100%{transform:translateY(-25%);animation-timing-function:cubic-bezier(0.8,0,1,1)}50%{transform:translateY(0);animation-timing-function:cubic-bezier(0,0,0.2,1)}}</style>
-      <script>if(window.location.pathname==='/auth/callback'||window.location.search.includes('postAuth')){document.getElementById('prehydration-shell').style.display='none';}</script>
+      <script>
+        if(window.location.search.includes('postAuth')){document.getElementById('prehydration-shell').style.display='none';}
+        else if(window.location.pathname==='/auth/callback'){document.getElementById('prehydration-shell').querySelector('div').innerHTML='<div style="font-size:48px;margin-bottom:16px">🏀</div><div style="color:#888;font-size:14px;font-family:system-ui">Signing you in…</div>';}
+      </script>
     </div>
     <div id="root"></div>
     <script>
