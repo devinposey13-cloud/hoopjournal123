@@ -1,9 +1,13 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { isNativeApp, getPlatform } from '@/lib/platform';
 import { buildNativeOAuthReturnUrl, isMobileSystemBrowserOAuthReturn } from '@/lib/oauthCallback';
+import { DashboardSkeleton } from '@/components/skeletons/DashboardSkeleton';
+
+// Preload the Index page so it's ready when we navigate
+const _preloadIndex = lazy(() => import('./Index'));
 
 /**
  * PRE-CAPTURE: Grab tokens from the URL immediately at module load time,
@@ -197,17 +201,7 @@ export default function OAuthCallback() {
     // ── Tokens in URL (implicit grant) ──
     if (accessToken && refreshToken) {
       log('Both access_token and refresh_token found — implicit grant flow');
-
-      // First check if detectSessionInUrl already established a session
-      const existingSession = await tryGetExistingSession();
-      if (existingSession) {
-        log('detectSessionInUrl already restored session — skipping manual setSession');
-        log(`Session user: ${existingSession.user?.id}, provider: ${existingSession.user?.app_metadata?.provider}`);
-        handleSessionEstablished(existingSession.access_token, existingSession.refresh_token, existingSession.user?.id, existingSession.user?.app_metadata?.provider);
-        return;
-      }
-
-      log('No existing session found — calling supabase.auth.setSession...');
+      log('Calling supabase.auth.setSession directly (skipping tryGetExistingSession)...');
       try {
         const { data, error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
@@ -386,58 +380,58 @@ export default function OAuthCallback() {
     handleCallback();
   }, []);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center space-y-4 max-w-sm px-4">
-        {error ? (
-          <>
-            <AlertTriangle className="w-8 h-8 mx-auto text-destructive" />
-            <p className="text-destructive font-medium">Sign in failed</p>
-            <p className="text-muted-foreground text-sm">{error}</p>
-            {showRetry && (
+  // Error or native handoff states use a centered card; default state shows branded skeleton
+  if (error || showReturnButton || redirectingToApp) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4 max-w-sm px-4">
+          {error ? (
+            <>
+              <AlertTriangle className="w-8 h-8 mx-auto text-destructive" />
+              <p className="text-destructive font-medium">Sign in failed</p>
+              <p className="text-muted-foreground text-sm">{error}</p>
+              {showRetry && (
+                <button
+                  onClick={handleRetry}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 transition-colors mt-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Retry
+                </button>
+              )}
               <button
-                onClick={handleRetry}
-                className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 transition-colors mt-2"
+                onClick={() => navigate('/', { replace: true })}
+                className="block mx-auto text-xs text-muted-foreground underline mt-2"
               >
-                <RefreshCw className="w-4 h-4" />
-                Retry
+                Return to sign in
               </button>
-            )}
-            <button
-              onClick={() => navigate('/', { replace: true })}
-              className="block mx-auto text-xs text-muted-foreground underline mt-2"
-            >
-              Return to sign in
-            </button>
-          </>
-        ) : showReturnButton ? (
-          <>
-            <p className="text-foreground font-medium">Sign in complete!</p>
-            <p className="text-muted-foreground text-sm mb-4">Tap the button below to return to Hoop Journal.</p>
-            <a
-              href={deepLinkUrl || 'hoopjournal://'}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              Return to App
-            </a>
-            <p className="text-muted-foreground text-xs mt-3">
-              If the button doesn't work, open Hoop Journal manually — you're already signed in.
-            </p>
-          </>
-        ) : redirectingToApp ? (
-          <>
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+            </>
+          ) : showReturnButton ? (
+            <>
+              <p className="text-foreground font-medium">Sign in complete!</p>
+              <p className="text-muted-foreground text-sm mb-4">Tap the button below to return to Hoop Journal.</p>
+              <a
+                href={deepLinkUrl || 'hoopjournal://'}
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-6 py-3 text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                Return to App
+              </a>
+              <p className="text-muted-foreground text-xs mt-3">
+                If the button doesn't work, open Hoop Journal manually — you're already signed in.
+              </p>
+            </>
+          ) : (
             <p className="text-muted-foreground">Opening Hoop Journal...</p>
-          </>
-        ) : (
-          <>
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-            <p className="text-muted-foreground">Completing sign in...</p>
-          </>
-        )}
-
-        {/* Debug logs only in console, not visible to users */}
+          )}
+        </div>
       </div>
+    );
+  }
+
+  // Default: show branded dashboard skeleton so the transition feels seamless
+  return (
+    <div className="min-h-screen bg-background">
+      <DashboardSkeleton />
     </div>
   );
 }
