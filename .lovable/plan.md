@@ -1,115 +1,39 @@
 
+Goal: remove the brief “white page” feeling after mobile auth by shortening the post-auth path and showing the dashboard shell immediately while data finishes loading.
 
-## Critical Finding: Wrong Apple Auth Architecture
+1. Tighten the callback handoff
+- Update `src/pages/OAuthCallback.tsx` so it stops doing extra verification work after a successful token restore.
+- Use the session returned by `setSession` / code exchange as the success signal instead of re-checking multiple times with `getSession()`.
+- Navigate to `/` immediately with a lightweight “post-auth transition” flag in router state.
 
-### What Despia Documentation Says
+2. Split auth readiness from app-data readiness
+- Refine `src/hooks/useAuth.tsx` so the app can distinguish:
+  - auth session restored
+  - dashboard data still loading
+- Keep `onAuthStateChange` simple and non-blocking.
+- Add a small “auth ready” signal so downstream hooks only start once session hydration is complete, instead of multiple parts of the app each waiting on their own timing.
 
-The Despia docs at `setup.despia.com/lovable/native-features/o-auth-2-0/apple-auth` are explicit:
+3. Reduce dashboard startup latency
+- Optimize `src/hooks/useCloudData.ts` by parallelizing independent reads after the active profile is known.
+- Keep the current profile lookup as the first dependency, then fetch seasons/games/schedule/clips/profile settings in parallel where possible.
+- Avoid redundant post-login reads that don’t affect the first paint.
 
-```text
-Platform Strategy:
-  iOS (Despia):    Apple JS SDK → Native Face ID dialog (instant)
-  Android (Despia): oauth:// protocol → ASWebAuthenticationSession → form_post
-  Web:             Apple JS SDK → Native browser dialog (instant)
+4. Replace full-screen blank/loading with immediate dashboard skeleton
+- In `src/pages/Index.tsx`, render a branded dashboard shell/skeleton immediately after auth instead of a blank callback-looking screen.
+- For the first post-auth load on mobile, keep navigation chrome and skeleton cards visible right away so users feel they are already “in” the app.
+- Preserve current guards for approval/onboarding, but make the default path feel like a transition into the dashboard rather than a white hold screen.
 
-Why Different Approaches:
-  - iOS has native Apple Sign In support → Use JS SDK for instant dialog
-  - Android has NO native Apple Sign In → Use oauth:// to trigger browser session
-```
+5. Make loading visuals lighter
+- Review `src/components/ui/loading-spinner.tsx` and reduce reliance on the heavier full-screen Lottie spinner during auth-to-dashboard transition.
+- Use a simpler lightweight skeleton/spinner for this specific route so the handoff feels faster and avoids a “stuck” impression on mobile.
 
-### What We're Currently Doing (Wrong)
+Expected result
+- Best case: the delay is mostly eliminated.
+- If network/profile reads still take a moment, users will see the dashboard frame and skeleton instantly instead of a white page, which makes the transition feel smooth.
 
-We routed iOS to `supabase.auth.signInWithOAuth({ provider: 'apple' })` via the `oauth://` bridge — a redirect-based flow. This is wrong for two reasons:
-
-1. **Despia says iOS should use the Apple JS SDK**, not OAuth redirects. The JS SDK triggers the native Face ID dialog instantly inside the WebView — no redirects, no blank screens.
-2. **Apple will reject apps** that show blank screens during redirect-based OAuth (per Despia's blank-screen-redirects docs).
-
-### Why the JS SDK Previously Failed
-
-The JS SDK was initialized with `com.hoopjournal.web` (wrong client ID). It likely resolved instantly with empty authorization because Apple couldn't match the Service ID. Now that we've corrected the client ID to `com.despia.hoopjourney.AppleAuth`, the JS SDK should work.
-
-### What Despia Recommends: Custom Edge Function
-
-Despia's architecture uses a custom `auth-apple-callback` edge function (not Supabase's built-in OAuth). The flow:
-
-1. JS SDK → get `id_token` + `code` from Apple (native Face ID dialog)
-2. POST `id_token` to custom edge function
-3. Edge function verifies token against Apple's JWKS
-4. Edge function creates/finds user via Supabase Admin API
-5. Edge function returns `access_token` + `refresh_token`
-6. Frontend calls `supabase.auth.setSession()`
-
-We don't have this edge function — it's missing entirely.
-
-### Plan
-
-#### 1. Create `supabase/functions/auth-apple-callback/index.ts`
-
-Custom edge function following Despia's spec:
-- Accepts both JSON (iOS/Web JS SDK) and form_post (Android oauth://)
-- Verifies Apple `id_token` against Apple's JWKS (`https://appleid.apple.com/auth/keys`)
-- Uses `APPLE_CLIENT_ID` secret for audience verification
-- Creates or finds user via Supabase Admin API (`admin.createUser` / `admin.listUsers`)
-- Generates session via `admin.generateLink` + `verifyOtp`
-- Returns JSON `{ access_token, refresh_token }` for iOS/Web
-- Returns 302 redirect with tokens for Android
-- Uses existing secrets: `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`
-
-#### 2. Revert `src/components/AuthForm.tsx` — iOS back to JS SDK
-
-For `isDespiaIOS()`:
-- Call `signInWithAppleNative()` (the JS SDK path in `apple-auth.ts`)
-- On success, navigate to an auth-loading state
-- POST the `id_token` to the new edge function
-- Call `setSession()` with returned tokens
-- Remove the `getDirectOAuthUrl('apple')` path for iOS
-
-Keep `oauth://` redirect only for Android (which has no native Apple support).
-
-#### 3. Update `src/lib/apple-auth.ts`
-
-- Remove the Despia iOS guard (it should be callable from iOS again)
-- After JS SDK returns `id_token`, POST to the edge function instead of using `supabase.auth.signInWithIdToken`
-- Add comprehensive error capture so failures appear in the debug panel
-- Ensure the `APPLE_CLIENT_ID` from `authConfig.ts` is used for SDK init
-
-#### 4. Add `APP_URL` secret
-
-The edge function needs `APP_URL` (e.g., `https://hoopjournal.me`) for Android redirect fallbacks. Request this secret.
-
-#### 5. Update debug panel logging
-
-Ensure the audit trail captures:
-- Which flow was selected (JS SDK vs OAuth redirect)
-- Edge function URL called
-- Edge function response status
-- Session establishment result
-
-### Final Flow After Fix
-
-| Platform | Flow | Blank Screen? |
-|----------|------|---------------|
-| iPhone (Despia) | JS SDK → Face ID → edge function → setSession | No |
-| iPad (Despia) | JS SDK → Face ID → edge function → setSession | No |
-| Android (Despia) | oauth:// → browser → form_post to edge function → deeplink | Minimal (loading screen) |
-| Web (custom domain) | JS SDK → browser dialog → edge function → setSession | No |
-| Web (lovable.app) | JS SDK → browser dialog → edge function → setSession | No |
-
-### Technical Detail
-
-The edge function will use the `jose` library (available in Deno) to verify Apple's JWT:
-```typescript
-import * as jose from "https://deno.land/x/jose@v4.14.4/index.ts";
-const JWKS = jose.createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
-const { payload } = await jose.jwtVerify(idToken, JWKS, {
-  issuer: 'https://appleid.apple.com',
-  audience: APPLE_CLIENT_ID,
-});
-```
-
-Files changed: 4 new/modified
-- `supabase/functions/auth-apple-callback/index.ts` (new)
-- `src/components/AuthForm.tsx` (revert iOS to JS SDK)
-- `src/lib/apple-auth.ts` (POST to edge function, remove iOS guard)
-- `src/components/settings/AppleAuthDebugPanel.tsx` (minor label updates)
-
+Technical notes
+- Main bottlenecks in the current flow appear to be:
+  - extra callback verification in `OAuthCallback.tsx`
+  - sequential profile/auth/data gating across `useAuth`, `useActiveProfile`, `useCloudData`, `useApprovalStatus`, and `useFirstLogin`
+- I would keep the auth listener non-blocking and avoid awaiting auth calls inside `onAuthStateChange`.
+- The practical UX fix is not only “faster auth,” but also “show the dashboard shell before all backend reads complete.”
