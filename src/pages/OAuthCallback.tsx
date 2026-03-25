@@ -349,8 +349,8 @@ export default function OAuthCallback() {
 
   /** Try to get an existing session (in case detectSessionInUrl already ran) */
   const tryGetExistingSession = async () => {
-    // Small delay to let any in-flight detectSessionInUrl complete
-    await new Promise(r => setTimeout(r, 500));
+    // Minimal delay to let any in-flight detectSessionInUrl complete
+    await new Promise(r => setTimeout(r, 100));
     const { data: { session } } = await supabase.auth.getSession();
     return session;
   };
@@ -445,17 +445,7 @@ export default function OAuthCallback() {
           </>
         )}
 
-        {/* Debug info — visible temporarily for troubleshooting */}
-        {debugInfo.length > 0 && (
-          <div className="mt-6 text-left bg-muted/50 rounded-md p-3 max-h-40 overflow-y-auto">
-            <p className="text-[10px] font-mono text-muted-foreground mb-1 font-semibold">Debug Log:</p>
-            {debugInfo.map((line, i) => (
-              <p key={i} className="text-[9px] font-mono text-muted-foreground leading-tight">
-                {line}
-              </p>
-            ))}
-          </div>
-        )}
+        {/* Debug logs only in console, not visible to users */}
       </div>
     </div>
   );
