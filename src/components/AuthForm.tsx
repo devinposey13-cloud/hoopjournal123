@@ -63,12 +63,18 @@ export function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
+  const [appleRedirectPending, setAppleRedirectPending] = useState(false);
+  const [showAppleRetry, setShowAppleRetry] = useState(false);
   const { signIn, signUp, enterGuestMode } = useAuth();
   const googleTimeoutRef = useRef<number | null>(null);
+  const appleRedirectTimerRef = useRef<number | null>(null);
+  const appleVisibilityCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     return () => {
       if (googleTimeoutRef.current) window.clearTimeout(googleTimeoutRef.current);
+      if (appleRedirectTimerRef.current) window.clearTimeout(appleRedirectTimerRef.current);
+      appleVisibilityCleanupRef.current?.();
     };
   }, []);
 
