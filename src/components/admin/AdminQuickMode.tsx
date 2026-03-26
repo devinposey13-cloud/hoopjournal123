@@ -628,7 +628,7 @@ export function AdminQuickMode() {
             {/* Template Selection */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Template</Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {(Object.entries(TEMPLATES) as [TemplateKey, typeof TEMPLATES[TemplateKey]][]).map(([key, tpl]) => (
                   <button
                     key={key}
