@@ -193,7 +193,7 @@ function PromoCardCanvas({
       }} />
 
       {/* PROMO BADGE */}
-      <div style={{
+      <div data-canvas-eventtag="true" style={{
         position: 'absolute', top: 32, right: 32, zIndex: 10,
         background: 'linear-gradient(135deg, rgba(168,85,247,0.9), rgba(139,92,246,0.9))',
         borderRadius: 12, padding: '8px 20px',
@@ -235,14 +235,14 @@ function PromoCardCanvas({
           position: 'absolute', top: 490, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
-          <div style={{
+          <div data-canvas-name="true" style={{
             color: s.bright, fontSize: 64, fontWeight: 900,
             letterSpacing: '0.06em', textTransform: 'uppercase',
             textAlign: 'center', lineHeight: 1.02,
             maxWidth: '100%', wordBreak: 'break-word',
           }}>{playerName}</div>
 
-          <div style={{
+          <div data-canvas-team="true" style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
             marginTop: 12, flexWrap: 'wrap',
           }}>
@@ -258,7 +258,7 @@ function PromoCardCanvas({
           </div>
 
           {/* Archetype — slightly smaller, more spacing from name */}
-          <div style={{
+          <div data-canvas-archetype="true" data-canvas-color={color} style={{
             color, fontSize: 26, fontWeight: 800,
             letterSpacing: '0.25em', textTransform: 'uppercase',
             marginTop: 30, textAlign: 'center',
@@ -266,7 +266,7 @@ function PromoCardCanvas({
           }}>{archetype}</div>
 
           {/* Status Line — scouting feel */}
-          <div style={{
+          <div data-canvas-status="true" style={{
             color: s.sub, fontSize: 19, fontWeight: 700,
             letterSpacing: '0.35em', textTransform: 'uppercase',
             marginTop: 14, textAlign: 'center',
@@ -293,7 +293,7 @@ function PromoCardCanvas({
             pointerEvents: 'none',
           }} />
           {/* GAME GRADE label — more visible */}
-          <div style={{
+          <div data-canvas-label="true" style={{
             color: s.muted, fontSize: 19, fontWeight: 800,
             letterSpacing: '0.5em', textTransform: 'uppercase',
             textAlign: 'center', marginBottom: 16,
@@ -315,13 +315,13 @@ function PromoCardCanvas({
         </div>
 
         {/* Badges — first badge emphasized */}
-        <div style={{
+        <div data-canvas-badges="true" style={{
           position: 'absolute', top: 1090, left: 0, right: 0,
           display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center',
           alignItems: 'center',
         }}>
           {badges.slice(0, 3).map((badge, i) => (
-            <div key={i} style={{
+            <div key={i} data-canvas-badge={i} style={{
               background: i === 0 ? `${color}20` : `${color}10`,
               border: `1.5px solid ${i === 0 ? `${color}50` : `${color}28`}`,
               borderRadius: 50,
@@ -343,7 +343,7 @@ function PromoCardCanvas({
         position: 'absolute', bottom: 60, left: 80, right: 80,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, opacity: 0.85 }}>
+        <div data-canvas-footer-brand="true" style={{ display: 'flex', alignItems: 'center', gap: 16, opacity: 0.85 }}>
           <img src={hoopJournalLogo} alt="" style={{ width: 76, height: 76, borderRadius: 14 }} crossOrigin="anonymous" />
           <div>
             <div style={{ color: s.bright, fontSize: 26, fontWeight: 800, opacity: 0.9 }}>Hoop Journal</div>
@@ -351,7 +351,7 @@ function PromoCardCanvas({
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-          <div style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to claim</div>
+          <div data-canvas-footer-scan="true" style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to claim</div>
           <div style={{ padding: 6, background: 'rgba(255,255,255,0.95)', borderRadius: 10 }}>
             {claimUrl ? (
               <QRCodeSVG value={claimUrl} size={160} bgColor="#ffffff" fgColor="#000000" level="M" />
@@ -359,7 +359,7 @@ function PromoCardCanvas({
               <div style={{ width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 12 }}>Generate card first</div>
             )}
           </div>
-          <div style={{ color: s.dim, fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', marginTop: 2 }}>Claim within 72 hours</div>
+          <div data-canvas-footer-claim="true" style={{ color: s.dim, fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', marginTop: 2 }}>Claim within 72 hours</div>
         </div>
       </div>
 
@@ -715,20 +715,90 @@ export function AdminQuickMode() {
     ? TEMPLATES[previewCard.template_used as TemplateKey] || TEMPLATES.scorer
     : template;
 
-  // Canvas 2D export — hides avatar & grade, captures via html2canvas, redraws them crisp
+  // Helper: draw text with letter-spacing (Canvas 2D has no native letter-spacing)
+  function drawTrackedText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, tracking: number) {
+    const chars = Array.from(text);
+    const totalWidth = chars.reduce((acc, ch) => acc + ctx.measureText(ch).width + tracking, -tracking);
+    let cx = x - totalWidth / 2;
+    for (const ch of chars) {
+      ctx.fillText(ch, cx, y);
+      cx += ctx.measureText(ch).width + tracking;
+    }
+  }
+
+  // Helper: draw a rounded rect pill
+  function drawPill(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number, fillColor: string, strokeColor: string, strokeWidth: number) {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = strokeWidth;
+    ctx.stroke();
+  }
+
+  // Canvas 2D export — hides all text + avatar, captures bg via html2canvas, redraws everything crisp
   async function capturePromoCard(container: HTMLElement): Promise<Blob | null> {
     const W = 1080, H = 1920;
+    const FONT = "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
+    // Query all elements to redraw
     const avatarEl = container.querySelector('[data-canvas-avatar]') as HTMLElement | null;
     const gradeEl = container.querySelector('[data-canvas-grade]') as HTMLElement | null;
+    const nameEl = container.querySelector('[data-canvas-name]') as HTMLElement | null;
+    const teamEl = container.querySelector('[data-canvas-team]') as HTMLElement | null;
+    const archetypeEl = container.querySelector('[data-canvas-archetype]') as HTMLElement | null;
+    const statusEl = container.querySelector('[data-canvas-status]') as HTMLElement | null;
+    const labelEl = container.querySelector('[data-canvas-label]') as HTMLElement | null;
+    const badgesEl = container.querySelector('[data-canvas-badges]') as HTMLElement | null;
+    const eventTagEl = container.querySelector('[data-canvas-eventtag]') as HTMLElement | null;
+    const footerBrandEl = container.querySelector('[data-canvas-footer-brand]') as HTMLElement | null;
+    const footerScanEl = container.querySelector('[data-canvas-footer-scan]') as HTMLElement | null;
+    const footerClaimEl = container.querySelector('[data-canvas-footer-claim]') as HTMLElement | null;
 
-    // Collect avatar data before hiding
+    const allEls = [avatarEl, gradeEl, nameEl, teamEl, archetypeEl, statusEl, labelEl, badgesEl, eventTagEl, footerBrandEl, footerScanEl, footerClaimEl].filter(Boolean) as HTMLElement[];
+
+    // Read bounding rects BEFORE hiding
+    const containerRect = container.getBoundingClientRect();
+    const scaleX = W / containerRect.width;
+    const scaleY = H / containerRect.height;
+
+    function getPos(el: HTMLElement) {
+      const r = el.getBoundingClientRect();
+      return {
+        cx: (r.left - containerRect.left + r.width / 2) * scaleX,
+        cy: (r.top - containerRect.top + r.height / 2) * scaleY,
+        x: (r.left - containerRect.left) * scaleX,
+        y: (r.top - containerRect.top) * scaleY,
+        w: r.width * scaleX,
+        h: r.height * scaleY,
+      };
+    }
+
+    // Collect positions before hiding
+    const positions: Record<string, ReturnType<typeof getPos>> = {};
+    const posKeys: [HTMLElement | null, string][] = [
+      [avatarEl, 'avatar'], [gradeEl, 'grade'], [nameEl, 'name'], [teamEl, 'team'],
+      [archetypeEl, 'archetype'], [statusEl, 'status'], [labelEl, 'label'],
+      [badgesEl, 'badges'], [eventTagEl, 'eventTag'],
+      [footerBrandEl, 'footerBrand'], [footerScanEl, 'footerScan'], [footerClaimEl, 'footerClaim'],
+    ];
+    for (const [el, key] of posKeys) {
+      if (el) positions[key] = getPos(el);
+    }
+
+    // Also collect individual badge positions
+    const badgeEls = container.querySelectorAll('[data-canvas-badge]') as NodeListOf<HTMLElement>;
+    const badgePositions: ReturnType<typeof getPos>[] = [];
+    badgeEls.forEach(el => badgePositions.push(getPos(el)));
+
+    // Collect avatar data
     const avatarImg = avatarEl?.querySelector('img') as HTMLImageElement | null;
     const avatarColor = activeTemplate.color;
+    const color = activeTemplate.color;
 
-    // Hide elements that html2canvas distorts
-    if (avatarEl) avatarEl.style.visibility = 'hidden';
-    if (gradeEl) gradeEl.style.visibility = 'hidden';
+    // Hide ALL elements for clean html2canvas pass
+    allEls.forEach(el => el.style.visibility = 'hidden');
 
     const rawCanvas = await html2canvas(container, {
       scale: 2, useCORS: true, backgroundColor: '#070b16',
@@ -736,8 +806,7 @@ export function AdminQuickMode() {
     });
 
     // Restore visibility
-    if (avatarEl) avatarEl.style.visibility = '';
-    if (gradeEl) gradeEl.style.visibility = '';
+    allEls.forEach(el => el.style.visibility = '');
 
     const out = document.createElement('canvas');
     out.width = W; out.height = H;
@@ -748,21 +817,15 @@ export function AdminQuickMode() {
     ctx.fillRect(0, 0, W, H);
     ctx.drawImage(rawCanvas, 0, 0, rawCanvas.width, rawCanvas.height, 0, 0, W, H);
 
-    // ── Redraw avatar as perfect circle ──
-    if (avatarEl) {
-      const containerRect = container.getBoundingClientRect();
-      const avatarRect = avatarEl.getBoundingClientRect();
-      const scaleX = W / containerRect.width;
-      const scaleY = H / containerRect.height;
-      const cx = (avatarRect.left - containerRect.left + avatarRect.width / 2) * scaleX;
-      const cy = (avatarRect.top - containerRect.top + avatarRect.height / 2) * scaleY;
-      const radius = (avatarRect.width / 2) * scaleX;
+    // ── 1. Redraw avatar as perfect circle ──
+    if (avatarEl && positions.avatar) {
+      const p = positions.avatar;
+      const radius = p.w / 2;
       const borderWidth = 8 * scaleX;
 
-      // Draw border ring
       ctx.save();
       ctx.beginPath();
-      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.arc(p.cx, p.cy, radius, 0, Math.PI * 2);
       ctx.strokeStyle = avatarColor;
       ctx.lineWidth = borderWidth;
       ctx.shadowColor = avatarColor;
@@ -770,47 +833,105 @@ export function AdminQuickMode() {
       ctx.stroke();
       ctx.restore();
 
-      // Draw image clipped to circle
       if (avatarImg && avatarImg.complete && avatarImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
-        ctx.arc(cx, cy, radius - borderWidth / 2, 0, Math.PI * 2);
+        ctx.arc(p.cx, p.cy, radius - borderWidth / 2, 0, Math.PI * 2);
         ctx.clip();
-
-        // Cover-fit the image into the circle
         const imgW = avatarImg.naturalWidth;
         const imgH = avatarImg.naturalHeight;
         const diam = (radius - borderWidth / 2) * 2;
         const scale = Math.max(diam / imgW, diam / imgH);
         const sw = imgW * scale;
         const sh = imgH * scale;
-        ctx.drawImage(avatarImg, cx - sw / 2, cy - sh / 2, sw, sh);
+        ctx.drawImage(avatarImg, p.cx - sw / 2, p.cy - sh / 2, sw, sh);
         ctx.restore();
       } else {
-        // Fallback: fill circle with dark bg
         ctx.save();
         ctx.beginPath();
-        ctx.arc(cx, cy, radius - borderWidth / 2, 0, Math.PI * 2);
+        ctx.arc(p.cx, p.cy, radius - borderWidth / 2, 0, Math.PI * 2);
         ctx.fillStyle = '#1e293b';
         ctx.fill();
         ctx.restore();
       }
     }
 
-    // ── Redraw grade text ──
-    if (gradeEl) {
-      const containerRect = container.getBoundingClientRect();
-      const gradeRect = gradeEl.getBoundingClientRect();
-      const scaleX = W / containerRect.width;
-      const scaleY = H / containerRect.height;
-      const relX = (gradeRect.left - containerRect.left + gradeRect.width / 2) * scaleX;
-      const relY = (gradeRect.top - containerRect.top + gradeRect.height / 2) * scaleY;
+    // ── 2. Redraw player name ──
+    if (nameEl && positions.name) {
+      const p = positions.name;
+      ctx.save();
+      ctx.font = `900 64px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#f8fafc';
+      const nameText = nameEl.textContent || '';
+      drawTrackedText(ctx, nameText.toUpperCase(), p.cx, p.cy, 64 * 0.06);
+      ctx.restore();
+    }
 
-      const gradeColor = gradeEl.getAttribute('data-grade-color') || activeTemplate.color;
+    // ── 3. Redraw team/number line ──
+    if (teamEl && positions.team) {
+      const p = positions.team;
+      ctx.save();
+      ctx.font = `700 24px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#64748b';
+      const teamText = teamEl.textContent || '';
+      drawTrackedText(ctx, teamText.toUpperCase(), p.cx, p.cy, 24 * 0.15);
+      ctx.restore();
+    }
+
+    // ── 4. Redraw archetype ──
+    if (archetypeEl && positions.archetype) {
+      const p = positions.archetype;
+      ctx.save();
+      ctx.font = `800 26px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = color;
+      ctx.shadowColor = `${color}66`;
+      ctx.shadowBlur = 30;
+      const archText = archetypeEl.textContent || '';
+      drawTrackedText(ctx, archText.toUpperCase(), p.cx, p.cy, 26 * 0.25);
+      ctx.restore();
+    }
+
+    // ── 5. Redraw status line ──
+    if (statusEl && positions.status) {
+      const p = positions.status;
+      ctx.save();
+      ctx.font = `700 19px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#94a3b8';
+      ctx.globalAlpha = 0.75;
+      const statusText = statusEl.textContent || '';
+      drawTrackedText(ctx, statusText.toUpperCase(), p.cx, p.cy, 19 * 0.35);
+      ctx.restore();
+    }
+
+    // ── 6. Redraw "GAME GRADE" label ──
+    if (labelEl && positions.label) {
+      const p = positions.label;
+      ctx.save();
+      ctx.font = `800 19px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#64748b';
+      ctx.globalAlpha = 0.85;
+      drawTrackedText(ctx, 'GAME GRADE', p.cx, p.cy, 19 * 0.5);
+      ctx.restore();
+    }
+
+    // ── 7. Redraw grade text ──
+    if (gradeEl && positions.grade) {
+      const p = positions.grade;
+      const gradeColor = gradeEl.getAttribute('data-grade-color') || color;
       const gradeGlow = gradeEl.getAttribute('data-grade-glow') || '';
 
       ctx.save();
-      ctx.font = `900 244px Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+      ctx.font = `900 244px ${FONT}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = gradeColor;
@@ -821,7 +942,107 @@ export function AdminQuickMode() {
         ctx.shadowBlur = 60;
       }
 
-      ctx.fillText(activeTemplate.grade, relX, relY);
+      ctx.fillText(activeTemplate.grade, p.cx, p.cy);
+      ctx.restore();
+    }
+
+    // ── 8. Redraw badges as pills ──
+    if (badgesEl && badgePositions.length > 0) {
+      const badges = activeTemplate.badges.slice(0, 3);
+      badgePositions.forEach((bp, i) => {
+        if (i >= badges.length) return;
+        const badge = badges[i];
+        const isPrimary = i === 0;
+        const fontSize = isPrimary ? 23 : 21;
+        const pad = isPrimary ? 34 : 30;
+        const padV = isPrimary ? 13 : 12;
+
+        // Draw pill background
+        ctx.save();
+        const pillH = (fontSize + padV * 2);
+        const pillY = bp.cy - pillH / 2;
+        drawPill(
+          ctx, bp.x, pillY, bp.w, pillH, 50,
+          isPrimary ? `${color}33` : `${color}1a`,
+          isPrimary ? `${color}80` : `${color}46`,
+          1.5
+        );
+
+        // Draw badge text
+        ctx.font = `${isPrimary ? 800 : 700} ${fontSize}px ${FONT}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = color;
+        ctx.globalAlpha = isPrimary ? 1 : 0.8;
+        ctx.fillText(badge, bp.cx, bp.cy);
+        ctx.restore();
+      });
+    }
+
+    // ── 9. Redraw EVENT CARD tag ──
+    if (eventTagEl && positions.eventTag) {
+      const p = positions.eventTag;
+      ctx.save();
+      // Draw purple pill background
+      const grad = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
+      grad.addColorStop(0, 'rgba(168,85,247,0.9)');
+      grad.addColorStop(1, 'rgba(139,92,246,0.9)');
+      drawPill(ctx, p.x, p.y, p.w, p.h, 12, 'transparent', 'rgba(255,255,255,0.2)', 1);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(p.x, p.y, p.w, p.h, 12);
+      ctx.fill();
+      // Text
+      ctx.font = `900 16px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      drawTrackedText(ctx, '⚡ EVENT CARD', p.cx, p.cy, 16 * 0.15);
+      ctx.restore();
+    }
+
+    // ── 10. Redraw footer branding text (logo image handled by html2canvas) ──
+    if (footerBrandEl && positions.footerBrand) {
+      const p = positions.footerBrand;
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      // "Hoop Journal" text — positioned to the right of the logo
+      const logoSize = 76 * scaleX;
+      const textX = p.x + logoSize + 16 * scaleX;
+      // Title
+      ctx.font = `800 26px ${FONT}`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#f8fafc';
+      ctx.globalAlpha = 0.85 * 0.9;
+      ctx.fillText('Hoop Journal', textX, p.cy - 16);
+      // Subtitle
+      ctx.font = `500 15px ${FONT}`;
+      ctx.fillStyle = '#475569';
+      ctx.globalAlpha = 0.85 * 0.8;
+      drawTrackedText(ctx, 'EVENT EDITION', textX + ctx.measureText('EVENT EDITION').width / 2, p.cy + 14, 15 * 0.05);
+      ctx.restore();
+    }
+
+    // ── 11. Redraw footer scan/claim text ──
+    if (footerScanEl && positions.footerScan) {
+      const p = positions.footerScan;
+      ctx.save();
+      ctx.font = `700 10px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#475569';
+      drawTrackedText(ctx, 'SCAN TO CLAIM', p.cx, p.cy, 10 * 0.1);
+      ctx.restore();
+    }
+    if (footerClaimEl && positions.footerClaim) {
+      const p = positions.footerClaim;
+      ctx.save();
+      ctx.font = `600 10px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#475569';
+      ctx.fillText('Claim within 72 hours', p.cx, p.cy);
       ctx.restore();
     }
 
