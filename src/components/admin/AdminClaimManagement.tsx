@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { RefreshCw, CheckCircle2, Clock, XCircle, Shield, Loader2, RotateCcw, CalendarPlus, Eye } from 'lucide-react';
+import { RefreshCw, CheckCircle2, Clock, XCircle, Shield, Loader2, RotateCcw, CalendarPlus, Eye, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 
@@ -178,6 +178,23 @@ export function AdminClaimManagement() {
     }
   }
 
+  async function handleDeleteCard(cardId: string) {
+    setActionLoading(cardId);
+    try {
+      await supabase.from('claim_recovery_requests').delete().eq('card_id', cardId);
+      await supabase.from('quick_mode_audit_log').delete().eq('card_id', cardId);
+      const { error } = await supabase.from('quick_cards').delete().eq('id', cardId);
+      if (error) throw error;
+      toast.success('Card deleted');
+      setCards(prev => prev.filter(c => c.id !== cardId));
+      if (selectedCard?.id === cardId) setSelectedCard(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete card');
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   const pendingRequests = recoveryRequests.filter(r => r.status === 'pending');
   const statusColor = (s: string) => {
     if (s === 'claimed') return 'text-green-400';
@@ -300,6 +317,9 @@ export function AdminClaimManagement() {
                     <CheckCircle2 className="w-4 h-4" /> Mark as Claimed
                   </Button>
                 )}
+                <Button variant="destructive" onClick={() => handleDeleteCard(selectedCard.id)} disabled={actionLoading === selectedCard.id} className="gap-2">
+                  <Trash2 className="w-4 h-4" /> Delete Card
+                </Button>
               </div>
             </>
           )}
