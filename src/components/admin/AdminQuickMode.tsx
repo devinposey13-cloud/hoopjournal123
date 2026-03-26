@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Camera, Upload, Zap, Printer, Download, RotateCcw, Eye, Image as ImageIcon, Plus, Clock, Hash, Sparkles, Loader2 } from 'lucide-react';
+import { Camera, Upload, Zap, Printer, Download, RotateCcw, Eye, Image as ImageIcon, Plus, Clock, Hash, Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import hoopJournalQr from '@/assets/hoop-journal-qr.png';
@@ -604,6 +604,25 @@ export function AdminQuickMode() {
     }
   }
 
+  // Delete a card
+  async function handleDeleteCard(cardId: string) {
+    try {
+      // Delete audit log entries first (foreign key)
+      await supabase.from('quick_mode_audit_log').delete().eq('card_id', cardId);
+      const { error } = await supabase.from('quick_cards').delete().eq('id', cardId);
+      if (error) throw error;
+      toast.success('Card deleted');
+      setRecentCards(prev => prev.filter(c => c.id !== cardId));
+      setTodayCount(prev => prev - 1);
+      if (previewCard?.id === cardId) {
+        setPreviewCard(null);
+        setShowPreview(false);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete card');
+    }
+  }
+
   // Create next card
   function handleCreateNext() {
     setPlayerName('');
@@ -922,10 +941,13 @@ export function AdminQuickMode() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <Badge variant="outline" className="text-xs font-mono">{card.claim_code}</Badge>
                     <Button size="sm" variant="ghost" onClick={() => handleReprint(card)}>
                       <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDeleteCard(card.id)}>
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
