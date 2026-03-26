@@ -418,11 +418,9 @@ export default function OAuthCallback() {
       setShowRetry(true);
     });
 
-    // ── Aggressive watchdog for iOS native AND iPad web ──
-    const isIPadWeb = !isNativeApp() && /iPad|Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document;
-    if ((isNativeApp() && isDespiaIOS()) || isIPadWeb) {
-      const watchdogLabel = isIPadWeb ? 'iPad' : 'iOS-native';
-      console.log(`[OAuthCallback] Starting ${watchdogLabel} watchdog`);
+    // ── Aggressive watchdog for iOS native (iPhone + iPad) ──
+    if (isNativeApp() && isDespiaIOS()) {
+      console.log(`[OAuthCallback] Starting iOS-native watchdog`);
 
       const watchdogInterval = setInterval(async () => {
         if (navigationTriggered.current) {
