@@ -283,7 +283,7 @@ function PromoCardCanvas({
 
         {/* Grade — ~12% larger, tighter to content */}
         <div style={{
-          position: 'absolute', top: 780, left: 0, right: 0,
+          position: 'absolute', top: 860, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
           <div style={{
@@ -316,7 +316,7 @@ function PromoCardCanvas({
 
         {/* Badges — first badge emphasized */}
         <div data-canvas-badges="true" style={{
-          position: 'absolute', top: 1090, left: 0, right: 0,
+          position: 'absolute', top: 1170, left: 0, right: 0,
           display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center',
           alignItems: 'center',
         }}>
