@@ -235,14 +235,14 @@ function PromoCardCanvas({
           position: 'absolute', top: 490, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
-          <div style={{
+          <div data-canvas-name="true" style={{
             color: s.bright, fontSize: 64, fontWeight: 900,
             letterSpacing: '0.06em', textTransform: 'uppercase',
             textAlign: 'center', lineHeight: 1.02,
             maxWidth: '100%', wordBreak: 'break-word',
           }}>{playerName}</div>
 
-          <div style={{
+          <div data-canvas-team="true" style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
             marginTop: 12, flexWrap: 'wrap',
           }}>
@@ -258,7 +258,7 @@ function PromoCardCanvas({
           </div>
 
           {/* Archetype — slightly smaller, more spacing from name */}
-          <div style={{
+          <div data-canvas-archetype="true" data-canvas-color={color} style={{
             color, fontSize: 26, fontWeight: 800,
             letterSpacing: '0.25em', textTransform: 'uppercase',
             marginTop: 30, textAlign: 'center',
@@ -266,7 +266,7 @@ function PromoCardCanvas({
           }}>{archetype}</div>
 
           {/* Status Line — scouting feel */}
-          <div style={{
+          <div data-canvas-status="true" style={{
             color: s.sub, fontSize: 19, fontWeight: 700,
             letterSpacing: '0.35em', textTransform: 'uppercase',
             marginTop: 14, textAlign: 'center',
