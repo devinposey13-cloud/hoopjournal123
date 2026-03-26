@@ -32,7 +32,7 @@ const TEMPLATES = {
   playmaker: {
     label: 'Playmaker',
     emoji: '🎯',
-    grade: 'A',
+    grade: 'A+',
     headline: 'FLOOR GENERAL',
     archetype: 'PLAYMAKING GUARD',
     stats: { points: 14, rebounds: 3, assists: 11, steals: 3, blocks: 0, turnovers: 2, fgMade: 6, fgAttempted: 12, threePtMade: 1, threePtAttempted: 3, ftMade: 1, ftAttempted: 2 },
@@ -43,7 +43,7 @@ const TEMPLATES = {
   defender: {
     label: 'Defender',
     emoji: '🛡️',
-    grade: 'A',
+    grade: 'A+',
     headline: 'LOCKDOWN',
     archetype: 'TWO-WAY WING',
     stats: { points: 8, rebounds: 7, assists: 2, steals: 5, blocks: 3, turnovers: 1, fgMade: 3, fgAttempted: 7, threePtMade: 0, threePtAttempted: 1, ftMade: 2, ftAttempted: 4 },
@@ -54,7 +54,7 @@ const TEMPLATES = {
   shooter: {
     label: 'Shooter',
     emoji: '💧',
-    grade: 'A',
+    grade: 'A+',
     headline: 'SPLASH',
     archetype: 'ELITE SHOOTER',
     stats: { points: 22, rebounds: 2, assists: 2, steals: 1, blocks: 0, turnovers: 1, fgMade: 8, fgAttempted: 14, threePtMade: 6, threePtAttempted: 10, ftMade: 0, ftAttempted: 0 },
@@ -65,7 +65,7 @@ const TEMPLATES = {
   energy: {
     label: 'Energy Player',
     emoji: '⚡',
-    grade: 'A-',
+    grade: 'A+',
     headline: 'ENERGY SHIFT',
     archetype: 'SPARK PLUG',
     stats: { points: 12, rebounds: 10, assists: 2, steals: 3, blocks: 2, turnovers: 2, fgMade: 5, fgAttempted: 9, threePtMade: 0, threePtAttempted: 1, ftMade: 2, ftAttempted: 4 },
@@ -74,7 +74,7 @@ const TEMPLATES = {
     glow: '0 0 60px rgba(250,204,21,0.5)',
   },
   allaround: {
-    label: 'All-Around Hooper',
+    label: 'All-Around',
     emoji: '🏀',
     grade: 'A+',
     headline: 'ALL-AROUND THREAT',
@@ -87,13 +87,24 @@ const TEMPLATES = {
   dominantbig: {
     label: 'Dominant Big',
     emoji: '🏔️',
-    grade: 'A',
+    grade: 'A+',
     headline: 'PAINT BEAST',
     archetype: 'DOMINANT BIG',
     stats: { points: 16, rebounds: 14, assists: 2, steals: 1, blocks: 5, turnovers: 2, fgMade: 7, fgAttempted: 10, threePtMade: 0, threePtAttempted: 0, ftMade: 2, ftAttempted: 5 },
     badges: ['🏔️ Paint Beast', '🧱 Rim Protector', '💪 Boards'],
     color: '#e879f9',
     glow: '0 0 60px rgba(232,121,249,0.5)',
+  },
+  clutch: {
+    label: 'Clutch',
+    emoji: '🧊',
+    grade: 'A+',
+    headline: 'ICE IN VEINS',
+    archetype: 'CLUTCH PERFORMER',
+    stats: { points: 24, rebounds: 5, assists: 4, steals: 2, blocks: 1, turnovers: 1, fgMade: 9, fgAttempted: 16, threePtMade: 3, threePtAttempted: 6, ftMade: 3, ftAttempted: 3 },
+    badges: ['🧊 Ice Cold', '💎 Big Moment', '🎯 Closer'],
+    color: '#22d3ee',
+    glow: '0 0 60px rgba(34,211,238,0.5)',
   },
 } as const;
 
