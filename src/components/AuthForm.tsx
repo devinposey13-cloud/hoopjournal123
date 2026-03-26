@@ -172,25 +172,21 @@ export function AuthForm() {
         return;
       }
 
-      // ── iOS DESPIA (iPhone only): Direct redirect to Apple authorize URL ──
-      // iPad uses the Lovable managed OAuth flow below (more reliable in iPad WKWebView)
-      const isIPhone = isIOSNative && /iphone/i.test(navigator.userAgent);
-      if (isIPhone) {
+      // ── iOS DESPIA (iPhone + iPad): Direct redirect to Apple authorize URL ──
+      if (isIOSNative) {
         tracker.logEvent('flow_selected', { flow: 'ios_despia_redirect' });
         tracker.persistBeforeRedirect();
         signInWithAppleRedirect();
         return;
       }
 
-      // ── WEB/iPad: Apple JS SDK popup → edge callback ──
+      // ── WEB: Apple JS SDK popup → edge callback ──
       tracker.logEvent('flow_selected', { flow: 'web_js_sdk' });
 
       // Use Lovable managed Apple auth (handles credentials & callbacks)
-      // Add cache-busting nonce to prevent service worker / ITP caching on iPad
-      const isIPadDevice = /iPad|Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document;
-      tracker.logEvent('using_lovable_managed_flow', { customDomain: isCustomDomain(), isIPad: isIPadDevice });
+      tracker.logEvent('using_lovable_managed_flow', { customDomain: isCustomDomain() });
       const redirectUri = isCustomDomain()
-        ? `${window.location.origin}/auth/callback${isIPadDevice ? `?ts=${Date.now()}` : ''}`
+        ? `${window.location.origin}/auth/callback`
         : window.location.origin;
       const { error } = await lovable.auth.signInWithOAuth('apple', {
         redirect_uri: redirectUri,

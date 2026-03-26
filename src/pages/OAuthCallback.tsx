@@ -418,19 +418,17 @@ export default function OAuthCallback() {
       setShowRetry(true);
     });
 
-    // ── Aggressive watchdog for iOS native AND iPad web ──
-    const isIPadWeb = !isNativeApp() && /iPad|Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document;
-    if ((isNativeApp() && isDespiaIOS()) || isIPadWeb) {
-      const watchdogLabel = isIPadWeb ? 'iPad' : 'iOS-native';
-      console.log(`[OAuthCallback] Starting ${watchdogLabel} watchdog`);
+    // ── Aggressive watchdog for iOS native (iPhone + iPad) ──
+    if (isNativeApp() && isDespiaIOS()) {
+      console.log(`[OAuthCallback] Starting iOS-native watchdog`);
 
       const watchdogInterval = setInterval(async () => {
         if (navigationTriggered.current) {
           try {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-              logEvent('watchdog_force_redirect', { reason: 'navigation_stalled', source: watchdogLabel });
-              console.log(`[OAuthCallback] ${watchdogLabel} watchdog — session exists, forcing redirect.`);
+              logEvent('watchdog_force_redirect', { reason: 'navigation_stalled', source: 'iOS-native' });
+              console.log(`[OAuthCallback] iOS-native watchdog — session exists, forcing redirect.`);
               window.location.href = '/?postAuth=1&watchdog=1&ts=' + Date.now();
             }
           } catch { /* ignore */ }
@@ -441,8 +439,8 @@ export default function OAuthCallback() {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
-            logEvent('watchdog_session_found', { userId: session.user.id, source: watchdogLabel });
-            console.log(`[OAuthCallback] ${watchdogLabel} watchdog — session found, forcing redirect`);
+            logEvent('watchdog_session_found', { userId: session.user.id, source: 'iOS-native' });
+            console.log(`[OAuthCallback] iOS-native watchdog — session found, forcing redirect`);
             navigationTriggered.current = true;
             completeAttempt('success');
             window.location.href = '/?postAuth=1&watchdog=1&ts=' + Date.now();
