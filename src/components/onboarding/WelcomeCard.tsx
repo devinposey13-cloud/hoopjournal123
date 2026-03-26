@@ -95,6 +95,16 @@ export function WelcomeCard({ value, onNext, onSkip, onClaimCard }: WelcomeCardP
             Skip for now
           </button>
         )}
+
+        {onClaimCard && (
+          <button
+            type="button"
+            onClick={onClaimCard}
+            className="text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+          >
+            🎴 Have a card code?
+          </button>
+        )}
       </motion.form>
     </motion.div>
   );
