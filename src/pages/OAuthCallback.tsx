@@ -545,14 +545,36 @@ export default function OAuthCallback() {
     );
   }
 
-  // Default: visible loading state
+  // Default: always show visible loading/recovery state — never blank white
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center space-y-3">
-        <Loader2 className="w-8 h-8 mx-auto text-primary animate-spin" />
-        <p className="text-muted-foreground text-sm">
-          {phase === 'navigating' ? 'Opening app…' : 'Signing you in…'}
-        </p>
+        {showRetry ? (
+          <>
+            <AlertTriangle className="w-8 h-8 mx-auto text-yellow-500" />
+            <p className="text-foreground font-medium text-sm">Sign in is taking longer than expected</p>
+            <button
+              onClick={handleRetry}
+              className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 transition-colors mt-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Retry
+            </button>
+            <button
+              onClick={() => navigate('/', { replace: true })}
+              className="block mx-auto text-xs text-muted-foreground underline mt-2"
+            >
+              Return to sign in
+            </button>
+          </>
+        ) : (
+          <>
+            <Loader2 className="w-8 h-8 mx-auto text-primary animate-spin" />
+            <p className="text-muted-foreground text-sm">
+              {phase === 'navigating' ? 'Opening app…' : 'Signing you in…'}
+            </p>
+          </>
+        )}
 
         {/* TEMPORARY: Debug info visible only with flag */}
         {showDebug && (
