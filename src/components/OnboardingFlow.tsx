@@ -135,7 +135,13 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             className="w-full"
           >
             {currentStep === 0 && (
-              <WelcomeCard value={data.name} onNext={handleWelcome} onSkip={handleSkip} />
+              <WelcomeCard
+                value={data.name}
+                onNext={handleWelcome}
+                onSkip={handleSkip}
+                onClaimCard={() => setShowClaimCard(true)}
+              />
+            )}
             )}
             {currentStep === 1 && (
               <PlayerIdentityCard
@@ -175,6 +181,15 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           </motion.button>
         )}
       </AnimatePresence>
+
+      <ClaimCardFlow
+        open={showClaimCard}
+        onOpenChange={setShowClaimCard}
+        onClaimed={() => {
+          setShowClaimCard(false);
+          onComplete(data, 'explore_dashboard');
+        }}
+      />
     </motion.div>
   );
 }
