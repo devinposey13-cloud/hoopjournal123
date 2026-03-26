@@ -321,6 +321,9 @@ export default function Index() {
       completeAttempt('success');
     }
 
+    // Dismiss the pre-hydration shell now that the final route is resolved
+    (window as any).__dismissShell?.();
+
     const url = new URL(window.location.href);
     url.searchParams.delete('postAuth');
     url.searchParams.delete('watchdog');

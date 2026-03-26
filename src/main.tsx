@@ -16,8 +16,12 @@ if (window.location.pathname === '/oauth-bridge') {
     window.location.replace('/');
   }
 } else {
-  // Remove pre-hydration shell once React mounts
-  const shell = document.getElementById('prehydration-shell');
-  if (shell) shell.remove();
+  // Remove pre-hydration shell once React mounts — but keep it for postAuth
+  // so it covers intermediate route transitions until Index.tsx signals resolution
+  const isPostAuth = window.location.search.includes('postAuth');
+  if (!isPostAuth) {
+    const shell = document.getElementById('prehydration-shell');
+    if (shell) shell.remove();
+  }
   createRoot(document.getElementById("root")!).render(<App />);
 }
