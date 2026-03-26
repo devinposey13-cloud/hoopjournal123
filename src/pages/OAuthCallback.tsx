@@ -427,8 +427,8 @@ export default function OAuthCallback() {
           try {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-              logEvent('watchdog_force_redirect', { reason: 'navigation_stalled', source: watchdogLabel });
-              console.log(`[OAuthCallback] ${watchdogLabel} watchdog — session exists, forcing redirect.`);
+              logEvent('watchdog_force_redirect', { reason: 'navigation_stalled', source: 'iOS-native' });
+              console.log(`[OAuthCallback] iOS-native watchdog — session exists, forcing redirect.`);
               window.location.href = '/?postAuth=1&watchdog=1&ts=' + Date.now();
             }
           } catch { /* ignore */ }
@@ -439,8 +439,8 @@ export default function OAuthCallback() {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
-            logEvent('watchdog_session_found', { userId: session.user.id, source: watchdogLabel });
-            console.log(`[OAuthCallback] ${watchdogLabel} watchdog — session found, forcing redirect`);
+            logEvent('watchdog_session_found', { userId: session.user.id, source: 'iOS-native' });
+            console.log(`[OAuthCallback] iOS-native watchdog — session found, forcing redirect`);
             navigationTriggered.current = true;
             completeAttempt('success');
             window.location.href = '/?postAuth=1&watchdog=1&ts=' + Date.now();
