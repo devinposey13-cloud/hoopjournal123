@@ -32,6 +32,14 @@ export interface AuthDebugAttempt {
 let _currentAttempt: AuthDebugAttempt | null = null;
 let _listeners: Array<() => void> = [];
 
+function saveAttemptHistory(history: AuthDebugAttempt[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  } catch {
+    /* storage full or unavailable */
+  }
+}
+
 function notify() {
   _listeners.forEach((fn) => fn());
 }
@@ -84,6 +92,7 @@ export function logEvent(stage: string, data?: Record<string, unknown>): void {
     `[AuthDebug:${_currentAttempt.provider}] ${stage} (+${event.elapsed}ms)`,
     data ? JSON.stringify(data) : ''
   );
+  persistAttempt(_currentAttempt);
   notify();
 }
 
@@ -124,12 +133,10 @@ export function logTokenPresence(params: {
 // ── Persistence ──────────────────────────────────────────────────────
 
 function persistAttempt(attempt: AuthDebugAttempt): void {
-  try {
-    const history = getAttemptHistory();
-    history.unshift(attempt);
-    if (history.length > MAX_ATTEMPTS) history.length = MAX_ATTEMPTS;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-  } catch { /* storage full or unavailable */ }
+  const history = getAttemptHistory().filter((item) => item.id !== attempt.id);
+  history.unshift({ ...attempt, events: [...attempt.events], metadata: { ...attempt.metadata } });
+  if (history.length > MAX_ATTEMPTS) history.length = MAX_ATTEMPTS;
+  saveAttemptHistory(history);
 }
 
 export function getAttemptHistory(): AuthDebugAttempt[] {
@@ -144,6 +151,32 @@ export function getAttemptHistory(): AuthDebugAttempt[] {
 
 export function clearHistory(): void {
   try { localStorage.removeItem(STORAGE_KEY); } catch {}
+}
+
+export function resumeOrCreateMainAppAttempt(): void {
+  if (_currentAttempt && Date.now() - _currentAttempt.startedAt < 120_000) {
+    return;
+  }
+
+  const history = getAttemptHistory();
+  const recent = history.find((a) => Date.now() - a.startedAt < 120_000);
+
+  if (recent) {
+    _currentAttempt = {
+      ...recent,
+      events: [...recent.events],
+      metadata: { ...recent.metadata },
+    };
+    logEvent('main_app_attempt_resumed', {
+      priorStatus: recent.status,
+      elapsedSinceStart: Date.now() - recent.startedAt,
+    });
+  } else {
+    startAttempt('apple');
+    logEvent('main_app_attempt_created', {
+      note: 'No recent attempt found — created from main app postAuth',
+    });
+  }
 }
 
 // ── Resume from callback (page loaded fresh after redirect) ─────────

@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { useActiveProfile } from './useActiveProfile';
 import { GameStats, VideoClip, PlayerProfile, SeasonStats, ScheduledGame, Season } from '@/types/basketball';
 import { toast } from 'sonner';
+import { logEvent as logAuthDebugEvent } from '@/lib/appleAuthDebugTracker';
 
 const defaultProfile: PlayerProfile = {
   name: 'Player Name',
@@ -68,6 +69,8 @@ export function useCloudData() {
 
   // Fetch all data when user is authenticated
   const fetchData = useCallback(async (seasonId?: string) => {
+    const isPostAuthReturn = new URLSearchParams(window.location.search).get('postAuth') === '1';
+
     if (!user || !activeProfileId) {
       setGames([]);
       setClips([]);
@@ -225,6 +228,13 @@ export function useCloudData() {
       setClips(clipsWithUrls);
 
       // Fetch player settings for the active profile
+      if (isPostAuthReturn) {
+        logAuthDebugEvent('profile_fetch_started', {
+          source: 'player_settings',
+          profileId: activeProfileId,
+        });
+      }
+
       const { data: settingsData, error: settingsError } = await (supabase as any)
         .from('player_settings')
         .select('*')
@@ -263,9 +273,25 @@ export function useCloudData() {
           ringOfHonorOptIn: settingsData.ring_of_honor_opt_in ?? false,
         });
       }
+
+      if (isPostAuthReturn) {
+        logAuthDebugEvent('profile_fetch_completed', {
+          source: 'player_settings',
+          profileId: activeProfileId,
+          hasProfile: !!settingsData,
+          onboardingCompleted: !!settingsData?.onboarding_completed_at,
+        });
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load data');
+      if (new URLSearchParams(window.location.search).get('postAuth') === '1') {
+        logAuthDebugEvent('profile_fetch_completed', {
+          source: 'player_settings',
+          profileId: activeProfileId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     } finally {
       setLoading(false);
     }
