@@ -24,10 +24,11 @@ const TEMPLATES = {
     grade: 'A+',
     headline: 'BUCKET GETTER',
     archetype: '3-LEVEL SCORER',
+    statusLine: 'ELITE SCORING THREAT',
     stats: { points: 28, rebounds: 4, assists: 3, steals: 2, blocks: 0, turnovers: 2, fgMade: 11, fgAttempted: 18, threePtMade: 4, threePtAttempted: 8, ftMade: 2, ftAttempted: 3 },
     badges: ['🎯 Sharpshooter', '🔥 On Fire', '💰 Money'],
     color: '#FFD700',
-    glow: '0 0 60px rgba(255,215,0,0.5)',
+    glow: '0 0 80px rgba(255,215,0,0.6)',
   },
   playmaker: {
     label: 'Playmaker',
@@ -35,10 +36,11 @@ const TEMPLATES = {
     grade: 'A+',
     headline: 'FLOOR GENERAL',
     archetype: 'PLAYMAKING GUARD',
+    statusLine: 'ELITE COURT VISION',
     stats: { points: 14, rebounds: 3, assists: 11, steals: 3, blocks: 0, turnovers: 2, fgMade: 6, fgAttempted: 12, threePtMade: 1, threePtAttempted: 3, ftMade: 1, ftAttempted: 2 },
     badges: ['🎯 Dime Dropper', '👀 Court Vision', '🧠 High IQ'],
     color: '#FF6B00',
-    glow: '0 0 60px rgba(255,107,0,0.5)',
+    glow: '0 0 80px rgba(255,107,0,0.6)',
   },
   defender: {
     label: 'Defender',
@@ -46,10 +48,11 @@ const TEMPLATES = {
     grade: 'A+',
     headline: 'LOCKDOWN',
     archetype: 'TWO-WAY WING',
+    statusLine: 'SHUTDOWN DEFENDER',
     stats: { points: 8, rebounds: 7, assists: 2, steals: 5, blocks: 3, turnovers: 1, fgMade: 3, fgAttempted: 7, threePtMade: 0, threePtAttempted: 1, ftMade: 2, ftAttempted: 4 },
     badges: ['🛡️ Lockdown', '🖐️ Pickpocket', '🧱 Wall'],
     color: '#4ade80',
-    glow: '0 0 60px rgba(74,222,128,0.5)',
+    glow: '0 0 80px rgba(74,222,128,0.6)',
   },
   shooter: {
     label: 'Shooter',
@@ -57,10 +60,11 @@ const TEMPLATES = {
     grade: 'A+',
     headline: 'SPLASH',
     archetype: 'ELITE SHOOTER',
+    statusLine: 'LIGHTS OUT RANGE',
     stats: { points: 22, rebounds: 2, assists: 2, steals: 1, blocks: 0, turnovers: 1, fgMade: 8, fgAttempted: 14, threePtMade: 6, threePtAttempted: 10, ftMade: 0, ftAttempted: 0 },
     badges: ['💧 Splash', '🎯 Sniper', '🔥 Hot Hand'],
     color: '#60a5fa',
-    glow: '0 0 60px rgba(96,165,250,0.5)',
+    glow: '0 0 80px rgba(96,165,250,0.6)',
   },
   energy: {
     label: 'Energy Player',
@@ -68,10 +72,11 @@ const TEMPLATES = {
     grade: 'A+',
     headline: 'ENERGY SHIFT',
     archetype: 'SPARK PLUG',
+    statusLine: 'RELENTLESS MOTOR',
     stats: { points: 12, rebounds: 10, assists: 2, steals: 3, blocks: 2, turnovers: 2, fgMade: 5, fgAttempted: 9, threePtMade: 0, threePtAttempted: 1, ftMade: 2, ftAttempted: 4 },
     badges: ['⚡ Spark Plug', '💪 Hustle', '🏀 Glass Cleaner'],
     color: '#facc15',
-    glow: '0 0 60px rgba(250,204,21,0.5)',
+    glow: '0 0 80px rgba(250,204,21,0.6)',
   },
   allaround: {
     label: 'All-Around',
@@ -79,10 +84,11 @@ const TEMPLATES = {
     grade: 'A+',
     headline: 'ALL-AROUND THREAT',
     archetype: 'COMPLETE HOOPER',
+    statusLine: 'DOES IT ALL',
     stats: { points: 18, rebounds: 8, assists: 6, steals: 3, blocks: 2, turnovers: 2, fgMade: 7, fgAttempted: 14, threePtMade: 2, threePtAttempted: 5, ftMade: 2, ftAttempted: 3 },
     badges: ['🏀 Complete Player', '🌟 Versatile', '💯 All-Around'],
     color: '#FFD700',
-    glow: '0 0 60px rgba(255,215,0,0.5)',
+    glow: '0 0 80px rgba(255,215,0,0.6)',
   },
   dominantbig: {
     label: 'Dominant Big',
@@ -90,10 +96,11 @@ const TEMPLATES = {
     grade: 'A+',
     headline: 'PAINT BEAST',
     archetype: 'DOMINANT BIG',
+    statusLine: 'CONTROLS THE PAINT',
     stats: { points: 16, rebounds: 14, assists: 2, steals: 1, blocks: 5, turnovers: 2, fgMade: 7, fgAttempted: 10, threePtMade: 0, threePtAttempted: 0, ftMade: 2, ftAttempted: 5 },
     badges: ['🏔️ Paint Beast', '🧱 Rim Protector', '💪 Boards'],
     color: '#e879f9',
-    glow: '0 0 60px rgba(232,121,249,0.5)',
+    glow: '0 0 80px rgba(232,121,249,0.6)',
   },
   clutch: {
     label: 'Clutch',
@@ -101,10 +108,11 @@ const TEMPLATES = {
     grade: 'A+',
     headline: 'ICE IN VEINS',
     archetype: 'CLUTCH PERFORMER',
+    statusLine: 'BIG GAME PLAYER',
     stats: { points: 24, rebounds: 5, assists: 4, steals: 2, blocks: 1, turnovers: 1, fgMade: 9, fgAttempted: 16, threePtMade: 3, threePtAttempted: 6, ftMade: 3, ftAttempted: 3 },
     badges: ['🧊 Ice Cold', '💎 Big Moment', '🎯 Closer'],
     color: '#22d3ee',
-    glow: '0 0 60px rgba(34,211,238,0.5)',
+    glow: '0 0 80px rgba(34,211,238,0.6)',
   },
 } as const;
 
@@ -137,7 +145,7 @@ function generateClaimCode(): string {
 
 // ── Promo Card Canvas ──
 function PromoCardCanvas({ 
-  playerName, teamName, jerseyNumber, position, photoUrl, template, cardRef, claimUrl 
+  playerName, teamName, jerseyNumber, position, photoUrl, template, cardRef, claimUrl, isNewlyGenerated 
 }: {
   playerName: string;
   teamName: string;
@@ -147,8 +155,9 @@ function PromoCardCanvas({
   template: typeof TEMPLATES[TemplateKey];
   cardRef: React.RefObject<HTMLDivElement>;
   claimUrl?: string;
+  isNewlyGenerated?: boolean;
 }) {
-  const { color, glow, grade, badges, headline, archetype } = template;
+  const { color, glow, grade, badges, headline, archetype, statusLine } = template;
   const CANVAS_W = 1080;
   const CANVAS_H = 1920;
 
@@ -221,9 +230,9 @@ function PromoCardCanvas({
           )}
         </div>
 
-        {/* Identity block */}
+        {/* Identity block — name is primary, archetype secondary */}
         <div style={{
-          position: 'absolute', top: 494, left: 0, right: 0,
+          position: 'absolute', top: 490, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
           <div style={{
@@ -248,40 +257,56 @@ function PromoCardCanvas({
             }}>#{jerseyNumber}{position ? ` • ${position}` : ''}</span>
           </div>
 
+          {/* Archetype — slightly smaller, more spacing from name */}
           <div style={{
-            color, fontSize: 30, fontWeight: 800,
+            color, fontSize: 26, fontWeight: 800,
             letterSpacing: '0.25em', textTransform: 'uppercase',
-            marginTop: 28, textAlign: 'center',
+            marginTop: 30, textAlign: 'center',
             textShadow: `0 0 30px ${color}40`,
           }}>{archetype}</div>
 
+          {/* Status Line — scouting feel */}
           <div style={{
-            width: 300, height: 2, marginTop: 24,
+            color: s.sub, fontSize: 19, fontWeight: 700,
+            letterSpacing: '0.35em', textTransform: 'uppercase',
+            marginTop: 14, textAlign: 'center',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            maxWidth: '100%',
+            opacity: 0.75,
+          }}>{statusLine}</div>
+
+          <div style={{
+            width: 300, height: 2, marginTop: 20,
             background: `linear-gradient(90deg, transparent, ${color}40, transparent)`,
           }} />
         </div>
 
-        {/* Grade */}
+        {/* Grade — ~12% larger, tighter to content */}
         <div style={{
-          position: 'absolute', top: 770, left: 0, right: 0,
+          position: 'absolute', top: 780, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
           <div style={{
-            position: 'absolute', top: 112, left: '50%', transform: 'translate(-50%, -50%)',
-            width: 460, height: 460, borderRadius: '50%',
-            background: `radial-gradient(circle, ${color}12 0%, transparent 55%)`,
+            position: 'absolute', top: 120, left: '50%', transform: 'translate(-50%, -50%)',
+            width: 500, height: 500, borderRadius: '50%',
+            background: `radial-gradient(circle, ${color}15 0%, transparent 55%)`,
             pointerEvents: 'none',
           }} />
+          {/* GAME GRADE label — more visible */}
           <div style={{
-            color: s.dim, fontSize: 18, fontWeight: 800,
-            letterSpacing: '0.4em', textTransform: 'uppercase',
-            textAlign: 'center', marginBottom: 20,
+            color: s.muted, fontSize: 19, fontWeight: 800,
+            letterSpacing: '0.5em', textTransform: 'uppercase',
+            textAlign: 'center', marginBottom: 16,
+            opacity: 0.85,
           }}>GAME GRADE</div>
           <div style={{
-            fontSize: 216, fontWeight: 900, color,
+            fontSize: 244, fontWeight: 900, color,
             lineHeight: 0.82, textShadow: glow,
             letterSpacing: '-0.03em', textAlign: 'center',
-            minHeight: 176,
+            minHeight: 200,
+            ...(isNewlyGenerated ? {
+              animation: 'gradeReveal 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+            } : {}),
           }}
             data-canvas-grade="true"
             data-grade-color={color}
@@ -289,33 +314,40 @@ function PromoCardCanvas({
           >{grade}</div>
         </div>
 
-        {/* Badges */}
+        {/* Badges — first badge emphasized */}
         <div style={{
-          position: 'absolute', top: 1076, left: 0, right: 0,
+          position: 'absolute', top: 1090, left: 0, right: 0,
           display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center',
           alignItems: 'center',
         }}>
           {badges.slice(0, 3).map((badge, i) => (
             <div key={i} style={{
-              background: `${color}12`, border: `1.5px solid ${color}35`,
-              borderRadius: 50, padding: '12px 30px',
-              color, fontSize: 22, fontWeight: 700,
+              background: i === 0 ? `${color}20` : `${color}10`,
+              border: `1.5px solid ${i === 0 ? `${color}50` : `${color}28`}`,
+              borderRadius: 50,
+              padding: i === 0 ? '13px 34px' : '12px 30px',
+              color: i === 0 ? color : color,
+              fontSize: i === 0 ? 23 : 21,
+              fontWeight: i === 0 ? 800 : 700,
               letterSpacing: '0.04em',
+              opacity: i === 0 ? 1 : 0.8,
+              boxShadow: i === 0 ? `0 0 24px ${color}18` : 'none',
+              transform: i === 0 ? 'scale(1.04)' : 'none',
             }}>{badge}</div>
           ))}
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer — slightly de-emphasized branding */}
       <div style={{
         position: 'absolute', bottom: 60, left: 80, right: 80,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <img src={hoopJournalLogo} alt="" style={{ width: 82, height: 82, borderRadius: 16 }} crossOrigin="anonymous" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, opacity: 0.85 }}>
+          <img src={hoopJournalLogo} alt="" style={{ width: 76, height: 76, borderRadius: 14 }} crossOrigin="anonymous" />
           <div>
-            <div style={{ color: s.bright, fontSize: 28, fontWeight: 800 }}>Hoop Journal</div>
-            <div style={{ color: s.dim, fontSize: 16, fontWeight: 500, letterSpacing: '0.05em' }}>EVENT EDITION</div>
+            <div style={{ color: s.bright, fontSize: 26, fontWeight: 800, opacity: 0.9 }}>Hoop Journal</div>
+            <div style={{ color: s.dim, fontSize: 15, fontWeight: 500, letterSpacing: '0.05em', opacity: 0.8 }}>EVENT EDITION</div>
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
@@ -330,6 +362,15 @@ function PromoCardCanvas({
           <div style={{ color: s.dim, fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', marginTop: 2 }}>Claim within 72 hours</div>
         </div>
       </div>
+
+      {/* Grade reveal animation keyframes */}
+      <style>{`
+        @keyframes gradeReveal {
+          0% { opacity: 0; transform: scale(0.88); }
+          60% { opacity: 1; transform: scale(1.03); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
     </div>
   );
 }
@@ -769,7 +810,7 @@ export function AdminQuickMode() {
       const gradeGlow = gradeEl.getAttribute('data-grade-glow') || '';
 
       ctx.save();
-      ctx.font = `900 216px Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+      ctx.font = `900 244px Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = gradeColor;
@@ -1042,6 +1083,7 @@ export function AdminQuickMode() {
                   template={activeTemplate}
                   cardRef={cardRef}
                   claimUrl={previewCard?.claim_token ? `https://hoopjournal.me/claim?card_id=${previewCard.id}&token=${previewCard.claim_token}` : undefined}
+                  isNewlyGenerated={showPreview}
                 />
               </div>
             </div>
