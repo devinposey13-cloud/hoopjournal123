@@ -28,7 +28,7 @@ import { AdminBroadcast } from '@/components/admin/AdminBroadcast';
 import { AdminSystemHealth } from '@/components/admin/AdminSystemHealth';
 import { AdminSlackAlerts } from '@/components/admin/AdminSlackAlerts';
 import { ApprovalModeSelector } from '@/components/admin/ApprovalModeSelector';
-import { AdminQuickMode } from '@/components/admin/AdminQuickMode';
+
 import { dispatchSlackAlert } from '@/utils/slackAlerts';
 import { format } from 'date-fns';
 
