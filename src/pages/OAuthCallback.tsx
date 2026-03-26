@@ -137,6 +137,7 @@ export default function OAuthCallback() {
 
     // TEMPORARY: Resume or create debug attempt
     resumeOrCreateCallbackAttempt();
+    logEvent('redirect_return_detected', { isRetry, platform, native, url: window.location.href });
     logEvent('callback_processing_started', { isRetry, platform, native });
     updateMetadata('callbackUrl', _capturedUrl);
 
