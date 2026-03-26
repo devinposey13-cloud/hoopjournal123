@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ForgotPasswordDialog } from './ForgotPasswordDialog';
+import { ClaimCardFlow } from './ClaimCardFlow';
 import { Separator } from '@/components/ui/separator';
 import { isNativeApp, getPlatform, isDespiaIOS } from '@/lib/platform';
 import { openOAuthInSystemBrowser } from '@/lib/nativeOAuth';
