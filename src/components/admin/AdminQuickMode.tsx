@@ -378,8 +378,7 @@ export function AdminQuickMode() {
 
   async function fetchRecentCards() {
     const today = new Date().toISOString().split('T')[0];
-    const { data, error } = await supabase
-      .from('quick_cards')
+    const { data, error } = await (supabase.from('quick_cards') as any)
       .select('*')
       .order('created_at', { ascending: false })
       .limit(20);
