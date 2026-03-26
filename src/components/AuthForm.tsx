@@ -186,9 +186,11 @@ export function AuthForm() {
       tracker.logEvent('flow_selected', { flow: 'web_js_sdk' });
 
       // Use Lovable managed Apple auth (handles credentials & callbacks)
-      tracker.logEvent('using_lovable_managed_flow', { customDomain: isCustomDomain() });
+      // Add cache-busting nonce to prevent service worker / ITP caching on iPad
+      const isIPadDevice = /iPad|Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document;
+      tracker.logEvent('using_lovable_managed_flow', { customDomain: isCustomDomain(), isIPad: isIPadDevice });
       const redirectUri = isCustomDomain()
-        ? `${window.location.origin}/auth/callback`
+        ? `${window.location.origin}/auth/callback${isIPadDevice ? `?ts=${Date.now()}` : ''}`
         : window.location.origin;
       const { error } = await lovable.auth.signInWithOAuth('apple', {
         redirect_uri: redirectUri,

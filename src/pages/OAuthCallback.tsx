@@ -307,7 +307,13 @@ export default function OAuthCallback() {
     setPhase('exchanging');
     logEvent('waiting_for_auto_detection');
     log('No code or tokens in URL — waiting for auto-detection...');
-    const detected = await waitForSession(8000);
+
+    // iPad gets a longer timeout due to ITP / service worker interference
+    const isIPad = /iPad|Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document;
+    const waitTimeout = isIPad ? 12000 : 8000;
+    log(`Wait timeout: ${waitTimeout}ms (iPad: ${isIPad})`);
+
+    const detected = await waitForSession(waitTimeout);
     if (detected) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -318,11 +324,23 @@ export default function OAuthCallback() {
       }
     }
 
-    logError('No session established after waiting');
+    // ── Auto-retry: one more getSession attempt before giving up ──
+    log('Auto-detection timed out — performing one final getSession retry...');
+    logEvent('auto_retry_after_timeout');
+    await new Promise(r => setTimeout(r, 500));
+    const { data: { session: retrySession } } = await supabase.auth.getSession();
+    if (retrySession) {
+      log(`Retry succeeded — user: ${retrySession.user.id}`);
+      logEvent('session_exchange_completed', { method: 'auto_retry', userId: retrySession.user.id });
+      handleSessionEstablished(retrySession.access_token, retrySession.refresh_token, retrySession.user.id, retrySession.user.app_metadata?.provider);
+      return;
+    }
+
+    logError('No session established after waiting + retry');
     logEvent('session_wait_timeout');
     setPhase('error');
     setError('Session could not be restored. Please try signing in again.');
-    completeAttempt('timeout', 'No session after 8s wait');
+    completeAttempt('timeout', `No session after ${waitTimeout}ms wait + retry`);
     setShowRetry(true);
   };
 
@@ -400,15 +418,19 @@ export default function OAuthCallback() {
       setShowRetry(true);
     });
 
-    // ── Aggressive watchdog for iOS native ──
-    if (isNativeApp() && isDespiaIOS()) {
+    // ── Aggressive watchdog for iOS native AND iPad web ──
+    const isIPadWeb = !isNativeApp() && /iPad|Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document;
+    if ((isNativeApp() && isDespiaIOS()) || isIPadWeb) {
+      const watchdogLabel = isIPadWeb ? 'iPad' : 'iOS-native';
+      console.log(`[OAuthCallback] Starting ${watchdogLabel} watchdog`);
+
       const watchdogInterval = setInterval(async () => {
         if (navigationTriggered.current) {
           try {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-              logEvent('watchdog_force_redirect', { reason: 'navigation_stalled' });
-              console.log('[OAuthCallback] Watchdog — session exists, forcing redirect.');
+              logEvent('watchdog_force_redirect', { reason: 'navigation_stalled', source: watchdogLabel });
+              console.log(`[OAuthCallback] ${watchdogLabel} watchdog — session exists, forcing redirect.`);
               window.location.href = '/?postAuth=1&watchdog=1&ts=' + Date.now();
             }
           } catch { /* ignore */ }
@@ -419,8 +441,8 @@ export default function OAuthCallback() {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
-            logEvent('watchdog_session_found', { userId: session.user.id });
-            console.log('[OAuthCallback] Watchdog — session found, forcing redirect');
+            logEvent('watchdog_session_found', { userId: session.user.id, source: watchdogLabel });
+            console.log(`[OAuthCallback] ${watchdogLabel} watchdog — session found, forcing redirect`);
             navigationTriggered.current = true;
             completeAttempt('success');
             window.location.href = '/?postAuth=1&watchdog=1&ts=' + Date.now();
