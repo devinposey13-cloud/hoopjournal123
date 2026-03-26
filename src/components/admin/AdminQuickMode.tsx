@@ -359,6 +359,9 @@ export function AdminQuickMode() {
   const [contactInfo, setContactInfo] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [showWebcam, setShowWebcam] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   // UI state
   const [generating, setGenerating] = useState(false);
