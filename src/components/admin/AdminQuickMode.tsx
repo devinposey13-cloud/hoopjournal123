@@ -403,19 +403,13 @@ export function AdminQuickMode() {
     setPhotoUrl(url);
   }, []);
 
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
   const handleCameraCapture = useCallback(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'environment';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        setPhotoFile(file);
-        setPhotoUrl(URL.createObjectURL(file));
-      }
-    };
-    input.click();
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
+      cameraInputRef.current.click();
+    }
   }, []);
 
   // Upload photo to storage
@@ -720,6 +714,14 @@ export function AdminQuickMode() {
                   <Button variant="outline" className="flex-1 gap-2" onClick={handleCameraCapture}>
                     <Camera className="w-4 h-4" /> Camera
                   </Button>
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handlePhotoUpload}
+                  />
                   <label className="flex-1">
                     <Button variant="outline" className="w-full gap-2" asChild>
                       <span><Upload className="w-4 h-4" /> Upload</span>
