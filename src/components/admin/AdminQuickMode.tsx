@@ -604,6 +604,25 @@ export function AdminQuickMode() {
     }
   }
 
+  // Delete a card
+  async function handleDeleteCard(cardId: string) {
+    try {
+      // Delete audit log entries first (foreign key)
+      await supabase.from('quick_mode_audit_log').delete().eq('card_id', cardId);
+      const { error } = await supabase.from('quick_cards').delete().eq('id', cardId);
+      if (error) throw error;
+      toast.success('Card deleted');
+      setRecentCards(prev => prev.filter(c => c.id !== cardId));
+      setTodayCount(prev => prev - 1);
+      if (previewCard?.id === cardId) {
+        setPreviewCard(null);
+        setShowPreview(false);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete card');
+    }
+  }
+
   // Create next card
   function handleCreateNext() {
     setPlayerName('');
