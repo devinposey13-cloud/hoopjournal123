@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Camera, Upload, Zap, Printer, Download, RotateCcw, Eye, Image as ImageIcon, Plus, Clock, Hash, Sparkles, Loader2 } from 'lucide-react';
+import { Camera, Upload, Zap, Printer, Download, RotateCcw, Eye, Image as ImageIcon, Plus, Clock, Hash, Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import hoopJournalQr from '@/assets/hoop-journal-qr.png';
