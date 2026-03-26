@@ -1,65 +1,65 @@
 
 
-## Analysis: iPad Apple Sign-In Inconsistency
+## Analysis: iPad Apple Sign-In in TestFlight
 
-### Root Cause
+### Current State
 
-The iPad currently uses `lovable.auth.signInWithOAuth('apple', ...)` which triggers a **full-page redirect** through the Lovable OAuth broker (`/~oauth`). The inconsistency stems from a race condition in how the callback is processed:
+You are correct. The current implementation **intentionally routes iPad differently from iPhone**, even when both run inside the Despia native shell (TestFlight). Here's the exact logic in `AuthForm.tsx` line 177:
 
-1. **Success case**: The broker redirects back to `https://hoopjournal.me/auth/callback` with a PKCE `code` param. `OAuthCallback.tsx` captures it, calls `exchangeCodeForSession`, session is established, user is redirected home.
+```typescript
+const isIPhone = isIOSNative && /iphone/i.test(navigator.userAgent);
+if (isIPhone) {
+  signInWithAppleRedirect(); // Native form_post flow
+  return;
+}
+// iPad falls through to lovable.auth.signInWithOAuth('apple', ...) — web redirect flow
+```
 
-2. **Failure case (blank white screen)**: The redirect lands on `/auth/callback` but the code/tokens are missing or already consumed. The page enters the "waiting for auto-detection" branch, which times out after 8 seconds showing a blank/spinner. The 8-second timeout is the *only* fallback, and there is no iPad-specific watchdog (the existing watchdog only runs for `isNativeApp() && isDespiaIOS()`, which iPads no longer match).
+So even though `isDespiaIOS()` returns `true` for iPad (it checks for both `iphone` and `ipad` in the UA), the auth form adds a second gate that only lets iPhone through to the native redirect. iPad gets the **web-based Lovable OAuth broker flow**, which causes:
 
-3. **Refresh behavior**: When refreshing the blank screen, the user hits `/auth/callback` again with no tokens, so the flow restarts and may redirect back to Apple login.
+- A full-page redirect chain through `lovable.app/~oauth` → Apple → back to callback
+- PKCE token exchange that's fragile in WKWebView due to ITP and cookie partitioning
+- The intermittent white screen you're seeing
 
-### Why It's Intermittent
+### Why It Was Done This Way
 
-- The Lovable broker redirect sometimes includes the code in query params (works), sometimes the browser caches/strips them (fails)
-- iPad Safari's Intelligent Tracking Prevention (ITP) can interfere with cross-origin cookie/token passing
-- The Progressier service worker may occasionally cache the `/auth/callback` route, serving a stale response without tokens
+This was introduced as a workaround because `signInWithAppleRedirect()` (the native flow) was also hanging on iPad. That flow uses Apple's `form_post` response mode → edge function → HTML page with meta-refresh back to the app. The meta-refresh was unreliable in iPad WKWebView.
 
-### Plan: Make iPad Auth Reliable
+However, **the same flow works on iPhone**, which means the root issue isn't the flow itself but likely a subtle difference in how iPad WKWebView handles the redirect. The web OAuth fallback made things worse, not better.
 
-#### 1. Add iPad-specific watchdog to OAuthCallback.tsx
-Extend the existing iOS-native watchdog to also cover iPad Safari. Currently it only fires for `isNativeApp() && isDespiaIOS()`. Add a separate watchdog for iPad web that:
-- Polls `supabase.auth.getSession()` every 2 seconds
-- If a session is found, immediately redirects to `/`
-- Times out after 15 seconds and shows a retry button
+### Plan: Unify iPhone + iPad Native Auth
 
-#### 2. Increase auto-detection timeout for iPad
-The current 8-second `waitForSession` timeout is too short for iPad where ITP and service worker interference can delay token processing. Increase to 12 seconds on iPad.
+#### 1. Remove the iPhone-only gate in AuthForm.tsx
+Change the condition from checking for "iphone" UA to using `isDespiaIOS()` directly, so both iPhone and iPad use `signInWithAppleRedirect()`.
 
-#### 3. Add explicit retry on blank screen
-When the auto-detection times out, instead of just showing an error, automatically retry `getSession()` one more time before giving up. This handles the case where the Supabase client processed the tokens slightly after the timeout.
+```text
+Before: const isIPhone = isIOSNative && /iphone/i.test(navigator.userAgent);
+After:  if (isIOSNative) { signInWithAppleRedirect(); return; }
+```
 
-#### 4. Ensure service worker doesn't cache callback route
-Verify the Progressier service worker configuration doesn't intercept `/auth/callback`. Add a `nonce` query parameter to the redirect URI to bust any cached responses.
+#### 2. Remove iPad-specific workarounds from OAuthCallback.tsx
+The iPad watchdog polling and extended timeouts were added for the web OAuth flow. Since iPad will now use the native redirect flow (same as iPhone), these are no longer needed for iPad. Keep the existing iOS-native watchdog which already covers both.
+
+#### 3. Remove iPad cache-busting nonce from AuthForm.tsx
+The `?ts=${Date.now()}` appended to the redirect URI for iPad is no longer relevant since iPad won't use the Lovable OAuth broker flow.
+
+#### 4. Ensure the edge function HTML response works on iPad
+The `auth-apple-callback` edge function already returns an HTML page with both meta-refresh and JS fallback. This is the same response iPhone gets successfully. No changes needed here, but if issues persist, we can add a more aggressive JS redirect with a short delay as a tertiary fallback.
 
 ### Files to Modify
 
 | File | Change |
 |---|---|
-| `src/pages/OAuthCallback.tsx` | Add iPad watchdog, increase timeout, add auto-retry |
-| `src/components/AuthForm.tsx` | Add cache-busting nonce to redirect_uri for iPad |
+| `src/components/AuthForm.tsx` | Remove `/iphone/i` check; use `isIOSNative` for both iPhone+iPad. Remove iPad cache-busting nonce. |
+| `src/pages/OAuthCallback.tsx` | Remove `isIPadWeb` watchdog branch (iPad in Despia is now handled by the existing iOS-native watchdog). |
 
-### Technical Details
+### Expected Outcome
 
-**iPad detection** in OAuthCallback:
-```typescript
-const isIPad = /iPad|Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document;
-```
+- **iPhone TestFlight**: No change — continues using `signInWithAppleRedirect()`
+- **iPad TestFlight**: Now uses `signInWithAppleRedirect()` (same as iPhone) instead of the unreliable web OAuth broker
+- **Web/PWA (desktop + mobile Safari)**: No change — continues using `lovable.auth.signInWithOAuth('apple')`
 
-**Watchdog extension** — run for both native iOS AND iPad web:
-```typescript
-if ((isNativeApp() && isDespiaIOS()) || isIPad) {
-  // existing watchdog logic
-}
-```
+### Risk Note
 
-**Cache-busting redirect_uri**:
-```typescript
-const redirectUri = isCustomDomain()
-  ? `${window.location.origin}/auth/callback?ts=${Date.now()}`
-  : window.location.origin;
-```
+If the meta-refresh HTML response from the edge function still hangs on iPad WKWebView, the existing iOS-native watchdog (polling `getSession()` every 2s) will catch it — this watchdog already runs for `isNativeApp() && isDespiaIOS()`, which includes iPad.
 
