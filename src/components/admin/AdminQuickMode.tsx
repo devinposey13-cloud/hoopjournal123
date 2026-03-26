@@ -403,14 +403,6 @@ export function AdminQuickMode() {
     setPhotoUrl(url);
   }, []);
 
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-
-  const handleCameraCapture = useCallback(() => {
-    if (cameraInputRef.current) {
-      cameraInputRef.current.value = '';
-      cameraInputRef.current.click();
-    }
-  }, []);
 
   // Upload photo to storage
   async function uploadPhoto(file: File): Promise<string | null> {
@@ -711,19 +703,20 @@ export function AdminQuickMode() {
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 gap-2" onClick={handleCameraCapture}>
-                    <Camera className="w-4 h-4" /> Camera
-                  </Button>
-                  <input
-                    ref={cameraInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={handlePhotoUpload}
-                  />
-                  <label className="flex-1">
-                    <Button variant="outline" className="w-full gap-2" asChild>
+                  <label className="flex-1 cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                    />
+                    <Button variant="outline" className="w-full gap-2 pointer-events-none" asChild>
+                      <span><Camera className="w-4 h-4" /> Camera</span>
+                    </Button>
+                  </label>
+                  <label className="flex-1 cursor-pointer">
+                    <Button variant="outline" className="w-full gap-2 pointer-events-none" asChild>
                       <span><Upload className="w-4 h-4" /> Upload</span>
                     </Button>
                     <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
