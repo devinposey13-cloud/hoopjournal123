@@ -28,7 +28,7 @@ import { isNativeApp, isDespia } from '@/lib/platform';
 import { track } from '@/lib/plans';
 import { RotateCcw } from 'lucide-react';
 import { useAdmin } from '@/hooks/useAdmin';
-
+import { useActiveProfile } from '@/hooks/useActiveProfile';
 
 
 interface SettingsPanelProps {
