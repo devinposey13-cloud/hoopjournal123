@@ -519,6 +519,8 @@ export function AdminQuickMode() {
       }
 
       const claimCode = generateClaimCode();
+      const claimToken = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('');
+      const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
       const { data, error } = await supabase.from('quick_cards').insert({
         created_by_admin_id: user?.id,
         player_name: playerName.trim(),
@@ -532,6 +534,8 @@ export function AdminQuickMode() {
         badges: template.badges as any,
         card_headline: template.headline,
         claim_code: claimCode,
+        claim_token: claimToken,
+        expires_at: expiresAt,
         contact_info: contactInfo || null,
         card_source: 'event_quick_mode',
         verification_status: 'promo_generated',
