@@ -1,60 +1,65 @@
 
 
-## Plan: Full Canvas 2D Text Rendering for Event Card Export
+## Analysis: iPad Apple Sign-In Inconsistency
 
-### Problem
-The status line and other text elements disappear or distort during PNG export because `html2canvas` struggles with certain CSS properties (opacity, letter-spacing, transforms). Currently only the avatar and game grade are redrawn via Canvas 2D.
+### Root Cause
 
-### Approach
-Extend the hybrid rendering strategy: hide ALL significant text and visual elements before the `html2canvas` pass, then redraw them manually using the Canvas 2D API. This guarantees pixel-perfect output regardless of browser rendering quirks.
+The iPad currently uses `lovable.auth.signInWithOAuth('apple', ...)` which triggers a **full-page redirect** through the Lovable OAuth broker (`/~oauth`). The inconsistency stems from a race condition in how the callback is processed:
 
-### What Gets Redrawn via Canvas 2D
+1. **Success case**: The broker redirects back to `https://hoopjournal.me/auth/callback` with a PKCE `code` param. `OAuthCallback.tsx` captures it, calls `exchangeCodeForSession`, session is established, user is redirected home.
 
-Currently redrawn:
-- Avatar (circle + image)
-- Game Grade text
+2. **Failure case (blank white screen)**: The redirect lands on `/auth/callback` but the code/tokens are missing or already consumed. The page enters the "waiting for auto-detection" branch, which times out after 8 seconds showing a blank/spinner. The 8-second timeout is the *only* fallback, and there is no iPad-specific watchdog (the existing watchdog only runs for `isNativeApp() && isDespiaIOS()`, which iPads no longer match).
 
-**Adding to Canvas 2D redraw:**
-1. **Player Name** (e.g., "JOE")
-2. **Team/Number line** (e.g., "BRONCOS | #2 - SG")
-3. **Archetype** (e.g., "3-LEVEL SCORER")
-4. **Status Line** (e.g., "ELITE SCORING THREAT")
-5. **"GAME GRADE" label**
-6. **Badges** (pill shapes with text)
-7. **Footer text** ("Hoop Journal", "EVENT EDITION", "Scan to claim", "Claim within 72 hours")
-8. **"EVENT CARD" badge** (top-right)
+3. **Refresh behavior**: When refreshing the blank screen, the user hits `/auth/callback` again with no tokens, so the flow restarts and may redirect back to Apple login.
 
-Leave to `html2canvas`: background gradient, basketball court outline SVG, QR code, logo image, divider line, radial glow — these render reliably.
+### Why It's Intermittent
 
-### Implementation (single file: `AdminQuickMode.tsx`)
+- The Lovable broker redirect sometimes includes the code in query params (works), sometimes the browser caches/strips them (fails)
+- iPad Safari's Intelligent Tracking Prevention (ITP) can interfere with cross-origin cookie/token passing
+- The Progressier service worker may occasionally cache the `/auth/callback` route, serving a stale response without tokens
 
-1. **Tag all text elements** with `data-canvas-*` attributes (e.g., `data-canvas-name`, `data-canvas-team`, `data-canvas-archetype`, `data-canvas-status`, `data-canvas-label`, `data-canvas-badges`, `data-canvas-footer`, `data-canvas-event-tag`).
+### Plan: Make iPad Auth Reliable
 
-2. **In `capturePromoCard`**, query and hide all tagged elements before `html2canvas`, then redraw each after:
-   - Use `ctx.font`, `ctx.fillStyle`, `ctx.textAlign`, `ctx.fillText()` for each text element at its computed position
-   - Use `ctx.roundRect` + `ctx.fill` + `ctx.stroke` for badge pills
-   - Match font sizes, weights, colors, and letter-spacing from the inline styles
-   - Apply glow/shadow effects via `ctx.shadowColor` / `ctx.shadowBlur`
+#### 1. Add iPad-specific watchdog to OAuthCallback.tsx
+Extend the existing iOS-native watchdog to also cover iPad Safari. Currently it only fires for `isNativeApp() && isDespiaIOS()`. Add a separate watchdog for iPad web that:
+- Polls `supabase.auth.getSession()` every 2 seconds
+- If a session is found, immediately redirects to `/`
+- Times out after 15 seconds and shows a retry button
 
-3. **Position calculation** remains the same pattern: read `getBoundingClientRect()` before hiding, scale to 1080x1920 canvas coordinates.
+#### 2. Increase auto-detection timeout for iPad
+The current 8-second `waitForSession` timeout is too short for iPad where ITP and service worker interference can delay token processing. Increase to 12 seconds on iPad.
 
-### Technical Detail
+#### 3. Add explicit retry on blank screen
+When the auto-detection times out, instead of just showing an error, automatically retry `getSession()` one more time before giving up. This handles the case where the Supabase client processed the tokens slightly after the timeout.
 
-```text
-capturePromoCard flow:
-1. Query all [data-canvas-*] elements
-2. Read their bounding rects + computed styles
-3. Set visibility: hidden on all
-4. html2canvas capture (bg, court lines, QR, logo, divider)
-5. Restore visibility
-6. Draw base capture onto output canvas
-7. Redraw avatar (circle + image) — existing
-8. Redraw grade text — existing
-9. NEW: Redraw name, team, archetype, status, label, badges, footer, event tag
-10. Export as PNG blob
+#### 4. Ensure service worker doesn't cache callback route
+Verify the Progressier service worker configuration doesn't intercept `/auth/callback`. Add a `nonce` query parameter to the redirect URI to bust any cached responses.
+
+### Files to Modify
+
+| File | Change |
+|---|---|
+| `src/pages/OAuthCallback.tsx` | Add iPad watchdog, increase timeout, add auto-retry |
+| `src/components/AuthForm.tsx` | Add cache-busting nonce to redirect_uri for iPad |
+
+### Technical Details
+
+**iPad detection** in OAuthCallback:
+```typescript
+const isIPad = /iPad|Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document;
 ```
 
-### Risk Mitigation
-- Letter-spacing in Canvas 2D is limited — will manually space characters for tracked text (archetype, status line, team)
-- Badge pills use `roundRect` with measured widths from emoji+text measurement
+**Watchdog extension** — run for both native iOS AND iPad web:
+```typescript
+if ((isNativeApp() && isDespiaIOS()) || isIPad) {
+  // existing watchdog logic
+}
+```
+
+**Cache-busting redirect_uri**:
+```typescript
+const redirectUri = isCustomDomain()
+  ? `${window.location.origin}/auth/callback?ts=${Date.now()}`
+  : window.location.origin;
+```
 
