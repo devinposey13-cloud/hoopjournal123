@@ -66,7 +66,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { logEvent as logAuthDebugEvent, completeAttempt, updateMetadata } from '@/lib/appleAuthDebugTracker';
 
 export default function Index() {
@@ -338,7 +337,7 @@ export default function Index() {
       <div className="min-h-screen bg-background flex items-center justify-center px-6">
         <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <LoadingSpinner className="h-6 w-6" />
+            <LoadingSpinner size="xs" />
           </div>
           <h1 className="text-xl font-semibold text-foreground">Finishing sign-in…</h1>
           <p className="mt-2 text-sm text-muted-foreground">
