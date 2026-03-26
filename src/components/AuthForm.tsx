@@ -180,7 +180,16 @@ export function AuthForm() {
 
       // ── WEB/iPad: Apple JS SDK popup → edge callback ──
       tracker.logEvent('flow_selected', { flow: 'web_js_sdk' });
-      await signInWithAppleNative();
+
+      // Use Lovable managed Apple auth (handles credentials & callbacks)
+      tracker.logEvent('using_lovable_managed_flow', { customDomain: isCustomDomain() });
+      const redirectUri = isCustomDomain()
+        ? `${window.location.origin}/auth/callback`
+        : window.location.origin;
+      const { error } = await lovable.auth.signInWithOAuth('apple', {
+        redirect_uri: redirectUri,
+      });
+      if (error) throw error;
       tracker.completeAttempt('success');
     } catch (error: unknown) {
       console.error('[Auth:Apple] Sign-in error:', error);
