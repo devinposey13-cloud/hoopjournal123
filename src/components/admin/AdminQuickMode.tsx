@@ -892,6 +892,7 @@ export function AdminQuickMode() {
                   photoUrl={photoUrl || undefined}
                   template={activeTemplate}
                   cardRef={cardRef}
+                  claimUrl={previewCard?.claim_token ? `https://hoopjournal.me/claim?card_id=${previewCard.id}&token=${previewCard.claim_token}` : undefined}
                 />
               </div>
             </div>
