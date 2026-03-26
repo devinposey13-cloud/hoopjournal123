@@ -182,6 +182,12 @@ export function AuthForm() {
       if (isIOSNative) {
         tracker.logEvent('flow_selected', { flow: 'ios_despia_redirect' });
         tracker.persistBeforeRedirect();
+
+        // Start the redirect watchdog BEFORE navigating away.
+        // If the redirect fails to return (WKWebView drops the navigation),
+        // this will detect the app resume and attempt session recovery.
+        startAppleRedirectWatchdog(tracker);
+
         signInWithAppleRedirect();
         return;
       }
