@@ -455,7 +455,7 @@ export function AdminQuickMode() {
         const file = new File([blob], `avatar-${Date.now()}.png`, { type: 'image/png' });
         setPhotoFile(file);
         setPhotoUrl(URL.createObjectURL(file));
-        toast.success('Avatar generated!');
+        toast.success(data.cached ? 'Avatar loaded from cache!' : 'Avatar generated!');
       } else {
         throw new Error('No avatar image returned');
       }
