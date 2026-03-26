@@ -306,6 +306,56 @@ export type Database = {
           },
         ]
       }
+      claim_recovery_requests: {
+        Row: {
+          card_id: string
+          created_at: string
+          entered_email: string | null
+          entered_jersey: number
+          entered_name: string
+          entered_team: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          entered_email?: string | null
+          entered_jersey: number
+          entered_name: string
+          entered_team: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          entered_email?: string | null
+          entered_jersey?: number
+          entered_name?: string
+          entered_team?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_recovery_requests_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "quick_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coach_memory: {
         Row: {
           confidence: number | null
@@ -1478,7 +1528,10 @@ export type Database = {
           badges: Json
           card_headline: string | null
           card_source: string
+          claim_attempts: number
           claim_code: string | null
+          claim_status: string
+          claim_token: string | null
           claimed_by_user_id: string | null
           contact_info: string | null
           created_at: string
@@ -1486,13 +1539,16 @@ export type Database = {
           eligible_for_career_stats: boolean
           eligible_for_leaderboards: boolean
           eligible_for_xp_progression: boolean
+          expires_at: string | null
           grade: string
           id: string
           jersey_number: number
+          last_claim_attempt_at: string | null
           photo_url: string | null
           player_name: string
           position: string | null
           print_count: number
+          recovery_claim: boolean
           stats: Json
           team_name: string
           template_used: string
@@ -1503,7 +1559,10 @@ export type Database = {
           badges?: Json
           card_headline?: string | null
           card_source?: string
+          claim_attempts?: number
           claim_code?: string | null
+          claim_status?: string
+          claim_token?: string | null
           claimed_by_user_id?: string | null
           contact_info?: string | null
           created_at?: string
@@ -1511,13 +1570,16 @@ export type Database = {
           eligible_for_career_stats?: boolean
           eligible_for_leaderboards?: boolean
           eligible_for_xp_progression?: boolean
+          expires_at?: string | null
           grade: string
           id?: string
           jersey_number: number
+          last_claim_attempt_at?: string | null
           photo_url?: string | null
           player_name: string
           position?: string | null
           print_count?: number
+          recovery_claim?: boolean
           stats?: Json
           team_name: string
           template_used: string
@@ -1528,7 +1590,10 @@ export type Database = {
           badges?: Json
           card_headline?: string | null
           card_source?: string
+          claim_attempts?: number
           claim_code?: string | null
+          claim_status?: string
+          claim_token?: string | null
           claimed_by_user_id?: string | null
           contact_info?: string | null
           created_at?: string
@@ -1536,13 +1601,16 @@ export type Database = {
           eligible_for_career_stats?: boolean
           eligible_for_leaderboards?: boolean
           eligible_for_xp_progression?: boolean
+          expires_at?: string | null
           grade?: string
           id?: string
           jersey_number?: number
+          last_claim_attempt_at?: string | null
           photo_url?: string | null
           player_name?: string
           position?: string | null
           print_count?: number
+          recovery_claim?: boolean
           stats?: Json
           team_name?: string
           template_used?: string
