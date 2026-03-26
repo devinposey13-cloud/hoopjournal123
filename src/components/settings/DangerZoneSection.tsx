@@ -259,8 +259,8 @@ export function DangerZoneSection({ userId, activeProfileId, onStartOver }: Dang
                 Start Over
               </h4>
               <p className="text-sm text-muted-foreground mt-1">
-                Wipe all game data, clips, schedule, and profile photo. You'll go through onboarding again.
-                Your account will be preserved.
+                Wipe all game data, clips, schedule, and profile photo for this profile only. You'll go through onboarding again.
+                Your account and other profiles will be preserved.
               </p>
             </div>
             <Button
