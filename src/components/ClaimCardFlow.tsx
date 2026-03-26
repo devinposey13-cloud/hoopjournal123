@@ -55,16 +55,21 @@ export function ClaimCardFlow({ open, onOpenChange, onClaimed }: ClaimCardFlowPr
     setLoading(true);
     try {
       const lookupCode = code.trim().toUpperCase();
+      // Look up card: RLS allows unclaimed OR claimed by current user
       const { data, error } = await supabase
         .from('quick_cards')
         .select('*')
         .eq('claim_code', lookupCode)
-        .is('claimed_by_user_id', null)
         .maybeSingle();
 
       if (error) throw error;
       if (!data) {
-        toast.error('Code not found or already claimed');
+        toast.error('Code not found');
+        return;
+      }
+      // If claimed by a different user, block
+      if (data.claimed_by_user_id && data.claimed_by_user_id !== user?.id) {
+        toast.error('This code has already been claimed by another account');
         return;
       }
 
