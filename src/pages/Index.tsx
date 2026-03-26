@@ -330,41 +330,49 @@ export default function Index() {
     postAuthCleanupRef.current = true;
   }, [isPostAuthReturn, isPostAuthBootstrapping, postAuthRouteState]);
 
-  // Show auth form if not logged in
-  // Show loading skeleton while auth/approval/intro is loading (branded, not white screen)
-  if (showPostAuthRecovery && isPostAuthBootstrapping) {
+  // ── Post-auth bootstrap gate ──
+  // When returning from Apple/OAuth with ?postAuth=1, suppress ALL intermediate
+  // route renders and show a single branded loading screen until every check resolves.
+  if (isPostAuthBootstrapping) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-6">
         <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <LoadingSpinner size="xs" />
           </div>
-          <h1 className="text-xl font-semibold text-foreground">Finishing sign-in…</h1>
+          <h1 className="text-xl font-semibold text-foreground">
+            {showPostAuthRecovery ? 'Taking longer than expected…' : 'Finishing sign-in…'}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Your account is authenticated. We’re restoring your session and dashboard now.
+            {showPostAuthRecovery
+              ? 'Your session may need a refresh to continue.'
+              : 'Setting up your dashboard — just a moment.'}
           </p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Button onClick={() => window.location.reload()}>
-              Refresh app
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                logAuthDebugEvent('navigation_started', {
-                  source: 'postauth_recovery_manual',
-                  target: 'root_reload',
-                });
-                window.location.replace('/');
-              }}
-            >
-              Go to dashboard
-            </Button>
-          </div>
+          {showPostAuthRecovery && (
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Button onClick={() => window.location.reload()}>
+                Refresh app
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  logAuthDebugEvent('navigation_started', {
+                    source: 'postauth_recovery_manual',
+                    target: 'root_reload',
+                  });
+                  window.location.replace('/');
+                }}
+              >
+                Go to dashboard
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
+  // ── Normal (non-post-auth) loading / routing gates ──
   if (authLoading || approvalLoading || introLoading) {
     return (
       <div className="min-h-screen bg-background">
