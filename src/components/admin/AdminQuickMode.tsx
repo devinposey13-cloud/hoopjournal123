@@ -747,20 +747,40 @@ export function AdminQuickMode() {
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
                 </div>
+               ) : showWebcam ? (
+                <div className="space-y-3">
+                  <div className="relative w-full aspect-square max-w-[280px] mx-auto rounded-xl overflow-hidden border-2 border-primary/30 bg-black">
+                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex gap-2 max-w-[280px] mx-auto">
+                    <Button onClick={captureFromWebcam} className="flex-1 gap-2">
+                      <Camera className="w-4 h-4" /> Capture
+                    </Button>
+                    <Button variant="outline" onClick={stopWebcam} className="gap-2">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex gap-2">
-                  <label className="flex-1 cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={handlePhotoUpload}
-                    />
-                    <Button variant="outline" className="w-full gap-2 pointer-events-none" asChild>
-                      <span><Camera className="w-4 h-4" /> Camera</span>
+                  {isMobileDevice ? (
+                    <label className="flex-1 cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={handlePhotoUpload}
+                      />
+                      <Button variant="outline" className="w-full gap-2 pointer-events-none" asChild>
+                        <span><Camera className="w-4 h-4" /> Camera</span>
+                      </Button>
+                    </label>
+                  ) : (
+                    <Button variant="outline" className="flex-1 gap-2" onClick={startWebcam}>
+                      <Camera className="w-4 h-4" /> Camera
                     </Button>
-                  </label>
+                  )}
                   <label className="flex-1 cursor-pointer">
                     <Button variant="outline" className="w-full gap-2 pointer-events-none" asChild>
                       <span><Upload className="w-4 h-4" /> Upload</span>
