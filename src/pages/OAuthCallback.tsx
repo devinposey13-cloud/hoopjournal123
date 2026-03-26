@@ -419,39 +419,66 @@ export default function OAuthCallback() {
     });
 
     // ── Fast watchdog for iOS native (iPhone + iPad) ──
-    // Polls every 500ms for up to 10s, then shows retry button
+    // Polls every 400ms for up to 8s, then shows retry UI
     if (isNativeApp() && isDespiaIOS()) {
-      console.log(`[OAuthCallback] Starting iOS-native watchdog (500ms polling, 10s timeout)`);
+      const POLL_MS = 400;
+      const TIMEOUT_MS = 8000;
       let watchdogTick = 0;
-      const POLL_MS = 500;
-      const TIMEOUT_MS = 10000;
+      const watchdogStartedAt = Date.now();
+
+      logEvent('watchdog_started', { source: 'iOS-native', pollMs: POLL_MS, timeoutMs: TIMEOUT_MS });
+      console.log(`[OAuthCallback] iOS-native watchdog started (${POLL_MS}ms polling, ${TIMEOUT_MS / 1000}s timeout)`);
 
       const watchdogInterval = setInterval(async () => {
         watchdogTick++;
+        const elapsed = Date.now() - watchdogStartedAt;
+        logEvent('session_poll_attempt', { tick: watchdogTick, elapsed });
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
-            const label = navigationTriggered.current ? 'watchdog_force_redirect' : 'watchdog_session_found';
-            logEvent(label, { userId: session.user.id, source: 'iOS-native', tick: watchdogTick });
-            console.log(`[OAuthCallback] iOS-native watchdog — session found at tick ${watchdogTick}, redirecting`);
+            clearInterval(watchdogInterval);
+            logEvent('session_found', {
+              tick: watchdogTick,
+              elapsed,
+              userId: session.user.id,
+              provider: session.user.app_metadata?.provider,
+              alreadyNavigated: navigationTriggered.current,
+            });
+            console.log(`[OAuthCallback] Watchdog: session found at tick ${watchdogTick} (+${elapsed}ms)`);
             navigationTriggered.current = true;
             completeAttempt('success');
-            clearInterval(watchdogInterval);
+            logEvent('navigation_to_next_screen', { method: 'watchdog_redirect', elapsed });
             window.location.href = '/?postAuth=1&watchdog=1&ts=' + Date.now();
+            // Verify redirect actually happened
+            setTimeout(() => {
+              if (window.location.pathname === '/auth/callback') {
+                logEvent('watchdog_redirect_stalled', { elapsed: Date.now() - watchdogStartedAt });
+                window.location.replace('/?postAuth=1&watchdog=2&ts=' + Date.now());
+              }
+            }, 2000);
+          } else {
+            logEvent('session_not_found', { tick: watchdogTick, elapsed });
           }
-        } catch { /* ignore */ }
+        } catch (e) {
+          logEvent('session_poll_error', { tick: watchdogTick, error: String(e) });
+        }
       }, POLL_MS);
 
       const watchdogTimeout = setTimeout(() => {
         clearInterval(watchdogInterval);
-        console.log('[OAuthCallback] iOS-native watchdog timed out');
-        logEvent('watchdog_timeout', { source: 'iOS-native', ticks: watchdogTick });
+        const elapsed = Date.now() - watchdogStartedAt;
+        logEvent('timeout_reached', { source: 'iOS-native', ticks: watchdogTick, elapsed });
+        logEvent('watchdog_cleanup_complete', { showingRetryUI: true });
+        console.log(`[OAuthCallback] Watchdog timed out after ${elapsed}ms (${watchdogTick} ticks)`);
         setShowRetry(true);
+        setPhase('error');
+        setError('Sign in is taking longer than expected. Please try again.');
       }, TIMEOUT_MS);
 
       return () => {
         clearInterval(watchdogInterval);
         clearTimeout(watchdogTimeout);
+        logEvent('watchdog_cleanup_complete', { reason: 'component_unmount' });
       };
     }
   }, []);
