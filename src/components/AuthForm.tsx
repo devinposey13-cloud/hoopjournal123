@@ -51,6 +51,7 @@ const isValidPhoneNumber = (phone: string): boolean => {
 };
 
 export function AuthForm() {
+  const [showClaimCard, setShowClaimCard] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [email, setEmail] = useState('');
@@ -511,12 +512,28 @@ export function AuthForm() {
             </button>
           </div>
 
+          {/* Claim Card */}
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => setShowClaimCard(true)}
+              className="text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+            >
+              🎴 Have a card code?
+            </button>
+          </div>
+
           {/* Legal links */}
           <div className="flex justify-center gap-4 mt-6">
             <a href="/privacy" className="text-xs text-muted-foreground hover:text-primary transition-colors">Privacy</a>
             <a href="/terms" className="text-xs text-muted-foreground hover:text-primary transition-colors">Terms</a>
             <a href="/eula" className="text-xs text-muted-foreground hover:text-primary transition-colors">EULA</a>
           </div>
+
+          <ClaimCardFlow
+            open={showClaimCard}
+            onOpenChange={setShowClaimCard}
+          />
         </div>
       </div>
     </div>
