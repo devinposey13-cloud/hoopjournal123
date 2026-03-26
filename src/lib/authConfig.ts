@@ -134,7 +134,7 @@ export const APPLE_CLIENT_ID = 'com.despia.hoopjourney.AppleAuth';
 
 /**
  * Apple JS SDK redirect URI for the popup/redirect flow.
- * This is NOT the Supabase auth callback — it's the Apple-specific
- * return URL configured in the Apple Services ID.
+ * Must match the Return URL registered in Apple Developer Console
+ * and Lovable Cloud auth settings.
  */
-export const APPLE_REDIRECT_URI = `${APP_ORIGIN}/auth/apple/callback`;
+export const APPLE_REDIRECT_URI = `${APP_ORIGIN}/~oauth/callback`;
