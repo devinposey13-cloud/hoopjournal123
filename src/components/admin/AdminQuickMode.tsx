@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Camera, Upload, Zap, Printer, Download, RotateCcw, Eye, Image as ImageIcon, Plus, Clock, Hash } from 'lucide-react';
+import { Camera, Upload, Zap, Printer, Download, RotateCcw, Eye, Image as ImageIcon, Plus, Clock, Hash, Sparkles, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import hoopJournalQr from '@/assets/hoop-journal-qr.png';
@@ -335,6 +335,7 @@ export function AdminQuickMode() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [showWebcam, setShowWebcam] = useState(false);
+  const [generatingAvatar, setGeneratingAvatar] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -424,6 +425,43 @@ export function AdminQuickMode() {
   }, [stopWebcam]);
 
   const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  // Generate AI avatar from uploaded photo
+  const handleGenerateAvatar = useCallback(async () => {
+    if (!photoUrl) {
+      toast.error('Upload a photo first to generate an avatar');
+      return;
+    }
+    setGeneratingAvatar(true);
+    try {
+      // First upload the current photo if it's a local blob
+      let sourceUrl = photoUrl;
+      if (photoFile) {
+        const uploaded = await uploadPhoto(photoFile);
+        if (uploaded) sourceUrl = uploaded;
+      }
+      const { data, error } = await supabase.functions.invoke('generate-avatar', {
+        body: { imageUrl: sourceUrl },
+      });
+      if (error) throw error;
+      if (data?.avatarUrl) {
+        // Fetch the generated avatar as a file
+        const resp = await fetch(data.avatarUrl);
+        const blob = await resp.blob();
+        const file = new File([blob], `avatar-${Date.now()}.png`, { type: 'image/png' });
+        setPhotoFile(file);
+        setPhotoUrl(URL.createObjectURL(file));
+        toast.success('Avatar generated!');
+      } else {
+        throw new Error('No avatar URL returned');
+      }
+    } catch (err: any) {
+      console.error('Avatar generation error:', err);
+      toast.error('Failed to generate avatar. Using original photo.');
+    } finally {
+      setGeneratingAvatar(false);
+    }
+  }, [photoUrl, photoFile]);
 
   // Upload photo to storage
   async function uploadPhoto(file: File): Promise<string | null> {
@@ -713,14 +751,28 @@ export function AdminQuickMode() {
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Player Photo *</Label>
               {photoUrl ? (
-                <div className="relative w-full aspect-square max-w-[200px] mx-auto rounded-xl overflow-hidden border-2 border-primary/30">
-                  <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => { setPhotoUrl(null); setPhotoFile(null); }}
-                    className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1.5"
+                <div className="space-y-2">
+                  <div className="relative w-full aspect-square max-w-[200px] mx-auto rounded-xl overflow-hidden border-2 border-primary/30">
+                    <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => { setPhotoUrl(null); setPhotoFile(null); }}
+                      className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1.5"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full max-w-[200px] mx-auto flex gap-2"
+                    onClick={handleGenerateAvatar}
+                    disabled={generatingAvatar}
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                  </button>
+                    {generatingAvatar ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4" /> Generate Avatar</>
+                    )}
+                  </Button>
                 </div>
                ) : showWebcam ? (
                 <div className="space-y-3">
