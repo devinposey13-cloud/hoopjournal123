@@ -426,6 +426,43 @@ export function AdminQuickMode() {
 
   const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
+  // Generate AI avatar from uploaded photo
+  const handleGenerateAvatar = useCallback(async () => {
+    if (!photoUrl) {
+      toast.error('Upload a photo first to generate an avatar');
+      return;
+    }
+    setGeneratingAvatar(true);
+    try {
+      // First upload the current photo if it's a local blob
+      let sourceUrl = photoUrl;
+      if (photoFile) {
+        const uploaded = await uploadPhoto(photoFile);
+        if (uploaded) sourceUrl = uploaded;
+      }
+      const { data, error } = await supabase.functions.invoke('generate-avatar', {
+        body: { imageUrl: sourceUrl },
+      });
+      if (error) throw error;
+      if (data?.avatarUrl) {
+        // Fetch the generated avatar as a file
+        const resp = await fetch(data.avatarUrl);
+        const blob = await resp.blob();
+        const file = new File([blob], `avatar-${Date.now()}.png`, { type: 'image/png' });
+        setPhotoFile(file);
+        setPhotoUrl(URL.createObjectURL(file));
+        toast.success('Avatar generated!');
+      } else {
+        throw new Error('No avatar URL returned');
+      }
+    } catch (err: any) {
+      console.error('Avatar generation error:', err);
+      toast.error('Failed to generate avatar. Using original photo.');
+    } finally {
+      setGeneratingAvatar(false);
+    }
+  }, [photoUrl, photoFile]);
+
   // Upload photo to storage
   async function uploadPhoto(file: File): Promise<string | null> {
     const ext = file.name.split('.').pop() || 'jpg';
