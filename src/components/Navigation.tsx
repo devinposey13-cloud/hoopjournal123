@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Gamepad2, Settings, Shield, CalendarRange, UserCircle, LogOut, UserPlus, HelpCircle, MessageSquare, Bell } from 'lucide-react';
+import { LayoutDashboard, ClipboardPlus, TrendingUp, MessageCircle, MoreHorizontal, Gamepad2, Settings, Shield, CalendarRange, UserCircle, LogOut, UserPlus, HelpCircle, MessageSquare, Bell, Zap } from 'lucide-react';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import { SeasonSelector } from './SeasonSelector';
 import { ProfileSelector } from './profile/ProfileSelector';
@@ -54,7 +54,7 @@ const moreTabs = [
 
 // Helper to check if a tab is in the "More" menu
 const isMoreTab = (tab: Tab): boolean => {
-  return ['profile', 'minigames', 'settings', 'admin'].includes(tab);
+  return ['profile', 'minigames', 'settings', 'admin', 'quickmode'].includes(tab);
 };
 
 // Map display tabs to actual tabs
@@ -287,6 +287,13 @@ export function Navigation({
                           {adminNotificationCount > 99 ? '99+' : adminNotificationCount}
                         </Badge>
                       )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleMoreItemClick({ id: 'quickmode' as Tab, label: 'Event Quick Mode', icon: Zap })}
+                      className={cn('flex items-center gap-3 px-3 py-2.5 cursor-pointer', activeTab === 'quickmode' && 'bg-primary/10 text-primary')}
+                    >
+                      <Zap className="w-4 h-4" />
+                      <span>Event Quick Mode</span>
                     </DropdownMenuItem>
                   </>
                 )}
