@@ -204,7 +204,9 @@ function PromoCardCanvas({
           overflow: 'hidden',
           boxShadow: `0 0 80px ${color}50, 0 0 160px ${color}20, inset 0 0 40px ${color}10`,
           position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-        }}>
+        }}
+          data-canvas-avatar="true"
+        >
           {photoUrl ? (
             <img src={photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} crossOrigin="anonymous" />
           ) : (
@@ -280,7 +282,11 @@ function PromoCardCanvas({
             lineHeight: 0.82, textShadow: glow,
             letterSpacing: '-0.03em', textAlign: 'center',
             minHeight: 176,
-          }}>{grade}</div>
+          }}
+            data-canvas-grade="true"
+            data-grade-color={color}
+            data-grade-glow={glow}
+          >{grade}</div>
         </div>
 
         {/* Badges */}
@@ -575,17 +581,18 @@ export function AdminQuickMode() {
     const target = exportRef.current || cardRef.current;
     if (!target) return;
     try {
-      const canvas = await html2canvas(target, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#070b16',
-        width: 1080,
-        height: 1920,
-      });
-      const link = document.createElement('a');
-      link.download = `${playerName.replace(/\s+/g, '-')}-event-card.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      const blob = await capturePromoCard(target);
+      if (!blob) throw new Error('Failed to generate image');
+      const file = new File([blob], `${playerName.replace(/\s+/g, '-')}-event-card.png`, { type: 'image/png' });
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] });
+      } else {
+        const link = document.createElement('a');
+        link.download = file.name;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
       toast.success('Card saved!');
     } catch {
       toast.error('Failed to save image');
@@ -597,13 +604,12 @@ export function AdminQuickMode() {
     const target = exportRef.current || cardRef.current;
     if (!target) return;
     try {
-      const canvas = await html2canvas(target, {
-        scale: 2, useCORS: true, backgroundColor: '#070b16',
-        width: 1080, height: 1920,
-      });
+      const blob = await capturePromoCard(target);
+      if (!blob) throw new Error('Failed to generate image');
+      const url = URL.createObjectURL(blob);
       const win = window.open('', '_blank');
       if (win) {
-        win.document.write(`<html><body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#000"><img src="${canvas.toDataURL()}" style="max-width:100%;max-height:100vh" /></body></html>`);
+        win.document.write(`<html><body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#000"><img src="${url}" style="max-width:100%;max-height:100vh" /></body></html>`);
         win.document.close();
         win.print();
       }
@@ -667,6 +673,119 @@ export function AdminQuickMode() {
   const activeTemplate = previewCard 
     ? TEMPLATES[previewCard.template_used as TemplateKey] || TEMPLATES.scorer
     : template;
+
+  // Canvas 2D export — hides avatar & grade, captures via html2canvas, redraws them crisp
+  async function capturePromoCard(container: HTMLElement): Promise<Blob | null> {
+    const W = 1080, H = 1920;
+
+    const avatarEl = container.querySelector('[data-canvas-avatar]') as HTMLElement | null;
+    const gradeEl = container.querySelector('[data-canvas-grade]') as HTMLElement | null;
+
+    // Collect avatar data before hiding
+    const avatarImg = avatarEl?.querySelector('img') as HTMLImageElement | null;
+    const avatarColor = activeTemplate.color;
+
+    // Hide elements that html2canvas distorts
+    if (avatarEl) avatarEl.style.visibility = 'hidden';
+    if (gradeEl) gradeEl.style.visibility = 'hidden';
+
+    const rawCanvas = await html2canvas(container, {
+      scale: 2, useCORS: true, backgroundColor: '#070b16',
+      width: W, height: H, windowWidth: W, windowHeight: H, logging: false,
+    });
+
+    // Restore visibility
+    if (avatarEl) avatarEl.style.visibility = '';
+    if (gradeEl) gradeEl.style.visibility = '';
+
+    const out = document.createElement('canvas');
+    out.width = W; out.height = H;
+    const ctx = out.getContext('2d');
+    if (!ctx) return null;
+
+    ctx.fillStyle = '#070b16';
+    ctx.fillRect(0, 0, W, H);
+    ctx.drawImage(rawCanvas, 0, 0, rawCanvas.width, rawCanvas.height, 0, 0, W, H);
+
+    // ── Redraw avatar as perfect circle ──
+    if (avatarEl) {
+      const containerRect = container.getBoundingClientRect();
+      const avatarRect = avatarEl.getBoundingClientRect();
+      const scaleX = W / containerRect.width;
+      const scaleY = H / containerRect.height;
+      const cx = (avatarRect.left - containerRect.left + avatarRect.width / 2) * scaleX;
+      const cy = (avatarRect.top - containerRect.top + avatarRect.height / 2) * scaleY;
+      const radius = (avatarRect.width / 2) * scaleX;
+      const borderWidth = 8 * scaleX;
+
+      // Draw border ring
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = avatarColor;
+      ctx.lineWidth = borderWidth;
+      ctx.shadowColor = avatarColor;
+      ctx.shadowBlur = 80;
+      ctx.stroke();
+      ctx.restore();
+
+      // Draw image clipped to circle
+      if (avatarImg && avatarImg.complete && avatarImg.naturalWidth > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - borderWidth / 2, 0, Math.PI * 2);
+        ctx.clip();
+
+        // Cover-fit the image into the circle
+        const imgW = avatarImg.naturalWidth;
+        const imgH = avatarImg.naturalHeight;
+        const diam = (radius - borderWidth / 2) * 2;
+        const scale = Math.max(diam / imgW, diam / imgH);
+        const sw = imgW * scale;
+        const sh = imgH * scale;
+        ctx.drawImage(avatarImg, cx - sw / 2, cy - sh / 2, sw, sh);
+        ctx.restore();
+      } else {
+        // Fallback: fill circle with dark bg
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - borderWidth / 2, 0, Math.PI * 2);
+        ctx.fillStyle = '#1e293b';
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // ── Redraw grade text ──
+    if (gradeEl) {
+      const containerRect = container.getBoundingClientRect();
+      const gradeRect = gradeEl.getBoundingClientRect();
+      const scaleX = W / containerRect.width;
+      const scaleY = H / containerRect.height;
+      const relX = (gradeRect.left - containerRect.left + gradeRect.width / 2) * scaleX;
+      const relY = (gradeRect.top - containerRect.top + gradeRect.height / 2) * scaleY;
+
+      const gradeColor = gradeEl.getAttribute('data-grade-color') || activeTemplate.color;
+      const gradeGlow = gradeEl.getAttribute('data-grade-glow') || '';
+
+      ctx.save();
+      ctx.font = `900 216px Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = gradeColor;
+
+      const glowMatch = gradeGlow.match(/rgba?\(([^)]+)\)/);
+      if (glowMatch) {
+        ctx.shadowColor = `rgba(${glowMatch[1]})`;
+        ctx.shadowBlur = 60;
+      }
+
+      ctx.fillText(activeTemplate.grade, relX, relY);
+      ctx.restore();
+    }
+
+    return new Promise((resolve) => out.toBlob((b) => resolve(b), 'image/png'));
+  }
 
   return (
     <div className="space-y-6">
