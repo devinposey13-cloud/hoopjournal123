@@ -468,8 +468,8 @@ export function AdminQuickMode() {
         photo_url: uploadedUrl,
         template_used: templateKey,
         grade: template.grade,
-        stats: template.stats,
-        badges: template.badges,
+        stats: template.stats as any,
+        badges: template.badges as any,
         card_headline: template.headline,
         claim_code: claimCode,
         contact_info: contactInfo || null,
@@ -478,7 +478,7 @@ export function AdminQuickMode() {
         eligible_for_leaderboards: false,
         eligible_for_career_stats: false,
         eligible_for_xp_progression: false,
-      }).select().single();
+      } as any).select().single();
 
       if (error) throw error;
 
