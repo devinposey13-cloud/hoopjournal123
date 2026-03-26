@@ -7,6 +7,7 @@ import { WelcomeCard } from './onboarding/WelcomeCard';
 import { PlayerIdentityCard } from './onboarding/PlayerIdentityCard';
 import { GoalsCard } from './onboarding/GoalsCard';
 import { CompletionCard } from './onboarding/CompletionCard';
+import { ClaimCardFlow } from './ClaimCardFlow';
 
 export interface OnboardingData {
   name: string;
@@ -28,6 +29,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [showClaimCard, setShowClaimCard] = useState(false);
   const [data, setData] = useState<OnboardingData>({
     name: '',
     courtRole: '',
