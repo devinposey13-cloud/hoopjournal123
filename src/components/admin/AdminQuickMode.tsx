@@ -487,8 +487,8 @@ export function AdminQuickMode() {
         admin_id: user?.id,
         card_id: data.id,
         action: 'created',
-        metadata: { template_used: templateKey, player_name: playerName },
-      });
+        metadata: { template_used: templateKey, player_name: playerName } as any,
+      } as any);
 
       toast.success('Card generated!');
       setShowPreview(true);
@@ -541,10 +541,10 @@ export function AdminQuickMode() {
       }
 
       if (previewCard) {
-        await supabase.from('quick_cards').update({ print_count: (previewCard.print_count || 0) + 1 }).eq('id', previewCard.id);
+        await supabase.from('quick_cards').update({ print_count: (previewCard.print_count || 0) + 1 } as any).eq('id', previewCard.id);
         await supabase.from('quick_mode_audit_log').insert({
           admin_id: user?.id, card_id: previewCard.id, action: 'printed',
-        });
+        } as any);
       }
     } catch {
       toast.error('Failed to print');
