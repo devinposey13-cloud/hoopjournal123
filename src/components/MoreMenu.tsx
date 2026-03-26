@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LogOut, Settings, Shield, UserCircle, UserPlus, Calendar,
-  HelpCircle, MessageSquare, Gamepad2, Bell,
+  HelpCircle, MessageSquare, Gamepad2, Bell, Zap,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveProfile } from '@/hooks/useActiveProfile';
@@ -24,7 +24,7 @@ import { AddProfileDialog } from './profile/AddProfileDialog';
 import { FeedbackDialog } from './FeedbackDialog';
 import { Season } from '@/types/basketball';
 
-export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile';
+export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile' | 'quickmode';
 
 interface MoreMenuProps {
   open: boolean;
@@ -225,6 +225,12 @@ export function MoreMenu({
                 isActive={activeTab === 'admin'}
                 badge={adminNotificationCount}
                 onClick={() => go('admin')}
+              />
+              <MenuRow
+                icon={Zap}
+                label="Event Quick Mode"
+                isActive={activeTab === 'quickmode'}
+                onClick={() => go('quickmode')}
               />
             </div>
           )}

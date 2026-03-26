@@ -14,6 +14,7 @@ import { SettingsPanel } from '@/components/SettingsPanel';
 import { AuthForm } from '@/components/AuthForm';
 import { JournalHeader } from '@/components/JournalHeader';
 import { AdminPanel } from '@/components/AdminPanel';
+import { AdminQuickMode } from '@/components/admin/AdminQuickMode';
 import { GamesHub } from '@/components/games/GamesHub';
 import { ProgressHub } from '@/components/ProgressHub';
 import { LogSection } from '@/components/LogSection';
@@ -939,6 +940,13 @@ export default function Index() {
               </p>
             </div>
             <AdminPanel />
+          </div>
+        )}
+
+        {/* Quick Mode Tab */}
+        {activeTab === 'quickmode' && isAdmin && (
+          <div className="animate-fade-in">
+            <AdminQuickMode />
           </div>
         )}
       </main>
