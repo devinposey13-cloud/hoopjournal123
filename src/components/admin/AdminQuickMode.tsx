@@ -810,7 +810,7 @@ export function AdminQuickMode() {
       const gradeGlow = gradeEl.getAttribute('data-grade-glow') || '';
 
       ctx.save();
-      ctx.font = `900 216px Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+      ctx.font = `900 244px Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = gradeColor;
