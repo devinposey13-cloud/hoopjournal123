@@ -123,6 +123,7 @@ interface QuickCard {
   badges: string[];
   card_headline: string | null;
   claim_code: string | null;
+  claim_token: string | null;
   print_count: number;
   created_at: string;
 }
@@ -136,7 +137,7 @@ function generateClaimCode(): string {
 
 // ── Promo Card Canvas ──
 function PromoCardCanvas({ 
-  playerName, teamName, jerseyNumber, position, photoUrl, template, cardRef 
+  playerName, teamName, jerseyNumber, position, photoUrl, template, cardRef, claimUrl 
 }: {
   playerName: string;
   teamName: string;
@@ -145,6 +146,7 @@ function PromoCardCanvas({
   photoUrl?: string;
   template: typeof TEMPLATES[TemplateKey];
   cardRef: React.RefObject<HTMLDivElement>;
+  claimUrl?: string;
 }) {
   const { color, glow, grade, badges, headline, archetype } = template;
   const CANVAS_W = 1080;
@@ -310,10 +312,15 @@ function PromoCardCanvas({
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-          <div style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to track</div>
-          <div style={{ padding: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 10 }}>
-            <img src={hoopJournalQr} alt="" style={{ width: 160, height: 160, borderRadius: 6 }} crossOrigin="anonymous" />
+          <div style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to claim</div>
+          <div style={{ padding: 6, background: 'rgba(255,255,255,0.95)', borderRadius: 10 }}>
+            {claimUrl ? (
+              <QRCodeSVG value={claimUrl} size={160} bgColor="#ffffff" fgColor="#000000" level="M" />
+            ) : (
+              <div style={{ width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 12 }}>Generate card first</div>
+            )}
           </div>
+          <div style={{ color: s.dim, fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', marginTop: 2 }}>Claim within 72 hours</div>
         </div>
       </div>
     </div>
