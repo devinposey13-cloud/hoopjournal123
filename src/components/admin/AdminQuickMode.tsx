@@ -714,6 +714,14 @@ export function AdminQuickMode() {
                   <Button variant="outline" className="flex-1 gap-2" onClick={handleCameraCapture}>
                     <Camera className="w-4 h-4" /> Camera
                   </Button>
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handlePhotoUpload}
+                  />
                   <label className="flex-1">
                     <Button variant="outline" className="w-full gap-2" asChild>
                       <span><Upload className="w-4 h-4" /> Upload</span>
