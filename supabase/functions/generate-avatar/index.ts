@@ -4,10 +4,19 @@ import { getCorsHeaders } from '../_shared/cors.ts';
 
 const AVATAR_PROMPT = "Create a stylized illustrated portrait of the person in this photo as a basketball player avatar. CRITICAL: You MUST precisely preserve the person's exact facial structure, skin tone, eye shape, nose shape, mouth shape, hairstyle, hair color, and any distinguishing facial features — the result must be immediately recognizable as the same person. Apply a vibrant digital illustration style similar to NBA 2K cover art or trading card illustrations. Use dynamic lighting with rim lighting effects. Add a subtle basketball-themed background with soft bokeh court lights. The style should be polished and professional while keeping the likeness perfectly intact. IMPORTANT: Do NOT add any text, names, nicknames, labels, watermarks, or any written words anywhere in the image. The image must contain zero text of any kind.";
 
+// Flash first (cheaper/faster), Pro as fallback
 const MODELS = [
-  "google/gemini-3-pro-image-preview",
   "google/gemini-3.1-flash-image-preview",
+  "google/gemini-3-pro-image-preview",
 ];
+
+async function hashImage(imageData: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(imageData);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 async function tryGenerateAvatar(apiKey: string, imageUrl: string, model: string): Promise<string | null> {
   console.log(`Trying model: ${model}`);
@@ -103,18 +112,69 @@ serve(async (req) => {
       );
     }
 
-    console.log("Generating avatar from image:", imageUrl);
+    // --- Caching: check if we already generated an avatar for this image ---
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const imageHash = await hashImage(imageUrl);
+    const cachePath = `avatar-cache/${imageHash}.png`;
+    console.log("Cache key:", cachePath);
+
+    // Check if cached avatar exists
+    const { data: existingFile } = await serviceClient.storage
+      .from('avatars')
+      .list('avatar-cache', { search: `${imageHash}.png`, limit: 1 });
+
+    if (existingFile && existingFile.length > 0) {
+      const { data: publicUrlData } = serviceClient.storage
+        .from('avatars')
+        .getPublicUrl(cachePath);
+
+      if (publicUrlData?.publicUrl) {
+        console.log("Cache HIT — returning stored avatar");
+        return new Response(
+          JSON.stringify({ success: true, imageData: publicUrlData.publicUrl, cached: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    console.log("Cache MISS — generating avatar from image");
 
     // Try each model, with one retry on the primary model
     for (let attempt = 0; attempt < 3; attempt++) {
-      const modelIndex = attempt === 0 ? 0 : attempt === 1 ? 0 : 1; // retry primary once, then fallback
+      const modelIndex = attempt === 0 ? 0 : attempt === 1 ? 0 : 1;
       const model = MODELS[modelIndex];
 
       try {
         const result = await tryGenerateAvatar(LOVABLE_API_KEY, imageUrl, model);
         if (result) {
+          // Upload to cache in background (don't block response)
+          try {
+            // result is a base64 data URL — extract the binary
+            const base64Match = result.match(/^data:image\/\w+;base64,(.+)$/);
+            if (base64Match) {
+              const binaryStr = atob(base64Match[1]);
+              const bytes = new Uint8Array(binaryStr.length);
+              for (let i = 0; i < binaryStr.length; i++) {
+                bytes[i] = binaryStr.charCodeAt(i);
+              }
+              await serviceClient.storage
+                .from('avatars')
+                .upload(cachePath, bytes, {
+                  contentType: 'image/png',
+                  upsert: true,
+                });
+              console.log("Avatar cached at", cachePath);
+            }
+          } catch (cacheErr) {
+            console.error("Failed to cache avatar (non-fatal):", cacheErr);
+          }
+
           return new Response(
-            JSON.stringify({ success: true, imageData: result }),
+            JSON.stringify({ success: true, imageData: result, cached: false }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -128,7 +188,6 @@ serve(async (req) => {
         console.error(`Attempt ${attempt + 1} failed:`, err);
       }
 
-      // Brief pause between retries
       if (attempt < 2) {
         await new Promise((r) => setTimeout(r, 1500));
       }
