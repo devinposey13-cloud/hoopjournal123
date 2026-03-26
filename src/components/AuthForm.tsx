@@ -172,8 +172,10 @@ export function AuthForm() {
         return;
       }
 
-      // ── iOS DESPIA: Direct redirect to Apple authorize URL ──
-      if (isIOSNative) {
+      // ── iOS DESPIA (iPhone only): Direct redirect to Apple authorize URL ──
+      // iPad uses the Lovable managed OAuth flow below (more reliable in iPad WKWebView)
+      const isIPhone = isIOSNative && /iphone/i.test(navigator.userAgent);
+      if (isIPhone) {
         tracker.logEvent('flow_selected', { flow: 'ios_despia_redirect' });
         tracker.persistBeforeRedirect();
         signInWithAppleRedirect();
