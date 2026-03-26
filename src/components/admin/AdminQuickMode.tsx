@@ -12,9 +12,9 @@ import { toast } from 'sonner';
 import { Camera, Upload, Zap, Printer, Download, RotateCcw, Eye, Image as ImageIcon, Plus, Clock, Hash, Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
-import hoopJournalQr from '@/assets/hoop-journal-qr.png';
 import courtLines from '@/assets/basketball-court-lines.jpg';
 import html2canvas from 'html2canvas';
+import { QRCodeSVG } from 'qrcode.react';
 
 // ── Template Definitions ──
 const TEMPLATES = {
