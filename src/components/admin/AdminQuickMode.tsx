@@ -124,20 +124,11 @@ function PromoCardCanvas({
   template: typeof TEMPLATES[TemplateKey];
   cardRef: React.RefObject<HTMLDivElement>;
 }) {
-  const { color, glow, grade, badges, stats, headline } = template;
+  const { color, glow, grade, badges, headline, archetype } = template;
   const CANVAS_W = 1080;
   const CANVAS_H = 1920;
 
   const s = { muted: '#64748b', dim: '#475569', bright: '#f8fafc', sub: '#94a3b8' };
-
-  const statGrid = [
-    { label: 'PTS', value: stats.points },
-    { label: 'REB', value: stats.rebounds },
-    { label: 'AST', value: stats.assists },
-    { label: 'STL', value: stats.steals },
-    { label: 'BLK', value: stats.blocks },
-    { label: 'TOV', value: stats.turnovers },
-  ];
 
   return (
     <div
@@ -158,9 +149,9 @@ function PromoCardCanvas({
       }} />
       {/* Background glow */}
       <div style={{
-        position: 'absolute', top: '22%', left: '50%', transform: 'translate(-50%, -50%)',
-        width: 800, height: 800, borderRadius: '50%',
-        background: `radial-gradient(circle, ${color}08 0%, transparent 70%)`,
+        position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%, -50%)',
+        width: 900, height: 900, borderRadius: '50%',
+        background: `radial-gradient(circle, ${color}10 0%, transparent 65%)`,
         pointerEvents: 'none',
       }} />
       <div style={{
@@ -178,166 +169,122 @@ function PromoCardCanvas({
         border: '1px solid rgba(255,255,255,0.2)',
       }}>⚡ EVENT CARD</div>
 
-      {/* Content */}
+      {/* Content — identity-focused */}
       <div style={{
-        position: 'absolute', top: 100, bottom: 320, left: 80, right: 80,
+        position: 'absolute', top: 100, bottom: 280, left: 80, right: 80,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center',
       }}>
-        {/* Avatar + Grade */}
+        {/* Avatar — enlarged with accent ring glow */}
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: '100%', marginBottom: 32, gap: 48,
+          width: 440, height: 440, borderRadius: '50%',
+          border: `8px solid ${color}`,
+          overflow: 'hidden', flexShrink: 0,
+          boxShadow: `0 0 80px ${color}50, 0 0 160px ${color}20, inset 0 0 40px ${color}10`,
         }}>
-          {/* Avatar */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+          {photoUrl ? (
+            <img src={photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
+          ) : (
             <div style={{
-              width: 320, height: 320, borderRadius: '50%',
-              border: `7px solid ${color}`,
-              overflow: 'hidden',
-              boxShadow: `0 0 100px ${color}40, 0 0 200px ${color}15`,
+              width: '100%', height: '100%', background: '#1e293b',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexDirection: 'column', gap: 8,
             }}>
-              {photoUrl ? (
-                <img src={photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
-              ) : (
-                <div style={{
-                  width: '100%', height: '100%', background: '#1e293b',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexDirection: 'column', gap: 8,
-                }}>
-                  <span style={{ fontSize: 80 }}>🏀</span>
-                  <span style={{ color: s.muted, fontSize: 28, fontWeight: 800 }}>#{jerseyNumber}</span>
-                </div>
-              )}
+              <span style={{ fontSize: 100 }}>🏀</span>
+              <span style={{ color: s.muted, fontSize: 32, fontWeight: 800 }}>#{jerseyNumber}</span>
             </div>
-          </div>
-
-          {/* Grade */}
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            position: 'relative', marginTop: 28, padding: '44px 24px 96px',
-          }}>
-            <div style={{
-              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-              width: 440, height: 440, borderRadius: '50%',
-              background: `radial-gradient(circle, ${color}15 0%, transparent 60%)`,
-              pointerEvents: 'none',
-            }} />
-            <div style={{
-              color: s.dim, fontSize: 18, fontWeight: 800,
-              letterSpacing: '0.4em', textTransform: 'uppercase',
-              textAlign: 'center', marginBottom: 8,
-            }}>HOOP JOURNAL GAME GRADE</div>
-            <div style={{
-              fontSize: 236, fontWeight: 900, color,
-              lineHeight: 0.9, textShadow: glow,
-              letterSpacing: '-0.03em', textAlign: 'center',
-              paddingBottom: 10,
-            }}>{grade}</div>
-          </div>
+          )}
         </div>
 
-        {/* Player Name + Team */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28 }}>
-          <div style={{
-            color: s.bright, fontSize: 55, fontWeight: 900,
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-            textAlign: 'center', lineHeight: 1,
-          }}>{playerName}</div>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 16, marginTop: 10,
-          }}>
-            <span style={{
-              color: s.muted, fontSize: 21, fontWeight: 700,
-              letterSpacing: '0.25em', textTransform: 'uppercase',
-            }}>{teamName}</span>
-            <span style={{ color: s.dim, fontSize: 21, fontWeight: 700 }}>|</span>
-            <span style={{
-              color: s.muted, fontSize: 21, fontWeight: 700,
-              letterSpacing: '0.15em',
-            }}>#{jerseyNumber}{position ? ` • ${position}` : ''}</span>
-          </div>
-        </div>
-
-        {/* Headline */}
+        {/* Player Name — enlarged + bolder */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28,
+          color: s.bright, fontSize: 68, fontWeight: 900,
+          letterSpacing: '0.06em', textTransform: 'uppercase',
+          textAlign: 'center', lineHeight: 1.05, marginTop: 48,
+          maxWidth: '100%', wordBreak: 'break-word',
+        }}>{playerName}</div>
+
+        {/* Team + Jersey */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 16, marginTop: 14,
         }}>
           <span style={{
-            color, fontSize: 36, fontWeight: 900,
-            letterSpacing: '0.12em', textTransform: 'uppercase',
-          }}>{headline}</span>
+            color: s.muted, fontSize: 24, fontWeight: 700,
+            letterSpacing: '0.25em', textTransform: 'uppercase',
+          }}>{teamName}</span>
+          <span style={{ color: s.dim, fontSize: 24, fontWeight: 700 }}>|</span>
+          <span style={{
+            color: s.muted, fontSize: 24, fontWeight: 700,
+            letterSpacing: '0.15em',
+          }}>#{jerseyNumber}{position ? ` • ${position}` : ''}</span>
+        </div>
+
+        {/* Archetype */}
+        <div style={{
+          color, fontSize: 32, fontWeight: 800,
+          letterSpacing: '0.25em', textTransform: 'uppercase',
+          marginTop: 28, textAlign: 'center',
+          textShadow: `0 0 30px ${color}40`,
+        }}>{archetype}</div>
+
+        {/* Divider */}
+        <div style={{
+          width: '35%', height: 2, marginTop: 36,
+          background: `linear-gradient(90deg, transparent, ${color}40, transparent)`,
+        }} />
+
+        {/* Grade — hero element */}
+        <div style={{
+          position: 'relative', marginTop: 36,
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+        }}>
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            width: 500, height: 500, borderRadius: '50%',
+            background: `radial-gradient(circle, ${color}12 0%, transparent 55%)`,
+            pointerEvents: 'none',
+          }} />
+          <div style={{
+            color: s.dim, fontSize: 18, fontWeight: 800,
+            letterSpacing: '0.4em', textTransform: 'uppercase',
+            textAlign: 'center', marginBottom: 4,
+          }}>GAME GRADE</div>
+          <div style={{
+            fontSize: 272, fontWeight: 900, color,
+            lineHeight: 0.85, textShadow: glow,
+            letterSpacing: '-0.03em', textAlign: 'center',
+          }}>{grade}</div>
         </div>
 
         {/* Divider */}
         <div style={{
-          width: '40%', height: 1, marginBottom: 20,
-          background: `linear-gradient(90deg, transparent, ${color}25, transparent)`,
-        }} />
-
-        {/* Badges */}
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 18 }}>
-          {badges.map((badge, i) => (
-            <div key={i} style={{
-              background: `${color}15`, border: `1px solid ${color}30`,
-              borderRadius: 50, padding: '6px 22px',
-              color, fontSize: 18, fontWeight: 700,
-            }}>{badge}</div>
-          ))}
-        </div>
-
-        <div style={{
-          width: '60%', height: 1, marginBottom: 28,
+          width: '50%', height: 2, marginTop: 32,
           background: `linear-gradient(90deg, transparent, ${color}30, transparent)`,
         }} />
 
-        {/* Stat grid */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 24, width: '100%',
-        }}>
-          {statGrid.map((st) => (
-            <div key={st.label} style={{
-              background: 'rgba(15,23,42,0.8)',
-              border: '1px solid rgba(100,116,139,0.12)',
-              borderLeft: `4px solid ${color}`,
-              borderRadius: 16, padding: '20px 20px 18px',
-              textAlign: 'left', position: 'relative',
-            }}>
-              <div style={{ fontSize: 25, fontWeight: 800, color, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4, whiteSpace: 'nowrap' }}>{st.label}</div>
-              <div style={{ fontSize: 67, fontWeight: 900, color: s.bright, lineHeight: 1, whiteSpace: 'nowrap' }}>{st.value}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Shooting Row */}
-        <div style={{ display: 'flex', gap: 24, width: '100%', marginTop: 16, justifyContent: 'center' }}>
-          {[
-            { label: 'FG', made: stats.fgMade, att: stats.fgAttempted },
-            { label: '3PT', made: stats.threePtMade, att: stats.threePtAttempted },
-            { label: 'FT', made: stats.ftMade, att: stats.ftAttempted },
-          ].map((sh) => (
-            <div key={sh.label} style={{
-              flex: 1, background: 'rgba(15,23,42,0.5)',
-              border: '1px solid rgba(100,116,139,0.1)',
-              borderRadius: 12, padding: '14px 12px', textAlign: 'center',
-            }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: s.sub, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 2 }}>{sh.label}</div>
-              <div style={{ fontSize: 40, fontWeight: 900, color: s.bright, lineHeight: 1 }}>{sh.made}/{sh.att}</div>
-            </div>
+        {/* Badges */}
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center', marginTop: 36 }}>
+          {badges.slice(0, 3).map((badge, i) => (
+            <div key={i} style={{
+              background: `${color}12`, border: `1.5px solid ${color}35`,
+              borderRadius: 50, padding: '12px 30px',
+              color, fontSize: 22, fontWeight: 700,
+              letterSpacing: '0.04em',
+            }}>{badge}</div>
           ))}
         </div>
       </div>
 
       {/* Footer */}
       <div style={{
-        position: 'absolute', bottom: 80, left: 80, right: 80,
+        position: 'absolute', bottom: 60, left: 80, right: 80,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <img src={hoopJournalLogo} alt="" style={{ width: 82, height: 82, borderRadius: 16 }} crossOrigin="anonymous" />
           <div>
             <div style={{ color: s.bright, fontSize: 28, fontWeight: 800 }}>Hoop Journal</div>
-            <div style={{ color: s.dim, fontSize: 18, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
+            <div style={{ color: s.dim, fontSize: 16, fontWeight: 500, letterSpacing: '0.05em' }}>EVENT EDITION</div>
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
