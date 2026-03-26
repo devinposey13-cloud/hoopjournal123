@@ -193,21 +193,23 @@ function PromoCardCanvas({
         border: '1px solid rgba(255,255,255,0.2)',
       }}>⚡ EVENT CARD</div>
 
-      {/* Content — identity-focused */}
+      {/* Content — identity-focused, use fixed positioning to avoid overflow */}
       <div style={{
         position: 'absolute', top: 100, bottom: 280, left: 80, right: 80,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
+        gap: 0,
       }}>
-        {/* Avatar — enlarged with accent ring glow */}
+        {/* Avatar — fixed size with proper aspect ratio */}
         <div style={{
-          width: 440, height: 440, borderRadius: '50%',
+          width: 380, height: 380, borderRadius: '50%',
           border: `8px solid ${color}`,
           overflow: 'hidden', flexShrink: 0,
           boxShadow: `0 0 80px ${color}50, 0 0 160px ${color}20, inset 0 0 40px ${color}10`,
+          marginTop: 20,
         }}>
           {photoUrl ? (
-            <img src={photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
+            <img src={photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} crossOrigin="anonymous" />
           ) : (
             <div style={{
               width: '100%', height: '100%', background: '#1e293b',
@@ -220,17 +222,17 @@ function PromoCardCanvas({
           )}
         </div>
 
-        {/* Player Name — enlarged + bolder */}
+        {/* Player Name */}
         <div style={{
-          color: s.bright, fontSize: 68, fontWeight: 900,
+          color: s.bright, fontSize: 64, fontWeight: 900,
           letterSpacing: '0.06em', textTransform: 'uppercase',
-          textAlign: 'center', lineHeight: 1.05, marginTop: 48,
+          textAlign: 'center', lineHeight: 1.05, marginTop: 36,
           maxWidth: '100%', wordBreak: 'break-word',
         }}>{playerName}</div>
 
         {/* Team + Jersey */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 16, marginTop: 14,
+          display: 'flex', alignItems: 'center', gap: 16, marginTop: 12,
         }}>
           <span style={{
             color: s.muted, fontSize: 24, fontWeight: 700,
@@ -245,26 +247,27 @@ function PromoCardCanvas({
 
         {/* Archetype */}
         <div style={{
-          color, fontSize: 32, fontWeight: 800,
+          color, fontSize: 30, fontWeight: 800,
           letterSpacing: '0.25em', textTransform: 'uppercase',
-          marginTop: 28, textAlign: 'center',
+          marginTop: 22, textAlign: 'center',
           textShadow: `0 0 30px ${color}40`,
         }}>{archetype}</div>
 
         {/* Divider */}
         <div style={{
-          width: '35%', height: 2, marginTop: 36,
+          width: '35%', height: 2, marginTop: 28,
           background: `linear-gradient(90deg, transparent, ${color}40, transparent)`,
         }} />
 
         {/* Grade — hero element */}
         <div style={{
-          position: 'relative', marginTop: 36,
+          position: 'relative', marginTop: 20,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
+          flexShrink: 0,
         }}>
           <div style={{
             position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            width: 500, height: 500, borderRadius: '50%',
+            width: 420, height: 420, borderRadius: '50%',
             background: `radial-gradient(circle, ${color}12 0%, transparent 55%)`,
             pointerEvents: 'none',
           }} />
@@ -274,20 +277,14 @@ function PromoCardCanvas({
             textAlign: 'center', marginBottom: 4,
           }}>GAME GRADE</div>
           <div style={{
-            fontSize: 272, fontWeight: 900, color,
+            fontSize: 220, fontWeight: 900, color,
             lineHeight: 0.85, textShadow: glow,
             letterSpacing: '-0.03em', textAlign: 'center',
           }}>{grade}</div>
         </div>
 
-        {/* Divider */}
-        <div style={{
-          width: '50%', height: 2, marginTop: 32,
-          background: `linear-gradient(90deg, transparent, ${color}30, transparent)`,
-        }} />
-
-        {/* Badges */}
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center', marginTop: 36 }}>
+        {/* Badges — below grade with clear gap */}
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center', marginTop: 28, flexShrink: 0 }}>
           {badges.slice(0, 3).map((badge, i) => (
             <div key={i} style={{
               background: `${color}12`, border: `1.5px solid ${color}35`,
