@@ -7,6 +7,7 @@ import { WelcomeCard } from './onboarding/WelcomeCard';
 import { PlayerIdentityCard } from './onboarding/PlayerIdentityCard';
 import { GoalsCard } from './onboarding/GoalsCard';
 import { CompletionCard } from './onboarding/CompletionCard';
+import { ClaimCardFlow } from './ClaimCardFlow';
 
 export interface OnboardingData {
   name: string;
@@ -28,6 +29,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [showClaimCard, setShowClaimCard] = useState(false);
   const [data, setData] = useState<OnboardingData>({
     name: '',
     courtRole: '',
@@ -133,7 +135,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             className="w-full"
           >
             {currentStep === 0 && (
-              <WelcomeCard value={data.name} onNext={handleWelcome} onSkip={handleSkip} />
+              <WelcomeCard
+                value={data.name}
+                onNext={handleWelcome}
+                onSkip={handleSkip}
+                onClaimCard={() => setShowClaimCard(true)}
+              />
             )}
             {currentStep === 1 && (
               <PlayerIdentityCard
@@ -173,6 +180,15 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           </motion.button>
         )}
       </AnimatePresence>
+
+      <ClaimCardFlow
+        open={showClaimCard}
+        onOpenChange={setShowClaimCard}
+        onClaimed={() => {
+          setShowClaimCard(false);
+          onComplete(data, 'explore_dashboard');
+        }}
+      />
     </motion.div>
   );
 }

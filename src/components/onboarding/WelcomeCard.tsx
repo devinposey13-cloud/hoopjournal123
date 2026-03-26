@@ -8,9 +8,10 @@ interface WelcomeCardProps {
   value: string;
   onNext: (name: string) => void;
   onSkip?: () => void;
+  onClaimCard?: () => void;
 }
 
-export function WelcomeCard({ value, onNext, onSkip }: WelcomeCardProps) {
+export function WelcomeCard({ value, onNext, onSkip, onClaimCard }: WelcomeCardProps) {
   const [name, setName] = useState(value);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -92,6 +93,16 @@ export function WelcomeCard({ value, onNext, onSkip }: WelcomeCardProps) {
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Skip for now
+          </button>
+        )}
+
+        {onClaimCard && (
+          <button
+            type="button"
+            onClick={onClaimCard}
+            className="text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+          >
+            🎴 Have a card code?
           </button>
         )}
       </motion.form>
