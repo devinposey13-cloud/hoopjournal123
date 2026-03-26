@@ -7,7 +7,7 @@ import { Season } from '@/types/basketball';
 import { useBroadcastCount } from '@/hooks/useBroadcastCount';
 
 
-export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile';
+export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile' | 'quickmode';
 
 interface BottomNavigationProps {
   activeTab: Tab;
@@ -30,7 +30,7 @@ const primaryTabs = [
 
 // Helper to check if a tab is in the "More" menu (Clips/Milestones moved to Progress hub)
 const isMoreTab = (tab: Tab): boolean => {
-  return ['minigames', 'settings', 'admin'].includes(tab);
+  return ['minigames', 'settings', 'admin', 'quickmode'].includes(tab);
 };
 
 export function BottomNavigation({

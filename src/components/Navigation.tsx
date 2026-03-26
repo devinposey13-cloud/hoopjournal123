@@ -22,7 +22,7 @@ import {
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 
-export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile';
+export type Tab = 'dashboard' | 'log' | 'progress' | 'games' | 'stats' | 'schedule' | 'minigames' | 'coach' | 'settings' | 'admin' | 'profile' | 'quickmode';
 
 interface NavigationProps {
   activeTab: Tab;
