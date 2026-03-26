@@ -15,6 +15,7 @@ import { AuthForm } from '@/components/AuthForm';
 import { JournalHeader } from '@/components/JournalHeader';
 import { AdminPanel } from '@/components/AdminPanel';
 import { AdminQuickMode } from '@/components/admin/AdminQuickMode';
+import { AdminClaimManagement } from '@/components/admin/AdminClaimManagement';
 import { GamesHub } from '@/components/games/GamesHub';
 import { ProgressHub } from '@/components/ProgressHub';
 import { LogSection } from '@/components/LogSection';
@@ -947,8 +948,12 @@ export default function Index() {
 
         {/* Quick Mode Tab */}
         {activeTab === 'quickmode' && isAdmin && (
-          <div className="animate-fade-in">
+          <div className="animate-fade-in space-y-8">
             <AdminQuickMode />
+            <div className="border-t pt-6">
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2">🔐 Claim Management</h2>
+              <AdminClaimManagement />
+            </div>
           </div>
         )}
       </main>
