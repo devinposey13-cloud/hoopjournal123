@@ -58,9 +58,10 @@ export function initAppleAuth(): void {
   }
 }
 
-/** Build Apple authorize URL for direct redirect flows (iOS Despia). */
-function buildAppleAuthorizeUrl(state: string): string {
+/** Build Apple authorize URL for direct redirect flows. */
+function buildAppleAuthorizeUrl(platform: string): string {
   const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-apple-callback`;
+  const state = `${crypto.randomUUID()}|${platform}|hoopjournal`;
   const params = new URLSearchParams({
     client_id: APPLE_CLIENT_ID,
     response_type: 'code id_token',
@@ -72,10 +73,9 @@ function buildAppleAuthorizeUrl(state: string): string {
   return `https://appleid.apple.com/auth/authorize?${params.toString()}`;
 }
 
-/** iOS Despia: Direct redirect to Apple's authorize URL. */
-export function signInWithAppleRedirect(): void {
-  const state = `${crypto.randomUUID()}|ios|hoopjournal`;
-  window.location.href = buildAppleAuthorizeUrl(state);
+/** Direct redirect to Apple's authorize URL (works on all platforms). */
+export function signInWithAppleRedirect(platform = 'ios'): void {
+  window.location.href = buildAppleAuthorizeUrl(platform);
 }
 
 /** Web: Apple JS SDK → edge function → setSession. */

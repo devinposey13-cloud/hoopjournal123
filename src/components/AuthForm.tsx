@@ -178,10 +178,11 @@ export function AuthForm() {
         return;
       }
 
-      // ── WEB: Apple JS SDK → Edge Function ──
-      tracker.logEvent('flow_selected', { flow: 'web_js_sdk' });
-      await signInWithAppleNative();
-      tracker.completeAttempt('success');
+      // ── WEB/iPad: Direct redirect (same as iOS, avoids JS SDK cross-origin issues) ──
+      tracker.logEvent('flow_selected', { flow: 'web_redirect' });
+      tracker.persistBeforeRedirect();
+      signInWithAppleRedirect('web');
+      return;
     } catch (error: unknown) {
       console.error('[Auth:Apple] Sign-in error:', error);
       const message = error instanceof Error ? error.message : 'Apple sign-in failed';
