@@ -15,6 +15,7 @@ export interface OnboardingData {
   playingLevel: string;
   seasonGoals: string[];
   parentEmail: string | null;
+  claimedFromCard?: boolean;
 }
 
 export type OnboardingCompletionAction = 'start_game' | 'pregame_talk' | 'explore_dashboard';
@@ -187,8 +188,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         onClaimed={(cardData) => {
           setShowClaimCard(false);
           onComplete({
-            ...data,
             name: cardData.playerName,
+            courtRole: '',
+            playingLevel: '',
+            seasonGoals: [],
+            parentEmail: null,
+            claimedFromCard: true,
           }, 'explore_dashboard');
         }}
       />

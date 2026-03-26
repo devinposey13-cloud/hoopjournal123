@@ -243,20 +243,22 @@ export default function Index() {
 
   // Show onboarding flow after intro
   const handleOnboardingComplete = async (data: OnboardingData, action?: OnboardingCompletionAction) => {
-    // Save onboarding data to profile - MUST complete before hiding onboarding
-    try {
-      await updateProfile({
-        name: data.name,
-        courtRole: data.courtRole,
-        playingLevel: data.playingLevel,
-        seasonGoals: data.seasonGoals,
-        parentEmail: data.parentEmail || undefined,
-        onboardingCompletedAt: new Date().toISOString(),
-      });
-    } catch (err) {
-      console.error('[Onboarding] Failed to save profile:', err);
-      toast.error('Failed to save profile. Please try again.');
-      return; // Don't complete onboarding if save failed
+    // If claimed from a card, ClaimCardFlow already saved all profile data — skip updateProfile
+    if (!data.claimedFromCard) {
+      try {
+        await updateProfile({
+          name: data.name,
+          courtRole: data.courtRole,
+          playingLevel: data.playingLevel,
+          seasonGoals: data.seasonGoals,
+          parentEmail: data.parentEmail || undefined,
+          onboardingCompletedAt: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.error('[Onboarding] Failed to save profile:', err);
+        toast.error('Failed to save profile. Please try again.');
+        return;
+      }
     }
     // Mark that user just completed onboarding for Coach AI intro
     setJustCompletedOnboarding(true);
