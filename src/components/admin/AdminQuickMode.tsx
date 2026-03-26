@@ -394,6 +394,8 @@ export function AdminQuickMode() {
   const [generatingAvatar, setGeneratingAvatar] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
 
   // UI state
   const [generating, setGenerating] = useState(false);
@@ -425,9 +427,11 @@ export function AdminQuickMode() {
     }
   }
 
-  // Photo handling
+  // Photo handling — reset input value so same file or re-trigger works on iPad
   const handlePhotoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Always reset the input so it can be re-triggered
+    e.target.value = '';
     if (!file) return;
     if (file.size > 20 * 1024 * 1024) {
       toast.error('Photo must be under 20MB');
@@ -1214,30 +1218,42 @@ export function AdminQuickMode() {
                 </div>
               ) : (
                 <div className="flex gap-2">
+                  {/* Hidden file inputs with stable refs — survive iPad camera round-trips */}
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handlePhotoUpload}
+                  />
+                  <input
+                    ref={uploadInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoUpload}
+                  />
                   {isMobileDevice ? (
-                    <label className="flex-1 cursor-pointer">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        onChange={handlePhotoUpload}
-                      />
-                      <Button variant="outline" className="w-full gap-2 pointer-events-none" asChild>
-                        <span><Camera className="w-4 h-4" /> Camera</span>
-                      </Button>
-                    </label>
+                    <Button
+                      variant="outline"
+                      className="flex-1 gap-2"
+                      onClick={() => cameraInputRef.current?.click()}
+                    >
+                      <Camera className="w-4 h-4" /> Camera
+                    </Button>
                   ) : (
                     <Button variant="outline" className="flex-1 gap-2" onClick={startWebcam}>
                       <Camera className="w-4 h-4" /> Camera
                     </Button>
                   )}
-                  <label className="flex-1 cursor-pointer">
-                    <Button variant="outline" className="w-full gap-2 pointer-events-none" asChild>
-                      <span><Upload className="w-4 h-4" /> Upload</span>
-                    </Button>
-                    <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-                  </label>
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2"
+                    onClick={() => uploadInputRef.current?.click()}
+                  >
+                    <Upload className="w-4 h-4" /> Upload
+                  </Button>
                 </div>
               )}
             </div>
