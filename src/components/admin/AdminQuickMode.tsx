@@ -941,10 +941,13 @@ export function AdminQuickMode() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <Badge variant="outline" className="text-xs font-mono">{card.claim_code}</Badge>
                     <Button size="sm" variant="ghost" onClick={() => handleReprint(card)}>
                       <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDeleteCard(card.id)}>
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
