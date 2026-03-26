@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck, ChevronDown, Activity, Cpu, Zap, TrendingUp, Clock, Shield, Star, Calendar as CalendarIcon, CreditCard, Trophy, ToggleLeft, Megaphone, Info, Bell } from 'lucide-react';
+import { Users, Flag, BarChart3, Trash2, Edit2, Key, Loader2, Search, Check, X, AlertTriangle, Phone, Copy, MessageSquare, UserCheck, ChevronDown, Activity, Cpu, Zap, TrendingUp, Clock, Shield, Star, Calendar as CalendarIcon, CreditCard, Trophy, ToggleLeft, Megaphone, Info, Bell, ImageIcon } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { type PlanId, planCatalog, getEffectivePlan, type UserAccessInfo } from '@/lib/plans';
 import { Calendar } from '@/components/ui/calendar';
@@ -28,6 +28,7 @@ import { AdminBroadcast } from '@/components/admin/AdminBroadcast';
 import { AdminSystemHealth } from '@/components/admin/AdminSystemHealth';
 import { AdminSlackAlerts } from '@/components/admin/AdminSlackAlerts';
 import { ApprovalModeSelector } from '@/components/admin/ApprovalModeSelector';
+import { AdminQuickMode } from '@/components/admin/AdminQuickMode';
 import { dispatchSlackAlert } from '@/utils/slackAlerts';
 import { format } from 'date-fns';
 
@@ -1052,6 +1053,11 @@ export function AdminPanel() {
             <Bell className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
             <span className="hidden sm:inline">Slack</span>
             <span className="sm:hidden">Slack</span>
+          </TabsTrigger>
+          <TabsTrigger value="quickmode" className="gap-1.5 text-xs px-2 py-1.5 md:text-sm md:px-3 md:py-2 flex-1 min-w-0 whitespace-nowrap">
+            <Zap className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span className="hidden sm:inline">Quick Mode</span>
+            <span className="sm:hidden">Quick</span>
           </TabsTrigger>
             </TabsList>
           </div>
@@ -2479,6 +2485,11 @@ export function AdminPanel() {
         {/* Slack Alerts Tab */}
         <TabsContent value="slack" className="space-y-4">
           <AdminSlackAlerts />
+        </TabsContent>
+
+        {/* Quick Mode Tab */}
+        <TabsContent value="quickmode" className="space-y-4">
+          <AdminQuickMode />
         </TabsContent>
       </Tabs>
 

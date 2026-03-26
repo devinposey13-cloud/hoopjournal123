@@ -1473,6 +1473,119 @@ export type Database = {
           },
         ]
       }
+      quick_cards: {
+        Row: {
+          badges: Json
+          card_headline: string | null
+          card_source: string
+          claim_code: string | null
+          claimed_by_user_id: string | null
+          contact_info: string | null
+          created_at: string
+          created_by_admin_id: string
+          eligible_for_career_stats: boolean
+          eligible_for_leaderboards: boolean
+          eligible_for_xp_progression: boolean
+          grade: string
+          id: string
+          jersey_number: number
+          photo_url: string | null
+          player_name: string
+          position: string | null
+          print_count: number
+          stats: Json
+          team_name: string
+          template_used: string
+          updated_at: string
+          verification_status: string
+        }
+        Insert: {
+          badges?: Json
+          card_headline?: string | null
+          card_source?: string
+          claim_code?: string | null
+          claimed_by_user_id?: string | null
+          contact_info?: string | null
+          created_at?: string
+          created_by_admin_id: string
+          eligible_for_career_stats?: boolean
+          eligible_for_leaderboards?: boolean
+          eligible_for_xp_progression?: boolean
+          grade: string
+          id?: string
+          jersey_number: number
+          photo_url?: string | null
+          player_name: string
+          position?: string | null
+          print_count?: number
+          stats?: Json
+          team_name: string
+          template_used: string
+          updated_at?: string
+          verification_status?: string
+        }
+        Update: {
+          badges?: Json
+          card_headline?: string | null
+          card_source?: string
+          claim_code?: string | null
+          claimed_by_user_id?: string | null
+          contact_info?: string | null
+          created_at?: string
+          created_by_admin_id?: string
+          eligible_for_career_stats?: boolean
+          eligible_for_leaderboards?: boolean
+          eligible_for_xp_progression?: boolean
+          grade?: string
+          id?: string
+          jersey_number?: number
+          photo_url?: string | null
+          player_name?: string
+          position?: string | null
+          print_count?: number
+          stats?: Json
+          team_name?: string
+          template_used?: string
+          updated_at?: string
+          verification_status?: string
+        }
+        Relationships: []
+      }
+      quick_mode_audit_log: {
+        Row: {
+          action: string
+          admin_id: string
+          card_id: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          card_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          card_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quick_mode_audit_log_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "quick_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rate_limits: {
         Row: {
           action: string
