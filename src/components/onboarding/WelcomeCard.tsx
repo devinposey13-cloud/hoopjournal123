@@ -8,9 +8,10 @@ interface WelcomeCardProps {
   value: string;
   onNext: (name: string) => void;
   onSkip?: () => void;
+  onClaimCard?: () => void;
 }
 
-export function WelcomeCard({ value, onNext, onSkip }: WelcomeCardProps) {
+export function WelcomeCard({ value, onNext, onSkip, onClaimCard }: WelcomeCardProps) {
   const [name, setName] = useState(value);
 
   const handleSubmit = (e: React.FormEvent) => {
