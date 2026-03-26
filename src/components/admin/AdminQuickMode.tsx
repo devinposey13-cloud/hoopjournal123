@@ -331,6 +331,7 @@ function PromoCardCanvas({
 export function AdminQuickMode() {
   const { user } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   // Form state
   const [playerName, setPlayerName] = useState('');
@@ -570,9 +571,10 @@ export function AdminQuickMode() {
 
   // Save as image
   async function handleSaveImage() {
-    if (!cardRef.current) return;
+    const target = exportRef.current || cardRef.current;
+    if (!target) return;
     try {
-      const canvas = await html2canvas(cardRef.current, {
+      const canvas = await html2canvas(target, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#070b16',
@@ -591,9 +593,10 @@ export function AdminQuickMode() {
 
   // Print card
   async function handlePrint() {
-    if (!cardRef.current) return;
+    const target = exportRef.current || cardRef.current;
+    if (!target) return;
     try {
-      const canvas = await html2canvas(cardRef.current, {
+      const canvas = await html2canvas(target, {
         scale: 2, useCORS: true, backgroundColor: '#070b16',
         width: 1080, height: 1920,
       });
@@ -872,6 +875,32 @@ export function AdminQuickMode() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Hidden full-size export canvas */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            left: -3000,
+            top: 0,
+            width: 1080,
+            height: 1920,
+            overflow: 'hidden',
+            pointerEvents: 'none',
+            zIndex: -1,
+          }}
+        >
+          <PromoCardCanvas
+            playerName={playerName || 'PLAYER NAME'}
+            teamName={teamName || 'TEAM NAME'}
+            jerseyNumber={parseInt(jerseyNumber) || 0}
+            position={position}
+            photoUrl={photoUrl || undefined}
+            template={activeTemplate}
+            cardRef={exportRef}
+            claimUrl={previewCard?.claim_token ? `https://hoopjournal.me/claim?card_id=${previewCard.id}&token=${previewCard.claim_token}` : undefined}
+          />
+        </div>
 
         {/* Live Preview */}
         <Card>
