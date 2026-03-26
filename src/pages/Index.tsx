@@ -66,12 +66,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { logEvent as logAuthDebugEvent, completeAttempt, updateMetadata } from '@/lib/appleAuthDebugTracker';
+import { logEvent as logAuthDebugEvent, completeAttempt } from '@/lib/appleAuthDebugTracker';
 
 export default function Index() {
   const navigate = useNavigate();
   const location = useLocation();
-  const lastPostAuthRouteRef = useRef<string | null>(null);
   const postAuthCleanupRef = useRef(false);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const isMobile = useIsMobile();
@@ -228,155 +227,149 @@ export default function Index() {
     [location.search]
   );
 
-  const postAuthRouteState = useMemo(() => {
-    if (authLoading) return 'auth_loading';
-    if (approvalLoading) return 'approval_loading';
-    if (dataLoading) return 'profile_loading';
-    if (introLoading) return 'intro_loading';
+  // ── Unified route resolver ──
+  // ALL loading states must resolve before ANY route decision is made.
+  // This eliminates intermediate route flashing (auth_loading → approval_loading → profile_loading etc.)
+  const isBootstrapLoading = authLoading || approvalLoading || dataLoading || introLoading;
+
+  const determineFinalRoute = (): string => {
+    if (isBootstrapLoading) return 'loading';
     if (!user && isGuest) return 'guest_dashboard';
     if (!user) return 'auth_form';
     if (!isApproved && !isAdmin) return 'pending_approval';
     if (showOnboarding) return 'onboarding';
     return 'dashboard';
-  }, [authLoading, approvalLoading, dataLoading, introLoading, user, isGuest, isApproved, isAdmin, showOnboarding]);
+  };
 
-  const isPostAuthBootstrapping = isPostAuthReturn && [
-    'auth_loading',
-    'approval_loading',
-    'profile_loading',
-    'intro_loading',
-  ].includes(postAuthRouteState);
+  const finalRoute = useMemo(determineFinalRoute, [
+    isBootstrapLoading, user, isGuest, isApproved, isAdmin, showOnboarding,
+  ]);
 
+  // ── Navigation lock ──
+  // After post-auth, once a final route is determined, lock it to prevent
+  // any further route changes until post-auth cleanup completes.
+  const hasNavigatedRef = useRef(false);
+  const lockedRouteRef = useRef<string | null>(null);
+
+  // Determine the active route: locked during post-auth, live otherwise
+  const activeRoute = (isPostAuthReturn && hasNavigatedRef.current && lockedRouteRef.current)
+    ? lockedRouteRef.current
+    : finalRoute;
+
+  // ── Post-auth resolution: single log, single dismiss, single cleanup ──
   useEffect(() => {
     if (!isPostAuthReturn) {
+      // Reset lock when not in post-auth flow
+      hasNavigatedRef.current = false;
+      lockedRouteRef.current = null;
       setShowPostAuthRecovery(false);
-      lastPostAuthRouteRef.current = null;
       postAuthCleanupRef.current = false;
       return;
     }
 
-    if (lastPostAuthRouteRef.current !== postAuthRouteState) {
-      logAuthDebugEvent('route_decision_made', {
-        routeState: postAuthRouteState,
-        authLoading,
-        approvalLoading,
-        dataLoading,
-        introLoading,
-        hasUser: !!user,
-        isGuest,
-        isApproved,
-        isAdmin,
-        showOnboarding,
-      });
-      updateMetadata('postAuthRouteState', postAuthRouteState);
-      lastPostAuthRouteRef.current = postAuthRouteState;
-    }
-  }, [
-    isPostAuthReturn,
-    postAuthRouteState,
-    authLoading,
-    approvalLoading,
-    dataLoading,
-    introLoading,
-    user,
-    isGuest,
-    isApproved,
-    isAdmin,
-    showOnboarding,
-  ]);
+    // Still loading — do nothing
+    if (finalRoute === 'loading') return;
 
-  useEffect(() => {
-    if (!isPostAuthBootstrapping) {
-      setShowPostAuthRecovery(false);
-      return;
-    }
+    // Already handled — do nothing
+    if (postAuthCleanupRef.current) return;
 
-    const timer = window.setTimeout(() => {
-      setShowPostAuthRecovery(true);
-      logAuthDebugEvent('postauth_recovery_visible', {
-        routeState: postAuthRouteState,
-      });
-    }, 10000);
+    // Lock the route and perform ONE cleanup
+    hasNavigatedRef.current = true;
+    lockedRouteRef.current = finalRoute;
+    postAuthCleanupRef.current = true;
 
-    return () => window.clearTimeout(timer);
-  }, [isPostAuthBootstrapping, postAuthRouteState]);
-
-  useEffect(() => {
-    if (!isPostAuthReturn || isPostAuthBootstrapping || postAuthCleanupRef.current) return;
-
-    logAuthDebugEvent('navigation_started', {
-      source: 'postauth_main_app',
-      target: postAuthRouteState,
-    });
-    logAuthDebugEvent('navigation_completed', {
-      source: 'postauth_main_app',
-      target: postAuthRouteState,
-    });
-    logAuthDebugEvent('loading_state_cleared', {
-      source: 'postauth_main_app',
-      target: postAuthRouteState,
+    logAuthDebugEvent('route_decision_made', {
+      finalRoute,
+      authLoading,
+      approvalLoading,
+      dataLoading,
+      introLoading,
+      hasUser: !!user,
+      isGuest,
+      isApproved,
+      isAdmin,
+      showOnboarding,
     });
 
-    if (postAuthRouteState !== 'auth_form') {
+    if (finalRoute !== 'auth_form') {
       completeAttempt('success');
     }
 
     // Dismiss the pre-hydration shell now that the final route is resolved
     (window as any).__dismissShell?.();
 
+    logAuthDebugEvent('loading_state_cleared', {
+      source: 'postauth_single_resolve',
+      target: finalRoute,
+    });
+
+    // Clean post-auth params from URL
     const url = new URL(window.location.href);
     url.searchParams.delete('postAuth');
     url.searchParams.delete('watchdog');
     url.searchParams.delete('fallback');
     url.searchParams.delete('ts');
     window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
-    postAuthCleanupRef.current = true;
-  }, [isPostAuthReturn, isPostAuthBootstrapping, postAuthRouteState]);
+  }, [isPostAuthReturn, finalRoute, authLoading, approvalLoading, dataLoading, introLoading, user, isGuest, isApproved, isAdmin, showOnboarding]);
 
-  // ── Post-auth bootstrap gate ──
-  // When returning from Apple/OAuth with ?postAuth=1, suppress ALL intermediate
-  // route renders and show a single branded loading screen until every check resolves.
-  if (isPostAuthBootstrapping) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-6">
-        <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <LoadingSpinner size="xs" />
-          </div>
-          <h1 className="text-xl font-semibold text-foreground">
-            {showPostAuthRecovery ? 'Taking longer than expected…' : 'Finishing sign-in…'}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {showPostAuthRecovery
-              ? 'Your session may need a refresh to continue.'
-              : 'Setting up your dashboard — just a moment.'}
-          </p>
-          {showPostAuthRecovery && (
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Button onClick={() => window.location.reload()}>
-                Refresh app
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  logAuthDebugEvent('navigation_started', {
-                    source: 'postauth_recovery_manual',
-                    target: 'root_reload',
-                  });
-                  window.location.replace('/');
-                }}
-              >
-                Go to dashboard
-              </Button>
+  // ── Post-auth recovery timer ──
+  useEffect(() => {
+    if (!isPostAuthReturn || activeRoute !== 'loading') {
+      setShowPostAuthRecovery(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowPostAuthRecovery(true);
+      logAuthDebugEvent('postauth_recovery_visible', { activeRoute });
+    }, 10000);
+
+    return () => window.clearTimeout(timer);
+  }, [isPostAuthReturn, activeRoute]);
+
+  // ── Single loading gate for ALL flows ──
+  // Both post-auth and normal loads show a loading screen until every
+  // data dependency resolves. No intermediate route screens are rendered.
+  if (activeRoute === 'loading') {
+    if (isPostAuthReturn) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center px-6">
+          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <LoadingSpinner size="xs" />
             </div>
-          )}
+            <h1 className="text-xl font-semibold text-foreground">
+              {showPostAuthRecovery ? 'Taking longer than expected…' : 'Finishing sign-in…'}
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {showPostAuthRecovery
+                ? 'Your session may need a refresh to continue.'
+                : 'Setting up your dashboard — just a moment.'}
+            </p>
+            {showPostAuthRecovery && (
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                <Button onClick={() => window.location.reload()}>
+                  Refresh app
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    logAuthDebugEvent('navigation_started', {
+                      source: 'postauth_recovery_manual',
+                      target: 'root_reload',
+                    });
+                    window.location.replace('/');
+                  }}
+                >
+                  Go to dashboard
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  // ── Normal (non-post-auth) loading / routing gates ──
-  if (authLoading || approvalLoading || introLoading) {
     return (
       <div className="min-h-screen bg-background">
         <DashboardSkeleton />
@@ -384,16 +377,16 @@ export default function Index() {
     );
   }
 
-  if (!user && isGuest) {
+  // ── Route rendering (all data is resolved at this point) ──
+  if (activeRoute === 'guest_dashboard') {
     return <GuestDashboard />;
   }
 
-  if (!user) {
+  if (activeRoute === 'auth_form') {
     return <AuthForm />;
   }
 
-  // Show pending approval screen if not approved (admins bypass this)
-  if (!isApproved && !isAdmin) {
+  if (activeRoute === 'pending_approval') {
     return <PendingApproval onRefresh={refetchApproval} />;
   }
 
