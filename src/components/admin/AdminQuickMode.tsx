@@ -359,6 +359,9 @@ export function AdminQuickMode() {
   const [contactInfo, setContactInfo] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [showWebcam, setShowWebcam] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   // UI state
   const [generating, setGenerating] = useState(false);
@@ -403,6 +406,49 @@ export function AdminQuickMode() {
     setPhotoUrl(url);
   }, []);
 
+  // Webcam handling for desktop
+  const startWebcam = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 1280 } } });
+      streamRef.current = stream;
+      setShowWebcam(true);
+      // Attach stream after render
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+        }
+      }, 100);
+    } catch (err) {
+      console.error('Webcam error:', err);
+      toast.error('Could not access camera. Please use Upload instead.');
+    }
+  }, []);
+
+  const stopWebcam = useCallback(() => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    setShowWebcam(false);
+  }, []);
+
+  const captureFromWebcam = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], `webcam-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        setPhotoFile(file);
+        setPhotoUrl(URL.createObjectURL(file));
+      }
+      stopWebcam();
+    }, 'image/jpeg', 0.92);
+  }, [stopWebcam]);
+
+  const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   // Upload photo to storage
   async function uploadPhoto(file: File): Promise<string | null> {
@@ -701,20 +747,40 @@ export function AdminQuickMode() {
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
                 </div>
+               ) : showWebcam ? (
+                <div className="space-y-3">
+                  <div className="relative w-full aspect-square max-w-[280px] mx-auto rounded-xl overflow-hidden border-2 border-primary/30 bg-black">
+                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex gap-2 max-w-[280px] mx-auto">
+                    <Button onClick={captureFromWebcam} className="flex-1 gap-2">
+                      <Camera className="w-4 h-4" /> Capture
+                    </Button>
+                    <Button variant="outline" onClick={stopWebcam} className="gap-2">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex gap-2">
-                  <label className="flex-1 cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={handlePhotoUpload}
-                    />
-                    <Button variant="outline" className="w-full gap-2 pointer-events-none" asChild>
-                      <span><Camera className="w-4 h-4" /> Camera</span>
+                  {isMobileDevice ? (
+                    <label className="flex-1 cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={handlePhotoUpload}
+                      />
+                      <Button variant="outline" className="w-full gap-2 pointer-events-none" asChild>
+                        <span><Camera className="w-4 h-4" /> Camera</span>
+                      </Button>
+                    </label>
+                  ) : (
+                    <Button variant="outline" className="flex-1 gap-2" onClick={startWebcam}>
+                      <Camera className="w-4 h-4" /> Camera
                     </Button>
-                  </label>
+                  )}
                   <label className="flex-1 cursor-pointer">
                     <Button variant="outline" className="w-full gap-2 pointer-events-none" asChild>
                       <span><Upload className="w-4 h-4" /> Upload</span>
