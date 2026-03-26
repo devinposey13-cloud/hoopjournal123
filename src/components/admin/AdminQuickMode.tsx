@@ -428,32 +428,36 @@ export function AdminQuickMode() {
 
   // Generate AI avatar from uploaded photo
   const handleGenerateAvatar = useCallback(async () => {
-    if (!photoUrl) {
+    if (!photoFile && !photoUrl) {
       toast.error('Upload a photo first to generate an avatar');
       return;
     }
     setGeneratingAvatar(true);
     try {
-      // First upload the current photo if it's a local blob
-      let sourceUrl = photoUrl;
+      // Convert the photo file to a base64 data URL to avoid blob URL issues
+      let imageUrl = photoUrl;
       if (photoFile) {
-        const uploaded = await uploadPhoto(photoFile);
-        if (uploaded) sourceUrl = uploaded;
+        imageUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(photoFile);
+        });
       }
       const { data, error } = await supabase.functions.invoke('generate-avatar', {
-        body: { imageUrl: sourceUrl },
+        body: { imageUrl },
       });
       if (error) throw error;
-      if (data?.avatarUrl) {
-        // Fetch the generated avatar as a file
-        const resp = await fetch(data.avatarUrl);
+      if (data?.imageData) {
+        // imageData is a base64 data URL from the AI model
+        const resp = await fetch(data.imageData);
         const blob = await resp.blob();
         const file = new File([blob], `avatar-${Date.now()}.png`, { type: 'image/png' });
         setPhotoFile(file);
         setPhotoUrl(URL.createObjectURL(file));
         toast.success('Avatar generated!');
       } else {
-        throw new Error('No avatar URL returned');
+        throw new Error('No avatar image returned');
       }
     } catch (err: any) {
       console.error('Avatar generation error:', err);
