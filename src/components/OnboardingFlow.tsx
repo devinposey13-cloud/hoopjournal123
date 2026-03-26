@@ -184,9 +184,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       <ClaimCardFlow
         open={showClaimCard}
         onOpenChange={setShowClaimCard}
-        onClaimed={() => {
+        onClaimed={(cardData) => {
           setShowClaimCard(false);
-          onComplete(data, 'explore_dashboard');
+          onComplete({
+            ...data,
+            name: cardData.playerName,
+          }, 'explore_dashboard');
         }}
       />
     </motion.div>
