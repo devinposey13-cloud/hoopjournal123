@@ -751,14 +751,28 @@ export function AdminQuickMode() {
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Player Photo *</Label>
               {photoUrl ? (
-                <div className="relative w-full aspect-square max-w-[200px] mx-auto rounded-xl overflow-hidden border-2 border-primary/30">
-                  <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => { setPhotoUrl(null); setPhotoFile(null); }}
-                    className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1.5"
+                <div className="space-y-2">
+                  <div className="relative w-full aspect-square max-w-[200px] mx-auto rounded-xl overflow-hidden border-2 border-primary/30">
+                    <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => { setPhotoUrl(null); setPhotoFile(null); }}
+                      className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1.5"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full max-w-[200px] mx-auto flex gap-2"
+                    onClick={handleGenerateAvatar}
+                    disabled={generatingAvatar}
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                  </button>
+                    {generatingAvatar ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4" /> Generate Avatar</>
+                    )}
+                  </Button>
                 </div>
                ) : showWebcam ? (
                 <div className="space-y-3">
