@@ -208,7 +208,7 @@ function PromoCardCanvas({
       }}>
         {/* Avatar */}
         <div style={{
-          width: 440, height: 440, borderRadius: '50%',
+          width: 500, height: 500, borderRadius: '50%',
           border: `8px solid ${color}`,
           overflow: 'hidden',
           boxShadow: `0 0 80px ${color}50, 0 0 160px ${color}20, inset 0 0 40px ${color}10`,
@@ -232,11 +232,11 @@ function PromoCardCanvas({
 
         {/* Identity block — name is primary, archetype secondary */}
         <div style={{
-          position: 'absolute', top: 490, left: 0, right: 0,
+          position: 'absolute', top: 550, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
           <div data-canvas-name="true" style={{
-            color: s.bright, fontSize: 64, fontWeight: 900,
+            color: s.bright, fontSize: 76, fontWeight: 900,
             letterSpacing: '0.06em', textTransform: 'uppercase',
             textAlign: 'center', lineHeight: 1.02,
             maxWidth: '100%', wordBreak: 'break-word',
@@ -247,19 +247,19 @@ function PromoCardCanvas({
             marginTop: 12, flexWrap: 'wrap',
           }}>
             <span style={{
-              color: s.muted, fontSize: 24, fontWeight: 700,
+              color: s.muted, fontSize: 28, fontWeight: 700,
               letterSpacing: '0.25em', textTransform: 'uppercase',
             }}>{teamName}</span>
-            <span style={{ color: s.dim, fontSize: 24, fontWeight: 700 }}>|</span>
+            <span style={{ color: s.dim, fontSize: 28, fontWeight: 700 }}>|</span>
             <span style={{
-              color: s.muted, fontSize: 24, fontWeight: 700,
+              color: s.muted, fontSize: 28, fontWeight: 700,
               letterSpacing: '0.15em',
             }}>#{jerseyNumber}{position ? ` • ${position}` : ''}</span>
           </div>
 
           {/* Archetype — slightly smaller, more spacing from name */}
           <div data-canvas-archetype="true" data-canvas-color={color} style={{
-            color, fontSize: 26, fontWeight: 800,
+            color, fontSize: 32, fontWeight: 800,
             letterSpacing: '0.25em', textTransform: 'uppercase',
             marginTop: 30, textAlign: 'center',
             textShadow: `0 0 30px ${color}40`,
@@ -860,12 +860,12 @@ export function AdminQuickMode() {
     if (nameEl && positions.name) {
       const p = positions.name;
       ctx.save();
-      ctx.font = `900 64px ${FONT}`;
+      ctx.font = `900 76px ${FONT}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#f8fafc';
       const nameText = nameEl.textContent || '';
-      drawTrackedText(ctx, nameText.toUpperCase(), p.cx, p.cy, 64 * 0.06);
+      drawTrackedText(ctx, nameText.toUpperCase(), p.cx, p.cy, 76 * 0.06);
       ctx.restore();
     }
 
@@ -873,12 +873,12 @@ export function AdminQuickMode() {
     if (teamEl && positions.team) {
       const p = positions.team;
       ctx.save();
-      ctx.font = `700 24px ${FONT}`;
+      ctx.font = `700 28px ${FONT}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#64748b';
       const teamText = teamEl.textContent || '';
-      drawTrackedText(ctx, teamText.toUpperCase(), p.cx, p.cy, 24 * 0.15);
+      drawTrackedText(ctx, teamText.toUpperCase(), p.cx, p.cy, 28 * 0.15);
       ctx.restore();
     }
 
@@ -886,14 +886,14 @@ export function AdminQuickMode() {
     if (archetypeEl && positions.archetype) {
       const p = positions.archetype;
       ctx.save();
-      ctx.font = `800 26px ${FONT}`;
+      ctx.font = `800 32px ${FONT}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = color;
       ctx.shadowColor = `${color}66`;
       ctx.shadowBlur = 30;
       const archText = archetypeEl.textContent || '';
-      drawTrackedText(ctx, archText.toUpperCase(), p.cx, p.cy, 26 * 0.25);
+      drawTrackedText(ctx, archText.toUpperCase(), p.cx, p.cy, 32 * 0.25);
       ctx.restore();
     }
 
