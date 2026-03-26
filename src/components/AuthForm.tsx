@@ -153,9 +153,86 @@ export function AuthForm() {
     }
   };
 
+  // ─── Apple redirect watchdog (for iOS native) ─────────────────────
+  // When the app redirects to Apple for auth, it may never return to
+  // /auth/callback (WKWebView drops navigation). This watchdog detects
+  // the app resuming via visibilitychange and polls for a session.
+  const startAppleRedirectWatchdog = (tracker: typeof import('@/lib/appleAuthDebugTracker')) => {
+    setAppleRedirectPending(true);
+    setShowAppleRetry(false);
+
+    // Clean up any previous watchdog
+    appleVisibilityCleanupRef.current?.();
+    if (appleRedirectTimerRef.current) window.clearTimeout(appleRedirectTimerRef.current);
+
+    tracker.logEvent('redirect_watchdog_armed', { timeout: 10000 });
+
+    let pollInterval: number | null = null;
+    let pollCount = 0;
+    let resolved = false;
+
+    const cleanup = () => {
+      resolved = true;
+      if (pollInterval) window.clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      if (appleRedirectTimerRef.current) window.clearTimeout(appleRedirectTimerRef.current);
+      appleVisibilityCleanupRef.current = null;
+    };
+
+    const startSessionPolling = () => {
+      if (pollInterval) return; // already polling
+      tracker.logEvent('app_resumed_polling_started');
+      pollInterval = window.setInterval(async () => {
+        if (resolved) return;
+        pollCount++;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          tracker.logEvent('redirect_watchdog_poll', { tick: pollCount, hasSession: !!session });
+          if (session) {
+            tracker.logEvent('redirect_watchdog_session_found', { tick: pollCount, userId: session.user.id.slice(0, 8) });
+            cleanup();
+            setAppleRedirectPending(false);
+            setAppleLoading(false);
+            // Navigate to dashboard
+            window.location.href = '/?postAuth=1&watchdog=redirect&ts=' + Date.now();
+          }
+        } catch (err) {
+          console.warn('[AppleRedirectWatchdog] Poll error:', err);
+        }
+      }, 400);
+    };
+
+    const onVisibilityChange = () => {
+      if (resolved) return;
+      const visible = document.visibilityState === 'visible';
+      tracker.logEvent('visibility_change', { visible, pathname: window.location.pathname });
+
+      if (visible && window.location.pathname !== '/auth/callback') {
+        // App resumed but we're still on the auth form — callback never mounted
+        tracker.logEvent('app_resumed_no_callback', { pathname: window.location.pathname });
+        startSessionPolling();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    // Hard timeout — show retry if nothing happened
+    appleRedirectTimerRef.current = window.setTimeout(() => {
+      if (resolved) return;
+      tracker.logEvent('redirect_watchdog_timeout', { pollCount });
+      cleanup();
+      setAppleRedirectPending(false);
+      setAppleLoading(false);
+      setShowAppleRetry(true);
+    }, 10000);
+
+    appleVisibilityCleanupRef.current = cleanup;
+  };
+
   // ─── Apple Sign-In ─────────────────────────────────────────────────
   const handleAppleSignIn = async () => {
     setAppleLoading(true);
+    setShowAppleRetry(false);
 
     // TEMPORARY: Debug instrumentation
     const tracker = await import('@/lib/appleAuthDebugTracker');
