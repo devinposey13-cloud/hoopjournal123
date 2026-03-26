@@ -19,10 +19,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface DangerZoneSectionProps {
   userId: string;
+  activeProfileId?: string | null;
   onStartOver?: () => void;
 }
 
-export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProps) {
+export function DangerZoneSection({ userId, activeProfileId, onStartOver }: DangerZoneSectionProps) {
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStartOverDialog, setShowStartOverDialog] = useState(false);
@@ -98,21 +99,30 @@ export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProp
 
     setIsStartingOver(true);
     try {
-      // Delete all user data except account itself
-      // Order matters for foreign key constraints
+      // Scope reset to the active profile only
+      const profileFilter = activeProfileId || null;
 
-      // First get video clips to delete from storage
-      const { data: videoClips } = await supabase
+      // Get the active profile's avatar to delete from storage
+      const profileQuery = supabase
+        .from('player_settings')
+        .select('avatar_url');
+      
+      if (profileFilter) {
+        profileQuery.eq('id', profileFilter);
+      } else {
+        profileQuery.eq('user_id', userId).eq('is_active_profile', true);
+      }
+      
+      const { data: playerSettings } = await profileQuery.maybeSingle();
+
+      // Get video clips scoped to this profile
+      const clipQuery = supabase
         .from('video_clips')
         .select('file_path, thumbnail_path')
         .eq('user_id', userId);
-
-      // Get player settings to delete avatar from storage
-      const { data: playerSettings } = await supabase
-        .from('player_settings')
-        .select('avatar_url')
-        .eq('user_id', userId)
-        .maybeSingle();
+      if (profileFilter) clipQuery.eq('profile_id', profileFilter);
+      
+      const { data: videoClips } = await clipQuery;
 
       // Delete video files from storage
       if (videoClips && videoClips.length > 0) {
@@ -134,37 +144,53 @@ export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProp
         }
       }
 
-      // Delete from tables in order
-      const tablesToClean = [
-        'video_likes',
-        'video_comments',
+      // Tables that support profile_id scoping
+      const tablesWithProfileId = [
         'video_clips',
         'stats_predictions',
         'postgame_insights',
         'player_milestones',
         'player_badges',
-        'user_achievements',
-        'user_game_stats',
-        'game_scores',
         'games',
         'scheduled_games',
         'seasons',
       ];
 
-      for (const table of tablesToClean) {
-        const { error } = await supabase
-          .from(table as any)
-          .delete()
-          .eq('user_id', userId);
+      // Tables that only have user_id (no profile_id) — only delete if no profileFilter
+      // to avoid wiping account-level data
+      const tablesUserLevelOnly = [
+        'video_likes',
+        'user_achievements',
+        'user_game_stats',
+        'game_scores',
+      ];
 
+      for (const table of tablesWithProfileId) {
+        const query = supabase.from(table as any).delete().eq('user_id', userId);
+        if (profileFilter) {
+          query.eq('profile_id', profileFilter);
+        }
+        const { error } = await query;
         if (error) {
           console.error(`Error deleting from ${table}:`, error);
         }
       }
 
-      // Reset player_settings to trigger re-onboarding (set onboarding_completed_at to null)
-      // Also clear avatar_url so user starts fresh with no profile photo
-      const { error: updateError } = await supabase
+      // Only wipe user-level tables if there's no profile scoping (single profile account)
+      if (!profileFilter) {
+        for (const table of tablesUserLevelOnly) {
+          const { error } = await supabase
+            .from(table as any)
+            .delete()
+            .eq('user_id', userId);
+          if (error) {
+            console.error(`Error deleting from ${table}:`, error);
+          }
+        }
+      }
+
+      // Reset only the active profile's player_settings
+      const resetQuery = supabase
         .from('player_settings')
         .update({
           onboarding_completed_at: null,
@@ -179,8 +205,15 @@ export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProp
           season_goals: null,
           avatar_url: null,
           avatar_skipped_at: null,
-        })
-        .eq('user_id', userId);
+        });
+
+      if (profileFilter) {
+        resetQuery.eq('id', profileFilter);
+      } else {
+        resetQuery.eq('user_id', userId).eq('is_active_profile', true);
+      }
+
+      const { error: updateError } = await resetQuery;
 
       if (updateError) {
         console.error('Error resetting player settings:', updateError);
@@ -190,18 +223,16 @@ export function DangerZoneSection({ userId, onStartOver }: DangerZoneSectionProp
       // Clear localStorage intro flag
       localStorage.removeItem('hoopjournal_intro_seen');
 
-      toast.success('All data cleared! Starting fresh...');
+      toast.success('Profile data cleared! Starting fresh...');
       
-      // Call the callback to handle navigation/reload
       if (onStartOver) {
         onStartOver();
       } else {
-        // Fallback: reload the page
         window.location.reload();
       }
     } catch (error: any) {
       console.error('Error starting over:', error);
-      toast.error(error.message || 'Failed to reset account');
+      toast.error(error.message || 'Failed to reset profile');
     } finally {
       setIsStartingOver(false);
       setShowStartOverDialog(false);
