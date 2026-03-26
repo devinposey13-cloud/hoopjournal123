@@ -87,11 +87,11 @@ export function ClaimCardFlow({ open, onOpenChange, onClaimed }: ClaimCardFlowPr
     setLoading(true);
     try {
       // 1. Mark card as claimed
+      // Update card to mark as claimed (works for unclaimed or re-claim by same user)
       const { error: claimError } = await supabase
         .from('quick_cards')
         .update({ claimed_by_user_id: user.id } as any)
-        .eq('id', cardData.id)
-        .is('claimed_by_user_id', null);
+        .eq('id', cardData.id);
 
       if (claimError) throw claimError;
 
