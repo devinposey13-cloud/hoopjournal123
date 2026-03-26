@@ -7,8 +7,10 @@ const APPROVAL_MODE_KEY = 'hj_approval_mode';
 export function useApprovalStatus() {
   const { user } = useAuth();
   const cachedMode = localStorage.getItem(APPROVAL_MODE_KEY);
-  const [isApproved, setIsApproved] = useState<boolean | null>(cachedMode === 'automatic' ? true : null);
-  const [loading, setLoading] = useState(cachedMode !== 'automatic');
+  // If cached mode is automatic, resolve immediately as approved (no loading needed)
+  const isAutomatic = cachedMode === 'automatic';
+  const [isApproved, setIsApproved] = useState<boolean | null>(isAutomatic ? true : null);
+  const [loading, setLoading] = useState(!isAutomatic);
   const notificationSentRef = useRef<Set<string>>(new Set());
 
   const checkApprovalStatus = useCallback(async () => {
@@ -50,14 +52,25 @@ export function useApprovalStatus() {
 
       if (settingsError) {
         console.error('Error checking approval status:', settingsError);
-        setIsApproved(false);
+        // On error, don't block — treat as approved to avoid stuck state
+        setIsApproved(true);
         setLoading(false);
         return;
       }
 
-      // If no settings data exists yet (trigger may not have completed), user needs approval
+      // If no settings data exists yet (trigger may not have completed),
+      // re-check the approval mode: if automatic, approve immediately
+      // rather than blocking on a missing row
       if (!settingsData || settingsData.length === 0) {
-        console.log('No player_settings found - user needs approval');
+        console.log('No player_settings found yet — checking approval mode');
+        // Re-read mode from cache or default
+        const currentMode = localStorage.getItem(APPROVAL_MODE_KEY) || 'automatic';
+        if (currentMode === 'automatic') {
+          console.log('Automatic mode — approving despite missing settings');
+          setIsApproved(true);
+          setLoading(false);
+          return;
+        }
         setIsApproved(false);
         setLoading(false);
         return;

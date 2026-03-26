@@ -236,7 +236,8 @@ export default function Index() {
     if (isBootstrapLoading) return 'loading';
     if (!user && isGuest) return 'guest_dashboard';
     if (!user) return 'auth_form';
-    if (!isApproved && !isAdmin) return 'pending_approval';
+    // isApproved === null means still resolving — treat as loading, not as rejected
+    if (isApproved === false && !isAdmin) return 'pending_approval';
     if (showOnboarding) return 'onboarding';
     return 'dashboard';
   };
