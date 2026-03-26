@@ -2486,6 +2486,11 @@ export function AdminPanel() {
         <TabsContent value="slack" className="space-y-4">
           <AdminSlackAlerts />
         </TabsContent>
+
+        {/* Quick Mode Tab */}
+        <TabsContent value="quickmode" className="space-y-4">
+          <AdminQuickMode />
+        </TabsContent>
       </Tabs>
 
       {/* Admin Override Confirmation Dialog */}
