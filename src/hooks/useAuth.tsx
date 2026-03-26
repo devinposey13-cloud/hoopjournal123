@@ -1,6 +1,11 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  logEvent as logAuthDebugEvent,
+  resumeOrCreateMainAppAttempt,
+  updateMetadata,
+} from '@/lib/appleAuthDebugTracker';
 
 type AuthMethod = 'email' | 'phone';
 
@@ -51,12 +56,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Detect if we're on a callback URL with tokens
+    const url = new URL(window.location.href);
     const hash = window.location.hash || '';
     const isCallbackWithTokens = hash.includes('access_token');
     const isCallbackRoute = window.location.pathname === '/auth/callback';
+    const isPostAuthReturn = url.searchParams.get('postAuth') === '1';
+    let postAuthPollCount = 0;
+    let postAuthPollInterval: number | null = null;
+    let postAuthTimeout: number | null = null;
+
+    const clearPostAuthPolling = () => {
+      if (postAuthPollInterval) {
+        window.clearInterval(postAuthPollInterval);
+        postAuthPollInterval = null;
+      }
+      if (postAuthTimeout) {
+        window.clearTimeout(postAuthTimeout);
+        postAuthTimeout = null;
+      }
+    };
     
     if (isCallbackWithTokens) {
       console.log('[Auth] Detected token-bearing URL, waiting for session hydration...');
+    }
+
+    if (isPostAuthReturn) {
+      resumeOrCreateMainAppAttempt();
+      logAuthDebugEvent('main_app_postauth_detected', {
+        pathname: window.location.pathname,
+        search: window.location.search,
+      });
+      updateMetadata('mainAppReturnUrl', window.location.href);
+
+      postAuthPollInterval = window.setInterval(async () => {
+        postAuthPollCount += 1;
+        logAuthDebugEvent('session_check_started', {
+          source: 'auth_provider_poll',
+          tick: postAuthPollCount,
+        });
+
+        const { data: { session } } = await supabase.auth.getSession();
+        logAuthDebugEvent('session_check_result', {
+          source: 'auth_provider_poll',
+          tick: postAuthPollCount,
+          hasSession: !!session,
+          userId: session?.user?.id,
+        });
+
+        if (session) {
+          clearPostAuthPolling();
+          setSession(session);
+          setUser(session.user);
+          setLoading(false);
+        }
+      }, 500);
+
+      postAuthTimeout = window.setTimeout(() => {
+        clearPostAuthPolling();
+        logAuthDebugEvent('session_check_result', {
+          source: 'auth_provider_timeout',
+          hasSession: false,
+        });
+        setLoading(false);
+      }, 10000);
     }
 
     // Set up auth state listener FIRST
@@ -69,6 +131,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log(`[Auth] User: ${session.user.id}`);
           console.log(`[Auth] Provider: ${session.user.app_metadata?.provider || 'email'}`);
         }
+
+        if (isPostAuthReturn) {
+          logAuthDebugEvent('auth_state_changed', {
+            event,
+            hasSession: !!session,
+            userId: session?.user?.id,
+            provider: session?.user?.app_metadata?.provider || 'email',
+          });
+          if (session) {
+            clearPostAuthPolling();
+          }
+        }
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -78,6 +152,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (isPostAuthReturn) {
+        logAuthDebugEvent('session_check_started', { source: 'auth_provider_initial' });
+        logAuthDebugEvent('session_check_result', {
+          source: 'auth_provider_initial',
+          hasSession: !!session,
+          userId: session?.user?.id,
+        });
+      }
+
       if (session) {
         console.log(`[Auth] Existing session found for user: ${session.user.id}`);
       } else {
@@ -92,6 +175,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // OAuthCallback.tsx manages its own session establishment — let it drive.
         // Set loading=false so the page can render its skeleton.
         setLoading(false);
+      } else if (isPostAuthReturn) {
+        if (session) {
+          clearPostAuthPolling();
+          setLoading(false);
+        }
       } else if (isCallbackWithTokens) {
         // Safety timeout: if no auth event fires within 3s, stop loading anyway
         setTimeout(() => {
@@ -102,7 +190,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearPostAuthPolling();
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async ({ identifier, password, method }: SignUpParams) => {

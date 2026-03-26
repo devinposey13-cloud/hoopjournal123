@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { ProfileSummary, PlayerProfileRecord, mapRecordToPlayerProfile } from '@/types/profile';
 import { toast } from 'sonner';
+import { logEvent as logAuthDebugEvent } from '@/lib/appleAuthDebugTracker';
 
 interface ActiveProfileContextValue {
   // Current active profile
@@ -43,6 +44,8 @@ export function useActiveProfileProvider() {
 
   // Fetch all profiles for this user
   const fetchProfiles = useCallback(async () => {
+    const isPostAuthReturn = new URLSearchParams(window.location.search).get('postAuth') === '1';
+
     if (!user) {
       setProfiles([]);
       setActiveProfile(null);
@@ -51,6 +54,13 @@ export function useActiveProfileProvider() {
     }
 
     try {
+      if (isPostAuthReturn) {
+        logAuthDebugEvent('profile_fetch_started', {
+          source: 'active_profile_list',
+          userId: user.id,
+        });
+      }
+
       const { data, error } = await supabase
         .from('player_settings')
         .select('id, name, display_name, number, avatar_url, team, position, is_active_profile, onboarding_completed_at')
@@ -86,8 +96,23 @@ export function useActiveProfileProvider() {
         
         setActiveProfile({ ...mappedProfiles[0], is_active_profile: true });
       }
+
+      if (isPostAuthReturn) {
+        logAuthDebugEvent('profile_fetch_completed', {
+          source: 'active_profile_list',
+          profileCount: mappedProfiles.length,
+          activeProfileId: (mappedProfiles.find(p => p.is_active_profile) || mappedProfiles[0])?.id || null,
+        });
+      }
     } catch (error) {
       console.error('Error fetching profiles:', error);
+      if (isPostAuthReturn) {
+        logAuthDebugEvent('profile_fetch_completed', {
+          source: 'active_profile_list',
+          error: error instanceof Error ? error.message : String(error),
+          profileCount: 0,
+        });
+      }
     } finally {
       setLoading(false);
     }

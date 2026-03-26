@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AnimatePresence } from 'framer-motion';
@@ -66,10 +66,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { logEvent as logAuthDebugEvent, completeAttempt, updateMetadata } from '@/lib/appleAuthDebugTracker';
 
 export default function Index() {
   const navigate = useNavigate();
   const location = useLocation();
+  const lastPostAuthRouteRef = useRef<string | null>(null);
+  const postAuthCleanupRef = useRef(false);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const isMobile = useIsMobile();
   const [showQuickLiveStatsDialog, setShowQuickLiveStatsDialog] = useState(false);
@@ -87,6 +91,7 @@ export default function Index() {
   const [hasShownRingOfHonorModal, setHasShownRingOfHonorModal] = useState(false);
   const [coachPrefillPrompt, setCoachPrefillPrompt] = useState<string | undefined>();
   const [autoOpenAddGame, setAutoOpenAddGame] = useState(false);
+  const [showPostAuthRecovery, setShowPostAuthRecovery] = useState(false);
   const { user, loading: authLoading, signOut, isGuest } = useAuth();
   const { teams } = usePlayerTeams();
   const { isAdmin } = useAdmin();
@@ -219,8 +224,148 @@ export default function Index() {
     profileLoading: dataLoading,
   });
 
+  const isPostAuthReturn = useMemo(
+    () => new URLSearchParams(location.search).get('postAuth') === '1',
+    [location.search]
+  );
+
+  const postAuthRouteState = useMemo(() => {
+    if (authLoading) return 'auth_loading';
+    if (approvalLoading) return 'approval_loading';
+    if (dataLoading) return 'profile_loading';
+    if (introLoading) return 'intro_loading';
+    if (!user && isGuest) return 'guest_dashboard';
+    if (!user) return 'auth_form';
+    if (!isApproved && !isAdmin) return 'pending_approval';
+    if (showOnboarding) return 'onboarding';
+    return 'dashboard';
+  }, [authLoading, approvalLoading, dataLoading, introLoading, user, isGuest, isApproved, isAdmin, showOnboarding]);
+
+  const isPostAuthBootstrapping = isPostAuthReturn && [
+    'auth_loading',
+    'approval_loading',
+    'profile_loading',
+    'intro_loading',
+  ].includes(postAuthRouteState);
+
+  useEffect(() => {
+    if (!isPostAuthReturn) {
+      setShowPostAuthRecovery(false);
+      lastPostAuthRouteRef.current = null;
+      postAuthCleanupRef.current = false;
+      return;
+    }
+
+    if (lastPostAuthRouteRef.current !== postAuthRouteState) {
+      logAuthDebugEvent('route_decision_made', {
+        routeState: postAuthRouteState,
+        authLoading,
+        approvalLoading,
+        dataLoading,
+        introLoading,
+        hasUser: !!user,
+        isGuest,
+        isApproved,
+        isAdmin,
+        showOnboarding,
+      });
+      updateMetadata('postAuthRouteState', postAuthRouteState);
+      lastPostAuthRouteRef.current = postAuthRouteState;
+    }
+  }, [
+    isPostAuthReturn,
+    postAuthRouteState,
+    authLoading,
+    approvalLoading,
+    dataLoading,
+    introLoading,
+    user,
+    isGuest,
+    isApproved,
+    isAdmin,
+    showOnboarding,
+  ]);
+
+  useEffect(() => {
+    if (!isPostAuthBootstrapping) {
+      setShowPostAuthRecovery(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowPostAuthRecovery(true);
+      logAuthDebugEvent('postauth_recovery_visible', {
+        routeState: postAuthRouteState,
+      });
+    }, 10000);
+
+    return () => window.clearTimeout(timer);
+  }, [isPostAuthBootstrapping, postAuthRouteState]);
+
+  useEffect(() => {
+    if (!isPostAuthReturn || isPostAuthBootstrapping || postAuthCleanupRef.current) return;
+
+    logAuthDebugEvent('navigation_started', {
+      source: 'postauth_main_app',
+      target: postAuthRouteState,
+    });
+    logAuthDebugEvent('navigation_completed', {
+      source: 'postauth_main_app',
+      target: postAuthRouteState,
+    });
+    logAuthDebugEvent('loading_state_cleared', {
+      source: 'postauth_main_app',
+      target: postAuthRouteState,
+    });
+
+    if (postAuthRouteState !== 'auth_form') {
+      completeAttempt('success');
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete('postAuth');
+    url.searchParams.delete('watchdog');
+    url.searchParams.delete('fallback');
+    url.searchParams.delete('ts');
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    postAuthCleanupRef.current = true;
+  }, [isPostAuthReturn, isPostAuthBootstrapping, postAuthRouteState]);
+
   // Show auth form if not logged in
   // Show loading skeleton while auth/approval/intro is loading (branded, not white screen)
+  if (showPostAuthRecovery && isPostAuthBootstrapping) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
+        <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <LoadingSpinner className="h-6 w-6" />
+          </div>
+          <h1 className="text-xl font-semibold text-foreground">Finishing sign-in…</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your account is authenticated. We’re restoring your session and dashboard now.
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Button onClick={() => window.location.reload()}>
+              Refresh app
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                logAuthDebugEvent('navigation_started', {
+                  source: 'postauth_recovery_manual',
+                  target: 'root_reload',
+                });
+                window.location.replace('/');
+              }}
+            >
+              Go to dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (authLoading || approvalLoading || introLoading) {
     return (
       <div className="min-h-screen bg-background">
