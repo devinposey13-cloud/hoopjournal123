@@ -84,6 +84,17 @@ const TEMPLATES = {
     color: '#FFD700',
     glow: '0 0 60px rgba(255,215,0,0.5)',
   },
+  dominantbig: {
+    label: 'Dominant Big',
+    emoji: '🏔️',
+    grade: 'A',
+    headline: 'PAINT BEAST',
+    archetype: 'DOMINANT BIG',
+    stats: { points: 16, rebounds: 14, assists: 2, steals: 1, blocks: 5, turnovers: 2, fgMade: 7, fgAttempted: 10, threePtMade: 0, threePtAttempted: 0, ftMade: 2, ftAttempted: 5 },
+    badges: ['🏔️ Paint Beast', '🧱 Rim Protector', '💪 Boards'],
+    color: '#e879f9',
+    glow: '0 0 60px rgba(232,121,249,0.5)',
+  },
 } as const;
 
 type TemplateKey = keyof typeof TEMPLATES;
