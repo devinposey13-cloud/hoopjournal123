@@ -406,6 +406,49 @@ export function AdminQuickMode() {
     setPhotoUrl(url);
   }, []);
 
+  // Webcam handling for desktop
+  const startWebcam = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 1280 } } });
+      streamRef.current = stream;
+      setShowWebcam(true);
+      // Attach stream after render
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+        }
+      }, 100);
+    } catch (err) {
+      console.error('Webcam error:', err);
+      toast.error('Could not access camera. Please use Upload instead.');
+    }
+  }, []);
+
+  const stopWebcam = useCallback(() => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    setShowWebcam(false);
+  }, []);
+
+  const captureFromWebcam = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], `webcam-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        setPhotoFile(file);
+        setPhotoUrl(URL.createObjectURL(file));
+      }
+      stopWebcam();
+    }, 'image/jpeg', 0.92);
+  }, [stopWebcam]);
+
+  const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   // Upload photo to storage
   async function uploadPhoto(file: File): Promise<string | null> {
