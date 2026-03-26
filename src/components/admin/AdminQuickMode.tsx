@@ -469,8 +469,13 @@ export function AdminQuickMode() {
 
   // Upload photo to storage
   async function uploadPhoto(file: File): Promise<string | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('Upload error: not authenticated');
+      return null;
+    }
     const ext = file.name.split('.').pop() || 'jpg';
-    const path = `event-cards/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+    const path = `${user.id}/event-cards/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
     const { error } = await supabase.storage.from('avatars').upload(path, file, {
       cacheControl: '3600',
       upsert: false,
