@@ -552,7 +552,7 @@ export default function OAuthCallback() {
       <div className="text-center space-y-3">
         {showRetry ? (
           <>
-            <AlertTriangle className="w-8 h-8 mx-auto text-yellow-500" />
+            <AlertTriangle className="w-8 h-8 mx-auto text-destructive" />
             <p className="text-foreground font-medium text-sm">Sign in is taking longer than expected</p>
             <button
               onClick={handleRetry}
