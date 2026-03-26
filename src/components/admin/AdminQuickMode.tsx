@@ -208,7 +208,7 @@ function PromoCardCanvas({
       }}>
         {/* Avatar */}
         <div style={{
-          width: 500, height: 500, borderRadius: '50%',
+          width: 580, height: 580, borderRadius: '50%',
           border: `8px solid ${color}`,
           overflow: 'hidden',
           boxShadow: `0 0 80px ${color}50, 0 0 160px ${color}20, inset 0 0 40px ${color}10`,
@@ -232,7 +232,7 @@ function PromoCardCanvas({
 
         {/* Identity block — name is primary, archetype secondary */}
         <div style={{
-          position: 'absolute', top: 550, left: 0, right: 0,
+          position: 'absolute', top: 630, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
           <div data-canvas-name="true" style={{
@@ -283,7 +283,7 @@ function PromoCardCanvas({
 
         {/* Grade — ~12% larger, tighter to content */}
         <div style={{
-          position: 'absolute', top: 860, left: 0, right: 0,
+          position: 'absolute', top: 940, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
           <div style={{
@@ -316,7 +316,7 @@ function PromoCardCanvas({
 
         {/* Badges — first badge emphasized */}
         <div data-canvas-badges="true" style={{
-          position: 'absolute', top: 1170, left: 0, right: 0,
+          position: 'absolute', top: 1250, left: 0, right: 0,
           display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center',
           alignItems: 'center',
         }}>
