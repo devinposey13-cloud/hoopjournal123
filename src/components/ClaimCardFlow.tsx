@@ -45,8 +45,7 @@ export function ClaimCardFlow({ open, onOpenChange, onClaimed }: ClaimCardFlowPr
   // Format input as HJ-XXXXX
   const handleCodeChange = (value: string) => {
     const upper = value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
-    // Auto-prefix HJ- if user starts typing letters/numbers
-    if (upper.length <= 8) {
+    if (upper.length <= 10) {
       setCode(upper);
     }
   };
@@ -153,7 +152,7 @@ export function ClaimCardFlow({ open, onOpenChange, onClaimed }: ClaimCardFlowPr
                 onChange={(e) => handleCodeChange(e.target.value)}
                 className="text-center text-lg font-mono tracking-widest h-14"
                 autoFocus
-                maxLength={8}
+                maxLength={10}
               />
               <Button
                 type="submit"
