@@ -403,19 +403,13 @@ export function AdminQuickMode() {
     setPhotoUrl(url);
   }, []);
 
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
   const handleCameraCapture = useCallback(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'environment';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        setPhotoFile(file);
-        setPhotoUrl(URL.createObjectURL(file));
-      }
-    };
-    input.click();
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
+      cameraInputRef.current.click();
+    }
   }, []);
 
   // Upload photo to storage
