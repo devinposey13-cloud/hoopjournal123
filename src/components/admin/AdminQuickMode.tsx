@@ -193,7 +193,7 @@ function PromoCardCanvas({
       }} />
 
       {/* PROMO BADGE */}
-      <div style={{
+      <div data-canvas-eventtag="true" style={{
         position: 'absolute', top: 32, right: 32, zIndex: 10,
         background: 'linear-gradient(135deg, rgba(168,85,247,0.9), rgba(139,92,246,0.9))',
         borderRadius: 12, padding: '8px 20px',
@@ -293,7 +293,7 @@ function PromoCardCanvas({
             pointerEvents: 'none',
           }} />
           {/* GAME GRADE label — more visible */}
-          <div style={{
+          <div data-canvas-label="true" style={{
             color: s.muted, fontSize: 19, fontWeight: 800,
             letterSpacing: '0.5em', textTransform: 'uppercase',
             textAlign: 'center', marginBottom: 16,
@@ -315,13 +315,13 @@ function PromoCardCanvas({
         </div>
 
         {/* Badges — first badge emphasized */}
-        <div style={{
+        <div data-canvas-badges="true" style={{
           position: 'absolute', top: 1090, left: 0, right: 0,
           display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center',
           alignItems: 'center',
         }}>
           {badges.slice(0, 3).map((badge, i) => (
-            <div key={i} style={{
+            <div key={i} data-canvas-badge={i} style={{
               background: i === 0 ? `${color}20` : `${color}10`,
               border: `1.5px solid ${i === 0 ? `${color}50` : `${color}28`}`,
               borderRadius: 50,
@@ -343,7 +343,7 @@ function PromoCardCanvas({
         position: 'absolute', bottom: 60, left: 80, right: 80,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, opacity: 0.85 }}>
+        <div data-canvas-footer-brand="true" style={{ display: 'flex', alignItems: 'center', gap: 16, opacity: 0.85 }}>
           <img src={hoopJournalLogo} alt="" style={{ width: 76, height: 76, borderRadius: 14 }} crossOrigin="anonymous" />
           <div>
             <div style={{ color: s.bright, fontSize: 26, fontWeight: 800, opacity: 0.9 }}>Hoop Journal</div>
@@ -351,7 +351,7 @@ function PromoCardCanvas({
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-          <div style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to claim</div>
+          <div data-canvas-footer-scan="true" style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to claim</div>
           <div style={{ padding: 6, background: 'rgba(255,255,255,0.95)', borderRadius: 10 }}>
             {claimUrl ? (
               <QRCodeSVG value={claimUrl} size={160} bgColor="#ffffff" fgColor="#000000" level="M" />
@@ -359,7 +359,7 @@ function PromoCardCanvas({
               <div style={{ width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 12 }}>Generate card first</div>
             )}
           </div>
-          <div style={{ color: s.dim, fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', marginTop: 2 }}>Claim within 72 hours</div>
+          <div data-canvas-footer-claim="true" style={{ color: s.dim, fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', marginTop: 2 }}>Claim within 72 hours</div>
         </div>
       </div>
 
