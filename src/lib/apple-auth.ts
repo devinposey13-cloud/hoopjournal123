@@ -48,7 +48,7 @@ export function initAppleAuth(): void {
         clientId: APPLE_CLIENT_ID,
         scope: 'name email',
         redirectURI: APPLE_REDIRECT_URI,
-        usePopup: false,
+        usePopup: true,
       });
     } catch (err) {
       console.warn('[AppleAuth] JS SDK init error:', err);
