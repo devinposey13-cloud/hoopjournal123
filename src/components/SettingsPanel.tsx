@@ -47,6 +47,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 }
 
 export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: SettingsPanelProps) {
+  const { activeProfileId } = useActiveProfile();
   const navigate = useNavigate();
   const [formData, setFormData] = useState(profile);
   
@@ -806,7 +807,7 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
 
           {/* Danger Zone */}
           {userId && (
-            <DangerZoneSection userId={userId} onStartOver={onStartOver} />
+            <DangerZoneSection userId={userId} activeProfileId={activeProfileId} onStartOver={onStartOver} />
           )}
         </div>
       </div>
