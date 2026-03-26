@@ -142,7 +142,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 onClaimCard={() => setShowClaimCard(true)}
               />
             )}
-            )}
             {currentStep === 1 && (
               <PlayerIdentityCard
                 roleValue={data.courtRole}
