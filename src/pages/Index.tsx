@@ -66,12 +66,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { logEvent as logAuthDebugEvent, completeAttempt, updateMetadata } from '@/lib/appleAuthDebugTracker';
+import { logEvent as logAuthDebugEvent, completeAttempt } from '@/lib/appleAuthDebugTracker';
 
 export default function Index() {
   const navigate = useNavigate();
   const location = useLocation();
-  const lastPostAuthRouteRef = useRef<string | null>(null);
   const postAuthCleanupRef = useRef(false);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const isMobile = useIsMobile();
