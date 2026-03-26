@@ -42,14 +42,12 @@ export function initAppleAuth(): void {
   if (isDespiaIOS()) return;
   if (!APPLE_CLIENT_ID) return;
 
-  const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-apple-callback`;
-
   if (window.AppleID) {
     try {
       window.AppleID.auth.init({
         clientId: APPLE_CLIENT_ID,
         scope: 'name email',
-        redirectURI: edgeFunctionUrl,
+        redirectURI: APPLE_REDIRECT_URI,
         usePopup: true,
       });
     } catch (err) {
