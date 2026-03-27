@@ -86,6 +86,31 @@ export function NativePurchaseSheet({
       toast.error('No internet connection. Please reconnect and try again.');
       return;
     }
+
+    // On native, prefer launching the RC native paywall for best UX
+    // This shows RC's own UI with offerings configured in the dashboard
+    if (isNative) {
+      try {
+        console.log('[NativePurchaseSheet] Launching native RC paywall…');
+        await launchNativePaywall('default');
+        onPurchaseComplete?.(selectedPlan);
+        onClose();
+      } catch (err) {
+        // If launchPaywall fails, fall back to direct product purchase
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`[NativePurchaseSheet] launchPaywall failed (${msg}), falling back to direct purchase`);
+        try {
+          await purchasePlan(selectedPlan, cycle);
+          onPurchaseComplete?.(selectedPlan);
+          onClose();
+        } catch {
+          // Error handled by useBilling
+        }
+      }
+      return;
+    }
+
+    // Web — Stripe checkout
     try {
       await purchasePlan(selectedPlan, cycle);
       onPurchaseComplete?.(selectedPlan);
