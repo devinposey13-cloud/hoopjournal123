@@ -80,10 +80,13 @@ export default function Upgrade() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Button variant="ghost" onClick={() => navigate('/')} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-full">
+            <X className="w-5 h-5" />
           </Button>
         </div>
       </div>
@@ -141,8 +144,8 @@ export default function Upgrade() {
               Restore Purchases
             </Button>
           )}
-          <Button variant="ghost" onClick={() => navigate(-1)} className="text-muted-foreground">
-            Not now
+          <Button variant="outline" onClick={() => navigate('/')} className="text-muted-foreground">
+            Return to Dashboard
           </Button>
           <p className="text-xs text-muted-foreground mt-4">
             Cancel anytime. Your data stays yours.
@@ -176,11 +179,19 @@ export default function Upgrade() {
       <NativePurchaseSheet
         open={nativeSheetOpen}
         onClose={() => setNativeSheetOpen(false)}
-        onPurchaseComplete={() => {
-          toast.success('Subscription activated! 🎉');
+        onPurchaseComplete={(planId) => {
+          const name = planId ? planCatalog[planId]?.name : 'your plan';
+          setConfirmedPlanName(name || 'your plan');
+          setShowConfirmation(true);
         }}
         recommendedPlan={nativeSheetPlan}
         initialBillingCycle={cycle}
+      />
+
+      <PurchaseConfirmationDialog
+        open={showConfirmation}
+        planName={confirmedPlanName}
+        onGoToDashboard={() => navigate('/')}
       />
     </div>
   );

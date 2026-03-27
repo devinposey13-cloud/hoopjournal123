@@ -65,7 +65,8 @@ export default function Pricing() {
       toast.info("Checkout canceled — you're still on the Free plan.");
     }
     if (success === 'true') {
-      toast.success('Subscription activated! 🎉');
+      setConfirmedPlanName('your plan');
+      setShowConfirmation(true);
     }
   }, [canceled, success]);
 
@@ -102,10 +103,13 @@ export default function Pricing() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate('/')} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back to Journal
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-full">
+            <X className="w-5 h-5" />
           </Button>
         </div>
       </div>
@@ -207,11 +211,19 @@ export default function Pricing() {
       <NativePurchaseSheet
         open={nativeSheetOpen}
         onClose={() => setNativeSheetOpen(false)}
-        onPurchaseComplete={() => {
-          toast.success('Subscription activated! 🎉');
+        onPurchaseComplete={(planId) => {
+          const name = planId ? planCatalog[planId]?.name : 'your plan';
+          setConfirmedPlanName(name || 'your plan');
+          setShowConfirmation(true);
         }}
         recommendedPlan={nativeSheetPlan}
         initialBillingCycle={cycle}
+      />
+
+      <PurchaseConfirmationDialog
+        open={showConfirmation}
+        planName={confirmedPlanName}
+        onGoToDashboard={() => navigate('/')}
       />
     </div>
   );

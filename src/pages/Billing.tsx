@@ -57,10 +57,13 @@ export default function Billing() {
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Button variant="ghost" onClick={() => navigate('/')} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-full">
+            <X className="w-5 h-5" />
           </Button>
         </div>
       </div>
