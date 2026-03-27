@@ -92,13 +92,20 @@ export function NativePurchaseSheet({
     if (isNative) {
       const productId = `HoopJ_${selectedPlan}_${cycle === 'yearly' ? 'yearly' : 'monthly'}`;
       console.log(`[NativePurchaseSheet] subscribe tapped: plan=${selectedPlan}, cycle=${cycle}, mapped_product=${productId}`);
-      console.log(`[NativePurchaseSheet] rc_purchase_path=native_paywall_first, rc_web_fallback=false`);
+      console.log(`[NativePurchaseSheet] rc_purchase_path=native_paywall_first, offering=useRevenueCat`);
       try {
-        console.log('[NativePurchaseSheet] Launching native RC paywall (offering=default)…');
-        await launchNativePaywall('default');
+        console.log('[NativePurchaseSheet] Launching native RC paywall (offering=useRevenueCat)…');
+        await launchNativePaywall('useRevenueCat');
         onPurchaseComplete?.(selectedPlan);
         onClose();
       } catch (err) {
+        // If user dismissed the paywall (cancelled), do NOT fall back to direct purchase
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.toLowerCase().includes('cancel')) {
+          console.log('[NativePurchaseSheet] User dismissed native paywall — no fallback');
+          return;
+        }
+        // Only fall back to direct purchase on genuine errors (not cancellation)
         const errObj = err instanceof Error ? { message: err.message, name: err.name, stack: err.stack } : err;
         console.warn(`[NativePurchaseSheet] launchPaywall failed: ${JSON.stringify(errObj)}, falling back to direct purchase product=${productId}`);
         try {

@@ -251,7 +251,7 @@ export function useBilling(): UseBillingReturn {
   }, [user?.id, log, getDespia, checkSubscription, pollSubscriptionStatus]);
 
   // ─── Launch native RevenueCat paywall ─────────────────────────────
-  const launchNativePaywall = useCallback(async (offering = 'default') => {
+  const launchNativePaywall = useCallback(async (offering = 'useRevenueCat') => {
     if (!user?.id) throw new Error('User not authenticated');
     if (!isDespia()) throw new Error('Native paywall only available on mobile');
 
@@ -259,28 +259,36 @@ export function useBilling(): UseBillingReturn {
     const despia = await getDespia();
 
     return new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const settle = (fn: () => void) => { if (!settled) { settled = true; cleanup(); fn(); } };
+
       const timeout = setTimeout(() => {
-        log('[Billing] ⚠ Native paywall callback timed out (180s)');
-        cleanup();
-        checkSubscription().then(() => resolve()).catch(reject);
+        log('[Billing] ⚠ Native paywall timed out (180s) — treating as dismiss');
+        settle(() => reject(new Error('cancelled')));
       }, 180000);
 
       const cleanup = () => {
         clearTimeout(timeout);
         window.onRevenueCatPurchase = undefined;
+        window.onRevenueCatPaywallDismiss = undefined;
       };
 
       window.onRevenueCatPurchase = () => {
         log('[Billing] ✓ Purchase via native paywall');
-        cleanup();
-        pollSubscriptionStatus(5, 2000).then(() => resolve()).catch(() => resolve());
+        settle(() => {
+          pollSubscriptionStatus(5, 2000).then(() => resolve()).catch(() => resolve());
+        });
+      };
+
+      // Dismiss without purchase → reject with cancellation so fallback does NOT fire
+      (window as any).onRevenueCatPaywallDismiss = () => {
+        log('[Billing] Native paywall dismissed without purchase');
+        settle(() => reject(new Error('cancelled')));
       };
 
       try {
         despia(`revenuecat://launchPaywall?external_id=${encodeURIComponent(user.id)}&offering=${encodeURIComponent(offering)}`);
         log('[Billing] Native paywall launched');
-        // Resolve immediately since user may dismiss without purchasing
-        // The onRevenueCatPurchase callback handles actual purchases
       } catch (err) {
         cleanup();
         log(`[Billing] ❌ launchPaywall failed: ${err}`);
