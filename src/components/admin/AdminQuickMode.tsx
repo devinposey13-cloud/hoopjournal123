@@ -381,40 +381,58 @@ export function AdminQuickMode() {
   const cardRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
-  // ── Camera-reload persistence (only survives iOS camera page reload, not navigation) ──
-  // Mark that component has mounted at least once this SPA session
-  const mountIdRef = useRef(Math.random().toString(36).slice(2));
+  // ── Camera-reload persistence ──
+  // On iOS, opening the native camera causes a full page reload.
+  // We use sessionStorage to persist form data across that reload.
+  // We use a navigation-aware approach: a "beacon" key is set while this
+  // component is mounted. On mount, if the beacon exists AND saved data exists,
+  // it means iOS reloaded (not SPA navigation). If the beacon is missing,
+  // the user navigated away and back — so we start fresh.
   const STORAGE_KEY = 'quick_mode_form';
+  const BEACON_KEY = 'quick_mode_active';
 
   function loadSaved() {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
-      // Only restore if the page was reloaded (same mount marker missing means fresh navigation)
-      if (parsed._fromCamera) return parsed;
-      return {};
+      // Only restore if the beacon was already set (means page reload, not fresh nav)
+      const beaconExists = sessionStorage.getItem(BEACON_KEY) === '1';
+      return beaconExists ? parsed : {};
     } catch { return {}; }
   }
 
   const saved = useRef(loadSaved());
 
-  // Clear storage after restoring — so navigating away and back starts fresh
   useEffect(() => {
-    // If we restored data, clear the flag so it doesn't persist beyond this mount
-    if (saved.current._fromCamera) {
-      sessionStorage.removeItem(STORAGE_KEY);
-    }
-    // On unmount (navigation away), always clear storage
+    // Set the beacon on mount — signals "this component is active"
+    sessionStorage.setItem(BEACON_KEY, '1');
+
+    // Listen for SPA navigation (popstate / component unmount via React Router)
+    // We use 'pagehide' to detect true page unload vs SPA unmount
+    const handlePageHide = () => {
+      // Page is actually unloading (iOS camera reload) — keep data
+      // Do nothing; data stays in sessionStorage
+    };
+    window.addEventListener('pagehide', handlePageHide);
+
     return () => {
-      try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+      window.removeEventListener('pagehide', handlePageHide);
+      // This cleanup runs on SPA unmount (navigation away).
+      // On iOS camera reload, the page unloads entirely so this cleanup
+      // does NOT run — sessionStorage data survives.
+      // On SPA navigation, this DOES run — clear everything.
+      try {
+        sessionStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(BEACON_KEY);
+      } catch {}
     };
   }, []);
 
   function saveFormForCamera(patch: Record<string, any>) {
     try {
       const current = (() => { try { const r = sessionStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; } })();
-      const next = { ...current, ...patch, _fromCamera: true };
+      const next = { ...current, ...patch };
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {}
   }
@@ -439,8 +457,7 @@ export function AdminQuickMode() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
-  // Persist form fields only when camera input is about to trigger a reload
-  // We save on every change so iOS camera reload captures the latest state
+  // Save form on every change so iOS camera reload captures latest state
   useEffect(() => {
     saveFormForCamera({ playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl });
   }, [playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl]);
