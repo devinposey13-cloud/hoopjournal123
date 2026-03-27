@@ -58,7 +58,7 @@ const PDF_VALUE_BULLETS = [
 export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: PaywallSheetProps) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('pro');
-  const { purchasePlan, launchNativePaywall, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
+  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
   const { refresh: refreshEntitlements } = useNativeEntitlements();
   const { findPackage, getTrialCopyForProduct, hasTrialForProduct } = useNativeRC();
   const { isOnline } = useOnlineStatus();
@@ -110,15 +110,25 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
     }
 
     setPurchasingPlan(selectedPlan);
-    track('upgrade_clicked', { planId: selectedPlan, reason, cycle, hasTrial: trialConfig.hasTrial });
-    if (trialConfig.hasTrial) {
+    const effectiveHasTrial = isNative ? selectedRCInfo.hasTrial : trialConfig.hasTrial;
+    track('upgrade_clicked', { planId: selectedPlan, reason, cycle, hasTrial: effectiveHasTrial });
+    if (effectiveHasTrial) {
       track('trial_started', { planId: selectedPlan, cycle, trialDays: trialConfig.trialDays });
     }
     try {
-      // On native, launch RC paywall directly to preserve introductory offers / free trials
+      // On native, purchase the exact selected product so the chosen plan/cycle
+      // and its introductory offer are the ones Apple presents.
       if (isNative) {
-        await launchNativePaywall('useRevenueCat');
-        track(trialConfig.hasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
+        console.log('[PaywallSheet] Native direct purchase', {
+          selectedPlan,
+          cycle,
+          productId: selectedRCInfo.pkg?.productId,
+          hasTrial: selectedRCInfo.hasTrial,
+          introPrice: selectedRCInfo.pkg?.introPrice ?? null,
+          trialCopy,
+        });
+        await purchasePlan(selectedPlan, cycle);
+        track(effectiveHasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
         onUpgrade(selectedPlan);
         return;
       }
