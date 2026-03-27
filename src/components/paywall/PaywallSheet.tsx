@@ -116,8 +116,6 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
       track('trial_started', { planId: selectedPlan, cycle, trialDays: trialConfig.trialDays });
     }
     try {
-      // On native, purchase the exact selected product so the chosen plan/cycle
-      // and its introductory offer are the ones Apple presents.
       if (isNative) {
         console.log('[PaywallSheet] Native direct purchase', {
           selectedPlan,
@@ -127,17 +125,18 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
           introPrice: selectedRCInfo.pkg?.introPrice ?? null,
           trialCopy,
         });
-        await purchasePlan(selectedPlan, cycle);
-        // Only trigger upgrade callback if purchase was confirmed by backend
-        if (lastPurchaseResult === 'success') {
+        const result = await purchasePlan(selectedPlan, cycle);
+        if (result.confirmed) {
           track(effectiveHasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
           onUpgrade(selectedPlan);
         }
         return;
       }
-      await purchasePlan(selectedPlan, cycle);
-      track(trialConfig.hasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
-      onUpgrade(selectedPlan);
+      const result = await purchasePlan(selectedPlan, cycle);
+      if (result.confirmed) {
+        track(trialConfig.hasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
+        onUpgrade(selectedPlan);
+      }
     } catch (err) {
       // Silently handle user cancellation (paywall dismissed)
       const msg = err instanceof Error ? err.message.toLowerCase() : '';

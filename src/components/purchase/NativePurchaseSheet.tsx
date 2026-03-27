@@ -109,9 +109,8 @@ export function NativePurchaseSheet({
           hasTrial: rcInfo.hasTrial,
           trialCopy: rcInfo.trialCopy,
         });
-        await purchasePlan(selectedPlan, cycle);
-        // Only trigger success callback if backend confirmed the plan
-        if (lastPurchaseResult === 'success') {
+        const result = await purchasePlan(selectedPlan, cycle);
+        if (result.confirmed) {
           onPurchaseComplete?.(selectedPlan);
           onClose();
         }
