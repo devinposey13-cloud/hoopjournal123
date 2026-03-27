@@ -348,23 +348,24 @@ export function useBilling(): UseBillingReturn {
         if (result.confirmed) {
           setLastPurchaseResult('success');
           toast.success(`You're now subscribed to ${planId === 'elite' ? 'Elite' : 'Pro'}! 🎉`);
+          return { confirmed: true };
         } else {
-          // Callback fired but backend hasn't confirmed yet — don't celebrate
           setLastPurchaseResult('idle');
           log('[Billing] ⚠ Purchase callback fired but backend not yet confirmed — no success toast');
           toast.info('Your purchase is being processed. It may take a moment to activate.');
+          return { confirmed: false };
         }
       } else {
         await purchaseWeb(planId, billingCycle);
         setLastPurchaseResult('success');
         toast.success('Redirecting to checkout…');
+        return { confirmed: true };
       }
     } catch (err) {
       if (isUserCancellation(err)) {
         log('[Billing] Purchase cancelled by user');
         setLastPurchaseResult('cancelled');
-        // Don't show error for user cancellation — show nothing or subtle message
-        return;
+        return { confirmed: false };
       }
 
       const friendlyMsg = getUserErrorMessage(err);
