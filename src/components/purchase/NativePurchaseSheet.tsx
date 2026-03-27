@@ -257,6 +257,7 @@ export function NativePurchaseSheet({
             {tiers.map((id) => {
               const plan = planCatalog[id];
               const rcInfo = getRCInfo(id, cycle);
+              console.log(`[NativePurchaseSheet] tile ${id}/${cycle}: price=${rcInfo.priceString}, hasTrial=${rcInfo.hasTrial}, trialCopy=${rcInfo.trialCopy}`);
               const price = rcInfo.priceString || `$${getPlanPrice(id, cycle)}`;
               const isRecommended = id === recommendedPlan;
               return (
