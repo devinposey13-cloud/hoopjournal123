@@ -1,13 +1,13 @@
+import { LegalPageNav } from '@/components/settings/LegalPageNav';
+
 export default function EULA() {
   return (
     <div className="min-h-screen bg-background">
+      <LegalPageNav />
       <div className="max-w-2xl mx-auto px-5 py-10">
-        <div className="flex items-center gap-3 mb-6">
-          <img src="/hoop-journal-logo.png" alt="Hoop Journal" className="w-10 h-10 rounded-lg" />
-          <div>
-            <h1 className="text-xl font-bold text-foreground">End User License Agreement</h1>
-            <p className="text-xs text-muted-foreground">Apple Standard EULA</p>
-          </div>
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-foreground">End User License Agreement</h1>
+          <p className="text-xs text-muted-foreground">Apple Standard EULA</p>
         </div>
         <div className="prose prose-sm dark:prose-invert prose-headings:text-foreground prose-p:text-muted-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline space-y-4 text-sm leading-relaxed">
           <p className="text-muted-foreground">
