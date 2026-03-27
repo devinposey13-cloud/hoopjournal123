@@ -23,11 +23,11 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, ArrowRight, Sparkles, Loader2, RotateCcw, WifiOff } from 'lucide-react';
+import { Check, ArrowRight, Sparkles, Loader2, RotateCcw, WifiOff, RefreshCw } from 'lucide-react';
 import { FeatureList } from '@/components/pricing/FeatureList';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, getPlanPrice, getTrialConfig, getTrialCopy, getTrialCta } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
-
+import { useNativeRC } from '@/hooks/useNativeRC';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
