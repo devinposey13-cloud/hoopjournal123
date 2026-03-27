@@ -93,6 +93,30 @@ export function useNativeRC(): UseNativeRCReturn {
       console.log(`[NativeRC] rc_entitlements_found: ${active.length}`);
       console.log(`[NativeRC] rc_products_loaded: true`);
 
+      // Log offering details if available
+      try {
+        console.log('[NativeRC] Fetching offerings via revenuecat://getOfferings…');
+        const offeringsData = await despia('revenuecat://getOfferings', ['offerings']);
+        const offerings = offeringsData?.offerings;
+        if (offerings) {
+          const current = offerings.current || offerings.default;
+          console.log(`[NativeRC] offerings.current.identifier: ${current?.identifier ?? '(none)'}`);
+          const pkgs = current?.availablePackages ?? [];
+          console.log(`[NativeRC] availablePackages count: ${pkgs.length}`);
+          pkgs.forEach((pkg: any, i: number) => {
+            console.log(`[NativeRC]   package[${i}]: id=${pkg.identifier}, productId=${pkg.product?.identifier ?? pkg.productIdentifier}, price=${pkg.product?.priceString ?? pkg.priceString}`);
+            if (pkg.product?.introductoryPrice || pkg.product?.introPrice) {
+              const intro = pkg.product.introductoryPrice || pkg.product.introPrice;
+              console.log(`[NativeRC]   package[${i}] trial/intro: price=${intro.priceString ?? intro.price}, period=${intro.subscriptionPeriod ?? intro.period}, cycles=${intro.numberOfPeriods ?? intro.cycles}`);
+            }
+          });
+        } else {
+          console.log('[NativeRC] offerings response had no data — Despia may not support getOfferings');
+        }
+      } catch (offerErr) {
+        console.log(`[NativeRC] getOfferings not available: ${offerErr instanceof Error ? offerErr.message : offerErr}`);
+      }
+
       setDiagnostics({
         rc_platform_detected: platform,
         rc_native_available: true,
