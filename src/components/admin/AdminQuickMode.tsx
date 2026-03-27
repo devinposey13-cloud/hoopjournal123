@@ -456,7 +456,7 @@ export function AdminQuickMode() {
     }
   }
 
-  // Photo handling — reset input value so same file or re-trigger works on iPad
+  // Photo handling — persist as data URL so it survives iOS camera page reloads
   const handlePhotoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     // Always reset the input so it can be re-triggered
@@ -467,8 +467,13 @@ export function AdminQuickMode() {
       return;
     }
     setPhotoFile(file);
-    const url = URL.createObjectURL(file);
-    setPhotoUrl(url);
+    // Convert to data URL so it persists through page reloads
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      setPhotoUrl(dataUrl);
+    };
+    reader.readAsDataURL(file);
   }, []);
 
   // Webcam handling for desktop
@@ -730,6 +735,7 @@ export function AdminQuickMode() {
     setPreviewCard(null);
     setTeamName(lastTeamName);
     setTemplateKey(lastTemplate);
+    clearSavedForm();
   }
 
   // Reprint from recent
