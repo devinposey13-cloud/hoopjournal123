@@ -19,6 +19,7 @@ import {
 } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
 import { useNativeEntitlements } from '@/hooks/useNativeEntitlements';
+import { useNativeRC } from '@/hooks/useNativeRC';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -59,6 +60,7 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('elite');
   const { purchasePlan, launchNativePaywall, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
   const { refresh: refreshEntitlements } = useNativeEntitlements();
+  const { findPackage, getTrialCopyForProduct, hasTrialForProduct } = useNativeRC();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
   const config = reason ? paywallConfigs[reason] : null;
@@ -81,9 +83,20 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   const dynamicSubline = DYNAMIC_HEADLINES[reason!] || null;
   const bullets = isPdfLimit ? PDF_VALUE_BULLETS : VALUE_BULLETS;
 
+  // Get RC-sourced trial info for the selected plan on native
+  const getRCTrialInfo = (planId: PlanId, billCycle: BillingCycle) => {
+    const suffix = billCycle === 'yearly' ? 'yearly' : 'monthly';
+    const productSubstr = `${planId}_${suffix}`;
+    const pkg = findPackage(productSubstr);
+    const rcTrialCopy = getTrialCopyForProduct(productSubstr);
+    const hasTrial = hasTrialForProduct(productSubstr);
+    return { pkg, rcTrialCopy, hasTrial };
+  };
+
+  const selectedRCInfo = getRCTrialInfo(selectedPlan, cycle);
   const trialConfig = getTrialConfig(selectedPlan, cycle);
-  const trialCopy = getTrialCopy(selectedPlan, cycle);
-  const trialCta = getTrialCta(selectedPlan, cycle);
+  const trialCopy = isNative && selectedRCInfo.rcTrialCopy ? selectedRCInfo.rcTrialCopy : getTrialCopy(selectedPlan, cycle);
+  const trialCta = isNative && selectedRCInfo.hasTrial ? 'Start Free Trial' : getTrialCta(selectedPlan, cycle);
 
   const handleUpgrade = async () => {
     if (isPurchasing) return; // prevent double tap
@@ -256,7 +269,8 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
           <div className="grid grid-cols-2 gap-3">
             {(['pro', 'elite'] as PlanId[]).map((id) => {
               const plan = planCatalog[id];
-              const price = getPlanPrice(id, cycle);
+              const rcInfo = getRCTrialInfo(id, cycle);
+              const price = isNative && rcInfo.pkg?.priceString ? rcInfo.pkg.priceString : `$${getPlanPrice(id, cycle)}`;
               const savings = cycle === 'yearly' ? getYearlySavingsPercent(id) : 0;
               const isSelected = selectedPlan === id;
               const isElite = id === 'elite';
@@ -296,8 +310,8 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                   )}
                   <div className="text-xs font-semibold text-white/60 mb-1">{plan.name}</div>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-2xl font-extrabold text-white">${price}</span>
-                    <span className="text-[10px] text-white/40">/{cycle === 'monthly' ? 'mo' : 'yr'}</span>
+                    <span className="text-2xl font-extrabold text-white">{price}</span>
+                    {!isNative && <span className="text-[10px] text-white/40">/{cycle === 'monthly' ? 'mo' : 'yr'}</span>}
                   </div>
                   {savings > 0 && (
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 mb-2 border-green-500/30 text-green-400">
@@ -306,6 +320,8 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                   )}
                   <p className="text-[10px] text-white/50 leading-relaxed">
                     {(() => {
+                      // Prefer RC data on native
+                      if (isNative && rcInfo.hasTrial) return rcInfo.rcTrialCopy || 'Free trial included';
                       const t = getTrialConfig(id, cycle);
                       if (t.hasTrial) return `${t.trialDays}-day free trial`;
                       return id === 'pro'

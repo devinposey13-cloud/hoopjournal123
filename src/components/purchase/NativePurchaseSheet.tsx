@@ -1,14 +1,7 @@
 /**
  * NativePurchaseSheet — hardened native purchase flow via Despia + RevenueCat.
  *
- * Features:
- * - Loading state while entitlements pre-check
- * - Graceful fallback when products unavailable
- * - Retry logic
- * - Restore purchases with clear messaging
- * - Cancel detection (no error on user cancel)
- * - Double-tap prevention
- * - Compliance links (Terms, Privacy, EULA)
+ * Uses live RC offerings metadata for pricing and trial display.
  */
 
 import { useState, useEffect } from 'react';
@@ -25,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, ArrowRight, Sparkles, Loader2, RotateCcw, WifiOff, RefreshCw } from 'lucide-react';
 import { FeatureList } from '@/components/pricing/FeatureList';
-import { type BillingCycle, type PlanId, planCatalog, planOrder, getPlanPrice, getTrialConfig, getTrialCopy, getTrialCta } from '@/lib/plans';
+import { type BillingCycle, type PlanId, planCatalog, planOrder, getPlanPrice, getTrialCopy, getTrialCta } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
 import { useNativeRC } from '@/hooks/useNativeRC';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -54,7 +47,7 @@ export function NativePurchaseSheet({
   initialBillingCycle = 'monthly',
 }: NativePurchaseSheetProps) {
   const { purchasePlan, launchNativePaywall, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
-  const { ready: rcReady, loading: rcLoading, diagnostics: rcDiag, retry: rcRetry } = useNativeRC();
+  const { ready: rcReady, loading: rcLoading, diagnostics: rcDiag, retry: rcRetry, findPackage, hasTrialForProduct, getTrialCopyForProduct } = useNativeRC();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
 
@@ -77,8 +70,23 @@ export function NativePurchaseSheet({
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [rcLoading]);
 
-
   const tiers = planOrder.filter((id) => id !== 'free') as PlanId[];
+
+  // Get RC-sourced pricing/trial info for a plan
+  const getRCInfo = (planId: PlanId, billCycle: BillingCycle) => {
+    const suffix = billCycle === 'yearly' ? 'yearly' : 'monthly';
+    const productSubstr = `${planId}_${suffix}`;
+    const pkg = findPackage(productSubstr);
+    const rcTrialCopy = getTrialCopyForProduct(productSubstr);
+    const hasTrial = hasTrialForProduct(productSubstr);
+    
+    return {
+      priceString: pkg?.priceString || null,
+      hasTrial,
+      trialCopy: rcTrialCopy,
+      trialCta: hasTrial ? 'Start Free Trial' : null,
+    };
+  };
 
   const handlePurchase = async () => {
     if (isPurchasing) return;
@@ -87,27 +95,24 @@ export function NativePurchaseSheet({
       return;
     }
 
-    // On native, prefer launching the RC native paywall for best UX
-    // This shows RC's own UI with offerings configured in the dashboard
+    const rcInfo = getRCInfo(selectedPlan, cycle);
+    const productId = `HoopJ_${selectedPlan}_${cycle === 'yearly' ? 'yearly' : 'monthly'}`;
+    console.log(`[NativePurchaseSheet] subscribe tapped: plan=${selectedPlan}, cycle=${cycle}, mapped_product=${productId}`);
+    console.log(`[NativePurchaseSheet] RC trial detected: ${rcInfo.hasTrial}, trialCopy: ${rcInfo.trialCopy}`);
+
     if (isNative) {
-      const productId = `HoopJ_${selectedPlan}_${cycle === 'yearly' ? 'yearly' : 'monthly'}`;
-      console.log(`[NativePurchaseSheet] subscribe tapped: plan=${selectedPlan}, cycle=${cycle}, mapped_product=${productId}`);
-      console.log(`[NativePurchaseSheet] rc_purchase_path=native_paywall_first, offering=useRevenueCat`);
       try {
         console.log('[NativePurchaseSheet] Launching native RC paywall (offering=useRevenueCat)…');
         await launchNativePaywall('useRevenueCat');
         onPurchaseComplete?.(selectedPlan);
         onClose();
       } catch (err) {
-        // If user dismissed the paywall (cancelled), do NOT fall back to direct purchase
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.toLowerCase().includes('cancel')) {
           console.log('[NativePurchaseSheet] User dismissed native paywall — no fallback');
           return;
         }
-        // Only fall back to direct purchase on genuine errors (not cancellation)
-        const errObj = err instanceof Error ? { message: err.message, name: err.name, stack: err.stack } : err;
-        console.warn(`[NativePurchaseSheet] launchPaywall failed: ${JSON.stringify(errObj)}, falling back to direct purchase product=${productId}`);
+        console.warn(`[NativePurchaseSheet] launchPaywall failed: ${msg}, falling back to direct purchase`);
         try {
           await purchasePlan(selectedPlan, cycle);
           onPurchaseComplete?.(selectedPlan);
@@ -144,9 +149,10 @@ export function NativePurchaseSheet({
     }
   };
 
-  const trialConfig = getTrialConfig(selectedPlan, cycle);
-  const trialCopy = getTrialCopy(selectedPlan, cycle);
-  const trialCta = getTrialCta(selectedPlan, cycle);
+  // Get trial info for the selected plan — prefer RC data on native
+  const selectedRCInfo = getRCInfo(selectedPlan, cycle);
+  const displayTrialCopy = isNative && selectedRCInfo.trialCopy ? selectedRCInfo.trialCopy : getTrialCopy(selectedPlan, cycle);
+  const displayTrialCta = isNative && selectedRCInfo.trialCta ? selectedRCInfo.trialCta : getTrialCta(selectedPlan, cycle);
 
   const renderContent = () => {
     // Offline
@@ -250,7 +256,8 @@ export function NativePurchaseSheet({
           <div className="flex gap-2">
             {tiers.map((id) => {
               const plan = planCatalog[id];
-              const price = getPlanPrice(id, cycle);
+              const rcInfo = getRCInfo(id, cycle);
+              const price = rcInfo.priceString || `$${getPlanPrice(id, cycle)}`;
               const isRecommended = id === recommendedPlan;
               return (
                 <button
@@ -264,9 +271,14 @@ export function NativePurchaseSheet({
                   )}
                 >
                   <div className="text-xs font-semibold mb-1">{plan.name}</div>
-                  <div className="text-lg font-extrabold">${price}</div>
+                  <div className="text-lg font-extrabold">{price}</div>
                   <div className="text-[10px] text-muted-foreground">/{cycle === 'monthly' ? 'mo' : 'yr'}</div>
-                  {isRecommended && (
+                  {rcInfo.hasTrial && (
+                    <Badge className="mt-1.5 text-[9px] px-1.5 py-0 bg-primary/20 text-primary border-0">
+                      Free Trial
+                    </Badge>
+                  )}
+                  {!rcInfo.hasTrial && isRecommended && (
                     <Badge className="mt-1.5 text-[9px] px-1.5 py-0 bg-primary/20 text-primary border-0">
                       Recommended
                     </Badge>
@@ -293,12 +305,12 @@ export function NativePurchaseSheet({
             {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
             {isPurchasing
               ? 'Processing purchase…'
-              : trialCta || `Subscribe — $${getPlanPrice(selectedPlan, cycle)}/${cycle === 'monthly' ? 'mo' : 'yr'}`}
+              : displayTrialCta || `Subscribe — ${selectedRCInfo.priceString || `$${getPlanPrice(selectedPlan, cycle)}`}/${cycle === 'monthly' ? 'mo' : 'yr'}`}
             {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
           </Button>
 
-          {trialCopy && (
-            <p className="text-center text-[11px] text-muted-foreground">{trialCopy}</p>
+          {displayTrialCopy && (
+            <p className="text-center text-[11px] text-muted-foreground">{displayTrialCopy}</p>
           )}
 
           <Button

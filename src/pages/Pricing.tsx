@@ -13,6 +13,7 @@ import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, track } from '@/lib/plans';
 import { usePlan } from '@/hooks/usePlanState';
 import { useBilling } from '@/hooks/useBilling';
+import { useNativeRC } from '@/hooks/useNativeRC';
 import { isNativeApp } from '@/lib/platform';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -23,6 +24,7 @@ export default function Pricing() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { purchasePlan, launchNativePaywall, isPurchasing, diagnostics, debugLog } = useBilling();
+  const { findPackage, getTrialCopyForProduct, hasTrialForProduct } = useNativeRC();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [promoApplied, setPromoApplied] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
@@ -64,6 +66,24 @@ export default function Pricing() {
       setShowConfirmation(true);
     }
   }, [canceled, success]);
+
+  // Helper to get RC metadata for a plan
+  const getRCProps = (planId: PlanId) => {
+    if (!native || planId === 'free') return {};
+    const suffix = cycle === 'yearly' ? 'yearly' : 'monthly';
+    const productSubstr = `${planId}_${suffix}`;
+    const pkg = findPackage(productSubstr);
+    const trialCopy = getTrialCopyForProduct(productSubstr);
+    const hasTrial = hasTrialForProduct(productSubstr);
+
+    console.log(`[Pricing] RC metadata for ${planId}/${suffix}: price=${pkg?.priceString}, hasTrial=${hasTrial}, trialCopy=${trialCopy}`);
+
+    return {
+      nativePriceString: pkg?.priceString || undefined,
+      nativeTrialCopy: trialCopy,
+      nativeTrialCta: hasTrial ? 'Start Free Trial' : null,
+    };
+  };
 
   const handleSelectPlan = async (planId: PlanId) => {
     if (planId === 'free') {
@@ -158,6 +178,7 @@ export default function Pricing() {
                 currentPlan={currentPlan}
                 onSelect={handleSelectPlan}
                 promoApplied={promoApplied}
+                {...getRCProps(id)}
               />
             </motion.div>
           ))}
