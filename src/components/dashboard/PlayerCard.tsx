@@ -175,7 +175,7 @@ export function PlayerCard({
                   #{profile.number}
                 </span>
                 {/* Plan Badge */}
-                {accessBadge === 'founding_member' ? (
+                {accessBadge?.type === 'grandfathered' ? (
                   <Badge className="text-[9px] px-1.5 py-0 bg-amber-500/20 text-amber-400 border-amber-500/30">
                     ⭐ Founding Member
                   </Badge>
