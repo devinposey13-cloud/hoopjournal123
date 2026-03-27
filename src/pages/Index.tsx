@@ -42,6 +42,7 @@ import { DailyInsight } from '@/components/dashboard/DailyInsight';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { PlayerCard } from '@/components/dashboard/PlayerCard';
 import { FreeLimitBanner } from '@/components/FreeLimitBanner';
+import { usePlan } from '@/hooks/usePlanState';
 import { ResetDetectionBanner } from '@/components/ResetDetectionBanner';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
@@ -91,6 +92,7 @@ export default function Index() {
   const [autoOpenAddGame, setAutoOpenAddGame] = useState(false);
   const [showPostAuthRecovery, setShowPostAuthRecovery] = useState(false);
   const { user, loading: authLoading, signOut, isGuest } = useAuth();
+  const { currentPlan, accessBadge } = usePlan();
   const { teams } = usePlayerTeams();
   const { isAdmin } = useAdmin();
   const { totalPending: adminNotificationCount } = useAdminNotifications();
@@ -796,6 +798,8 @@ export default function Index() {
                         games={dashboardFilteredGames}
                         seasonStats={dashboardStats}
                         xpProgress={xpProgress}
+                        planId={currentPlan}
+                        accessBadge={accessBadge}
                         className="shadow-md"
                       />
                       {/* Dear Basketball - Reflection Entry Point to Coach AI - Moved below card on mobile */}

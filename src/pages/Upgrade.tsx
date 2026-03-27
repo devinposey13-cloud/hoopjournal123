@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, Lock, RotateCcw, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Lock, RotateCcw, Loader2, X } from 'lucide-react';
+import { PurchaseConfirmationDialog } from '@/components/purchase/PurchaseConfirmationDialog';
 import { PlanCard } from '@/components/pricing/PlanCard';
 import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import { NativePurchaseSheet } from '@/components/purchase/NativePurchaseSheet';
@@ -30,6 +31,8 @@ export default function Upgrade() {
   const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, diagnostics, debugLog } = useBilling();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [showDebug, setShowDebug] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmedPlanName, setConfirmedPlanName] = useState('');
   const native = isNativeApp();
 
   // Native purchase sheet state
@@ -77,10 +80,13 @@ export default function Upgrade() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <div className="border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Button variant="ghost" onClick={() => navigate('/')} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-full">
+            <X className="w-5 h-5" />
           </Button>
         </div>
       </div>
@@ -138,8 +144,8 @@ export default function Upgrade() {
               Restore Purchases
             </Button>
           )}
-          <Button variant="ghost" onClick={() => navigate(-1)} className="text-muted-foreground">
-            Not now
+          <Button variant="outline" onClick={() => navigate('/')} className="text-muted-foreground">
+            Return to Dashboard
           </Button>
           <p className="text-xs text-muted-foreground mt-4">
             Cancel anytime. Your data stays yours.
@@ -173,11 +179,19 @@ export default function Upgrade() {
       <NativePurchaseSheet
         open={nativeSheetOpen}
         onClose={() => setNativeSheetOpen(false)}
-        onPurchaseComplete={() => {
-          toast.success('Subscription activated! 🎉');
+        onPurchaseComplete={(planId) => {
+          const name = planId ? planCatalog[planId]?.name : 'your plan';
+          setConfirmedPlanName(name || 'your plan');
+          setShowConfirmation(true);
         }}
         recommendedPlan={nativeSheetPlan}
         initialBillingCycle={cycle}
+      />
+
+      <PurchaseConfirmationDialog
+        open={showConfirmation}
+        planName={confirmedPlanName}
+        onGoToDashboard={() => navigate('/')}
       />
     </div>
   );

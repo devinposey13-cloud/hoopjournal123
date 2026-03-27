@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { PlayerProfile, GameStats, SeasonStats } from '@/types/basketball';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { TierBadges } from '@/components/xp/TierBadges';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { User, Target, Star, Percent, Flame, TrendingUp, Circle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { PlanId, AccessBadge } from '@/lib/plans';
 
 interface TierAchievement {
   tier: string;
@@ -21,6 +23,8 @@ interface PlayerCardProps {
   games?: GameStats[];
   seasonStats?: SeasonStats;
   xpProgress?: { current_level: number; current_xp: number } | null;
+  planId?: PlanId;
+  accessBadge?: AccessBadge;
   className?: string;
 }
 
@@ -84,6 +88,8 @@ export function PlayerCard({
   games = [],
   seasonStats,
   xpProgress,
+  planId,
+  accessBadge,
   className 
 }: PlayerCardProps) {
   const [avatarOpen, setAvatarOpen] = useState(false);
@@ -168,6 +174,20 @@ export function PlayerCard({
                 <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs sm:text-sm font-semibold">
                   #{profile.number}
                 </span>
+                {/* Plan Badge */}
+                {accessBadge?.type === 'grandfathered' ? (
+                  <Badge className="text-[9px] px-1.5 py-0 bg-amber-500/20 text-amber-400 border-amber-500/30">
+                    ⭐ Founding Member
+                  </Badge>
+                ) : planId === 'elite' ? (
+                  <Badge className="text-[9px] px-1.5 py-0 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border-amber-500/30">
+                    Elite
+                  </Badge>
+                ) : planId === 'pro' ? (
+                  <Badge className="text-[9px] px-1.5 py-0 bg-primary/20 text-primary border-primary/30">
+                    Pro
+                  </Badge>
+                ) : null}
                 {hasRecord && (
                   <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-xs sm:text-sm font-medium">
                     {seasonRecord.wins}-{seasonRecord.losses}

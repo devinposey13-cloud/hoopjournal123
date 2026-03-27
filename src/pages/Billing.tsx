@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, X } from 'lucide-react';
 import { BillingSummaryCard } from '@/components/billing/BillingSummaryCard';
 import { usePlan } from '@/hooks/usePlanState';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -57,10 +57,13 @@ export default function Billing() {
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Button variant="ghost" onClick={() => navigate('/')} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-full">
+            <X className="w-5 h-5" />
           </Button>
         </div>
       </div>
@@ -77,6 +80,11 @@ export default function Billing() {
           onManageSubscription={openCustomerPortal}
           onCancelSubscription={() => setCancelOpen(true)}
         />
+        <div className="mt-6 text-center">
+          <Button variant="outline" onClick={() => navigate('/')}>
+            Return to Dashboard
+          </Button>
+        </div>
       </div>
 
       <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
