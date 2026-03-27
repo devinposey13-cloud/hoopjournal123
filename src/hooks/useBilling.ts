@@ -178,15 +178,34 @@ export function useBilling(): UseBillingReturn {
     }
   }, [log]);
 
-  // Poll backend for subscription update
-  const pollSubscriptionStatus = useCallback(async (maxAttempts: number, delayMs: number) => {
+  // Poll backend for subscription update — returns the confirmed plan or null
+  const pollSubscriptionStatus = useCallback(async (maxAttempts: number, delayMs: number, expectedPlan?: PlanId): Promise<PlanId | null> => {
     for (let i = 0; i < maxAttempts; i++) {
       log(`[Billing] Polling backend (${i + 1}/${maxAttempts})…`);
-      await checkSubscription();
+      try {
+        const { data } = await supabase.functions.invoke('check-subscription');
+        const rawPlan = (data?.plan_type as string) || null;
+        const plan = rawPlan === 'starter' ? 'pro' : rawPlan;
+        log(`[Billing] Backend plan: ${plan}, expected: ${expectedPlan || 'any'}`);
+        if (expectedPlan && plan === expectedPlan) {
+          log(`[Billing] ✓ Backend confirmed plan=${plan}`);
+          await checkSubscription(); // update local state
+          return plan as PlanId;
+        }
+        if (!expectedPlan && plan && plan !== 'free') {
+          await checkSubscription();
+          return plan as PlanId;
+        }
+      } catch (err) {
+        log(`[Billing] Poll attempt ${i + 1} failed: ${err}`);
+      }
       if (i < maxAttempts - 1) {
         await new Promise((r) => setTimeout(r, delayMs));
       }
     }
+    // Final refresh even if not confirmed
+    await checkSubscription();
+    return null;
   }, [checkSubscription, log]);
 
   // ─── Native purchase via Despia + RevenueCat ──────────────────────
