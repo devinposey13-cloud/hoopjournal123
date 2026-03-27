@@ -54,12 +54,9 @@
           }
           window.__dismissShell=function(){
             if(window.__shellTimers){window.__shellTimers.forEach(clearTimeout);window.__shellTimers=null;}
-            if(window.__shellFallback){clearTimeout(window.__shellFallback);window.__shellFallback=null;}
             var s=document.getElementById('prehydration-shell');
             if(s){s.style.transition='opacity 0.3s ease';s.style.opacity='0';setTimeout(function(){s.remove()},300);}
           };
-          // Safety fallback: dismiss shell after 15s no matter what
-          window.__shellFallback=setTimeout(function(){ window.__dismissShell&&window.__dismissShell(); },15000);
         })();
       </script>
     </div>
