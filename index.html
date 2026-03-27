@@ -34,17 +34,24 @@
 
   <body>
     <!-- Pre-hydration loading shell: dark bg prevents white flash on iOS native -->
-    <div id="prehydration-shell" style="position:fixed;inset:0;z-index:9999;background:#141a23;display:flex;align-items:center;justify-content:center;">
+    <div id="prehydration-shell" style="position:fixed;inset:0;z-index:9999;background:#141a23;display:flex;align-items:center;justify-content:center;flex-direction:column;">
       <div style="font-size:64px;animation:hjbounce 1s infinite;">🏀</div>
+      <div id="shell-msg" style="color:#888;font-size:14px;font-family:system-ui;margin-top:16px;transition:opacity 0.3s ease;"></div>
       <style>@keyframes hjbounce{0%,100%{transform:translateY(-25%);animation-timing-function:cubic-bezier(0.8,0,1,1)}50%{transform:translateY(0);animation-timing-function:cubic-bezier(0,0,0.2,1)}}</style>
       <script>
         (function(){
           var isCallback = window.location.pathname==='/auth/callback';
           var isPostAuth = window.location.search.indexOf('postAuth')!==-1;
-          if(isCallback||isPostAuth){
-            document.getElementById('prehydration-shell').querySelector('div').innerHTML='<div style="font-size:48px;margin-bottom:16px">🏀</div><div style="color:#888;font-size:14px;font-family:system-ui">Signing you in…</div>';
+          var isAuthFlow = isCallback || isPostAuth;
+          var msg = document.getElementById('shell-msg');
+          if(isAuthFlow && msg){
+            msg.textContent='Signing you in\u2026';
+            window.__shellTimers=[];
+            window.__shellTimers.push(setTimeout(function(){ if(msg) msg.textContent='Still working\u2026'; },5000));
+            window.__shellTimers.push(setTimeout(function(){ if(msg) msg.textContent='Almost there\u2026'; },10000));
           }
           window.__dismissShell=function(){
+            if(window.__shellTimers){window.__shellTimers.forEach(clearTimeout);window.__shellTimers=null;}
             var s=document.getElementById('prehydration-shell');
             if(s){s.style.transition='opacity 0.3s ease';s.style.opacity='0';setTimeout(function(){s.remove()},300);}
           };
