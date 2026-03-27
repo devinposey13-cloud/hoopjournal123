@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, ArrowRight, Sparkles, Loader2, RotateCcw, WifiOff, RefreshCw } from 'lucide-react';
+import { ArrowRight, Sparkles, Loader2, RotateCcw, WifiOff, RefreshCw } from 'lucide-react';
 import { FeatureList } from '@/components/pricing/FeatureList';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, getPlanPrice } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
@@ -36,7 +36,6 @@ interface NativePurchaseSheetProps {
   initialBillingCycle?: BillingCycle;
 }
 
-
 export function NativePurchaseSheet({
   open,
   onClose,
@@ -54,9 +53,14 @@ export function NativePurchaseSheet({
   const [cycle, setCycle] = useState<BillingCycle>(initialBillingCycle);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(recommendedPlan);
   const [loadingMessage, setLoadingMessage] = useState('Loading plans…');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setIsLoading(false);
+      return;
+    }
+
     setSelectedPlan(recommendedPlan);
     setCycle(initialBillingCycle);
   }, [open, recommendedPlan, initialBillingCycle]);
@@ -66,10 +70,14 @@ export function NativePurchaseSheet({
     setLoadingMessage('Loading plans…');
     const t1 = setTimeout(() => setLoadingMessage('Still connecting…'), 5000);
     const t2 = setTimeout(() => setLoadingMessage('Almost there…'), 12000);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [rcLoading]);
 
   const tiers = planOrder.filter((id) => id !== 'free') as PlanId[];
+  const interactionLocked = isPurchasing || isLoading;
 
   const getRCPrice = (planId: PlanId, billCycle: BillingCycle) => {
     const suffix = billCycle === 'yearly' ? 'yearly' : 'monthly';
@@ -79,13 +87,14 @@ export function NativePurchaseSheet({
   };
 
   const handlePurchase = async () => {
-    if (isPurchasing) return;
+    if (interactionLocked) return;
     if (!isOnline) {
       toast.error('No internet connection. Please reconnect and try again.');
       return;
     }
 
-    console.log(`[NativePurchaseSheet] subscribe tapped: plan=${selectedPlan}, cycle=${cycle}`);
+    console.log(`[NativePurchaseSheet] selected_package plan=${selectedPlan} cycle=${cycle}`);
+    setIsLoading(true);
 
     try {
       const result = await purchasePlan(selectedPlan, cycle);
@@ -95,13 +104,16 @@ export function NativePurchaseSheet({
       }
     } catch {
       // Error handled by useBilling
+    } finally {
+      setIsLoading(false);
+      console.log('[NativePurchaseSheet] buttons_reenabled');
     }
   };
 
   const handleRestore = async () => {
     try {
       const purchases = await restorePurchases();
-      const hasActive = purchases.some(p => p.isActive);
+      const hasActive = purchases.some((p) => p.isActive);
       if (hasActive) {
         toast.success('Your subscription has been restored.');
         onClose();
@@ -141,9 +153,7 @@ export function NativePurchaseSheet({
       return (
         <div className="py-12 text-center space-y-4">
           <RefreshCw className="w-8 h-8 text-muted-foreground mx-auto" />
-          <p className="text-sm text-muted-foreground">
-            Unable to load subscription plans.
-          </p>
+          <p className="text-sm text-muted-foreground">Unable to load subscription plans.</p>
           <p className="text-xs text-muted-foreground/60">
             {rcDiag.rc_error || 'Please check your connection and try again.'}
           </p>
@@ -164,16 +174,16 @@ export function NativePurchaseSheet({
               <Button variant="ghost" className="text-muted-foreground text-xs">Close</Button>
             </DrawerClose>
           </div>
-          <div className="flex items-center justify-center gap-3 text-[10px] text-muted-foreground/60 mt-2">
-            <button onClick={() => { onClose(); navigate('/privacy'); }} className="hover:text-muted-foreground transition-colors">
+          <div className="mt-2 flex items-center justify-center gap-3 text-[10px] text-muted-foreground/60">
+            <button onClick={() => { onClose(); navigate('/privacy'); }} className="transition-colors hover:text-muted-foreground">
               Privacy Policy
             </button>
             <span>·</span>
-            <button onClick={() => { onClose(); navigate('/terms'); }} className="hover:text-muted-foreground transition-colors">
+            <button onClick={() => { onClose(); navigate('/terms'); }} className="transition-colors hover:text-muted-foreground">
               Terms of Service
             </button>
             <span>·</span>
-            <button onClick={() => { onClose(); navigate('/eula'); }} className="hover:text-muted-foreground transition-colors">
+            <button onClick={() => { onClose(); navigate('/eula'); }} className="transition-colors hover:text-muted-foreground">
               EULA
             </button>
           </div>
@@ -183,14 +193,14 @@ export function NativePurchaseSheet({
 
     return (
       <>
-        <div className="px-6 pb-2 space-y-4">
+        <div className="space-y-4 px-6 pb-2">
           <div className="flex justify-center">
-            <div className="inline-flex rounded-full bg-muted p-1 gap-1">
+            <div className="inline-flex gap-1 rounded-full bg-muted p-1">
               <button
                 onClick={() => setCycle('monthly')}
-                disabled={isPurchasing}
+                disabled={interactionLocked}
                 className={cn(
-                  'px-4 py-1.5 rounded-full text-sm font-medium transition-all',
+                  'rounded-full px-4 py-1.5 text-sm font-medium transition-all',
                   cycle === 'monthly' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -198,9 +208,9 @@ export function NativePurchaseSheet({
               </button>
               <button
                 onClick={() => setCycle('yearly')}
-                disabled={isPurchasing}
+                disabled={interactionLocked}
                 className={cn(
-                  'px-4 py-1.5 rounded-full text-sm font-medium transition-all',
+                  'rounded-full px-4 py-1.5 text-sm font-medium transition-all',
                   cycle === 'yearly' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -218,18 +228,18 @@ export function NativePurchaseSheet({
                 <button
                   key={id}
                   onClick={() => setSelectedPlan(id)}
-                  disabled={isPurchasing}
+                  disabled={interactionLocked}
                   className={cn(
                     'flex-1 rounded-xl border-2 p-3 text-center transition-all duration-200',
-                    isPurchasing && selectedPlan !== id && 'opacity-50',
+                    interactionLocked && selectedPlan !== id && 'opacity-50',
                     selectedPlan === id ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
                   )}
                 >
-                  <div className="text-xs font-semibold mb-1">{plan.name}</div>
+                  <div className="mb-1 text-xs font-semibold">{plan.name}</div>
                   <div className="text-lg font-extrabold">{price}</div>
                   <div className="text-[10px] text-muted-foreground">/{cycle === 'monthly' ? 'mo' : 'yr'}</div>
                   {isRecommended && (
-                    <Badge className="mt-1.5 text-[9px] px-1.5 py-0 bg-primary/20 text-primary border-0">
+                    <Badge className="mt-1.5 border-0 bg-primary/20 px-1.5 py-0 text-[9px] text-primary">
                       Recommended
                     </Badge>
                   )}
@@ -238,8 +248,8 @@ export function NativePurchaseSheet({
             })}
           </div>
 
-          <div className="bg-muted/50 rounded-lg p-4">
-            <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+          <div className="rounded-lg bg-muted/50 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               What you get with {planCatalog[selectedPlan].name}
             </p>
             <FeatureList features={planCatalog[selectedPlan].features.filter((f) => f.included)} />
@@ -249,46 +259,42 @@ export function NativePurchaseSheet({
         <DrawerFooter className="pt-2">
           <Button
             onClick={handlePurchase}
-            disabled={isPurchasing}
-            className="w-full gradient-primary text-primary-foreground font-semibold h-12"
+            disabled={interactionLocked}
+            className="gradient-primary h-12 w-full font-semibold text-primary-foreground"
           >
-            {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            {isPurchasing
-              ? 'Processing purchase…'
-              : `Subscribe — ${selectedPrice}/${cycle === 'monthly' ? 'mo' : 'yr'}`}
-            {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
+            {interactionLocked && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {interactionLocked ? 'Processing purchase…' : `Subscribe — ${selectedPrice}/${cycle === 'monthly' ? 'mo' : 'yr'}`}
+            {!interactionLocked && <ArrowRight className="ml-2 h-4 w-4" />}
           </Button>
 
           <Button
             variant="ghost"
-            className="text-muted-foreground text-xs"
+            className="text-xs text-muted-foreground"
             onClick={handleRestore}
-            disabled={isRestoring || isPurchasing}
+            disabled={isRestoring || interactionLocked}
           >
-            {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+            {isRestoring ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RotateCcw className="mr-1 h-3 w-3" />}
             Restore Purchases
           </Button>
 
           <DrawerClose asChild>
-            <Button variant="ghost" className="text-muted-foreground" disabled={isPurchasing}>
+            <Button variant="ghost" className="text-muted-foreground" disabled={interactionLocked}>
               Not now
             </Button>
           </DrawerClose>
 
-          <p className="text-center text-[10px] text-muted-foreground mt-1">
-            Cancel anytime. Your data stays yours.
-          </p>
+          <p className="mt-1 text-center text-[10px] text-muted-foreground">Cancel anytime. Your data stays yours.</p>
 
-          <div className="flex items-center justify-center gap-3 text-[10px] text-muted-foreground/60 mt-1">
-            <button onClick={() => { onClose(); navigate('/terms'); }} className="hover:text-muted-foreground transition-colors">
+          <div className="mt-1 flex items-center justify-center gap-3 text-[10px] text-muted-foreground/60">
+            <button onClick={() => { onClose(); navigate('/terms'); }} className="transition-colors hover:text-muted-foreground">
               Terms of Service
             </button>
             <span>·</span>
-            <button onClick={() => { onClose(); navigate('/privacy'); }} className="hover:text-muted-foreground transition-colors">
+            <button onClick={() => { onClose(); navigate('/privacy'); }} className="transition-colors hover:text-muted-foreground">
               Privacy Policy
             </button>
             <span>·</span>
-            <button onClick={() => { onClose(); navigate('/eula'); }} className="hover:text-muted-foreground transition-colors">
+            <button onClick={() => { onClose(); navigate('/eula'); }} className="transition-colors hover:text-muted-foreground">
               EULA
             </button>
           </div>
@@ -301,10 +307,10 @@ export function NativePurchaseSheet({
     <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">
-          <DrawerHeader className="text-center pb-2">
-            <div className="flex justify-center mb-2">
-              <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-primary-foreground" />
+          <DrawerHeader className="pb-2 text-center">
+            <div className="mb-2 flex justify-center">
+              <div className="gradient-primary flex h-10 w-10 items-center justify-center rounded-full">
+                <Sparkles className="h-5 w-5 text-primary-foreground" />
               </div>
             </div>
             <DrawerTitle className="text-xl font-bold">{title}</DrawerTitle>
