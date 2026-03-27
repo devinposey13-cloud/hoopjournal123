@@ -237,29 +237,40 @@ export function useBilling(): UseBillingReturn {
         }).catch(() => resolve({ confirmed: false }));
       }, 120000);
 
+      let settled = false;
+      const settle = (fn: () => void) => { if (!settled) { settled = true; cleanup(); fn(); } };
+
       const cleanup = () => {
         clearTimeout(timeout);
         window.onRevenueCatPurchase = undefined;
+        (window as any).onRevenueCatPaywallDismiss = undefined;
         purchaseInFlightRef.current = false;
       };
 
       window.onRevenueCatPurchase = () => {
         log('[Billing] ✓ onRevenueCatPurchase callback fired');
-        cleanup();
-        pollSubscriptionStatus(6, 2500, planId)
-          .then((confirmedPlan) => {
-            if (confirmedPlan === planId) {
-              log(`[Billing] ✓ Backend confirmed plan=${confirmedPlan}`);
-              resolve({ confirmed: true });
-            } else {
-              log(`[Billing] ⚠ Backend plan=${confirmedPlan}, expected=${planId} — not confirmed yet`);
+        settle(() => {
+          pollSubscriptionStatus(6, 2500, planId)
+            .then((confirmedPlan) => {
+              if (confirmedPlan === planId) {
+                log(`[Billing] ✓ Backend confirmed plan=${confirmedPlan}`);
+                resolve({ confirmed: true });
+              } else {
+                log(`[Billing] ⚠ Backend plan=${confirmedPlan}, expected=${planId} — not confirmed yet`);
+                resolve({ confirmed: false });
+              }
+            })
+            .catch((err) => {
+              log(`[Billing] ⚠ Backend polling failed: ${err}`);
               resolve({ confirmed: false });
-            }
-          })
-          .catch((err) => {
-            log(`[Billing] ⚠ Backend polling failed: ${err}`);
-            resolve({ confirmed: false });
-          });
+            });
+        });
+      };
+
+      // Handle user dismissing the Apple payment sheet without purchasing
+      (window as any).onRevenueCatPaywallDismiss = () => {
+        log('[Billing] Native purchase dismissed by user');
+        settle(() => reject(new Error('cancelled')));
       };
 
       try {
