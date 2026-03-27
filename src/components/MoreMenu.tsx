@@ -101,10 +101,15 @@ export function MoreMenu({
   const { activeProfile, hasMultipleProfiles } = useActiveProfile();
   const broadcastCount = useBroadcastCount();
   const [showAddProfileDialog, setShowAddProfileDialog] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    await signOut();
+    if (signingOut) return;
+    setSigningOut(true);
     onOpenChange(false);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    await signOut();
+    navigate('/');
   };
 
   const go = (tab: Tab, route?: string) => {
