@@ -46,7 +46,7 @@ export function NativePurchaseSheet({
   recommendedPlan = 'pro',
   initialBillingCycle = 'monthly',
 }: NativePurchaseSheetProps) {
-  const { purchasePlan, launchNativePaywall, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
+  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
   const { ready: rcReady, loading: rcLoading, diagnostics: rcDiag, retry: rcRetry, findPackage, hasTrialForProduct, getTrialCopyForProduct } = useNativeRC();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
@@ -102,24 +102,18 @@ export function NativePurchaseSheet({
 
     if (isNative) {
       try {
-        console.log('[NativePurchaseSheet] Launching native RC paywall (offering=useRevenueCat)…');
-        await launchNativePaywall('useRevenueCat');
+        console.log('[NativePurchaseSheet] Direct native purchase', {
+          selectedPlan,
+          cycle,
+          productId,
+          hasTrial: rcInfo.hasTrial,
+          trialCopy: rcInfo.trialCopy,
+        });
+        await purchasePlan(selectedPlan, cycle);
         onPurchaseComplete?.(selectedPlan);
         onClose();
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.toLowerCase().includes('cancel')) {
-          console.log('[NativePurchaseSheet] User dismissed native paywall — no fallback');
-          return;
-        }
-        console.warn(`[NativePurchaseSheet] launchPaywall failed: ${msg}, falling back to direct purchase`);
-        try {
-          await purchasePlan(selectedPlan, cycle);
-          onPurchaseComplete?.(selectedPlan);
-          onClose();
-        } catch {
-          // Error handled by useBilling
-        }
+      } catch {
+        // Error handled by useBilling
       }
       return;
     }
