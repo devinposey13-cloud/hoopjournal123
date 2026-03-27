@@ -163,9 +163,6 @@ export function useBilling(): UseBillingReturn {
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const despiaRef = useRef<any>(null);
 
-  // Module-level guard so multiple useBilling() instances share the same in-flight flag
-  // This prevents stale refs across different component instances
-  const purchaseInFlightRef = useRef(globalPurchaseInFlight);
 
   const log = useCallback((msg: string) => {
     const entry = `${new Date().toISOString().slice(11, 19)} ${msg}`;
