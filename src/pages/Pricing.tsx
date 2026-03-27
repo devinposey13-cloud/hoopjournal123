@@ -111,10 +111,11 @@ export default function Pricing() {
           hasTrial: hasTrialForProduct(productSubstr),
           trialCopy: getTrialCopyForProduct(productSubstr),
         });
-        await purchasePlan(planId, cycle);
-        // Purchase succeeded
-        setConfirmedPlanName(planCatalog[planId]?.name || 'your plan');
-        setShowConfirmation(true);
+        const result = await purchasePlan(planId, cycle);
+        if (result.confirmed) {
+          setConfirmedPlanName(planCatalog[planId]?.name || 'your plan');
+          setShowConfirmation(true);
+        }
       } catch (err) {
         // User dismissed paywall — do nothing
         const msg = err instanceof Error ? err.message.toLowerCase() : '';

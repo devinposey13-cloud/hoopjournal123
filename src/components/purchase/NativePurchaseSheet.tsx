@@ -46,7 +46,7 @@ export function NativePurchaseSheet({
   recommendedPlan = 'pro',
   initialBillingCycle = 'monthly',
 }: NativePurchaseSheetProps) {
-  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
+  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
   const { ready: rcReady, loading: rcLoading, diagnostics: rcDiag, retry: rcRetry, findPackage, hasTrialForProduct, getTrialCopyForProduct } = useNativeRC();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
@@ -109,9 +109,11 @@ export function NativePurchaseSheet({
           hasTrial: rcInfo.hasTrial,
           trialCopy: rcInfo.trialCopy,
         });
-        await purchasePlan(selectedPlan, cycle);
-        onPurchaseComplete?.(selectedPlan);
-        onClose();
+        const result = await purchasePlan(selectedPlan, cycle);
+        if (result.confirmed) {
+          onPurchaseComplete?.(selectedPlan);
+          onClose();
+        }
       } catch {
         // Error handled by useBilling
       }
@@ -120,9 +122,11 @@ export function NativePurchaseSheet({
 
     // Web — Stripe checkout
     try {
-      await purchasePlan(selectedPlan, cycle);
-      onPurchaseComplete?.(selectedPlan);
-      onClose();
+      const result = await purchasePlan(selectedPlan, cycle);
+      if (result.confirmed) {
+        onPurchaseComplete?.(selectedPlan);
+        onClose();
+      }
     } catch {
       // Error handled by useBilling
     }

@@ -44,9 +44,11 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
     track('plan_selected', { planId: selectedPlan, billingCycle: cycle });
     track('upgrade_clicked', { planId: selectedPlan, reason: reason });
     try {
-      await purchasePlan(selectedPlan, cycle);
-      track('upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
-      onUpgrade(selectedPlan);
+      const result = await purchasePlan(selectedPlan, cycle);
+      if (result.confirmed) {
+        track('upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
+        onUpgrade(selectedPlan);
+      }
     } catch {
       // Error handled by useBilling
     }
