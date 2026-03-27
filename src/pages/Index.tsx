@@ -798,6 +798,8 @@ export default function Index() {
                         games={dashboardFilteredGames}
                         seasonStats={dashboardStats}
                         xpProgress={xpProgress}
+                        planId={currentPlan}
+                        accessBadge={accessBadge}
                         className="shadow-md"
                       />
                       {/* Dear Basketball - Reflection Entry Point to Coach AI - Moved below card on mobile */}
