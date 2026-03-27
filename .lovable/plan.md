@@ -1,53 +1,76 @@
 
 
-## Streamline Native iOS Purchase Flow and Fix Trial Pass-through
+## Fix Native Paywall to Display Apple Free Trials from RevenueCat
 
-### Problems Identified
+### Problem
+The app shows hardcoded "3-day free trial" text on its own paywall UI, but when the RevenueCat native paywall launches, the actual Apple payment sheet does not display the trial. The app's trial messaging comes from `plans.ts` static config rather than from RevenueCat's live product metadata.
 
-1. **Three-step paywall on native**: Pricing page cards → NativePurchaseSheet drawer → RevenueCat native paywall → Apple payment sheet. Users go through 4 screens to purchase.
+### Root Cause
+1. The `useNativeRC` hook fetches offerings data (`revenuecat://getOfferings`) but only logs it — it never exposes the data to components.
+2. The paywall UI (PaywallSheet, NativePurchaseSheet, PlanCard, Pricing) uses hardcoded `getTrialConfig()` / `getTrialCopy()` from `plans.ts` instead of real RC product metadata.
+3. If `getOfferings` returns products with no `introductoryPrice`, the app still claims a trial exists — misleading users and Apple reviewers.
 
-2. **Same redundancy on PaywallSheet**: The limit-triggered paywall calls `purchasePlan()` which does a direct `revenuecat://purchase?product=X` call. Direct product purchases bypass introductory offers entirely. Only purchases through RC offerings/packages carry trial metadata.
-
-3. **Long delay**: The NativePurchaseSheet blocks on RC bridge initialization before showing content, adding unnecessary wait time.
-
-### Root Cause of Missing Free Trial
-
-The `PaywallSheet.handleUpgrade()` calls `purchasePlan()` → `purchaseNative()` → `despia('revenuecat://purchase?product=HoopJ_pro_monthly')`. This is a **direct product purchase** that bypasses RevenueCat's offering/package system. Introductory offers (free trials) are only presented when purchasing through an offering's package via `launchNativePaywall`.
+### Solution
+Expose RC offerings data from `useNativeRC`, then use real intro price metadata in all paywall surfaces on native. On web, continue using hardcoded config (Stripe handles trials separately).
 
 ### Changes
 
-**1. Pricing page: skip NativePurchaseSheet, launch RC paywall directly**
+**1. `src/hooks/useNativeRC.ts`** — Expose offerings packages and intro price data
+- Add `offerings` and `packages` to the hook's return type (array of `{ identifier, productId, priceString, introPrice? }`)
+- Store parsed offerings data from the existing `revenuecat://getOfferings` call in state instead of just logging it
+- Export a helper to check if a specific product has a trial
 
-File: `src/pages/Pricing.tsx`
+**2. `src/components/purchase/NativePurchaseSheet.tsx`** — Use live RC metadata for pricing/trial
+- Import offerings data from `useNativeRC`
+- When rendering plan tiles, match each plan to its RC package and display `product.priceString` and intro price from RC data
+- Replace hardcoded `getTrialCopy`/`getTrialCta` with RC intro price metadata on native
+- Show "3-day free trial, then $X.XX/month" only when RC confirms `introPrice` exists
+- If no intro price from RC, do not show trial messaging (prevents misleading users)
 
-- When native and user taps a plan, call `launchNativePaywall('useRevenueCat')` directly instead of opening the NativePurchaseSheet drawer.
-- Remove NativePurchaseSheet component from this page entirely.
-- Handle success (show confirmation dialog) and cancellation (do nothing) from the paywall promise.
+**3. `src/components/paywall/PaywallSheet.tsx`** — Use live RC metadata on native
+- Same approach: import `useNativeRC` offerings data
+- Replace hardcoded trial copy/CTA with RC-sourced intro price info for native
+- Keep hardcoded values as fallback for web (Stripe path)
 
-**2. PaywallSheet: use RC native paywall instead of direct purchase**
+**4. `src/pages/Pricing.tsx`** — Use live RC metadata on native
+- Import `useNativeRC` and pass RC package price strings to `PlanCard` via the existing `nativePriceString` prop
+- Show trial messaging from RC metadata, not hardcoded config
 
-File: `src/components/paywall/PaywallSheet.tsx`
+**5. `src/components/pricing/PlanCard.tsx`** — Add native trial display prop
+- Add optional `nativeTrialCopy` prop; when provided, use it instead of `getTrialCopy()`
+- Add optional `nativeTrialCta` prop; when provided, use it for the button text
 
-- In `handleUpgrade()`, when `isNative` is true, call `launchNativePaywall('useRevenueCat')` instead of `purchasePlan()`.
-- This ensures the purchase goes through RC's offering system, which includes introductory offer metadata.
-- Handle cancellation gracefully (no error toast, no fallback).
+**6. `src/pages/Upgrade.tsx`** — Same pattern for the upgrade page
 
-**3. Keep NativePurchaseSheet for other entry points but simplify**
+### Data flow
+```text
+useNativeRC (mount)
+  → despia('revenuecat://getOfferings')
+  → parse packages: [{ id, productId, priceString, introPrice }]
+  → expose via hook return
 
-File: `src/components/purchase/NativePurchaseSheet.tsx`
+PaywallSheet / NativePurchaseSheet / Pricing
+  → const { packages } = useNativeRC()
+  → match plan to package by productId
+  → display package.priceString + package.introPrice info
+  → CTA: "Start Free Trial" only if introPrice confirmed
+```
 
-- No changes needed since Pricing and PaywallSheet will bypass it on native.
-- It remains available as a fallback component if needed elsewhere.
+### Logging added
+- Log each package's `introductoryPrice` presence, period, and price on offerings fetch
+- Log whether trial messaging is sourced from RC metadata or hardcoded fallback
+- Log the exact package identifier and intro price when user taps subscribe
 
-### Flow After Fix
+### What this fixes
+- Trial messaging will only appear when Apple's products actually have an introductory offer configured and detected by RevenueCat
+- Apple reviewers will see accurate trial information matching what the payment sheet shows
+- If RC can't fetch offerings (rare), falls back to hardcoded config with a warning log
 
-**Before**: Plan card → NativePurchaseSheet drawer (wait for RC) → RC paywall → Apple sheet
-**After**: Plan card → RC paywall → Apple sheet (2 steps instead of 4)
-
-### Files to Modify
-- `src/pages/Pricing.tsx` — launch RC paywall directly on native, remove NativePurchaseSheet usage
-- `src/components/paywall/PaywallSheet.tsx` — use `launchNativePaywall` on native instead of `purchasePlan`
-
-### Note on Free Trial
-If the free trial still doesn't appear after this fix, the issue is in App Store Connect configuration (introductory offer eligibility, subscription group setup, or sandbox account having already used the offer). The code change ensures the app is using the correct path that supports trials.
+### Files to modify
+- `src/hooks/useNativeRC.ts`
+- `src/components/purchase/NativePurchaseSheet.tsx`
+- `src/components/paywall/PaywallSheet.tsx`
+- `src/pages/Pricing.tsx`
+- `src/pages/Upgrade.tsx`
+- `src/components/pricing/PlanCard.tsx`
 
