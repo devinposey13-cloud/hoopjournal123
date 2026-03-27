@@ -83,9 +83,20 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   const dynamicSubline = DYNAMIC_HEADLINES[reason!] || null;
   const bullets = isPdfLimit ? PDF_VALUE_BULLETS : VALUE_BULLETS;
 
+  // Get RC-sourced trial info for the selected plan on native
+  const getRCTrialInfo = (planId: PlanId, billCycle: BillingCycle) => {
+    const suffix = billCycle === 'yearly' ? 'yearly' : 'monthly';
+    const productSubstr = `${planId}_${suffix}`;
+    const pkg = findPackage(productSubstr);
+    const rcTrialCopy = getTrialCopyForProduct(productSubstr);
+    const hasTrial = hasTrialForProduct(productSubstr);
+    return { pkg, rcTrialCopy, hasTrial };
+  };
+
+  const selectedRCInfo = getRCTrialInfo(selectedPlan, cycle);
   const trialConfig = getTrialConfig(selectedPlan, cycle);
-  const trialCopy = getTrialCopy(selectedPlan, cycle);
-  const trialCta = getTrialCta(selectedPlan, cycle);
+  const trialCopy = isNative && selectedRCInfo.rcTrialCopy ? selectedRCInfo.rcTrialCopy : getTrialCopy(selectedPlan, cycle);
+  const trialCta = isNative && selectedRCInfo.hasTrial ? 'Start Free Trial' : getTrialCta(selectedPlan, cycle);
 
   const handleUpgrade = async () => {
     if (isPurchasing) return; // prevent double tap
