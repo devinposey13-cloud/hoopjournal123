@@ -110,8 +110,11 @@ export function NativePurchaseSheet({
           trialCopy: rcInfo.trialCopy,
         });
         await purchasePlan(selectedPlan, cycle);
-        onPurchaseComplete?.(selectedPlan);
-        onClose();
+        // Only trigger success callback if backend confirmed the plan
+        if (lastPurchaseResult === 'success') {
+          onPurchaseComplete?.(selectedPlan);
+          onClose();
+        }
       } catch {
         // Error handled by useBilling
       }
