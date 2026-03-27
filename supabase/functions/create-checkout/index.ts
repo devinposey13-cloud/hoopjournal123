@@ -91,15 +91,6 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://hoopjournal123.lovable.app";
 
-    // Trial configuration (matches client-side trialConfigs)
-    const TRIAL_PLANS: Record<string, number> = {
-      pro: 3,      // 3-day trial for Pro
-      starter: 3,  // starter maps to Pro
-      elite: 3,    // 3-day trial for Elite
-    };
-
-    const trialDays = TRIAL_PLANS[effectivePlanId] ?? 0;
-
     const sessionParams: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -111,19 +102,11 @@ serve(async (req) => {
       cancel_url: reqCancelUrl || (source === 'onboarding'
         ? `${origin}/pricing?canceled=true`
         : `${origin}/pricing?canceled=true`),
-      metadata: { user_id: user.id, plan_id: planId, has_trial: trialDays > 0 ? 'true' : 'false' },
+      metadata: { user_id: user.id, plan_id: planId },
     };
 
-    // Add trial period if eligible (Stripe handles eligibility — only one trial per customer)
-    if (trialDays > 0) {
-      sessionParams.subscription_data = {
-        trial_period_days: trialDays,
-      };
-      logStep("Trial enabled", { trialDays, effectivePlanId });
-    }
-
     const session = await stripe.checkout.sessions.create(sessionParams);
-    logStep("Checkout session created", { sessionId: session.id, url: session.url, trialDays });
+    logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
