@@ -596,8 +596,16 @@ export function AdminQuickMode() {
     setGenerating(true);
     try {
       let uploadedUrl = photoUrl;
-      if (photoFile) {
-        uploadedUrl = await uploadPhoto(photoFile);
+      // If we have a File, upload it directly
+      // If photoUrl is a data URL (from sessionStorage restore), convert to File first
+      let fileToUpload = photoFile;
+      if (!fileToUpload && photoUrl?.startsWith('data:')) {
+        const resp = await fetch(photoUrl);
+        const blob = await resp.blob();
+        fileToUpload = new File([blob], `photo-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
+      }
+      if (fileToUpload) {
+        uploadedUrl = await uploadPhoto(fileToUpload);
         if (!uploadedUrl) {
           toast.error('Failed to upload photo');
           setGenerating(false);
