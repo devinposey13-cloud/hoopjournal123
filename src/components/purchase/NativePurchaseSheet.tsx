@@ -45,7 +45,7 @@ export function NativePurchaseSheet({
   recommendedPlan = 'pro',
   initialBillingCycle = 'monthly',
 }: NativePurchaseSheetProps) {
-  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
+  const { purchasePlan, restorePurchases, isRestoring, isNative } = useBilling();
   const { ready: rcReady, loading: rcLoading, diagnostics: rcDiag, retry: rcRetry, findPackage } = useNativeRC();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
@@ -53,11 +53,11 @@ export function NativePurchaseSheet({
   const [cycle, setCycle] = useState<BillingCycle>(initialBillingCycle);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(recommendedPlan);
   const [loadingMessage, setLoadingMessage] = useState('Loading plans…');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isAttemptingPurchase, setIsAttemptingPurchase] = useState(false);
 
   useEffect(() => {
     if (!open) {
-      setIsLoading(false);
+      setIsAttemptingPurchase(false);
       return;
     }
 
@@ -77,7 +77,7 @@ export function NativePurchaseSheet({
   }, [rcLoading]);
 
   const tiers = planOrder.filter((id) => id !== 'free') as PlanId[];
-  const interactionLocked = isPurchasing || isLoading;
+  const interactionLocked = isAttemptingPurchase;
 
   const getRCPrice = (planId: PlanId, billCycle: BillingCycle) => {
     const suffix = billCycle === 'yearly' ? 'yearly' : 'monthly';
@@ -87,14 +87,14 @@ export function NativePurchaseSheet({
   };
 
   const handlePurchase = async () => {
-    if (interactionLocked) return;
+    if (interactionLocked || isRestoring) return;
     if (!isOnline) {
       toast.error('No internet connection. Please reconnect and try again.');
       return;
     }
 
     console.log(`[NativePurchaseSheet] selected_package plan=${selectedPlan} cycle=${cycle}`);
-    setIsLoading(true);
+    setIsAttemptingPurchase(true);
 
     try {
       const result = await purchasePlan(selectedPlan, cycle);
@@ -105,7 +105,7 @@ export function NativePurchaseSheet({
     } catch {
       // Error handled by useBilling
     } finally {
-      setIsLoading(false);
+      setIsAttemptingPurchase(false);
       console.log('[NativePurchaseSheet] buttons_reenabled');
     }
   };
@@ -304,7 +304,7 @@ export function NativePurchaseSheet({
   };
 
   return (
-    <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
+    <Drawer open={open} onOpenChange={(v) => !v && !interactionLocked && onClose()}>
       <DrawerContent>
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader className="pb-2 text-center">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Drawer,
   DrawerContent,
@@ -34,7 +34,14 @@ interface UpgradeDrawerProps {
 
 export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawerProps) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
-  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
+  const { purchasePlan, restorePurchases, isRestoring, isNative } = useBilling();
+  const [isAttemptingPurchase, setIsAttemptingPurchase] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setIsAttemptingPurchase(false);
+    }
+  }, [open]);
 
   if (!config) return null;
 
@@ -43,7 +50,9 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
   const periodLabel = cycle === 'monthly' ? 'mo' : 'yr';
 
   const handleUpgrade = async () => {
+    if (isAttemptingPurchase) return;
     track('upgrade_clicked', { planId: config.recommendedPlan, cycle, isNative });
+    setIsAttemptingPurchase(true);
     try {
       const result = await purchasePlan(config.recommendedPlan, cycle);
       if (result.confirmed) {
@@ -51,6 +60,8 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
       }
     } catch {
       // Error handled by useBilling
+    } finally {
+      setIsAttemptingPurchase(false);
     }
   };
 
@@ -123,12 +134,12 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
           <DrawerFooter className="pt-2">
             <Button
               onClick={handleUpgrade}
-              disabled={isPurchasing}
+              disabled={isAttemptingPurchase}
               className="w-full gradient-primary text-primary-foreground font-semibold h-12"
             >
-              {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              {isAttemptingPurchase && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               Upgrade to {plan.name}
-              {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
+              {!isAttemptingPurchase && <ArrowRight className="w-4 h-4 ml-2" />}
             </Button>
 
             {isNative && (
@@ -136,7 +147,7 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
                 variant="ghost"
                 className="text-muted-foreground text-xs"
                 onClick={handleRestore}
-                disabled={isRestoring}
+                disabled={isRestoring || isAttemptingPurchase}
               >
                 {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
                 Restore Purchases
@@ -144,7 +155,7 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
             )}
 
             <DrawerClose asChild>
-              <Button variant="ghost" className="text-muted-foreground">
+              <Button variant="ghost" className="text-muted-foreground" disabled={isAttemptingPurchase}>
                 Not now
               </Button>
             </DrawerClose>

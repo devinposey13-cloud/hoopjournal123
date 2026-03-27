@@ -32,7 +32,8 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const config = reason ? paywallConfigs[reason] : null;
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(config?.recommendedPlan || 'pro');
-  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
+  const { purchasePlan, restorePurchases, isRestoring, isNative } = useBilling();
+  const [isAttemptingPurchase, setIsAttemptingPurchase] = useState(false);
 
   if (!config) return null;
 
@@ -41,8 +42,10 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
   );
 
   const handleUpgrade = async () => {
+    if (isAttemptingPurchase) return;
     track('plan_selected', { planId: selectedPlan, billingCycle: cycle });
     track('upgrade_clicked', { planId: selectedPlan, reason: reason });
+    setIsAttemptingPurchase(true);
     try {
       const result = await purchasePlan(selectedPlan, cycle);
       if (result.confirmed) {
@@ -51,6 +54,8 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
       }
     } catch {
       // Error handled by useBilling
+    } finally {
+      setIsAttemptingPurchase(false);
     }
   };
 
@@ -122,6 +127,7 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
                 <button
                   key={id}
                   onClick={() => setSelectedPlan(id)}
+                  disabled={isAttemptingPurchase}
                   className={cn(
                     'flex-1 rounded-xl border-2 p-3 text-center transition-all duration-200',
                     selectedPlan === id
@@ -158,11 +164,11 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
           <Button
             className="w-full gradient-primary text-primary-foreground font-semibold h-12"
             onClick={handleUpgrade}
-            disabled={isPurchasing}
+            disabled={isAttemptingPurchase}
           >
-            {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+            {isAttemptingPurchase && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
             Upgrade to {planCatalog[selectedPlan].name}
-            {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
+            {!isAttemptingPurchase && <ArrowRight className="w-4 h-4 ml-2" />}
           </Button>
 
           {isNative && (
@@ -170,14 +176,14 @@ export function PaywallModal({ open, reason, currentPlan, onClose, onUpgrade }: 
               variant="ghost"
               className="w-full text-muted-foreground text-xs"
               onClick={handleRestore}
-              disabled={isRestoring}
+              disabled={isRestoring || isAttemptingPurchase}
             >
               {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
               Restore Purchases
             </Button>
           )}
 
-          <Button variant="ghost" className="w-full text-muted-foreground" onClick={onClose}>
+          <Button variant="ghost" className="w-full text-muted-foreground" onClick={onClose} disabled={isAttemptingPurchase}>
             Not now
           </Button>
 

@@ -55,7 +55,7 @@ const PDF_VALUE_BULLETS = [
 export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: PaywallSheetProps) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('pro');
-  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
+  const { purchasePlan, restorePurchases, isRestoring, isNative } = useBilling();
   const { refresh: refreshEntitlements } = useNativeEntitlements();
   const { findPackage } = useNativeRC();
   const { isOnline } = useOnlineStatus();
@@ -63,12 +63,22 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   const config = reason ? paywallConfigs[reason] : null;
 
   const [purchasingPlan, setPurchasingPlan] = useState<PlanId | null>(null);
+  const [isAttemptingPurchase, setIsAttemptingPurchase] = useState(false);
+
+  const interactionLocked = isAttemptingPurchase;
 
   useEffect(() => {
     if (open && isNative) {
       refreshEntitlements();
     }
   }, [open, isNative, refreshEntitlements]);
+
+  useEffect(() => {
+    if (!open) {
+      setIsAttemptingPurchase(false);
+      setPurchasingPlan(null);
+    }
+  }, [open]);
 
 
   if (!config) return null;
@@ -79,12 +89,13 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   const bullets = isPdfLimit ? PDF_VALUE_BULLETS : VALUE_BULLETS;
 
   const handleUpgrade = async () => {
-    if (isPurchasing) return;
+    if (interactionLocked) return;
     if (!isOnline) {
       toast.error('No internet connection. Please reconnect and try again.');
       return;
     }
 
+    setIsAttemptingPurchase(true);
     setPurchasingPlan(selectedPlan);
     track('upgrade_clicked', { planId: selectedPlan, reason, cycle });
     try {
@@ -97,12 +108,13 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
       const msg = err instanceof Error ? err.message.toLowerCase() : '';
       if (msg.includes('cancel')) return;
     } finally {
+      setIsAttemptingPurchase(false);
       setPurchasingPlan(null);
     }
   };
 
   const handlePlanSelect = (id: PlanId) => {
-    if (isPurchasing) return;
+    if (interactionLocked) return;
     setSelectedPlan(id);
   };
 
@@ -241,10 +253,10 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                 <button
                   key={id}
                   onClick={() => handlePlanSelect(id)}
-                  disabled={isPurchasing}
+                  disabled={interactionLocked}
                   className={cn(
                     'relative rounded-2xl p-4 text-left transition-all duration-200',
-                    isPurchasing && !isBeingPurchased && 'opacity-50',
+                    interactionLocked && !isBeingPurchased && 'opacity-50',
                     isSelected
                       ? 'ring-2'
                       : 'ring-1 ring-white/10 hover:ring-white/20',
@@ -303,19 +315,19 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
         <div className="px-6 pb-2">
           <Button
             onClick={handleUpgrade}
-            disabled={isPurchasing}
+            disabled={interactionLocked}
             className="w-full h-13 text-base font-bold rounded-xl border-0"
             style={{
-              background: isPurchasing
+              background: interactionLocked
                 ? 'hsl(24 100% 50% / 0.5)'
                 : 'linear-gradient(135deg, hsl(24 100% 50%), hsl(35 100% 55%))',
               color: 'white',
-              boxShadow: isPurchasing ? 'none' : '0 4px 20px hsl(24 100% 50% / 0.4)',
+              boxShadow: interactionLocked ? 'none' : '0 4px 20px hsl(24 100% 50% / 0.4)',
             }}
           >
-            {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            {isPurchasing ? 'Processing purchase…' : `Subscribe to ${planCatalog[selectedPlan].name}`}
-            {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
+            {interactionLocked && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+            {interactionLocked ? 'Processing purchase…' : `Subscribe to ${planCatalog[selectedPlan].name}`}
+            {!interactionLocked && <ArrowRight className="w-4 h-4 ml-2" />}
           </Button>
 
           <div className="flex items-center justify-center gap-3 mt-3 text-[11px] text-white/40">
@@ -339,7 +351,7 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
               variant="ghost"
               size="sm"
               onClick={handleRestore}
-              disabled={isRestoring || isPurchasing}
+              disabled={isRestoring || interactionLocked}
               className="text-white/30 hover:text-white/50 text-[11px] h-8"
             >
               {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
@@ -379,7 +391,7 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={onClose}
+            onClick={() => !interactionLocked && onClose()}
           />
 
           <motion.div
@@ -393,8 +405,9 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
             }}
           >
             <button
-              onClick={onClose}
-              className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all"
+              onClick={() => !interactionLocked && onClose()}
+              disabled={interactionLocked}
+              className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all disabled:pointer-events-none disabled:opacity-50"
             >
               <X className="w-4 h-4" />
             </button>

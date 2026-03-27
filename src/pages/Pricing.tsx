@@ -77,6 +77,7 @@ export default function Pricing() {
   };
 
   const handleSelectPlan = async (planId: PlanId) => {
+    if (loadingPlan) return;
     if (planId === 'free') {
       toast.info("You're already on the Free plan!");
       return;
