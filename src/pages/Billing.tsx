@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, X } from 'lucide-react';
 import { BillingSummaryCard } from '@/components/billing/BillingSummaryCard';
 import { usePlan } from '@/hooks/usePlanState';
 import { useSubscription } from '@/hooks/useSubscription';
