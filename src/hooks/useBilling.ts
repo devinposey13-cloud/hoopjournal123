@@ -298,6 +298,7 @@ export function useBilling(): UseBillingReturn {
   const purchasePlan = useCallback(async (planId: PlanId, billingCycle: BillingCycle) => {
     const diag = getDiagnostics();
     log(`[Billing] purchasePlan: plan=${planId}, cycle=${billingCycle}, platform=${diag.platform}`);
+    log(`[Billing] rc_platform_detected=${diag.platform}, rc_native_available=${diag.isDespia}, isDespiaIOS=${diag.isDespiaIOS}, isDespiaAndroid=${diag.isDespiaAndroid}`);
 
     // Prevent double taps
     if (isPurchasing || purchaseInFlightRef.current) {

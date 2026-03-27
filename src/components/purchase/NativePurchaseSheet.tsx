@@ -23,11 +23,11 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, ArrowRight, Sparkles, Loader2, RotateCcw, WifiOff } from 'lucide-react';
+import { Check, ArrowRight, Sparkles, Loader2, RotateCcw, WifiOff, RefreshCw } from 'lucide-react';
 import { FeatureList } from '@/components/pricing/FeatureList';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, getPlanPrice, getTrialConfig, getTrialCopy, getTrialCta } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
-
+import { useNativeRC } from '@/hooks/useNativeRC';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -53,18 +53,29 @@ export function NativePurchaseSheet({
   recommendedPlan = 'pro',
   initialBillingCycle = 'monthly',
 }: NativePurchaseSheetProps) {
-  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
+  const { purchasePlan, launchNativePaywall, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
+  const { ready: rcReady, loading: rcLoading, diagnostics: rcDiag, retry: rcRetry } = useNativeRC();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
 
   const [cycle, setCycle] = useState<BillingCycle>(initialBillingCycle);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(recommendedPlan);
+  const [loadingMessage, setLoadingMessage] = useState('Loading plans…');
 
   useEffect(() => {
     if (!open) return;
     setSelectedPlan(recommendedPlan);
     setCycle(initialBillingCycle);
   }, [open, recommendedPlan, initialBillingCycle]);
+
+  // Progressive loading message
+  useEffect(() => {
+    if (!rcLoading) return;
+    setLoadingMessage('Loading plans…');
+    const t1 = setTimeout(() => setLoadingMessage('Still connecting…'), 5000);
+    const t2 = setTimeout(() => setLoadingMessage('Almost there…'), 12000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [rcLoading]);
 
 
   const tiers = planOrder.filter((id) => id !== 'free') as PlanId[];
@@ -75,6 +86,31 @@ export function NativePurchaseSheet({
       toast.error('No internet connection. Please reconnect and try again.');
       return;
     }
+
+    // On native, prefer launching the RC native paywall for best UX
+    // This shows RC's own UI with offerings configured in the dashboard
+    if (isNative) {
+      try {
+        console.log('[NativePurchaseSheet] Launching native RC paywall…');
+        await launchNativePaywall('default');
+        onPurchaseComplete?.(selectedPlan);
+        onClose();
+      } catch (err) {
+        // If launchPaywall fails, fall back to direct product purchase
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`[NativePurchaseSheet] launchPaywall failed (${msg}), falling back to direct purchase`);
+        try {
+          await purchasePlan(selectedPlan, cycle);
+          onPurchaseComplete?.(selectedPlan);
+          onClose();
+        } catch {
+          // Error handled by useBilling
+        }
+      }
+      return;
+    }
+
+    // Web — Stripe checkout
     try {
       await purchasePlan(selectedPlan, cycle);
       onPurchaseComplete?.(selectedPlan);
@@ -117,7 +153,61 @@ export function NativePurchaseSheet({
       );
     }
 
-    // Plans always render immediately from static catalog — no blocking
+    // Native: loading state while RC bridge initializes
+    if (isNative && rcLoading) {
+      return (
+        <div className="py-12 text-center space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">{loadingMessage}</p>
+        </div>
+      );
+    }
+
+    // Native: RC bridge failed after retries
+    if (isNative && !rcReady && !rcLoading) {
+      return (
+        <div className="py-12 text-center space-y-4">
+          <RefreshCw className="w-8 h-8 text-muted-foreground mx-auto" />
+          <p className="text-sm text-muted-foreground">
+            Unable to load subscription plans.
+          </p>
+          <p className="text-xs text-muted-foreground/60">
+            {rcDiag.rc_error || 'Please check your connection and try again.'}
+          </p>
+          <div className="flex flex-col gap-2 items-center">
+            <Button variant="outline" size="sm" onClick={rcRetry} className="gap-2">
+              <RefreshCw className="w-3 h-3" /> Retry
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-muted-foreground text-xs"
+              onClick={handleRestore}
+              disabled={isRestoring}
+            >
+              {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+              Restore Purchases
+            </Button>
+            <DrawerClose asChild>
+              <Button variant="ghost" className="text-muted-foreground text-xs">Close</Button>
+            </DrawerClose>
+          </div>
+          {/* Compliance links */}
+          <div className="flex items-center justify-center gap-3 text-[10px] text-muted-foreground/60 mt-2">
+            <button onClick={() => { onClose(); navigate('/privacy'); }} className="hover:text-muted-foreground transition-colors">
+              Privacy Policy
+            </button>
+            <span>·</span>
+            <button onClick={() => { onClose(); navigate('/terms'); }} className="hover:text-muted-foreground transition-colors">
+              Terms of Service
+            </button>
+            <span>·</span>
+            <button onClick={() => { onClose(); navigate('/eula'); }} className="hover:text-muted-foreground transition-colors">
+              EULA
+            </button>
+          </div>
+        </div>
+      );
+    }
 
     // Normal content
     return (
