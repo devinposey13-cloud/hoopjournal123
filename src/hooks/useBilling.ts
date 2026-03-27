@@ -213,7 +213,6 @@ export function useBilling(): UseBillingReturn {
   const purchaseNative = useCallback(async (planId: PlanId, billingCycle: BillingCycle): Promise<{ confirmed: boolean }> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    // Prevent double purchases
     if (purchaseInFlightRef.current) {
       log('[Billing] ⚠ Purchase already in progress — ignoring duplicate tap');
       return { confirmed: false };
@@ -221,51 +220,80 @@ export function useBilling(): UseBillingReturn {
     purchaseInFlightRef.current = true;
 
     const productId = getNativeProductId(planId, billingCycle);
-    log(`[Billing] Native purchase: plan=${planId}, cycle=${billingCycle}, productId=${productId}`);
-    log(`[Billing] rc_purchase_path=native_despia, rc_web_fallback=false`);
+    log(`[Billing] selected_package productId=${productId} plan=${planId} cycle=${billingCycle}`);
+    log('[Billing] rc_purchase_path=native_despia, rc_web_fallback=false');
 
     const despia = await getDespia();
     const url = `revenuecat://purchase?external_id=${encodeURIComponent(user.id)}&product=${encodeURIComponent(productId)}`;
-    log(`[Billing] Calling despia purchase: product=${productId}, external_id=${user.id}`);
 
     return new Promise<{ confirmed: boolean }>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        log('[Billing] ⚠ Native purchase callback timed out (120s). Checking backend…');
-        cleanup();
-        pollSubscriptionStatus(3, 2000, planId).then((confirmedPlan) => {
-          resolve({ confirmed: confirmedPlan === planId });
-        }).catch(() => resolve({ confirmed: false }));
-      }, 120000);
-
       let settled = false;
-      const settle = (fn: () => void) => { if (!settled) { settled = true; cleanup(); fn(); } };
-
-      // Visibility-based fallback: when the webview regains focus after the
-      // Apple payment sheet is dismissed without purchasing, neither
-      // onRevenueCatPurchase nor onRevenueCatPaywallDismiss may fire.
-      // Detect this by listening for the page becoming visible again.
-      let visibilityTimer: ReturnType<typeof setTimeout> | null = null;
-      const onVisibilityChange = () => {
-        if (document.visibilityState === 'visible' && !settled) {
-          // Give the real callbacks a brief window to fire first
-          visibilityTimer = setTimeout(() => {
-            if (!settled) {
-              log('[Billing] ⚠ Page became visible with no purchase/dismiss callback — treating as cancellation');
-              settle(() => reject(new Error('cancelled')));
-            }
-          }, 1500);
-        }
-      };
-      document.addEventListener('visibilitychange', onVisibilityChange);
+      let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
       const cleanup = () => {
+        if (fallbackTimer) clearTimeout(fallbackTimer);
         clearTimeout(timeout);
-        if (visibilityTimer) clearTimeout(visibilityTimer);
+        window.removeEventListener('focus', onPossibleReturn);
+        window.removeEventListener('pageshow', onPossibleReturn);
         document.removeEventListener('visibilitychange', onVisibilityChange);
         window.onRevenueCatPurchase = undefined;
         (window as any).onRevenueCatPaywallDismiss = undefined;
         purchaseInFlightRef.current = false;
+        log('[Billing] purchase_state_reset');
       };
+
+      const settle = (fn: () => void) => {
+        if (!settled) {
+          settled = true;
+          cleanup();
+          fn();
+        }
+      };
+
+      const resolveAfterReturnCheck = (reason: string) => {
+        if (settled) return;
+        fallbackTimer = setTimeout(async () => {
+          if (settled) return;
+          log(`[Billing] purchase_sheet_dismissed source=${reason}`);
+          try {
+            const confirmedPlan = await pollSubscriptionStatus(2, 1000, planId);
+            if (confirmedPlan === planId) {
+              log(`[Billing] ✓ Backend confirmed plan=${confirmedPlan} after ${reason}`);
+              settle(() => resolve({ confirmed: true }));
+              return;
+            }
+          } catch (err) {
+            log(`[Billing] ⚠ Return check polling failed after ${reason}: ${err}`);
+          }
+
+          settle(() => reject(new Error('cancelled')));
+        }, 1200);
+      };
+
+      const onPossibleReturn = () => {
+        if (!settled) {
+          resolveAfterReturnCheck('focus_return');
+        }
+      };
+
+      const onVisibilityChange = () => {
+        if (document.visibilityState === 'visible' && !settled) {
+          resolveAfterReturnCheck('visibility_return');
+        }
+      };
+
+      const timeout = setTimeout(() => {
+        log('[Billing] ⚠ Native purchase callback timed out (120s). Checking backend…');
+        settle(() => {
+          pollSubscriptionStatus(3, 2000, planId)
+            .then((confirmedPlan) => resolve({ confirmed: confirmedPlan === planId }))
+            .catch(() => resolve({ confirmed: false }));
+        });
+      }, 120000);
+
+      window.addEventListener('focus', onPossibleReturn);
+      window.addEventListener('pageshow', onPossibleReturn);
+      document.addEventListener('visibilitychange', onVisibilityChange);
 
       window.onRevenueCatPurchase = () => {
         log('[Billing] ✓ onRevenueCatPurchase callback fired');
@@ -287,20 +315,19 @@ export function useBilling(): UseBillingReturn {
         });
       };
 
-      // Handle user dismissing the Apple payment sheet without purchasing
       (window as any).onRevenueCatPaywallDismiss = () => {
-        log('[Billing] Native purchase dismissed by user');
+        log('[Billing] purchase_sheet_dismissed source=onRevenueCatPaywallDismiss');
         settle(() => reject(new Error('cancelled')));
       };
 
       try {
+        log(`[Billing] purchase_sheet_opened productId=${productId}`);
         despia(url);
         log('[Billing] despia() call dispatched — waiting for callback…');
       } catch (err) {
-        cleanup();
         const errObj = err instanceof Error ? { message: err.message, name: err.name, stack: err.stack } : err;
-        log(`[Billing] ❌ despia() purchase failed: ${JSON.stringify(errObj)}`);
-        reject(err);
+        log(`[Billing] purchase_error trigger_failed=${JSON.stringify(errObj)}`);
+        settle(() => reject(err));
       }
     });
   }, [user?.id, log, getDespia, pollSubscriptionStatus]);
@@ -335,7 +362,6 @@ export function useBilling(): UseBillingReturn {
         });
       };
 
-      // Dismiss without purchase → reject with cancellation so fallback does NOT fire
       (window as any).onRevenueCatPaywallDismiss = () => {
         log('[Billing] Native paywall dismissed without purchase');
         settle(() => reject(new Error('cancelled')));
@@ -365,7 +391,6 @@ export function useBilling(): UseBillingReturn {
     log(`[Billing] purchasePlan: plan=${planId}, cycle=${billingCycle}, platform=${diag.platform}`);
     log(`[Billing] rc_platform_detected=${diag.platform}, rc_native_available=${diag.isDespia}, isDespiaIOS=${diag.isDespiaIOS}, isDespiaAndroid=${diag.isDespiaAndroid}`);
 
-    // Prevent double taps
     if (isPurchasing || purchaseInFlightRef.current) {
       log('[Billing] ⚠ Already purchasing — ignoring');
       return { confirmed: false };
@@ -380,34 +405,36 @@ export function useBilling(): UseBillingReturn {
           setLastPurchaseResult('success');
           toast.success(`You're now subscribed to ${planId === 'elite' ? 'Elite' : 'Pro'}! 🎉`);
           return { confirmed: true };
-        } else {
-          setLastPurchaseResult('idle');
-          log('[Billing] ⚠ Purchase callback fired but backend not yet confirmed — no success toast');
-          toast.info('Your purchase is being processed. It may take a moment to activate.');
-          return { confirmed: false };
         }
-      } else {
-        await purchaseWeb(planId, billingCycle);
-        setLastPurchaseResult('success');
-        toast.success('Redirecting to checkout…');
-        return { confirmed: true };
+
+        setLastPurchaseResult('idle');
+        log('[Billing] ⚠ Purchase callback fired but backend not yet confirmed — no success toast');
+        toast.info('Your purchase is being processed. It may take a moment to activate.');
+        return { confirmed: false };
       }
+
+      await purchaseWeb(planId, billingCycle);
+      setLastPurchaseResult('success');
+      toast.success('Redirecting to checkout…');
+      return { confirmed: true };
     } catch (err) {
       if (isUserCancellation(err)) {
-        log('[Billing] Purchase cancelled by user');
+        log('[Billing] purchase_cancelled');
         setLastPurchaseResult('cancelled');
         return { confirmed: false };
       }
 
       const friendlyMsg = getUserErrorMessage(err);
       const errObj = err instanceof Error ? { message: err.message, name: err.name, stack: err.stack } : err;
-      log(`[Billing] ❌ Purchase error (full): ${JSON.stringify(errObj)}`);
+      log(`[Billing] purchase_error full=${JSON.stringify(errObj)}`);
       setLastPurchaseResult('error');
       toast.error(friendlyMsg);
       throw err;
     } finally {
       setIsPurchasing(false);
       purchaseInFlightRef.current = false;
+      log('[Billing] buttons_reenabled');
+      log('[Billing] purchase_state_reset');
     }
   }, [log, purchaseNative, purchaseWeb, isPurchasing]);
 
