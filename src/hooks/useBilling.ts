@@ -228,74 +228,20 @@ export function useBilling(): UseBillingReturn {
 
     return new Promise<{ confirmed: boolean }>((resolve, reject) => {
       let settled = false;
+      let returnCheckStarted = false;
       let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+      let timeout: ReturnType<typeof setTimeout> | null = null;
+      let appWasHidden = document.visibilityState === 'hidden';
+      const launchedAt = Date.now();
 
-      const cleanup = () => {
-        if (fallbackTimer) clearTimeout(fallbackTimer);
-        clearTimeout(timeout);
-        window.removeEventListener('focus', onPossibleReturn);
-        window.removeEventListener('pageshow', onPossibleReturn);
-        document.removeEventListener('visibilitychange', onVisibilityChange);
-        window.onRevenueCatPurchase = undefined;
-        (window as any).onRevenueCatPaywallDismiss = undefined;
-        purchaseInFlightRef.current = false;
-        log('[Billing] purchase_state_reset');
-      };
-
-      const settle = (fn: () => void) => {
-        if (!settled) {
-          settled = true;
-          cleanup();
-          fn();
+      const clearFallbackTimer = () => {
+        if (fallbackTimer) {
+          clearTimeout(fallbackTimer);
+          fallbackTimer = null;
         }
       };
 
-      const resolveAfterReturnCheck = (reason: string) => {
-        if (settled) return;
-        fallbackTimer = setTimeout(async () => {
-          if (settled) return;
-          log(`[Billing] purchase_sheet_dismissed source=${reason}`);
-          try {
-            const confirmedPlan = await pollSubscriptionStatus(2, 1000, planId);
-            if (confirmedPlan === planId) {
-              log(`[Billing] ✓ Backend confirmed plan=${confirmedPlan} after ${reason}`);
-              settle(() => resolve({ confirmed: true }));
-              return;
-            }
-          } catch (err) {
-            log(`[Billing] ⚠ Return check polling failed after ${reason}: ${err}`);
-          }
-
-          settle(() => reject(new Error('cancelled')));
-        }, 1200);
-      };
-
-      const onPossibleReturn = () => {
-        if (!settled) {
-          resolveAfterReturnCheck('focus_return');
-        }
-      };
-
-      const onVisibilityChange = () => {
-        if (document.visibilityState === 'visible' && !settled) {
-          resolveAfterReturnCheck('visibility_return');
-        }
-      };
-
-      const timeout = setTimeout(() => {
-        log('[Billing] ⚠ Native purchase callback timed out (120s). Checking backend…');
-        settle(() => {
-          pollSubscriptionStatus(3, 2000, planId)
-            .then((confirmedPlan) => resolve({ confirmed: confirmedPlan === planId }))
-            .catch(() => resolve({ confirmed: false }));
-        });
-      }, 120000);
-
-      window.addEventListener('focus', onPossibleReturn);
-      window.addEventListener('pageshow', onPossibleReturn);
-      document.addEventListener('visibilitychange', onVisibilityChange);
-
-      window.onRevenueCatPurchase = () => {
+      const handlePurchaseCallback = () => {
         log('[Billing] ✓ onRevenueCatPurchase callback fired');
         settle(() => {
           pollSubscriptionStatus(6, 2500, planId)
@@ -315,10 +261,89 @@ export function useBilling(): UseBillingReturn {
         });
       };
 
-      (window as any).onRevenueCatPaywallDismiss = () => {
-        log('[Billing] purchase_sheet_dismissed source=onRevenueCatPaywallDismiss');
-        settle(() => reject(new Error('cancelled')));
+      const handleDismissCallback = () => {
+        runReturnCheck('onRevenueCatPaywallDismiss', 250);
       };
+
+      const cleanup = () => {
+        clearFallbackTimer();
+        if (timeout) clearTimeout(timeout);
+        window.removeEventListener('focus', onPossibleReturn);
+        window.removeEventListener('pageshow', onPossibleReturn);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+        if (window.onRevenueCatPurchase === handlePurchaseCallback) {
+          window.onRevenueCatPurchase = undefined;
+        }
+        if ((window as any).onRevenueCatPaywallDismiss === handleDismissCallback) {
+          (window as any).onRevenueCatPaywallDismiss = undefined;
+        }
+        purchaseInFlightRef.current = false;
+        log('[Billing] purchase_state_reset');
+      };
+
+      const settle = (fn: () => void) => {
+        if (!settled) {
+          settled = true;
+          cleanup();
+          fn();
+        }
+      };
+
+      function runReturnCheck(reason: string, delayMs = 1200) {
+        if (settled || returnCheckStarted) return;
+        returnCheckStarted = true;
+        clearFallbackTimer();
+        fallbackTimer = setTimeout(async () => {
+          if (settled) return;
+          log(`[Billing] purchase_sheet_dismissed source=${reason}`);
+          try {
+            const confirmedPlan = await pollSubscriptionStatus(2, 1000, planId);
+            if (settled) return;
+            if (confirmedPlan === planId) {
+              log(`[Billing] ✓ Backend confirmed plan=${confirmedPlan} after ${reason}`);
+              settle(() => resolve({ confirmed: true }));
+              return;
+            }
+          } catch (err) {
+            log(`[Billing] ⚠ Return check polling failed after ${reason}: ${err}`);
+          }
+
+          settle(() => reject(new Error('cancelled')));
+        }, delayMs);
+      }
+
+      const onPossibleReturn = () => {
+        if (!settled && Date.now() - launchedAt > 1000) {
+          runReturnCheck('focus_return');
+        }
+      };
+
+      const onVisibilityChange = () => {
+        if (document.visibilityState === 'hidden') {
+          appWasHidden = true;
+          return;
+        }
+
+        if (document.visibilityState === 'visible' && !settled && (appWasHidden || Date.now() - launchedAt > 1000)) {
+          runReturnCheck('visibility_return');
+        }
+      };
+
+      timeout = setTimeout(() => {
+        log('[Billing] ⚠ Native purchase callback timed out (120s). Checking backend…');
+        settle(() => {
+          pollSubscriptionStatus(3, 2000, planId)
+            .then((confirmedPlan) => resolve({ confirmed: confirmedPlan === planId }))
+            .catch(() => resolve({ confirmed: false }));
+        });
+      }, 120000);
+
+      window.addEventListener('focus', onPossibleReturn);
+      window.addEventListener('pageshow', onPossibleReturn);
+      document.addEventListener('visibilitychange', onVisibilityChange);
+
+      window.onRevenueCatPurchase = handlePurchaseCallback;
+      (window as any).onRevenueCatPaywallDismiss = handleDismissCallback;
 
       try {
         log(`[Billing] purchase_sheet_opened productId=${productId}`);
@@ -434,7 +459,6 @@ export function useBilling(): UseBillingReturn {
       setIsPurchasing(false);
       purchaseInFlightRef.current = false;
       log('[Billing] buttons_reenabled');
-      log('[Billing] purchase_state_reset');
     }
   }, [log, purchaseNative, purchaseWeb, isPurchasing]);
 
