@@ -202,10 +202,11 @@ export function useBilling(): UseBillingReturn {
 
     const productId = getNativeProductId(planId, billingCycle);
     log(`[Billing] Native purchase: plan=${planId}, cycle=${billingCycle}, productId=${productId}`);
+    log(`[Billing] rc_purchase_path=native_despia, rc_web_fallback=false`);
 
     const despia = await getDespia();
     const url = `revenuecat://purchase?external_id=${encodeURIComponent(user.id)}&product=${encodeURIComponent(productId)}`;
-    log(`[Billing] Calling despia purchase URL`);
+    log(`[Billing] Calling despia purchase: product=${productId}, external_id=${user.id}`);
 
     return new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -242,7 +243,8 @@ export function useBilling(): UseBillingReturn {
         log('[Billing] despia() call dispatched — waiting for callback…');
       } catch (err) {
         cleanup();
-        log(`[Billing] ❌ despia() call failed: ${err}`);
+        const errObj = err instanceof Error ? { message: err.message, name: err.name, stack: err.stack } : err;
+        log(`[Billing] ❌ despia() purchase failed: ${JSON.stringify(errObj)}`);
         reject(err);
       }
     });
@@ -253,7 +255,7 @@ export function useBilling(): UseBillingReturn {
     if (!user?.id) throw new Error('User not authenticated');
     if (!isDespia()) throw new Error('Native paywall only available on mobile');
 
-    log(`[Billing] Launching native paywall: offering=${offering}`);
+    log(`[Billing] Launching native paywall: offering=${offering}, rc_purchase_path=native_paywall, rc_web_fallback=false`);
     const despia = await getDespia();
 
     return new Promise<void>((resolve, reject) => {
@@ -327,8 +329,8 @@ export function useBilling(): UseBillingReturn {
       }
 
       const friendlyMsg = getUserErrorMessage(err);
-      const rawMsg = err instanceof Error ? err.message : String(err);
-      log(`[Billing] ❌ Purchase error: ${rawMsg}`);
+      const errObj = err instanceof Error ? { message: err.message, name: err.name, stack: err.stack } : err;
+      log(`[Billing] ❌ Purchase error (full): ${JSON.stringify(errObj)}`);
       setLastPurchaseResult('error');
       toast.error(friendlyMsg);
       throw err;
