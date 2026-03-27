@@ -128,8 +128,11 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
           trialCopy,
         });
         await purchasePlan(selectedPlan, cycle);
-        track(effectiveHasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
-        onUpgrade(selectedPlan);
+        // Only trigger upgrade callback if purchase was confirmed by backend
+        if (lastPurchaseResult === 'success') {
+          track(effectiveHasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
+          onUpgrade(selectedPlan);
+        }
         return;
       }
       await purchasePlan(selectedPlan, cycle);

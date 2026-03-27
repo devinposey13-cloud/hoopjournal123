@@ -46,7 +46,7 @@ export function NativePurchaseSheet({
   recommendedPlan = 'pro',
   initialBillingCycle = 'monthly',
 }: NativePurchaseSheetProps) {
-  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
+  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
   const { ready: rcReady, loading: rcLoading, diagnostics: rcDiag, retry: rcRetry, findPackage, hasTrialForProduct, getTrialCopyForProduct } = useNativeRC();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
