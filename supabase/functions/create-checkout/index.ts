@@ -93,8 +93,9 @@ serve(async (req) => {
 
     // Trial configuration (matches client-side trialConfigs)
     const TRIAL_PLANS: Record<string, number> = {
-      pro: 3,    // 3-day trial for Pro
-      starter: 3, // starter maps to Pro
+      pro: 3,      // 3-day trial for Pro
+      starter: 3,  // starter maps to Pro
+      elite: 3,    // 3-day trial for Elite
     };
 
     const trialDays = TRIAL_PLANS[effectivePlanId] ?? 0;

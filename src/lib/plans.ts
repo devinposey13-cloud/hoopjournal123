@@ -48,8 +48,8 @@ export const trialConfigs: Record<PlanId, Record<BillingCycle, TrialConfig>> = {
     yearly: { hasTrial: true, trialDays: 3 },
   },
   elite: {
-    monthly: { hasTrial: false, trialDays: 0 },
-    yearly: { hasTrial: false, trialDays: 0 },
+    monthly: { hasTrial: true, trialDays: 3 },
+    yearly: { hasTrial: true, trialDays: 3 },
   },
 };
 
