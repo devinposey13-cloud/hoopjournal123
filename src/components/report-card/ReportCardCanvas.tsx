@@ -155,12 +155,15 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               flexShrink: 0,
             }}>
-              <div style={{
-                width: 320 * sf, height: 320 * sf, borderRadius: '50%',
-                border: `7px solid ${color}`,
-                overflow: 'hidden',
-                boxShadow: `0 0 100px ${color}40, 0 0 200px ${color}15`,
-              }}>
+              <div
+                data-canvas-avatar="true"
+                style={{
+                  width: 320 * sf, height: 320 * sf, borderRadius: '50%',
+                  border: `7px solid ${color}`,
+                  overflow: 'hidden',
+                  boxShadow: `0 0 100px ${color}40, 0 0 200px ${color}15`,
+                }}
+              >
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
                 ) : (
@@ -186,11 +189,15 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 background: `radial-gradient(circle, ${color}15 0%, transparent 60%)`,
                 pointerEvents: 'none',
               }} />
-              <div style={{
-                color: s.dim, fontSize: 18 * sf, fontWeight: 800,
-                letterSpacing: '0.4em', textTransform: 'uppercase',
-                textAlign: 'center', marginBottom: 8 * sf,
-              }}>HOOP JOURNAL GAME GRADE</div>
+              <div
+                data-canvas-text="grade-label"
+                data-text-content="HOOP JOURNAL GAME GRADE"
+                style={{
+                  color: s.dim, fontSize: 18 * sf, fontWeight: 800,
+                  letterSpacing: '0.4em', textTransform: 'uppercase',
+                  textAlign: 'center', marginBottom: 8 * sf,
+                }}
+              >HOOP JOURNAL GAME GRADE</div>
               <div
                 data-canvas-grade="true"
                 data-grade-color={color}
@@ -206,21 +213,27 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             </div>
           </div>
 
-          {/* Player Name + Team — 15% larger text */}
+          {/* Player Name + Team */}
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             marginBottom: isPost ? 18 : 28,
           }}>
-            <div style={{
-              color: s.bright, fontSize: 55 * sf, fontWeight: 900,
-              letterSpacing: '0.08em', textTransform: 'uppercase',
-              textAlign: 'center', lineHeight: 1,
-            }}>{playerName}</div>
-            <div style={{
-              color: s.muted, fontSize: 21 * sf, fontWeight: 700,
-              letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 10,
-              textAlign: 'center',
-            }}>{playerTeam}</div>
+            <div
+              data-canvas-text="player-name"
+              style={{
+                color: s.bright, fontSize: 55 * sf, fontWeight: 900,
+                letterSpacing: '0.08em', textTransform: 'uppercase',
+                textAlign: 'center', lineHeight: 1,
+              }}
+            >{playerName}</div>
+            <div
+              data-canvas-text="player-team"
+              style={{
+                color: s.muted, fontSize: 21 * sf, fontWeight: 700,
+                letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 10,
+                textAlign: 'center',
+              }}
+            >{playerTeam}</div>
           </div>
 
           {/* ═══ ZONE 3: Game Context ═══ */}
@@ -232,16 +245,26 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               display: 'flex', alignItems: 'center', gap: 14,
               fontSize: 36 * sf, fontWeight: 700,
             }}>
-              <span style={{ color: '#cbd5e1', fontSize: 42 * sf, fontWeight: 900, letterSpacing: '0.04em', textTransform: 'uppercase' }}>vs {game.opponent}</span>
-              <span style={{
-                color: game.isWin ? '#4ade80' : '#f87171',
-                fontWeight: 800, fontSize: 18 * sf,
-                background: game.isWin ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
-                border: `1px solid ${game.isWin ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)'}`,
-                borderRadius: 8, padding: '4px 16px',
-              }}>{game.isWin ? 'WIN' : 'LOSS'}{scoreDisplay ? ` ${scoreDisplay}` : ''}</span>
+              <span
+                data-canvas-text="opponent"
+                style={{ color: '#cbd5e1', fontSize: 42 * sf, fontWeight: 900, letterSpacing: '0.04em', textTransform: 'uppercase' }}
+              >vs {game.opponent}</span>
+              <span
+                data-canvas-text="result-badge"
+                data-result-win={game.isWin ? 'true' : 'false'}
+                style={{
+                  color: game.isWin ? '#4ade80' : '#f87171',
+                  fontWeight: 800, fontSize: 18 * sf,
+                  background: game.isWin ? 'rgba(74,222,128,0.08)' : 'rgba(248,113,113,0.08)',
+                  border: `1px solid ${game.isWin ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)'}`,
+                  borderRadius: 8, padding: '4px 16px',
+                }}
+              >{game.isWin ? 'WIN' : 'LOSS'}{scoreDisplay ? ` ${scoreDisplay}` : ''}</span>
             </div>
-            <div style={{ color: s.dim, fontSize: 15 * sf, fontWeight: 500 }}>
+            <div
+              data-canvas-text="game-date"
+              style={{ color: s.dim, fontSize: 15 * sf, fontWeight: 500 }}
+            >
               {format(new Date(game.date), 'MMM d, yyyy')}
             </div>
           </div>
@@ -261,13 +284,13 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               display: 'flex', gap: 24, marginBottom: isPost ? 18 : 28, justifyContent: 'center',
             }}>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ color: s.dim, fontSize: 13 * sf, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>GAME SCORE</div>
-                <div style={{ color: s.bright, fontSize: 58 * sf, fontWeight: 900, lineHeight: 1 }}>{gameScore}</div>
+                <div data-canvas-text="game-score-label" style={{ color: s.dim, fontSize: 13 * sf, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>GAME SCORE</div>
+                <div data-canvas-text="game-score-value" style={{ color: s.bright, fontSize: 58 * sf, fontWeight: 900, lineHeight: 1 }}>{gameScore}</div>
               </div>
               {bestImpact.value > 0 && (
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ color: s.dim, fontSize: 13 * sf, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>BEST IMPACT</div>
-                  <div style={{ color: s.bright, fontSize: 58 * sf, fontWeight: 900, lineHeight: 1 }}>
+                  <div data-canvas-text="impact-label" style={{ color: s.dim, fontSize: 13 * sf, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>BEST IMPACT</div>
+                  <div data-canvas-text="impact-value" data-impact-stat={bestImpact.stat} style={{ color: s.bright, fontSize: 58 * sf, fontWeight: 900, lineHeight: 1 }}>
                     {bestImpact.value} <span style={{ fontSize: 24 * sf, color: s.sub, fontWeight: 700 }}>{bestImpact.stat}</span>
                   </div>
                 </div>
@@ -279,7 +302,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 marginBottom: isPost ? 12 : 18,
               }}>
                 {tags.slice(0, 3).map((tag, i) => (
-                  <div key={i} style={{
+                  <div key={i} data-canvas-tag={i} style={{
                     background: `${color}15`,
                     border: `1px solid ${color}30`,
                     borderRadius: 50, padding: '6px 22px',
@@ -292,13 +315,13 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
               width: '60%', height: 1, marginBottom: isPost ? 18 : 28,
               background: `linear-gradient(90deg, transparent, ${color}30, transparent)`,
             }} />
-            {/* Stat grid — labels +10%, numbers +12% */}
+            {/* Stat grid */}
             <div style={{
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
               gap: 24, width: '100%',
             }}>
               {stats.map((st) => (
-                <div key={st.label} style={{
+                <div key={st.label} data-canvas-stat={st.label} style={{
                   background: 'rgba(15,23,42,0.8)',
                   border: '1px solid rgba(100,116,139,0.12)',
                   borderLeft: `4px solid ${color}`,
@@ -306,8 +329,8 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                   textAlign: 'left',
                   position: 'relative',
                 }}>
-                  <div style={{ fontSize: 25 * sf, fontWeight: 800, color, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4, whiteSpace: 'nowrap' }}>{st.label}</div>
-                  <div style={{ fontSize: 67 * sf, fontWeight: 900, color: s.bright, lineHeight: 1, whiteSpace: 'nowrap' }}>{st.value}</div>
+                  <div data-canvas-text={`stat-label-${st.label}`} style={{ fontSize: 25 * sf, fontWeight: 800, color, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4, whiteSpace: 'nowrap' }}>{st.label}</div>
+                  <div data-canvas-text={`stat-value-${st.label}`} style={{ fontSize: 67 * sf, fontWeight: 900, color: s.bright, lineHeight: 1, whiteSpace: 'nowrap' }}>{st.value}</div>
                 </div>
               ))}
             </div>
@@ -322,14 +345,14 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 { label: '3PT', made: game.threePtMade, att: game.threePtAttempted },
                 { label: 'FT', made: game.ftMade, att: game.ftAttempted },
               ].map((sh) => (
-                <div key={sh.label} style={{
+                <div key={sh.label} data-canvas-shooting={sh.label} style={{
                   flex: 1, background: 'rgba(15,23,42,0.5)',
                   border: '1px solid rgba(100,116,139,0.1)',
                   borderRadius: 12, padding: `${14 * sf}px ${12 * sf}px`,
                   textAlign: 'center',
                 }}>
-                  <div style={{ fontSize: 18 * sf, fontWeight: 800, color: s.sub, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 2, whiteSpace: 'nowrap' }}>{sh.label}</div>
-                  <div style={{ fontSize: 40 * sf, fontWeight: 900, color: s.bright, lineHeight: 1, whiteSpace: 'nowrap' }}>{sh.made}/{sh.att}</div>
+                  <div data-canvas-text={`shoot-label-${sh.label}`} style={{ fontSize: 18 * sf, fontWeight: 800, color: s.sub, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 2, whiteSpace: 'nowrap' }}>{sh.label}</div>
+                  <div data-canvas-text={`shoot-value-${sh.label}`} style={{ fontSize: 40 * sf, fontWeight: 900, color: s.bright, lineHeight: 1, whiteSpace: 'nowrap' }}>{sh.made}/{sh.att}</div>
                 </div>
               ))}
             </div>
@@ -343,21 +366,21 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
             {careerHighsInGame.length > 0 && (
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
                 {careerHighsInGame.slice(0, 3).map((ch, i) => (
-                  <div key={i} style={{
+                  <div key={i} data-canvas-career-high={i} style={{
                     background: 'linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,165,0,0.06))',
                     border: '1px solid rgba(255,215,0,0.25)',
                     borderRadius: 12, padding: '10px 22px',
                     display: 'flex', alignItems: 'center', gap: 10,
                   }}>
                     <span style={{ fontSize: 18 }}>🏆</span>
-                    <span style={{ color: '#fbbf24', fontSize: 15, fontWeight: 800 }}>
+                    <span data-canvas-text={`career-high-${i}`} style={{ color: '#fbbf24', fontSize: 15, fontWeight: 800 }}>
                       Career High: {ch.displayValue} {ch.stat}
                     </span>
                   </div>
                 ))}
               </div>
             )}
-            <div style={{
+            <div data-canvas-xp="true" style={{
               background: 'linear-gradient(135deg, rgba(255,107,0,0.18), rgba(255,165,0,0.08))',
               border: '1px solid rgba(255,107,0,0.3)',
               borderRadius: 50, padding: isPost ? '8px 32px' : '12px 44px',
@@ -376,13 +399,13 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: isPost ? 12 : 16 }}>
               <img src={hoopJournalLogo} alt="" style={{ width: isPost ? 56 : 82, height: isPost ? 56 : 82, borderRadius: isPost ? 12 : 16 }} crossOrigin="anonymous" />
-              <div>
+              <div data-canvas-text="footer-brand">
                 <div style={{ color: s.bright, fontSize: isPost ? 20 : 28, fontWeight: 800 }}>Hoop Journal</div>
                 <div style={{ color: s.dim, fontSize: isPost ? 13 : 18, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-              <div style={{ color: s.dim, fontSize: isPost ? 8 : 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to track</div>
+              <div data-canvas-text="footer-scan" style={{ color: s.dim, fontSize: isPost ? 8 : 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to track</div>
               <div style={{ padding: isPost ? 4 : 6, background: 'rgba(255,255,255,0.06)', borderRadius: isPost ? 8 : 10 }}>
                 <img src={hoopJournalQr} alt="" style={{ width: isPost ? 100 : 160, height: isPost ? 100 : 160, borderRadius: 6 }} crossOrigin="anonymous" />
               </div>
