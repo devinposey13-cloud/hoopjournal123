@@ -389,51 +389,55 @@ export function AdminQuickMode() {
   // it means iOS reloaded (not SPA navigation). If the beacon is missing,
   // the user navigated away and back — so we start fresh.
   const STORAGE_KEY = 'quick_mode_form';
-  const BEACON_KEY = 'quick_mode_active';
+
+  function isReloadNavigation() {
+    if (typeof window === 'undefined') return false;
+
+    const navigationEntries = performance.getEntriesByType?.('navigation') as PerformanceNavigationTiming[];
+    if (navigationEntries?.length) {
+      return navigationEntries[0].type === 'reload';
+    }
+
+    return typeof performance !== 'undefined' && 'navigation' in performance
+      ? (performance as Performance & { navigation?: { type?: number } }).navigation?.type === 1
+      : false;
+  }
 
   function loadSaved() {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw);
-      // Only restore if the beacon was already set (means page reload, not fresh nav)
-      const beaconExists = sessionStorage.getItem(BEACON_KEY) === '1';
-      return beaconExists ? parsed : {};
-    } catch { return {}; }
+      if (!raw || !isReloadNavigation()) return {};
+      return JSON.parse(raw);
+    } catch {
+      return {};
+    }
   }
 
   const saved = useRef(loadSaved());
+  const restoredFromReload = useRef(Object.keys(saved.current).length > 0);
 
   useEffect(() => {
-    // Set the beacon on mount — signals "this component is active"
-    sessionStorage.setItem(BEACON_KEY, '1');
-
-    // Listen for SPA navigation (popstate / component unmount via React Router)
-    // We use 'pagehide' to detect true page unload vs SPA unmount
-    const handlePageHide = () => {
-      // Page is actually unloading (iOS camera reload) — keep data
-      // Do nothing; data stays in sessionStorage
-    };
-    window.addEventListener('pagehide', handlePageHide);
-
-    return () => {
-      window.removeEventListener('pagehide', handlePageHide);
-      // This cleanup runs on SPA unmount (navigation away).
-      // On iOS camera reload, the page unloads entirely so this cleanup
-      // does NOT run — sessionStorage data survives.
-      // On SPA navigation, this DOES run — clear everything.
+    // Clear stale drafts on fresh visits or SPA route changes.
+    // Keep drafts only when the page truly reloaded (iPad/native camera case).
+    if (!restoredFromReload.current) {
       try {
         sessionStorage.removeItem(STORAGE_KEY);
-        sessionStorage.removeItem(BEACON_KEY);
       } catch {}
-    };
+    }
   }, []);
 
   function saveFormForCamera(patch: Record<string, any>) {
     try {
-      const current = (() => { try { const r = sessionStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; } })();
-      const next = { ...current, ...patch };
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      const current = (() => {
+        try {
+          const raw = sessionStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : {};
+        } catch {
+          return {};
+        }
+      })();
+
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, ...patch }));
     } catch {}
   }
 
@@ -441,7 +445,7 @@ export function AdminQuickMode() {
     try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
   }
 
-  // Form state — initialise from saved (only present after iOS camera reload)
+  // Form state — initialise from saved only after a real page reload
   const [playerName, setPlayerName] = useState(saved.current.playerName || '');
   const [teamName, setTeamName] = useState(saved.current.teamName || '');
   const [jerseyNumber, setJerseyNumber] = useState(saved.current.jerseyNumber || '');
@@ -454,10 +458,9 @@ export function AdminQuickMode() {
   const [generatingAvatar, setGeneratingAvatar] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
-  // Save form on every change so iOS camera reload captures latest state
+  // Save form on every change so camera interruptions can recover the latest draft
   useEffect(() => {
     saveFormForCamera({ playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl });
   }, [playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl]);
@@ -492,10 +495,9 @@ export function AdminQuickMode() {
     }
   }
 
-  // Photo handling — persist as data URL so it survives iOS camera page reloads
+  // Photo handling — persist as data URL so it survives interruption/reload cases
   const handlePhotoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    // Always reset the input so it can be re-triggered
     e.target.value = '';
     if (!file) return;
     if (file.size > 20 * 1024 * 1024) {
@@ -503,7 +505,6 @@ export function AdminQuickMode() {
       return;
     }
     setPhotoFile(file);
-    // Convert to data URL so it persists through page reloads
     const reader = new FileReader();
     reader.onloadend = () => {
       const dataUrl = reader.result as string;
@@ -512,13 +513,14 @@ export function AdminQuickMode() {
     reader.readAsDataURL(file);
   }, []);
 
-  // Webcam handling for desktop
+  // In-app camera flow — avoids the iPad native file-input camera reload path
   const startWebcam = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 1280 } } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 1280 } },
+      });
       streamRef.current = stream;
       setShowWebcam(true);
-      // Attach stream after render
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -532,7 +534,7 @@ export function AdminQuickMode() {
   }, []);
 
   const stopWebcam = useCallback(() => {
-    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     setShowWebcam(false);
   }, []);
@@ -540,16 +542,27 @@ export function AdminQuickMode() {
   const captureFromWebcam = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
+
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d')?.drawImage(video, 0, 0);
+
     canvas.toBlob((blob) => {
-      if (blob) {
-        const file = new File([blob], `webcam-${Date.now()}.jpg`, { type: 'image/jpeg' });
-        setPhotoFile(file);
-        setPhotoUrl(URL.createObjectURL(file));
+      if (!blob) {
+        stopWebcam();
+        return;
       }
+
+      const file = new File([blob], `webcam-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      setPhotoFile(file);
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
       stopWebcam();
     }, 'image/jpeg', 0.92);
   }, [stopWebcam]);
@@ -1297,15 +1310,7 @@ export function AdminQuickMode() {
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  {/* Hidden file inputs with stable refs — survive iPad camera round-trips */}
-                  <input
-                    ref={cameraInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={handlePhotoUpload}
-                  />
+                  {/* Upload input stays available; camera uses in-app capture to avoid iPad reloads */}
                   <input
                     ref={uploadInputRef}
                     type="file"
@@ -1317,7 +1322,7 @@ export function AdminQuickMode() {
                     <Button
                       variant="outline"
                       className="flex-1 gap-2"
-                      onClick={() => cameraInputRef.current?.click()}
+                      onClick={startWebcam}
                     >
                       <Camera className="w-4 h-4" /> Camera
                     </Button>
