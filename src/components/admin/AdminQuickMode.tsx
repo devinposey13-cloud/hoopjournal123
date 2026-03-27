@@ -381,22 +381,40 @@ export function AdminQuickMode() {
   const cardRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
-  // ── Persistence helpers (survive iOS camera page reload) ──
+  // ── Camera-reload persistence (only survives iOS camera page reload, not navigation) ──
+  // Mark that component has mounted at least once this SPA session
+  const mountIdRef = useRef(Math.random().toString(36).slice(2));
   const STORAGE_KEY = 'quick_mode_form';
 
   function loadSaved() {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      // Only restore if the page was reloaded (same mount marker missing means fresh navigation)
+      if (parsed._fromCamera) return parsed;
+      return {};
     } catch { return {}; }
   }
 
   const saved = useRef(loadSaved());
 
-  function saveForm(patch: Record<string, any>) {
+  // Clear storage after restoring — so navigating away and back starts fresh
+  useEffect(() => {
+    // If we restored data, clear the flag so it doesn't persist beyond this mount
+    if (saved.current._fromCamera) {
+      sessionStorage.removeItem(STORAGE_KEY);
+    }
+    // On unmount (navigation away), always clear storage
+    return () => {
+      try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+    };
+  }, []);
+
+  function saveFormForCamera(patch: Record<string, any>) {
     try {
-      const current = loadSaved();
-      const next = { ...current, ...patch };
+      const current = (() => { try { const r = sessionStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; } })();
+      const next = { ...current, ...patch, _fromCamera: true };
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {}
   }
@@ -405,7 +423,7 @@ export function AdminQuickMode() {
     try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
   }
 
-  // Form state — initialise from sessionStorage
+  // Form state — initialise from saved (only present after iOS camera reload)
   const [playerName, setPlayerName] = useState(saved.current.playerName || '');
   const [teamName, setTeamName] = useState(saved.current.teamName || '');
   const [jerseyNumber, setJerseyNumber] = useState(saved.current.jerseyNumber || '');
@@ -421,9 +439,10 @@ export function AdminQuickMode() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
-  // Persist form fields on change
+  // Persist form fields only when camera input is about to trigger a reload
+  // We save on every change so iOS camera reload captures the latest state
   useEffect(() => {
-    saveForm({ playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl });
+    saveFormForCamera({ playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl });
   }, [playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl]);
 
   // UI state
