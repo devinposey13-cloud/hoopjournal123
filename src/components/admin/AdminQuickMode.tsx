@@ -381,14 +381,38 @@ export function AdminQuickMode() {
   const cardRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
-  // Form state
-  const [playerName, setPlayerName] = useState('');
-  const [teamName, setTeamName] = useState('');
-  const [jerseyNumber, setJerseyNumber] = useState('');
-  const [position, setPosition] = useState('');
-  const [templateKey, setTemplateKey] = useState<TemplateKey>('scorer');
-  const [contactInfo, setContactInfo] = useState('');
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  // ── Persistence helpers (survive iOS camera page reload) ──
+  const STORAGE_KEY = 'quick_mode_form';
+
+  function loadSaved() {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  }
+
+  const saved = useRef(loadSaved());
+
+  function saveForm(patch: Record<string, any>) {
+    try {
+      const current = loadSaved();
+      const next = { ...current, ...patch };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {}
+  }
+
+  function clearSavedForm() {
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+  }
+
+  // Form state — initialise from sessionStorage
+  const [playerName, setPlayerName] = useState(saved.current.playerName || '');
+  const [teamName, setTeamName] = useState(saved.current.teamName || '');
+  const [jerseyNumber, setJerseyNumber] = useState(saved.current.jerseyNumber || '');
+  const [position, setPosition] = useState(saved.current.position || '');
+  const [templateKey, setTemplateKey] = useState<TemplateKey>(saved.current.templateKey || 'scorer');
+  const [contactInfo, setContactInfo] = useState(saved.current.contactInfo || '');
+  const [photoUrl, setPhotoUrl] = useState<string | null>(saved.current.photoUrl || null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [showWebcam, setShowWebcam] = useState(false);
   const [generatingAvatar, setGeneratingAvatar] = useState(false);
@@ -396,6 +420,11 @@ export function AdminQuickMode() {
   const streamRef = useRef<MediaStream | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
+
+  // Persist form fields on change
+  useEffect(() => {
+    saveForm({ playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl });
+  }, [playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl]);
 
   // UI state
   const [generating, setGenerating] = useState(false);
