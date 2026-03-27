@@ -12,9 +12,6 @@ import {
   paywallConfigs,
   getPlanPrice,
   getYearlySavingsPercent,
-  getTrialConfig,
-  getTrialCopy,
-  getTrialCta,
   track,
 } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
@@ -60,15 +57,13 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('pro');
   const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
   const { refresh: refreshEntitlements } = useNativeEntitlements();
-  const { findPackage, getTrialCopyForProduct, hasTrialForProduct } = useNativeRC();
+  const { findPackage } = useNativeRC();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
   const config = reason ? paywallConfigs[reason] : null;
 
   const [purchasingPlan, setPurchasingPlan] = useState<PlanId | null>(null);
 
-  // Entitlements load in the background — never block the paywall UI.
-  // Plans are static catalog data; no need to wait for entitlement checks.
   useEffect(() => {
     if (open && isNative) {
       refreshEntitlements();
@@ -83,65 +78,24 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   const dynamicSubline = DYNAMIC_HEADLINES[reason!] || null;
   const bullets = isPdfLimit ? PDF_VALUE_BULLETS : VALUE_BULLETS;
 
-  // Get RC-sourced trial info for the selected plan on native
-  const getRCTrialInfo = (planId: PlanId, billCycle: BillingCycle) => {
-    const suffix = billCycle === 'yearly' ? 'yearly' : 'monthly';
-    const productSubstr = `${planId}_${suffix}`;
-    const pkg = findPackage(productSubstr);
-    const rcTrialCopy = getTrialCopyForProduct(productSubstr);
-    const hasTrial = hasTrialForProduct(productSubstr);
-    return { pkg, rcTrialCopy, hasTrial };
-  };
-
-  const selectedRCInfo = getRCTrialInfo(selectedPlan, cycle);
-  const trialConfig = getTrialConfig(selectedPlan, cycle);
-  // Log RC trial info for debugging Apple review issues
-  console.log(`[PaywallSheet] selectedPlan=${selectedPlan}, cycle=${cycle}, isNative=${isNative}`);
-  console.log(`[PaywallSheet] RC hasTrial=${selectedRCInfo.hasTrial}, rcTrialCopy=${selectedRCInfo.rcTrialCopy}, pkg=${selectedRCInfo.pkg?.productId}`);
-  console.log(`[PaywallSheet] RC introPrice=${JSON.stringify(selectedRCInfo.pkg?.introPrice)}`);
-  const trialCopy = isNative && selectedRCInfo.rcTrialCopy ? selectedRCInfo.rcTrialCopy : getTrialCopy(selectedPlan, cycle);
-  const trialCta = isNative && selectedRCInfo.hasTrial ? 'Start Free Trial' : getTrialCta(selectedPlan, cycle);
-
   const handleUpgrade = async () => {
-    if (isPurchasing) return; // prevent double tap
+    if (isPurchasing) return;
     if (!isOnline) {
       toast.error('No internet connection. Please reconnect and try again.');
       return;
     }
 
     setPurchasingPlan(selectedPlan);
-    const effectiveHasTrial = isNative ? selectedRCInfo.hasTrial : trialConfig.hasTrial;
-    track('upgrade_clicked', { planId: selectedPlan, reason, cycle, hasTrial: effectiveHasTrial });
-    if (effectiveHasTrial) {
-      track('trial_started', { planId: selectedPlan, cycle, trialDays: trialConfig.trialDays });
-    }
+    track('upgrade_clicked', { planId: selectedPlan, reason, cycle });
     try {
-      if (isNative) {
-        console.log('[PaywallSheet] Native direct purchase', {
-          selectedPlan,
-          cycle,
-          productId: selectedRCInfo.pkg?.productId,
-          hasTrial: selectedRCInfo.hasTrial,
-          introPrice: selectedRCInfo.pkg?.introPrice ?? null,
-          trialCopy,
-        });
-        const result = await purchasePlan(selectedPlan, cycle);
-        if (result.confirmed) {
-          track(effectiveHasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
-          onUpgrade(selectedPlan);
-        }
-        return;
-      }
       const result = await purchasePlan(selectedPlan, cycle);
       if (result.confirmed) {
-        track(trialConfig.hasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
+        track('upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
         onUpgrade(selectedPlan);
       }
     } catch (err) {
-      // Silently handle user cancellation (paywall dismissed)
       const msg = err instanceof Error ? err.message.toLowerCase() : '';
       if (msg.includes('cancel')) return;
-      // Other errors handled by useBilling
     } finally {
       setPurchasingPlan(null);
     }
@@ -150,12 +104,6 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   const handlePlanSelect = (id: PlanId) => {
     if (isPurchasing) return;
     setSelectedPlan(id);
-    const t = getTrialConfig(id, cycle);
-    if (t.hasTrial) {
-      track('trial_offer_viewed', { planId: id, cycle, trialDays: t.trialDays });
-    } else if (id !== 'free') {
-      track('ineligible_for_trial_shown', { planId: id, cycle });
-    }
   };
 
   const handleRestore = async () => {
@@ -173,9 +121,7 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
     }
   };
 
-  // ─── Determine what content to render ───────────────────────────
   const renderContent = () => {
-    // Offline — show message but still allow closing
     if (!isOnline && isNative) {
       return (
         <div className="px-6 py-12 text-center space-y-4">
@@ -189,9 +135,6 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
       );
     }
 
-    // Plans always render immediately from static catalog — no blocking
-
-    // Normal paywall content
     return (
       <>
         {/* === HERO SECTION === */}
@@ -285,8 +228,10 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
           <div className="grid grid-cols-2 gap-3">
             {(['pro', 'elite'] as PlanId[]).map((id) => {
               const plan = planCatalog[id];
-              const rcInfo = getRCTrialInfo(id, cycle);
-              const price = isNative && rcInfo.pkg?.priceString ? rcInfo.pkg.priceString : `$${getPlanPrice(id, cycle)}`;
+              const suffix = cycle === 'yearly' ? 'yearly' : 'monthly';
+              const productSubstr = `${id}_${suffix}`;
+              const pkg = findPackage(productSubstr);
+              const price = isNative && pkg?.priceString ? pkg.priceString : `$${getPlanPrice(id, cycle)}`;
               const savings = cycle === 'yearly' ? getYearlySavingsPercent(id) : 0;
               const isSelected = selectedPlan === id;
               const isElite = id === 'elite';
@@ -335,15 +280,9 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                     </Badge>
                   )}
                   <p className="text-[10px] text-white/50 leading-relaxed">
-                    {(() => {
-                      // Prefer RC data on native
-                      if (isNative && rcInfo.hasTrial) return rcInfo.rcTrialCopy || 'Free trial included';
-                      const t = getTrialConfig(id, cycle);
-                      if (t.hasTrial) return `${t.trialDays}-day free trial`;
-                      return id === 'pro'
-                        ? 'For players consistently working on their game'
-                        : 'For serious players who want to stand out';
-                    })()}
+                    {id === 'pro'
+                      ? 'For players consistently working on their game'
+                      : 'For serious players who want to stand out'}
                   </p>
                   {isSelected && (
                     <div className="absolute top-3 right-3">
@@ -375,21 +314,15 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
             }}
           >
             {isPurchasing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            {isPurchasing ? 'Processing purchase…' : (trialCta || `Upgrade to ${planCatalog[selectedPlan].name}`)}
+            {isPurchasing ? 'Processing purchase…' : `Subscribe to ${planCatalog[selectedPlan].name}`}
             {!isPurchasing && <ArrowRight className="w-4 h-4 ml-2" />}
           </Button>
 
-          {trialCopy ? (
-            <p className="text-center mt-3 text-[11px] text-white/50">
-              {trialCopy}
-            </p>
-          ) : (
-            <div className="flex items-center justify-center gap-3 mt-3 text-[11px] text-white/40">
-              <span>Cancel anytime</span>
-              <span className="w-1 h-1 rounded-full bg-white/20" />
-              <span>No commitment</span>
-            </div>
-          )}
+          <div className="flex items-center justify-center gap-3 mt-3 text-[11px] text-white/40">
+            <span>Cancel anytime</span>
+            <span className="w-1 h-1 rounded-full bg-white/20" />
+            <span>No commitment</span>
+          </div>
         </div>
 
         {/* === TRUST === */}
@@ -441,7 +374,6 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
         >
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -450,7 +382,6 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
             onClick={onClose}
           />
 
-          {/* Sheet */}
           <motion.div
             initial={{ y: '100%', opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -461,7 +392,6 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
               background: 'linear-gradient(180deg, hsl(220 25% 8%) 0%, hsl(220 20% 12%) 100%)',
             }}
           >
-            {/* Close button */}
             <button
               onClick={onClose}
               className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-all"

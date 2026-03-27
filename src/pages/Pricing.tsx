@@ -24,7 +24,7 @@ export default function Pricing() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { purchasePlan, isPurchasing, diagnostics, debugLog } = useBilling();
-  const { findPackage, getTrialCopyForProduct, hasTrialForProduct } = useNativeRC();
+  const { findPackage } = useNativeRC();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [promoApplied, setPromoApplied] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
@@ -32,7 +32,6 @@ export default function Pricing() {
   const [confirmedPlanName, setConfirmedPlanName] = useState('');
   const native = isNativeApp();
 
-  // Check if user already has promo_eligible in plan_overrides
   useEffect(() => {
     const checkPromo = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -49,7 +48,6 @@ export default function Pricing() {
     checkPromo();
   }, []);
 
-  // Show success/canceled toasts from Stripe redirect
   const success = searchParams.get('success');
   const canceled = searchParams.get('canceled');
 
@@ -67,21 +65,14 @@ export default function Pricing() {
     }
   }, [canceled, success]);
 
-  // Helper to get RC metadata for a plan
   const getRCProps = (planId: PlanId) => {
     if (!native || planId === 'free') return {};
     const suffix = cycle === 'yearly' ? 'yearly' : 'monthly';
     const productSubstr = `${planId}_${suffix}`;
     const pkg = findPackage(productSubstr);
-    const trialCopy = getTrialCopyForProduct(productSubstr);
-    const hasTrial = hasTrialForProduct(productSubstr);
-
-    console.log(`[Pricing] RC metadata for ${planId}/${suffix}: price=${pkg?.priceString}, hasTrial=${hasTrial}, trialCopy=${trialCopy}`);
 
     return {
       nativePriceString: pkg?.priceString || undefined,
-      nativeTrialCopy: trialCopy,
-      nativeTrialCta: hasTrial ? 'Start Free Trial' : null,
     };
   };
 
@@ -97,42 +88,18 @@ export default function Pricing() {
     console.log('[Pricing] handleSelectPlan', { planId, cycle, native, platform: diagnostics.platform });
     track('upgrade_clicked', { planId, cycle, native });
 
-    // On native, purchase the selected product directly so the chosen plan/cycle
-    // is what Apple presents in the confirmation sheet.
-    if (native) {
-      setLoadingPlan(planId);
-      try {
-        const suffix = cycle === 'yearly' ? 'yearly' : 'monthly';
-        const productSubstr = `${planId}_${suffix}`;
-        console.log('[Pricing] Native direct purchase', {
-          planId,
-          cycle,
-          productSubstr,
-          hasTrial: hasTrialForProduct(productSubstr),
-          trialCopy: getTrialCopyForProduct(productSubstr),
-        });
-        const result = await purchasePlan(planId, cycle);
-        if (result.confirmed) {
-          setConfirmedPlanName(planCatalog[planId]?.name || 'your plan');
-          setShowConfirmation(true);
-        }
-      } catch (err) {
-        // User dismissed paywall — do nothing
-        const msg = err instanceof Error ? err.message.toLowerCase() : '';
-        if (!msg.includes('cancel')) {
-          console.error('[Pricing] Native paywall error:', err);
-        }
-      } finally {
-        setLoadingPlan(null);
-      }
-      return;
-    }
-
     setLoadingPlan(planId);
     try {
-      await purchasePlan(planId, cycle);
-    } catch {
-      // Error already handled by useBilling
+      const result = await purchasePlan(planId, cycle);
+      if (result.confirmed) {
+        setConfirmedPlanName(planCatalog[planId]?.name || 'your plan');
+        setShowConfirmation(true);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message.toLowerCase() : '';
+      if (!msg.includes('cancel')) {
+        console.error('[Pricing] Purchase error:', err);
+      }
     } finally {
       setLoadingPlan(null);
     }
@@ -140,7 +107,6 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <div className="border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate('/')} className="gap-2">
@@ -154,7 +120,6 @@ export default function Pricing() {
       </div>
 
       <div className="container mx-auto px-4 py-12 max-w-6xl">
-        {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -169,12 +134,10 @@ export default function Pricing() {
           </p>
         </motion.div>
 
-        {/* Toggle */}
         <div className="flex justify-center mb-10">
           <MonthlyYearlyToggle cycle={cycle} onChange={setCycle} />
         </div>
 
-        {/* Plan cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
           {planOrder.map((id, i) => (
             <motion.div
@@ -195,14 +158,12 @@ export default function Pricing() {
           ))}
         </div>
 
-        {/* Promo Code - hide on native since App Store handles pricing */}
         {!native && (
           <div className="mb-12">
             <PromoCodeInput onApplied={() => setPromoApplied(true)} />
           </div>
         )}
 
-        {/* Compare table */}
         <div className="mb-16">
           <h2 className="text-2xl font-bold text-center mb-8">Compare Plans</h2>
           <PlanCompareTable />
@@ -210,13 +171,11 @@ export default function Pricing() {
 
         <Separator className="mb-16" />
 
-        {/* FAQ */}
         <div className="max-w-2xl mx-auto mb-16">
           <h2 className="text-2xl font-bold text-center mb-8">Frequently Asked Questions</h2>
           <FAQAccordion />
         </div>
 
-        {/* Footer */}
         <div className="text-center pb-8">
           <p className="text-sm text-muted-foreground">
             Cancel anytime. No long-term contracts.
