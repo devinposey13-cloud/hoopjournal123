@@ -329,7 +329,7 @@ export function useBilling(): UseBillingReturn {
   }, [createCheckout, log]);
 
   // ─── Unified purchase ─────────────────────────────────────────────
-  const purchasePlan = useCallback(async (planId: PlanId, billingCycle: BillingCycle) => {
+  const purchasePlan = useCallback(async (planId: PlanId, billingCycle: BillingCycle): Promise<{ confirmed: boolean }> => {
     const diag = getDiagnostics();
     log(`[Billing] purchasePlan: plan=${planId}, cycle=${billingCycle}, platform=${diag.platform}`);
     log(`[Billing] rc_platform_detected=${diag.platform}, rc_native_available=${diag.isDespia}, isDespiaIOS=${diag.isDespiaIOS}, isDespiaAndroid=${diag.isDespiaAndroid}`);
@@ -337,7 +337,7 @@ export function useBilling(): UseBillingReturn {
     // Prevent double taps
     if (isPurchasing || purchaseInFlightRef.current) {
       log('[Billing] ⚠ Already purchasing — ignoring');
-      return;
+      return { confirmed: false };
     }
 
     setIsPurchasing(true);
