@@ -53,18 +53,29 @@ export function NativePurchaseSheet({
   recommendedPlan = 'pro',
   initialBillingCycle = 'monthly',
 }: NativePurchaseSheetProps) {
-  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
+  const { purchasePlan, launchNativePaywall, restorePurchases, isPurchasing, isRestoring, isNative } = useBilling();
+  const { ready: rcReady, loading: rcLoading, diagnostics: rcDiag, retry: rcRetry } = useNativeRC();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
 
   const [cycle, setCycle] = useState<BillingCycle>(initialBillingCycle);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(recommendedPlan);
+  const [loadingMessage, setLoadingMessage] = useState('Loading plans…');
 
   useEffect(() => {
     if (!open) return;
     setSelectedPlan(recommendedPlan);
     setCycle(initialBillingCycle);
   }, [open, recommendedPlan, initialBillingCycle]);
+
+  // Progressive loading message
+  useEffect(() => {
+    if (!rcLoading) return;
+    setLoadingMessage('Loading plans…');
+    const t1 = setTimeout(() => setLoadingMessage('Still connecting…'), 5000);
+    const t2 = setTimeout(() => setLoadingMessage('Almost there…'), 12000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [rcLoading]);
 
 
   const tiers = planOrder.filter((id) => id !== 'free') as PlanId[];
