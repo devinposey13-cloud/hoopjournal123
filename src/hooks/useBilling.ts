@@ -240,8 +240,28 @@ export function useBilling(): UseBillingReturn {
       let settled = false;
       const settle = (fn: () => void) => { if (!settled) { settled = true; cleanup(); fn(); } };
 
+      // Visibility-based fallback: when the webview regains focus after the
+      // Apple payment sheet is dismissed without purchasing, neither
+      // onRevenueCatPurchase nor onRevenueCatPaywallDismiss may fire.
+      // Detect this by listening for the page becoming visible again.
+      let visibilityTimer: ReturnType<typeof setTimeout> | null = null;
+      const onVisibilityChange = () => {
+        if (document.visibilityState === 'visible' && !settled) {
+          // Give the real callbacks a brief window to fire first
+          visibilityTimer = setTimeout(() => {
+            if (!settled) {
+              log('[Billing] ⚠ Page became visible with no purchase/dismiss callback — treating as cancellation');
+              settle(() => reject(new Error('cancelled')));
+            }
+          }, 1500);
+        }
+      };
+      document.addEventListener('visibilitychange', onVisibilityChange);
+
       const cleanup = () => {
         clearTimeout(timeout);
+        if (visibilityTimer) clearTimeout(visibilityTimer);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
         window.onRevenueCatPurchase = undefined;
         (window as any).onRevenueCatPaywallDismiss = undefined;
         purchaseInFlightRef.current = false;
