@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { PlayerProfile, GameStats, SeasonStats } from '@/types/basketball';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { TierBadges } from '@/components/xp/TierBadges';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { User, Target, Star, Percent, Flame, TrendingUp, Circle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { PlanId, AccessBadge } from '@/lib/plans';
 
 interface TierAchievement {
   tier: string;
@@ -21,6 +23,8 @@ interface PlayerCardProps {
   games?: GameStats[];
   seasonStats?: SeasonStats;
   xpProgress?: { current_level: number; current_xp: number } | null;
+  planId?: PlanId;
+  accessBadge?: AccessBadge;
   className?: string;
 }
 
