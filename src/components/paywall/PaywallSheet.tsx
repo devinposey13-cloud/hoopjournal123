@@ -19,6 +19,7 @@ import {
 } from '@/lib/plans';
 import { useBilling } from '@/hooks/useBilling';
 import { useNativeEntitlements } from '@/hooks/useNativeEntitlements';
+import { useNativeRC } from '@/hooks/useNativeRC';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';

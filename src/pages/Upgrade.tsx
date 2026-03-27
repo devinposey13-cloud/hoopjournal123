@@ -18,6 +18,7 @@ import {
 } from '@/lib/plans';
 import { usePlan } from '@/hooks/usePlanState';
 import { useBilling } from '@/hooks/useBilling';
+import { useNativeRC } from '@/hooks/useNativeRC';
 import { isNativeApp } from '@/lib/platform';
 import { toast } from 'sonner';
 
@@ -29,6 +30,7 @@ export default function Upgrade() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, diagnostics, debugLog } = useBilling();
+  const { findPackage, getTrialCopyForProduct, hasTrialForProduct } = useNativeRC();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -42,6 +44,22 @@ export default function Upgrade() {
   const upgradePlans = planOrder.filter(
     (id) => id !== 'free' && planOrder.indexOf(id) > planOrder.indexOf(currentPlan)
   );
+
+  // Helper to get RC metadata for a plan
+  const getRCProps = (planId: PlanId) => {
+    if (!native || planId === 'free') return {};
+    const suffix = cycle === 'yearly' ? 'yearly' : 'monthly';
+    const productSubstr = `${planId}_${suffix}`;
+    const pkg = findPackage(productSubstr);
+    const trialCopy = getTrialCopyForProduct(productSubstr);
+    const hasTrial = hasTrialForProduct(productSubstr);
+
+    return {
+      nativePriceString: pkg?.priceString || undefined,
+      nativeTrialCopy: trialCopy,
+      nativeTrialCta: hasTrial ? 'Start Free Trial' : null,
+    };
+  };
 
   const handleSelect = async (planId: PlanId) => {
     console.log('[Upgrade] handleSelect', { planId, cycle, isNative, platform: diagnostics.platform });
@@ -127,6 +145,7 @@ export default function Upgrade() {
                 cycle={cycle}
                 currentPlan={currentPlan}
                 onSelect={handleSelect}
+                {...getRCProps(id)}
               />
             </motion.div>
           ))}
