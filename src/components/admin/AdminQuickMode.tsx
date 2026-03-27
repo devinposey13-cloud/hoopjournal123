@@ -1310,15 +1310,7 @@ export function AdminQuickMode() {
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  {/* Hidden file inputs with stable refs — survive iPad camera round-trips */}
-                  <input
-                    ref={cameraInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={handlePhotoUpload}
-                  />
+                  {/* Upload input stays available; camera uses in-app capture to avoid iPad reloads */}
                   <input
                     ref={uploadInputRef}
                     type="file"
@@ -1330,7 +1322,7 @@ export function AdminQuickMode() {
                     <Button
                       variant="outline"
                       className="flex-1 gap-2"
-                      onClick={() => cameraInputRef.current?.click()}
+                      onClick={startWebcam}
                     >
                       <Camera className="w-4 h-4" /> Camera
                     </Button>
