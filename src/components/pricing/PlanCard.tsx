@@ -14,6 +14,10 @@ interface PlanCardProps {
   promoApplied?: boolean;
   /** When provided (e.g. from RevenueCat), displayed instead of the computed price */
   nativePriceString?: string;
+  /** When provided, overrides the hardcoded trial copy from plans.ts */
+  nativeTrialCopy?: string | null;
+  /** When provided, overrides the hardcoded trial CTA from plans.ts */
+  nativeTrialCta?: string | null;
 }
 
 export function PlanCard({ plan, cycle, currentPlan, onSelect, promoApplied, nativePriceString }: PlanCardProps) {
