@@ -122,9 +122,11 @@ export function NativePurchaseSheet({
 
     // Web — Stripe checkout
     try {
-      await purchasePlan(selectedPlan, cycle);
-      onPurchaseComplete?.(selectedPlan);
-      onClose();
+      const result = await purchasePlan(selectedPlan, cycle);
+      if (result.confirmed) {
+        onPurchaseComplete?.(selectedPlan);
+        onClose();
+      }
     } catch {
       // Error handled by useBilling
     }

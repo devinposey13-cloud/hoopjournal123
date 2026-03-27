@@ -45,8 +45,10 @@ export function UpgradeDrawer({ open, config, onClose, onUpgrade }: UpgradeDrawe
   const handleUpgrade = async () => {
     track('upgrade_clicked', { planId: config.recommendedPlan, cycle, isNative });
     try {
-      await purchasePlan(config.recommendedPlan, cycle);
-      onUpgrade(config.recommendedPlan);
+      const result = await purchasePlan(config.recommendedPlan, cycle);
+      if (result.confirmed) {
+        onUpgrade(config.recommendedPlan);
+      }
     } catch {
       // Error handled by useBilling
     }
