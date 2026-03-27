@@ -92,6 +92,7 @@ export default function Index() {
   const [autoOpenAddGame, setAutoOpenAddGame] = useState(false);
   const [showPostAuthRecovery, setShowPostAuthRecovery] = useState(false);
   const { user, loading: authLoading, signOut, isGuest } = useAuth();
+  const { currentPlan, accessBadge } = usePlan();
   const { teams } = usePlayerTeams();
   const { isAdmin } = useAdmin();
   const { totalPending: adminNotificationCount } = useAdminNotifications();
