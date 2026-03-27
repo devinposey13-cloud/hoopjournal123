@@ -23,7 +23,7 @@ export default function Pricing() {
   const [searchParams] = useSearchParams();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
-  const { purchasePlan, launchNativePaywall, isPurchasing, diagnostics, debugLog } = useBilling();
+  const { purchasePlan, isPurchasing, diagnostics, debugLog } = useBilling();
   const { findPackage, getTrialCopyForProduct, hasTrialForProduct } = useNativeRC();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [promoApplied, setPromoApplied] = useState(false);
@@ -97,11 +97,21 @@ export default function Pricing() {
     console.log('[Pricing] handleSelectPlan', { planId, cycle, native, platform: diagnostics.platform });
     track('upgrade_clicked', { planId, cycle, native });
 
-    // On native, launch RevenueCat paywall directly (includes trial metadata)
+    // On native, purchase the selected product directly so the chosen plan/cycle
+    // is what Apple presents in the confirmation sheet.
     if (native) {
       setLoadingPlan(planId);
       try {
-        await launchNativePaywall('useRevenueCat');
+        const suffix = cycle === 'yearly' ? 'yearly' : 'monthly';
+        const productSubstr = `${planId}_${suffix}`;
+        console.log('[Pricing] Native direct purchase', {
+          planId,
+          cycle,
+          productSubstr,
+          hasTrial: hasTrialForProduct(productSubstr),
+          trialCopy: getTrialCopyForProduct(productSubstr),
+        });
+        await purchasePlan(planId, cycle);
         // Purchase succeeded
         setConfirmedPlanName(planCatalog[planId]?.name || 'your plan');
         setShowConfirmation(true);
