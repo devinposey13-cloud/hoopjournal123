@@ -80,6 +80,11 @@ export default function Billing() {
           onManageSubscription={openCustomerPortal}
           onCancelSubscription={() => setCancelOpen(true)}
         />
+        <div className="mt-6 text-center">
+          <Button variant="outline" onClick={() => navigate('/')}>
+            Return to Dashboard
+          </Button>
+        </div>
       </div>
 
       <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>

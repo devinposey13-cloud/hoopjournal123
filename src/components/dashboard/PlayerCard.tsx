@@ -88,6 +88,8 @@ export function PlayerCard({
   games = [],
   seasonStats,
   xpProgress,
+  planId,
+  accessBadge,
   className 
 }: PlayerCardProps) {
   const [avatarOpen, setAvatarOpen] = useState(false);
