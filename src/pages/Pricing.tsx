@@ -10,7 +10,6 @@ import { MonthlyYearlyToggle } from '@/components/pricing/MonthlyYearlyToggle';
 import { PlanCompareTable } from '@/components/pricing/PlanCompareTable';
 import { FAQAccordion } from '@/components/pricing/FAQAccordion';
 import { PromoCodeInput } from '@/components/pricing/PromoCodeInput';
-import { NativePurchaseSheet } from '@/components/purchase/NativePurchaseSheet';
 import { type BillingCycle, type PlanId, planCatalog, planOrder, track } from '@/lib/plans';
 import { usePlan } from '@/hooks/usePlanState';
 import { useBilling } from '@/hooks/useBilling';
@@ -23,17 +22,13 @@ export default function Pricing() {
   const [searchParams] = useSearchParams();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
-  const { purchasePlan, isPurchasing, diagnostics, debugLog } = useBilling();
+  const { purchasePlan, launchNativePaywall, isPurchasing, diagnostics, debugLog } = useBilling();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [promoApplied, setPromoApplied] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmedPlanName, setConfirmedPlanName] = useState('');
   const native = isNativeApp();
-
-  // Native purchase sheet state
-  const [nativeSheetOpen, setNativeSheetOpen] = useState(false);
-  const [nativeSheetPlan, setNativeSheetPlan] = useState<PlanId>('pro');
 
   // Check if user already has promo_eligible in plan_overrides
   useEffect(() => {
@@ -82,10 +77,23 @@ export default function Pricing() {
     console.log('[Pricing] handleSelectPlan', { planId, cycle, native, platform: diagnostics.platform });
     track('upgrade_clicked', { planId, cycle, native });
 
-    // On native, open the hardened purchase sheet instead of raw purchase
+    // On native, launch RevenueCat paywall directly (includes trial metadata)
     if (native) {
-      setNativeSheetPlan(planId);
-      setNativeSheetOpen(true);
+      setLoadingPlan(planId);
+      try {
+        await launchNativePaywall('useRevenueCat');
+        // Purchase succeeded
+        setConfirmedPlanName(planCatalog[planId]?.name || 'your plan');
+        setShowConfirmation(true);
+      } catch (err) {
+        // User dismissed paywall — do nothing
+        const msg = err instanceof Error ? err.message.toLowerCase() : '';
+        if (!msg.includes('cancel')) {
+          console.error('[Pricing] Native paywall error:', err);
+        }
+      } finally {
+        setLoadingPlan(null);
+      }
       return;
     }
 
@@ -206,19 +214,6 @@ export default function Pricing() {
           )}
         </div>
       </div>
-
-      {/* Native hardened purchase sheet */}
-      <NativePurchaseSheet
-        open={nativeSheetOpen}
-        onClose={() => setNativeSheetOpen(false)}
-        onPurchaseComplete={(planId) => {
-          const name = planId ? planCatalog[planId]?.name : 'your plan';
-          setConfirmedPlanName(name || 'your plan');
-          setShowConfirmation(true);
-        }}
-        recommendedPlan={nativeSheetPlan}
-        initialBillingCycle={cycle}
-      />
 
       <PurchaseConfirmationDialog
         open={showConfirmation}

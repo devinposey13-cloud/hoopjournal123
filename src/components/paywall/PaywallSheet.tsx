@@ -57,7 +57,7 @@ const PDF_VALUE_BULLETS = [
 export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: PaywallSheetProps) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('elite');
-  const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
+  const { purchasePlan, launchNativePaywall, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
   const { refresh: refreshEntitlements } = useNativeEntitlements();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
@@ -98,11 +98,21 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
       track('trial_started', { planId: selectedPlan, cycle, trialDays: trialConfig.trialDays });
     }
     try {
+      // On native, launch RC paywall directly to preserve introductory offers / free trials
+      if (isNative) {
+        await launchNativePaywall('useRevenueCat');
+        track(trialConfig.hasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
+        onUpgrade(selectedPlan);
+        return;
+      }
       await purchasePlan(selectedPlan, cycle);
       track(trialConfig.hasTrial ? 'trial_purchase_completed' : 'upgrade_completed', { planId: selectedPlan, billingCycle: cycle });
       onUpgrade(selectedPlan);
-    } catch {
-      // Error handled by useBilling with user-friendly messages
+    } catch (err) {
+      // Silently handle user cancellation (paywall dismissed)
+      const msg = err instanceof Error ? err.message.toLowerCase() : '';
+      if (msg.includes('cancel')) return;
+      // Other errors handled by useBilling
     } finally {
       setPurchasingPlan(null);
     }
