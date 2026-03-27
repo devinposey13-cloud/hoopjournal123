@@ -217,11 +217,11 @@ export function useBilling(): UseBillingReturn {
   const purchaseNative = useCallback(async (planId: PlanId, billingCycle: BillingCycle): Promise<{ confirmed: boolean }> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    if (purchaseInFlightRef.current) {
+    if (globalPurchaseInFlight) {
       log('[Billing] ⚠ Purchase already in progress — ignoring duplicate tap');
       return { confirmed: false };
     }
-    purchaseInFlightRef.current = true;
+    globalPurchaseInFlight = true;
 
     const productId = getNativeProductId(planId, billingCycle);
     log(`[Billing] selected_package productId=${productId} plan=${planId} cycle=${billingCycle}`);
@@ -281,7 +281,7 @@ export function useBilling(): UseBillingReturn {
         if ((window as any).onRevenueCatPaywallDismiss === handleDismissCallback) {
           (window as any).onRevenueCatPaywallDismiss = undefined;
         }
-        purchaseInFlightRef.current = false;
+        globalPurchaseInFlight = false;
         log('[Billing] purchase_state_reset');
       };
 
@@ -420,7 +420,7 @@ export function useBilling(): UseBillingReturn {
     log(`[Billing] purchasePlan: plan=${planId}, cycle=${billingCycle}, platform=${diag.platform}`);
     log(`[Billing] rc_platform_detected=${diag.platform}, rc_native_available=${diag.isDespia}, isDespiaIOS=${diag.isDespiaIOS}, isDespiaAndroid=${diag.isDespiaAndroid}`);
 
-    if (isPurchasing || purchaseInFlightRef.current) {
+    if (isPurchasing || globalPurchaseInFlight) {
       log('[Billing] ⚠ Already purchasing — ignoring');
       return { confirmed: false };
     }
@@ -461,7 +461,7 @@ export function useBilling(): UseBillingReturn {
       throw err;
     } finally {
       setIsPurchasing(false);
-      purchaseInFlightRef.current = false;
+      globalPurchaseInFlight = false;
       log('[Billing] buttons_reenabled');
     }
   }, [log, purchaseNative, purchaseWeb, isPurchasing]);
