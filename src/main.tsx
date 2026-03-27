@@ -22,9 +22,11 @@ if (window.location.pathname === '/oauth-bridge') {
     window.location.pathname === '/auth/callback';
   createRoot(document.getElementById("root")!).render(<App />);
   if (!isAuthFlow) {
-    // Use rAF to ensure React has painted before removing shell
+    // Double rAF ensures React has committed AND browser has painted before removing shell
     requestAnimationFrame(() => {
-      (window as any).__dismissShell?.();
+      requestAnimationFrame(() => {
+        (window as any).__dismissShell?.();
+      });
     });
   }
 }
