@@ -128,8 +128,8 @@ export interface RestoredPurchase {
 
 // ─── Hook return ──────────────────────────────────────────────────────
 export interface UseBillingReturn {
-  /** Purchase a plan. Routes to Despia/RC on native, Stripe on web. */
-  purchasePlan: (planId: PlanId, billingCycle: BillingCycle) => Promise<void>;
+  /** Purchase a plan. Routes to Despia/RC on native, Stripe on web. Returns whether purchase was confirmed. */
+  purchasePlan: (planId: PlanId, billingCycle: BillingCycle) => Promise<{ confirmed: boolean }>;
   /** Launch RevenueCat native paywall (Despia launchPaywall). */
   launchNativePaywall: (offering?: string) => Promise<void>;
   /** Restore purchases (native only). */
