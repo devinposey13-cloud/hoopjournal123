@@ -9,7 +9,6 @@
     <meta http-equiv="Expires" content="0" />
     <link rel="icon" href="/favicon.png" type="image/png" />
     <script defer data-id="wgNJVVsyiqGRYkyA5Kjx" src="https://progressier.app/wgNJVVsyiqGRYkyA5Kjx/script.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-wc@0.8.11/dist/dotlottie-wc.js" type="module"></script>
     <link rel="manifest" href="https://progressier.app/wgNJVVsyiqGRYkyA5Kjx/progressier.json" />
     <title>Hoop Journal™</title>
     <meta name="description" content="Track your basketball stats, games, and highlights with Hoop Journal™" />
@@ -36,10 +35,9 @@
   <body>
     <!-- Pre-hydration loading shell: dark bg prevents white flash on iOS native -->
     <div id="prehydration-shell" style="position:fixed;inset:0;z-index:9999;background:#141a23;display:flex;align-items:center;justify-content:center;flex-direction:column;">
-      <div style="filter:drop-shadow(0 0 20px rgba(255,140,50,0.4)) drop-shadow(0 0 40px rgba(255,140,50,0.2));">
-        <dotlottie-wc src="https://lottie.host/dc3b3b08-d2bb-46f0-915d-c8d56d0dd2c1/lCHnsbvgB8.lottie" style="width:200px;height:200px;" autoplay loop></dotlottie-wc>
-      </div>
+      <div style="font-size:64px;animation:hjbounce 1s infinite;">🏀</div>
       <div id="shell-msg" style="color:#888;font-size:14px;font-family:system-ui;margin-top:16px;transition:opacity 0.3s ease;"></div>
+      <style>@keyframes hjbounce{0%,100%{transform:translateY(-25%);animation-timing-function:cubic-bezier(0.8,0,1,1)}50%{transform:translateY(0);animation-timing-function:cubic-bezier(0,0,0.2,1)}}</style>
       <script>
         (function(){
           var isCallback = window.location.pathname==='/auth/callback';

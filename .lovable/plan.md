@@ -1,17 +1,37 @@
 
 
-## Replace Pre-Hydration Shell Emoji with Lottie Animation
+## Fix Post-Auth Shell Flashing
 
-The bouncing 🏀 emoji in the pre-hydration shell (index.html) will be replaced with the same Lottie basketball animation used throughout the app, giving a polished branded splash screen on first launch.
+### Problem
+The pre-hydration shell in `index.html` (line 41) immediately hides itself when `postAuth` is in the URL. Meanwhile, `main.tsx` (line 20-21) removes the shell entirely when React mounts. This exposes intermediate route transitions (auth_loading → approval_loading → profile_loading → dashboard) before the app resolves the final destination.
 
 ### Changes
 
-**index.html** (pre-hydration shell, ~lines 30-40):
-- Remove the emoji `<div>` and the `@keyframes hjbounce` CSS
-- Add a `<script>` tag to load the dotlottie-wc player: `https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-wc@latest/dist/dotlottie-wc.js`
-- Replace the emoji with a `<dotlottie-wc>` element pointing to `https://lottie.host/dc3b3b08-d2bb-46f0-915d-c8d56d0dd2c1/lCHnsbvgB8.lottie` (same URL used in `LoadingSpinner`)
-- Size it at ~200×200px with the same orange glow drop-shadow filter used in `loading-spinner.tsx`
-- Keep the dark background (#141a23), progressive messaging, and `__dismissShell` logic unchanged
+**1. `index.html` — Keep shell visible during postAuth**
+- Line 41: Remove the `if(window.location.search.includes('postAuth'))` auto-hide. Instead, show "Signing you in…" text for both `/auth/callback` AND `postAuth` URLs.
+- Add a fade-out CSS transition class and a global listener:
+  ```js
+  window.__dismissShell = function() {
+    var s = document.getElementById('prehydration-shell');
+    if (s) { s.style.transition='opacity 0.3s'; s.style.opacity='0'; setTimeout(function(){s.remove()},300); }
+  };
+  ```
 
-This ensures users see the smooth Lottie basketball animation from the very first moment the app loads, matching what they see on in-app loading states.
+**2. `src/main.tsx` — Conditional shell removal**
+- Only remove the shell immediately for non-postAuth routes.
+- For `postAuth` routes, leave the shell in place (React renders underneath it at z-index 9999).
+  ```typescript
+  const isPostAuth = window.location.search.includes('postAuth');
+  if (!isPostAuth) {
+    shell?.remove();
+  }
+  ```
+
+**3. `src/pages/Index.tsx` — Signal shell dismissal when route is resolved**
+- In the existing `useEffect` that runs post-auth cleanup (lines 304-331), after the route state resolves and URL params are cleaned, call `window.__dismissShell?.()` to fade out and remove the shell.
+- This ensures the shell stays visible over all intermediate renders and only disappears once the final screen is ready.
+- The post-auth bootstrap gate UI (lines 336-370) becomes a fallback that only matters if the shell was already removed for some reason.
+
+### Result
+After Apple auth redirect: user sees the bouncing basketball on dark background → all auth/profile/routing resolves behind it → shell fades out → user lands directly on the correct screen with zero flashing.
 
