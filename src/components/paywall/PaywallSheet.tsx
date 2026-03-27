@@ -269,7 +269,8 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
           <div className="grid grid-cols-2 gap-3">
             {(['pro', 'elite'] as PlanId[]).map((id) => {
               const plan = planCatalog[id];
-              const price = getPlanPrice(id, cycle);
+              const rcInfo = getRCTrialInfo(id, cycle);
+              const price = isNative && rcInfo.pkg?.priceString ? rcInfo.pkg.priceString : `$${getPlanPrice(id, cycle)}`;
               const savings = cycle === 'yearly' ? getYearlySavingsPercent(id) : 0;
               const isSelected = selectedPlan === id;
               const isElite = id === 'elite';
@@ -309,8 +310,8 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                   )}
                   <div className="text-xs font-semibold text-white/60 mb-1">{plan.name}</div>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-2xl font-extrabold text-white">${price}</span>
-                    <span className="text-[10px] text-white/40">/{cycle === 'monthly' ? 'mo' : 'yr'}</span>
+                    <span className="text-2xl font-extrabold text-white">{price}</span>
+                    {!isNative && <span className="text-[10px] text-white/40">/{cycle === 'monthly' ? 'mo' : 'yr'}</span>}
                   </div>
                   {savings > 0 && (
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 mb-2 border-green-500/30 text-green-400">
@@ -319,6 +320,8 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
                   )}
                   <p className="text-[10px] text-white/50 leading-relaxed">
                     {(() => {
+                      // Prefer RC data on native
+                      if (isNative && rcInfo.hasTrial) return rcInfo.rcTrialCopy || 'Free trial included';
                       const t = getTrialConfig(id, cycle);
                       if (t.hasTrial) return `${t.trialDays}-day free trial`;
                       return id === 'pro'
