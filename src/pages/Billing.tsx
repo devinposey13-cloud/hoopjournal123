@@ -1,10 +1,12 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, X } from 'lucide-react';
 import { BillingSummaryCard } from '@/components/billing/BillingSummaryCard';
+import { PurchaseConfirmationDialog } from '@/components/purchase/PurchaseConfirmationDialog';
 import { usePlan } from '@/hooks/usePlanState';
 import { useSubscription } from '@/hooks/useSubscription';
+import { planCatalog } from '@/lib/plans';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -19,19 +21,58 @@ import {
 
 export default function Billing() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { currentPlan, usage, accessBadge, loading } = usePlan();
   const { isSubscribed, subscriptionEnd, subscriptionStatus, checkSubscription, openCustomerPortal, cancelSubscription } = useSubscription();
   const [cancelOpen, setCancelOpen] = useState(false);
   const [canceling, setCanceling] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmedPlanName, setConfirmedPlanName] = useState('');
+  const pollingRef = useRef(false);
 
-  // Handle Stripe redirect success
+  // Handle Stripe redirect success — poll until webhook updates plan
   useEffect(() => {
-    if (searchParams.get('success') === 'true') {
-      toast.success("You're now upgraded! 🎉");
-      checkSubscription();
+    if (searchParams.get('success') !== 'true' || pollingRef.current) return;
+    pollingRef.current = true;
+
+    // Clear the query param immediately so refresh doesn't re-trigger
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('success');
+    setSearchParams(newParams, { replace: true });
+
+    let attempts = 0;
+    const maxAttempts = 12; // ~30 seconds
+    const poll = async () => {
+      attempts++;
+      console.log(`[Billing] Polling for subscription update (${attempts}/${maxAttempts})…`);
+      await checkSubscription();
+
+      // Check if plan updated (usePlan will re-render with new currentPlan)
+      // We can't read currentPlan here directly since it's stale in the closure,
+      // so we just poll and let the effect below detect the plan change
+      if (attempts < maxAttempts) {
+        setTimeout(poll, 2500);
+      } else {
+        // Even after max attempts, show confirmation — webhook may still be processing
+        console.log('[Billing] Max poll attempts reached — showing confirmation anyway');
+        setConfirmedPlanName('your new plan');
+        setShowConfirmation(true);
+      }
+    };
+
+    toast.success("Purchase complete! Activating your plan…");
+    poll();
+  }, [searchParams]);
+
+  // Detect when currentPlan changes to a paid plan after success polling
+  useEffect(() => {
+    if (pollingRef.current && currentPlan !== 'free') {
+      pollingRef.current = false;
+      const name = planCatalog[currentPlan]?.name || 'your plan';
+      setConfirmedPlanName(name);
+      setShowConfirmation(true);
     }
-  }, []);
+  }, [currentPlan]);
 
   const handleCancel = async (immediate: boolean) => {
     setCanceling(true);
@@ -120,6 +161,15 @@ export default function Billing() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PurchaseConfirmationDialog
+        open={showConfirmation}
+        planName={confirmedPlanName}
+        onGoToDashboard={() => {
+          setShowConfirmation(false);
+          navigate('/');
+        }}
+      />
     </div>
   );
 }
