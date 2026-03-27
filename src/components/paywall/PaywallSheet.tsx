@@ -60,6 +60,7 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('elite');
   const { purchasePlan, launchNativePaywall, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
   const { refresh: refreshEntitlements } = useNativeEntitlements();
+  const { findPackage, getTrialCopyForProduct, hasTrialForProduct } = useNativeRC();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
   const config = reason ? paywallConfigs[reason] : null;
