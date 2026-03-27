@@ -1,37 +1,39 @@
 
 
-## Fix Post-Auth Shell Flashing
+## Fix Free Trial Not Appearing at Checkout
 
-### Problem
-The pre-hydration shell in `index.html` (line 41) immediately hides itself when `postAuth` is in the URL. Meanwhile, `main.tsx` (line 20-21) removes the shell entirely when React mounts. This exposes intermediate route transitions (auth_loading → approval_loading → profile_loading → dashboard) before the app resolves the final destination.
+### Root Cause
 
-### Changes
+The RevenueCat offering identifier is **`useRevenueCat`** (visible in the RC dashboard screenshot), but the app calls `launchNativePaywall('default')`. RevenueCat cannot find an offering named "default", so the native paywall launch fails silently. The code then falls back to a direct `revenuecat://purchase?product=HoopJ_pro_monthly` call, which bypasses the RevenueCat offering/package system entirely. Direct product purchases do not automatically include introductory offers — those are only presented when purchasing through an offering's package.
 
-**1. `index.html` — Keep shell visible during postAuth**
-- Line 41: Remove the `if(window.location.search.includes('postAuth'))` auto-hide. Instead, show "Signing you in…" text for both `/auth/callback` AND `postAuth` URLs.
-- Add a fade-out CSS transition class and a global listener:
-  ```js
-  window.__dismissShell = function() {
-    var s = document.getElementById('prehydration-shell');
-    if (s) { s.style.transition='opacity 0.3s'; s.style.opacity='0'; setTimeout(function(){s.remove()},300); }
-  };
-  ```
+### Fix
 
-**2. `src/main.tsx` — Conditional shell removal**
-- Only remove the shell immediately for non-postAuth routes.
-- For `postAuth` routes, leave the shell in place (React renders underneath it at z-index 9999).
-  ```typescript
-  const isPostAuth = window.location.search.includes('postAuth');
-  if (!isPostAuth) {
-    shell?.remove();
-  }
-  ```
+**1. Update offering identifier in `NativePurchaseSheet.tsx`**
 
-**3. `src/pages/Index.tsx` — Signal shell dismissal when route is resolved**
-- In the existing `useEffect` that runs post-auth cleanup (lines 304-331), after the route state resolves and URL params are cleaned, call `window.__dismissShell?.()` to fade out and remove the shell.
-- This ensures the shell stays visible over all intermediate renders and only disappears once the final screen is ready.
-- The post-auth bootstrap gate UI (lines 336-370) becomes a fallback that only matters if the shell was already removed for some reason.
+Change `launchNativePaywall('default')` to `launchNativePaywall('useRevenueCat')` to match the actual RC dashboard offering identifier.
+
+**2. Update offering identifier in `useBilling.ts`**
+
+Change the default parameter in `launchNativePaywall` from `offering = 'default'` to `offering = 'useRevenueCat'`.
+
+**3. Fix `launchNativePaywall` promise resolution**
+
+Currently, the `launchNativePaywall` function never resolves when the native paywall is dismissed without a purchase (only on timeout at 180s). This causes the fallback to trigger unpredictably. Add proper dismiss handling so:
+- If user purchases → resolve via `onRevenueCatPurchase` callback (already works)
+- If user dismisses → the promise should reject with a cancellation error so the fallback does NOT fire
+
+**4. Prevent fallback to direct purchase on user cancellation**
+
+In `NativePurchaseSheet.tsx`, the catch block after `launchNativePaywall` should check for user cancellation and NOT fall through to the direct `purchasePlan()` call, which would bypass introductory offers.
+
+**5. Add logging for offering mismatch debugging**
+
+Log the offering identifier being used so future mismatches are immediately visible in diagnostics.
+
+### Files to modify
+- `src/components/purchase/NativePurchaseSheet.tsx` — update offering ID, fix fallback logic
+- `src/hooks/useBilling.ts` — update default offering parameter, improve promise lifecycle
 
 ### Result
-After Apple auth redirect: user sees the bouncing basketball on dark background → all auth/profile/routing resolves behind it → shell fades out → user lands directly on the correct screen with zero flashing.
+When a user taps subscribe on iOS, the native RevenueCat paywall launches with the correct offering (`useRevenueCat`), which includes the 3-day free trial configured in App Store Connect. The Apple payment sheet will show "Free for 3 days, then $X.XX/month."
 
