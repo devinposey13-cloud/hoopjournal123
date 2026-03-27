@@ -32,7 +32,7 @@ export default function Upgrade() {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
   const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, diagnostics, debugLog } = useBilling();
-  const { findPackage, getTrialCopyForProduct, hasTrialForProduct } = useNativeRC();
+  const { findPackage } = useNativeRC();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -53,13 +53,9 @@ export default function Upgrade() {
     const suffix = cycle === 'yearly' ? 'yearly' : 'monthly';
     const productSubstr = `${planId}_${suffix}`;
     const pkg = findPackage(productSubstr);
-    const trialCopy = getTrialCopyForProduct(productSubstr);
-    const hasTrial = hasTrialForProduct(productSubstr);
 
     return {
       nativePriceString: pkg?.priceString || undefined,
-      nativeTrialCopy: trialCopy,
-      nativeTrialCta: hasTrial ? 'Start Free Trial' : null,
     };
   };
 
