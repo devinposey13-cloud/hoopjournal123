@@ -381,14 +381,38 @@ export function AdminQuickMode() {
   const cardRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
-  // Form state
-  const [playerName, setPlayerName] = useState('');
-  const [teamName, setTeamName] = useState('');
-  const [jerseyNumber, setJerseyNumber] = useState('');
-  const [position, setPosition] = useState('');
-  const [templateKey, setTemplateKey] = useState<TemplateKey>('scorer');
-  const [contactInfo, setContactInfo] = useState('');
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  // ── Persistence helpers (survive iOS camera page reload) ──
+  const STORAGE_KEY = 'quick_mode_form';
+
+  function loadSaved() {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  }
+
+  const saved = useRef(loadSaved());
+
+  function saveForm(patch: Record<string, any>) {
+    try {
+      const current = loadSaved();
+      const next = { ...current, ...patch };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {}
+  }
+
+  function clearSavedForm() {
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+  }
+
+  // Form state — initialise from sessionStorage
+  const [playerName, setPlayerName] = useState(saved.current.playerName || '');
+  const [teamName, setTeamName] = useState(saved.current.teamName || '');
+  const [jerseyNumber, setJerseyNumber] = useState(saved.current.jerseyNumber || '');
+  const [position, setPosition] = useState(saved.current.position || '');
+  const [templateKey, setTemplateKey] = useState<TemplateKey>(saved.current.templateKey || 'scorer');
+  const [contactInfo, setContactInfo] = useState(saved.current.contactInfo || '');
+  const [photoUrl, setPhotoUrl] = useState<string | null>(saved.current.photoUrl || null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [showWebcam, setShowWebcam] = useState(false);
   const [generatingAvatar, setGeneratingAvatar] = useState(false);
@@ -396,6 +420,11 @@ export function AdminQuickMode() {
   const streamRef = useRef<MediaStream | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
+
+  // Persist form fields on change
+  useEffect(() => {
+    saveForm({ playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl });
+  }, [playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl]);
 
   // UI state
   const [generating, setGenerating] = useState(false);
@@ -427,7 +456,7 @@ export function AdminQuickMode() {
     }
   }
 
-  // Photo handling — reset input value so same file or re-trigger works on iPad
+  // Photo handling — persist as data URL so it survives iOS camera page reloads
   const handlePhotoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     // Always reset the input so it can be re-triggered
@@ -438,8 +467,13 @@ export function AdminQuickMode() {
       return;
     }
     setPhotoFile(file);
-    const url = URL.createObjectURL(file);
-    setPhotoUrl(url);
+    // Convert to data URL so it persists through page reloads
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      setPhotoUrl(dataUrl);
+    };
+    reader.readAsDataURL(file);
   }, []);
 
   // Webcam handling for desktop
@@ -562,8 +596,16 @@ export function AdminQuickMode() {
     setGenerating(true);
     try {
       let uploadedUrl = photoUrl;
-      if (photoFile) {
-        uploadedUrl = await uploadPhoto(photoFile);
+      // If we have a File, upload it directly
+      // If photoUrl is a data URL (from sessionStorage restore), convert to File first
+      let fileToUpload = photoFile;
+      if (!fileToUpload && photoUrl?.startsWith('data:')) {
+        const resp = await fetch(photoUrl);
+        const blob = await resp.blob();
+        fileToUpload = new File([blob], `photo-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
+      }
+      if (fileToUpload) {
+        uploadedUrl = await uploadPhoto(fileToUpload);
         if (!uploadedUrl) {
           toast.error('Failed to upload photo');
           setGenerating(false);
@@ -701,6 +743,7 @@ export function AdminQuickMode() {
     setPreviewCard(null);
     setTeamName(lastTeamName);
     setTemplateKey(lastTemplate);
+    clearSavedForm();
   }
 
   // Reprint from recent
