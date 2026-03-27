@@ -31,6 +31,8 @@ export default function Upgrade() {
   const { purchasePlan, restorePurchases, isPurchasing, isRestoring, isNative, diagnostics, debugLog } = useBilling();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [showDebug, setShowDebug] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmedPlanName, setConfirmedPlanName] = useState('');
   const native = isNativeApp();
 
   // Native purchase sheet state
