@@ -153,7 +153,61 @@ export function NativePurchaseSheet({
       );
     }
 
-    // Plans always render immediately from static catalog — no blocking
+    // Native: loading state while RC bridge initializes
+    if (isNative && rcLoading) {
+      return (
+        <div className="py-12 text-center space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">{loadingMessage}</p>
+        </div>
+      );
+    }
+
+    // Native: RC bridge failed after retries
+    if (isNative && !rcReady && !rcLoading) {
+      return (
+        <div className="py-12 text-center space-y-4">
+          <RefreshCw className="w-8 h-8 text-muted-foreground mx-auto" />
+          <p className="text-sm text-muted-foreground">
+            Unable to load subscription plans.
+          </p>
+          <p className="text-xs text-muted-foreground/60">
+            {rcDiag.rc_error || 'Please check your connection and try again.'}
+          </p>
+          <div className="flex flex-col gap-2 items-center">
+            <Button variant="outline" size="sm" onClick={rcRetry} className="gap-2">
+              <RefreshCw className="w-3 h-3" /> Retry
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-muted-foreground text-xs"
+              onClick={handleRestore}
+              disabled={isRestoring}
+            >
+              {isRestoring ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RotateCcw className="w-3 h-3 mr-1" />}
+              Restore Purchases
+            </Button>
+            <DrawerClose asChild>
+              <Button variant="ghost" className="text-muted-foreground text-xs">Close</Button>
+            </DrawerClose>
+          </div>
+          {/* Compliance links */}
+          <div className="flex items-center justify-center gap-3 text-[10px] text-muted-foreground/60 mt-2">
+            <button onClick={() => { onClose(); navigate('/privacy'); }} className="hover:text-muted-foreground transition-colors">
+              Privacy Policy
+            </button>
+            <span>·</span>
+            <button onClick={() => { onClose(); navigate('/terms'); }} className="hover:text-muted-foreground transition-colors">
+              Terms of Service
+            </button>
+            <span>·</span>
+            <button onClick={() => { onClose(); navigate('/eula'); }} className="hover:text-muted-foreground transition-colors">
+              EULA
+            </button>
+          </div>
+        </div>
+      );
+    }
 
     // Normal content
     return (
