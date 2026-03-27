@@ -8,6 +8,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import { supabase } from '@/integrations/supabase/client';
 import { isDespia, isDespiaIOS, isDespiaAndroid, isWeb, getPlatform } from '@/lib/platform';
 import { type PlanId, type BillingCycle } from '@/lib/plans';
 import { toast } from 'sonner';
