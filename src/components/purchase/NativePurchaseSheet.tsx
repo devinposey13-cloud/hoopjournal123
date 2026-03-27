@@ -90,15 +90,17 @@ export function NativePurchaseSheet({
     // On native, prefer launching the RC native paywall for best UX
     // This shows RC's own UI with offerings configured in the dashboard
     if (isNative) {
+      const productId = `HoopJ_${selectedPlan}_${cycle === 'yearly' ? 'yearly' : 'monthly'}`;
+      console.log(`[NativePurchaseSheet] subscribe tapped: plan=${selectedPlan}, cycle=${cycle}, mapped_product=${productId}`);
+      console.log(`[NativePurchaseSheet] rc_purchase_path=native_paywall_first, rc_web_fallback=false`);
       try {
-        console.log('[NativePurchaseSheet] Launching native RC paywall…');
+        console.log('[NativePurchaseSheet] Launching native RC paywall (offering=default)…');
         await launchNativePaywall('default');
         onPurchaseComplete?.(selectedPlan);
         onClose();
       } catch (err) {
-        // If launchPaywall fails, fall back to direct product purchase
-        const msg = err instanceof Error ? err.message : String(err);
-        console.warn(`[NativePurchaseSheet] launchPaywall failed (${msg}), falling back to direct purchase`);
+        const errObj = err instanceof Error ? { message: err.message, name: err.name, stack: err.stack } : err;
+        console.warn(`[NativePurchaseSheet] launchPaywall failed: ${JSON.stringify(errObj)}, falling back to direct purchase product=${productId}`);
         try {
           await purchasePlan(selectedPlan, cycle);
           onPurchaseComplete?.(selectedPlan);
