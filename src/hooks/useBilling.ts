@@ -150,6 +150,10 @@ export interface UseBillingReturn {
   lastPurchaseResult: 'idle' | 'success' | 'cancelled' | 'error';
 }
 
+// Module-level flag shared across all useBilling() instances to prevent
+// stale per-instance refs from blocking purchases after cancellation
+let globalPurchaseInFlight = false;
+
 export function useBilling(): UseBillingReturn {
   const { user } = useAuth();
   const { createCheckout, checkSubscription } = useSubscription();
