@@ -42,6 +42,7 @@ import { DailyInsight } from '@/components/dashboard/DailyInsight';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { PlayerCard } from '@/components/dashboard/PlayerCard';
 import { FreeLimitBanner } from '@/components/FreeLimitBanner';
+import { usePlan } from '@/hooks/usePlanState';
 import { ResetDetectionBanner } from '@/components/ResetDetectionBanner';
 import { useAuth } from '@/hooks/useAuth';
 import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
