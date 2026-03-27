@@ -210,13 +210,13 @@ export function useBilling(): UseBillingReturn {
   }, [checkSubscription, log]);
 
   // ─── Native purchase via Despia + RevenueCat ──────────────────────
-  const purchaseNative = useCallback(async (planId: PlanId, billingCycle: BillingCycle) => {
+  const purchaseNative = useCallback(async (planId: PlanId, billingCycle: BillingCycle): Promise<{ confirmed: boolean }> => {
     if (!user?.id) throw new Error('User not authenticated');
 
     // Prevent double purchases
     if (purchaseInFlightRef.current) {
       log('[Billing] ⚠ Purchase already in progress — ignoring duplicate tap');
-      return;
+      return { confirmed: false };
     }
     purchaseInFlightRef.current = true;
 
@@ -228,14 +228,13 @@ export function useBilling(): UseBillingReturn {
     const url = `revenuecat://purchase?external_id=${encodeURIComponent(user.id)}&product=${encodeURIComponent(productId)}`;
     log(`[Billing] Calling despia purchase: product=${productId}, external_id=${user.id}`);
 
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<{ confirmed: boolean }>((resolve, reject) => {
       const timeout = setTimeout(() => {
         log('[Billing] ⚠ Native purchase callback timed out (120s). Checking backend…');
         cleanup();
-        checkSubscription().then(() => {
-          log('[Billing] Backend refresh completed after timeout');
-          resolve();
-        }).catch(reject);
+        pollSubscriptionStatus(3, 2000, planId).then((confirmedPlan) => {
+          resolve({ confirmed: confirmedPlan === planId });
+        }).catch(() => resolve({ confirmed: false }));
       }, 120000);
 
       const cleanup = () => {
@@ -247,14 +246,19 @@ export function useBilling(): UseBillingReturn {
       window.onRevenueCatPurchase = () => {
         log('[Billing] ✓ onRevenueCatPurchase callback fired');
         cleanup();
-        pollSubscriptionStatus(5, 2000)
-          .then(() => {
-            log('[Billing] ✓ Backend confirmed subscription update');
-            resolve();
+        pollSubscriptionStatus(6, 2500, planId)
+          .then((confirmedPlan) => {
+            if (confirmedPlan === planId) {
+              log(`[Billing] ✓ Backend confirmed plan=${confirmedPlan}`);
+              resolve({ confirmed: true });
+            } else {
+              log(`[Billing] ⚠ Backend plan=${confirmedPlan}, expected=${planId} — not confirmed yet`);
+              resolve({ confirmed: false });
+            }
           })
           .catch((err) => {
             log(`[Billing] ⚠ Backend polling failed: ${err}`);
-            resolve(); // still resolve — webhook will catch up
+            resolve({ confirmed: false });
           });
       };
 
@@ -268,7 +272,7 @@ export function useBilling(): UseBillingReturn {
         reject(err);
       }
     });
-  }, [user?.id, log, getDespia, checkSubscription, pollSubscriptionStatus]);
+  }, [user?.id, log, getDespia, pollSubscriptionStatus]);
 
   // ─── Launch native RevenueCat paywall ─────────────────────────────
   const launchNativePaywall = useCallback(async (offering = 'useRevenueCat') => {
