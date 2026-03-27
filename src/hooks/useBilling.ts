@@ -270,7 +270,7 @@ export function useBilling(): UseBillingReturn {
       const cleanup = () => {
         clearTimeout(timeout);
         window.onRevenueCatPurchase = undefined;
-        window.onRevenueCatPaywallDismiss = undefined;
+        (window as any).onRevenueCatPaywallDismiss = undefined;
       };
 
       window.onRevenueCatPurchase = () => {
