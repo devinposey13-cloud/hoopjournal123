@@ -57,7 +57,7 @@ const PDF_VALUE_BULLETS = [
 
 export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: PaywallSheetProps) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
-  const [selectedPlan, setSelectedPlan] = useState<PlanId>('elite');
+  const [selectedPlan, setSelectedPlan] = useState<PlanId>('pro');
   const { purchasePlan, launchNativePaywall, restorePurchases, isPurchasing, isRestoring, isNative, lastPurchaseResult } = useBilling();
   const { refresh: refreshEntitlements } = useNativeEntitlements();
   const { findPackage, getTrialCopyForProduct, hasTrialForProduct } = useNativeRC();
@@ -95,6 +95,10 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
 
   const selectedRCInfo = getRCTrialInfo(selectedPlan, cycle);
   const trialConfig = getTrialConfig(selectedPlan, cycle);
+  // Log RC trial info for debugging Apple review issues
+  console.log(`[PaywallSheet] selectedPlan=${selectedPlan}, cycle=${cycle}, isNative=${isNative}`);
+  console.log(`[PaywallSheet] RC hasTrial=${selectedRCInfo.hasTrial}, rcTrialCopy=${selectedRCInfo.rcTrialCopy}, pkg=${selectedRCInfo.pkg?.productId}`);
+  console.log(`[PaywallSheet] RC introPrice=${JSON.stringify(selectedRCInfo.pkg?.introPrice)}`);
   const trialCopy = isNative && selectedRCInfo.rcTrialCopy ? selectedRCInfo.rcTrialCopy : getTrialCopy(selectedPlan, cycle);
   const trialCta = isNative && selectedRCInfo.hasTrial ? 'Start Free Trial' : getTrialCta(selectedPlan, cycle);
 
