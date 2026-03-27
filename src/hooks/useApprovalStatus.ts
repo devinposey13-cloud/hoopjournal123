@@ -15,7 +15,11 @@ export function useApprovalStatus() {
 
   const checkApprovalStatus = useCallback(async () => {
     if (!user) {
-      setIsApproved(null);
+      // Don't reset to null if automatic mode — keep the synchronous true
+      const currentMode = localStorage.getItem(APPROVAL_MODE_KEY);
+      if (currentMode !== 'automatic') {
+        setIsApproved(null);
+      }
       setLoading(false);
       return;
     }
