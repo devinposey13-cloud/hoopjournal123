@@ -344,9 +344,16 @@ export function useBilling(): UseBillingReturn {
     setLastPurchaseResult('idle');
     try {
       if (diag.isDespia) {
-        await purchaseNative(planId, billingCycle);
-        setLastPurchaseResult('success');
-        toast.success(`You're now subscribed to ${planId === 'elite' ? 'Elite' : 'Pro'}! 🎉`);
+        const result = await purchaseNative(planId, billingCycle);
+        if (result.confirmed) {
+          setLastPurchaseResult('success');
+          toast.success(`You're now subscribed to ${planId === 'elite' ? 'Elite' : 'Pro'}! 🎉`);
+        } else {
+          // Callback fired but backend hasn't confirmed yet — don't celebrate
+          setLastPurchaseResult('idle');
+          log('[Billing] ⚠ Purchase callback fired but backend not yet confirmed — no success toast');
+          toast.info('Your purchase is being processed. It may take a moment to activate.');
+        }
       } else {
         await purchaseWeb(planId, billingCycle);
         setLastPurchaseResult('success');
