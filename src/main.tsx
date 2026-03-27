@@ -16,12 +16,15 @@ if (window.location.pathname === '/oauth-bridge') {
     window.location.replace('/');
   }
 } else {
-  // Remove pre-hydration shell once React mounts — but keep it for postAuth
-  // so it covers intermediate route transitions until Index.tsx signals resolution
-  const isPostAuth = window.location.search.includes('postAuth');
-  if (!isPostAuth) {
-    const shell = document.getElementById('prehydration-shell');
-    if (shell) shell.remove();
-  }
+  // Keep shell visible during auth flows — Index.tsx calls __dismissShell after route resolves.
+  // For non-auth cold starts, dismiss after React mounts and first paint.
+  const isAuthFlow = window.location.search.includes('postAuth') ||
+    window.location.pathname === '/auth/callback';
   createRoot(document.getElementById("root")!).render(<App />);
+  if (!isAuthFlow) {
+    // Use rAF to ensure React has painted before removing shell
+    requestAnimationFrame(() => {
+      (window as any).__dismissShell?.();
+    });
+  }
 }
