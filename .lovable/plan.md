@@ -1,39 +1,54 @@
 
 
-## Fix Free Trial Not Appearing at Checkout
+## Improve Paywall/Pricing Navigation and Post-Purchase Flow
 
-### Root Cause
+### What users experience now
+- On Pricing, Upgrade, and Billing pages, the only way back is a "Back" button using `navigate(-1)`, which can fail if there's no history. Users feel stuck.
+- After a successful purchase, a toast appears but the user stays on the same page with no clear next step.
+- No plan-level badge is visible on the dashboard.
 
-The RevenueCat offering identifier is **`useRevenueCat`** (visible in the RC dashboard screenshot), but the app calls `launchNativePaywall('default')`. RevenueCat cannot find an offering named "default", so the native paywall launch fails silently. The code then falls back to a direct `revenuecat://purchase?product=HoopJ_pro_monthly` call, which bypasses the RevenueCat offering/package system entirely. Direct product purchases do not automatically include introductory offers — those are only presented when purchasing through an offering's package.
+### Changes
 
-### Fix
+**1. Add persistent "X" close button and bottom "Return to Dashboard" on all payment pages**
 
-**1. Update offering identifier in `NativePurchaseSheet.tsx`**
+Files: `src/pages/Pricing.tsx`, `src/pages/Upgrade.tsx`, `src/pages/Billing.tsx`
 
-Change `launchNativePaywall('default')` to `launchNativePaywall('useRevenueCat')` to match the actual RC dashboard offering identifier.
+- Add a fixed "X" (close) button in the top-right corner that always navigates to `/` (dashboard), not `navigate(-1)`.
+- Change existing "Back" buttons to use `navigate('/')` as fallback when no history exists.
+- Add a prominent "Return to Dashboard" button at the bottom of each page so users always have a visible escape hatch.
+- On Upgrade page, make the "Not now" button more prominent (larger, outlined style instead of ghost).
 
-**2. Update offering identifier in `useBilling.ts`**
+**2. Post-purchase confirmation dialog with auto-redirect**
 
-Change the default parameter in `launchNativePaywall` from `offering = 'default'` to `offering = 'useRevenueCat'`.
+Files: `src/pages/Pricing.tsx`, `src/pages/Upgrade.tsx`, `src/components/purchase/NativePurchaseSheet.tsx`, `src/components/paywall/PaywallSheet.tsx`
 
-**3. Fix `launchNativePaywall` promise resolution**
+- After successful purchase, show a celebratory confirmation dialog (using AlertDialog) with:
+  - Checkmark icon and "Welcome to [Plan Name]!" heading
+  - Brief message: "You now have access to all [plan] features."
+  - "Go to Dashboard" button that navigates to `/`
+  - Auto-redirect to dashboard after 4 seconds if user doesn't tap
+- Replace the current toast-only feedback.
+- In `PaywallSheet` and `NativePurchaseSheet`, after `onPurchaseComplete` / `onUpgrade`, navigate to `/` with a success state.
 
-Currently, the `launchNativePaywall` function never resolves when the native paywall is dismissed without a purchase (only on timeout at 180s). This causes the fallback to trigger unpredictably. Add proper dismiss handling so:
-- If user purchases → resolve via `onRevenueCatPurchase` callback (already works)
-- If user dismisses → the promise should reject with a cancellation error so the fallback does NOT fire
+**3. Plan badge on dashboard PlayerCard**
 
-**4. Prevent fallback to direct purchase on user cancellation**
+Files: `src/components/dashboard/PlayerCard.tsx`
 
-In `NativePurchaseSheet.tsx`, the catch block after `launchNativePaywall` should check for user cancellation and NOT fall through to the direct `purchasePlan()` call, which would bypass introductory offers.
+- Add a new optional `planId` prop to `PlayerCard`.
+- Display a small badge next to the player name showing:
+  - "Free" (muted/outline style)
+  - "Pro" (primary colored)
+  - "Elite" (gradient orange/amber)
+  - "Founding Member" with star icon (if accessBadge indicates it)
+- Use the existing `Badge` component with appropriate styling.
 
-**5. Add logging for offering mismatch debugging**
+File: `src/pages/Index.tsx`
 
-Log the offering identifier being used so future mismatches are immediately visible in diagnostics.
+- Pass `currentPlan` and `accessBadge` from `usePlan()` to the `PlayerCard` component.
 
-### Files to modify
-- `src/components/purchase/NativePurchaseSheet.tsx` — update offering ID, fix fallback logic
-- `src/hooks/useBilling.ts` — update default offering parameter, improve promise lifecycle
+### Technical details
 
-### Result
-When a user taps subscribe on iOS, the native RevenueCat paywall launches with the correct offering (`useRevenueCat`), which includes the 3-day free trial configured in App Store Connect. The Apple payment sheet will show "Free for 3 days, then $X.XX/month."
+- The confirmation dialog will be a new reusable component `src/components/purchase/PurchaseConfirmationDialog.tsx` with props: `open`, `planName`, `onGoToDashboard`.
+- Auto-redirect uses a `setTimeout` of 4 seconds, cleared on unmount or manual navigation.
+- Plan badge styling maps directly from `PlanId` to badge variant/colors using a simple lookup object.
 
