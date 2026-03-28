@@ -32,6 +32,7 @@ interface EmptyDashboardWelcomeProps {
   coachVoiceGender?: 'male' | 'female';
   onLogFirstGame: () => void;
   onPregameTalk: () => void;
+  onLogPractice?: () => void;
   onUploadPhoto: () => void;
   onSkipPhoto: () => void;
   onAvatarGenerated?: (newAvatarUrl: string) => void;
