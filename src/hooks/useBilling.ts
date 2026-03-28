@@ -515,11 +515,25 @@ export function useBilling(): UseBillingReturn {
     }
   }, [checkSubscription, log]);
 
+  // ─── Force reset all purchase state (emergency recovery) ─────────
+  const forceResetPurchaseState = useCallback(() => {
+    log('[Billing] paywall_soft_reset_started');
+    globalPurchaseInFlight = false;
+    setIsPurchasing(false);
+    setIsRestoring(false);
+    setLastPurchaseResult('idle');
+    // Clean up any lingering native callbacks
+    window.onRevenueCatPurchase = undefined;
+    (window as any).onRevenueCatPaywallDismiss = undefined;
+    log('[Billing] paywall_soft_reset_completed');
+  }, [log]);
+
   return {
     purchasePlan,
     launchNativePaywall,
     restorePurchases,
     refreshSubscriptionStatus,
+    forceResetPurchaseState,
     diagnostics: getDiagnostics(),
     debugLog,
     isPurchasing,
