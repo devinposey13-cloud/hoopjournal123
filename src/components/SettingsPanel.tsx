@@ -440,6 +440,17 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                   </div>
                 )}
 
+                {/* Upgrade to Elite — show for Pro users */}
+                {planType === 'pro' && (
+                  <Button
+                    className="w-full gradient-primary font-semibold"
+                    onClick={() => navigate('/pricing')}
+                  >
+                    <Star className="w-4 h-4 mr-2" />
+                    Upgrade to Elite
+                  </Button>
+                )}
+
                 <div className="flex gap-2">
                   {/* Manage button — only for Stripe */}
                   {effectiveBillingSource !== 'ios_app_store' && (
