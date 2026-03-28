@@ -163,16 +163,16 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
     if (result === 'make') {
       setShowFireCelebration(true);
       setTimeout(() => setShowFireCelebration(false), 800);
-      playMake?.();
+      playSound?.('make');
       triggerHaptic?.('success');
     } else {
       const zoneLabels: Record<ShotZone, string> = { ft: 'FT', mid: 'MID', '3pt': '3PT' };
       setFlashState({ show: true, emoji: '❌', message: `${zoneLabels[zone]} MISS`, variant: 'danger' });
       setTimeout(() => setFlashState(prev => ({ ...prev, show: false })), 900);
-      playMiss?.();
+      playSound?.('miss');
       triggerHaptic?.('error');
     }
-  }, [playMake, playMiss, triggerHaptic]);
+  }, [playSound, triggerHaptic]);
 
   const recordShot = useCallback((zone: ShotZone, result: ShotResult) => {
     if (zone === 'ft') {
