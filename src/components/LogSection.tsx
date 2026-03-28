@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { PracticeMode } from '@/components/practice/PracticeMode';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,7 +17,7 @@ import { getLetterGradeFromScore, calculateGameScore, getGradeColor } from '@/ut
 import { getGameStatus, getSmartPrompt, getNextRelevantGame, findLinkedLoggedGame, getMissingGames, getSeasonTrackingSummary, type GameStatus, type GameStatusResult } from '@/utils/gameStatus';
 import { calculateConsistencyStreak } from '@/utils/xpCalculations';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
-import { Radio, Calendar, MapPin, Clock, ChevronRight, ChevronLeft, Trophy, Users, X, Zap, ClipboardList, AlertCircle, Check, Flame } from 'lucide-react';
+import { Radio, Calendar, MapPin, Clock, ChevronRight, ChevronLeft, Trophy, Users, X, Zap, ClipboardList, AlertCircle, Check, Flame, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -95,6 +96,7 @@ export function LogSection({
   const [quickCaptureOpponent, setQuickCaptureOpponent] = useState('');
   const [quickCaptureScheduledGameId, setQuickCaptureScheduledGameId] = useState<string | undefined>();
   const [quickCaptureTeamId, setQuickCaptureTeamId] = useState<string | undefined>();
+  const [showPracticeMode, setShowPracticeMode] = useState(false);
   const [isSavingQuickCapture, setIsSavingQuickCapture] = useState(false);
 
   // Calendar month state
@@ -305,6 +307,10 @@ export function LogSection({
     setQuickCaptureTeamId(undefined);
   };
 
+  if (showPracticeMode) {
+    return <PracticeMode onBack={() => setShowPracticeMode(false)} />;
+  }
+
   if (showQuickLiveCapture) {
     return (
       <LiveStatCapture
@@ -372,7 +378,7 @@ export function LogSection({
             <CardContent className="p-5 space-y-4">
               {/* Header */}
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Game Center</h2>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Log Center</h2>
                 {(smartPrompt?.type === 'game_day' || smartPrompt?.type === 'live') && (
                   <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-bold uppercase gap-1">
                     <Zap className="w-3 h-3" />
@@ -415,6 +421,17 @@ export function LogSection({
                   {smartPrompt?.type === 'live' ? 'Resume Live Game' : 'Start Live Game'}
                 </Button>
               </div>
+
+              {/* Start Practice */}
+              <Button
+                onClick={() => setShowPracticeMode(true)}
+                variant="outline"
+                size="lg"
+                className="w-full gap-2 font-semibold text-base border-primary/30 hover:bg-primary/10"
+              >
+                <Target className="w-5 h-5" />
+                Start Practice
+              </Button>
 
               {/* Secondary: Log Game */}
               <div className="h-px bg-border/40" />
