@@ -1,5 +1,5 @@
 import { format, isToday, isTomorrow, differenceInHours } from 'date-fns';
-import { Calendar, Radio, MessageSquare, Flame, ChevronRight, MapPin, Clock, AlertCircle, Lightbulb } from 'lucide-react';
+import { Calendar, Radio, MessageSquare, Flame, ChevronRight, MapPin, Clock, AlertCircle, Lightbulb, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScheduledGame, GameStats } from '@/types/basketball';
@@ -16,6 +16,7 @@ interface TodayCardProps {
   onLogGame: () => void;
   onOpenCoach: () => void;
   onStartLiveCapture?: () => void;
+  onLogPractice?: () => void;
   latestUnseenInsight?: StoredInsight | null;
   onViewInsight?: (id: string) => void;
 }
@@ -28,6 +29,7 @@ export function TodayCard({
   onLogGame,
   onOpenCoach,
   onStartLiveCapture,
+  onLogPractice,
   latestUnseenInsight,
   onViewInsight,
 }: TodayCardProps) {
@@ -257,6 +259,17 @@ export function TodayCard({
           <span className="sm:hidden">Coach</span>
         </Button>
       </div>
+      {onLogPractice && (
+        <Button
+          onClick={(e) => { e.stopPropagation(); onLogPractice(); }}
+          variant="outline"
+          className="w-full mt-2 gap-2"
+          size="sm"
+        >
+          <Target className="w-4 h-4" />
+          Log Practice
+        </Button>
+      )}
     </div>
   );
 }
