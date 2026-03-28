@@ -24,6 +24,7 @@ const ClipCard = lazy(() => import('@/components/ClipCard').then(m => ({ default
 const AddClipDialog = lazy(() => import('@/components/AddClipDialog').then(m => ({ default: m.AddClipDialog })));
 const ExploreClips = lazy(() => import('@/components/ExploreClips').then(m => ({ default: m.ExploreClips })));
 
+export type DataSourceMode = 'games' | 'practice' | 'combined';
 export type ProgressSubTab = 'overview' | 'stats' | 'trends' | 'clips' | 'achievements';
 
 interface ProgressHubProps {
