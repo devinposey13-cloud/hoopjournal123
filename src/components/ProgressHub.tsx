@@ -64,7 +64,32 @@ export function ProgressHub({
   onSubTabChange,
 }: ProgressHubProps) {
   const [activeSubTab, setActiveSubTab] = useState<ProgressSubTab>(initialSubTab);
+  const [dataSource, setDataSource] = useState<DataSourceMode>('games');
+  const [practiceSessions, setPracticeSessions] = useState<any[]>([]);
   const { progress: xpProgress } = useXpProgress();
+  const { user } = useAuth();
+  const { activeProfile } = useActiveProfile();
+
+  // Fetch practice sessions when needed
+  useEffect(() => {
+    if ((dataSource === 'practice' || dataSource === 'combined') && user) {
+      const fetchSessions = async () => {
+        let query = supabase
+          .from('practice_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (activeProfile?.id) {
+          query = query.or(`profile_id.eq.${activeProfile.id},profile_id.is.null`);
+        }
+
+        const { data } = await query;
+        setPracticeSessions(data || []);
+      };
+      fetchSessions();
+    }
+  }, [dataSource, user, activeProfile]);
 
   // Sync with URL when initialSubTab changes
   React.useEffect(() => {
@@ -77,33 +102,79 @@ export function ProgressHub({
     onSubTabChange?.(newTab);
   };
 
+  const showPracticeView = dataSource === 'practice' || dataSource === 'combined';
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header - Compact */}
-      <div>
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-primary" />
-          Progress
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Your performance analytics hub
-        </p>
+      {/* Header with data source toggle */}
+      <div className="flex flex-col gap-3">
+        <div>
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Progress
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Your performance analytics hub
+          </p>
+        </div>
+
+        {/* Data Source Toggle */}
+        <ToggleGroup
+          type="single"
+          value={dataSource}
+          onValueChange={(v) => v && setDataSource(v as DataSourceMode)}
+          className="justify-start"
+        >
+          <ToggleGroupItem
+            value="games"
+            className="gap-1.5 px-3 h-8 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+          >
+            <Activity className="h-3.5 w-3.5" />
+            <span className="text-xs font-medium">Games</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="practice"
+            className="gap-1.5 px-3 h-8 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+          >
+            <Dumbbell className="h-3.5 w-3.5" />
+            <span className="text-xs font-medium">Practice</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="combined"
+            className="gap-1.5 px-3 h-8 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+          >
+            <GitCompare className="h-3.5 w-3.5" />
+            <span className="text-xs font-medium">Combined</span>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
-      {/* Quick Stats Row - Horizontally scrollable */}
-      <QuickStatsRow 
-        games={games} 
-        seasonStats={seasonStats} 
-        xpProgress={xpProgress}
-      />
+      {/* Practice / Combined View */}
+      {showPracticeView ? (
+        <PracticeProgressView
+          sessions={practiceSessions}
+          games={games}
+          mode={dataSource as 'practice' | 'combined'}
+        />
+      ) : (
+        <>
+          {/* Quick Stats Row - Horizontally scrollable */}
+          <QuickStatsRow 
+            games={games} 
+            seasonStats={seasonStats} 
+            xpProgress={xpProgress}
+          />
 
-      {/* AI Insights - Priority placement */}
-      <AIInsightsPanel games={games} seasonStats={seasonStats} />
+          {/* AI Insights - Priority placement */}
+          <AIInsightsPanel games={games} seasonStats={seasonStats} />
 
-      {/* Hero Performance Chart */}
-      <HeroPerformanceChart games={games} />
+          {/* Hero Performance Chart */}
+          <HeroPerformanceChart games={games} />
+        </>
+      )}
 
-      {/* Sub-Tabs Navigation */}
+      {/* Sub-Tabs Navigation - Only show for games mode */}
+      {dataSource === 'games' && (
       <Tabs value={activeSubTab} onValueChange={handleSubTabChange}>
         <TabsList className="grid grid-cols-5 w-full h-auto p-1 bg-muted/50">
           <TabsTrigger 
