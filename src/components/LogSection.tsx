@@ -422,6 +422,17 @@ export function LogSection({
                 </Button>
               </div>
 
+              {/* Start Practice */}
+              <Button
+                onClick={() => setShowPracticeMode(true)}
+                variant="outline"
+                size="lg"
+                className="w-full gap-2 font-semibold text-base border-primary/30 hover:bg-primary/10"
+              >
+                <Target className="w-5 h-5" />
+                Start Practice
+              </Button>
+
               {/* Secondary: Log Game */}
               <div className="h-px bg-border/40" />
               <div className="flex items-center justify-between gap-3">
