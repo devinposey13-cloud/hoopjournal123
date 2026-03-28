@@ -134,6 +134,8 @@ export interface UseBillingReturn {
   launchNativePaywall: (offering?: string) => Promise<void>;
   /** Restore purchases (native only). */
   restorePurchases: () => Promise<RestoredPurchase[]>;
+  /** Force reset all purchase state (emergency recovery). */
+  forceResetPurchaseState: () => void;
   /** Refresh subscription status from backend. */
   refreshSubscriptionStatus: () => Promise<void>;
   /** Current billing environment info. */
