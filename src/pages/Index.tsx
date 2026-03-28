@@ -729,6 +729,13 @@ export default function Index() {
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="animate-fade-in">
+            {showPracticeMode ? (
+              <div className="journal-page rounded-2xl overflow-hidden">
+                <div className="px-6 md:px-10 py-6">
+                  <PracticeMode onBack={() => setShowPracticeMode(false)} />
+                </div>
+              </div>
+            ) :
             {/* Show Coach AI welcome for new users with no games */}
             {games.length === 0 ? (
               <div className="journal-page rounded-2xl overflow-hidden">
