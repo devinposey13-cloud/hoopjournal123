@@ -277,6 +277,8 @@ export function useBilling(): UseBillingReturn {
         window.removeEventListener('focus', onPossibleReturn);
         window.removeEventListener('pageshow', onPossibleReturn);
         document.removeEventListener('visibilitychange', onVisibilityChange);
+        document.removeEventListener('touchstart', onTouchReturn);
+        document.removeEventListener('pointerdown', onTouchReturn);
         if (window.onRevenueCatPurchase === handlePurchaseCallback) {
           window.onRevenueCatPurchase = undefined;
         }
