@@ -877,6 +877,7 @@ export default function Index() {
                       onLogGame={() => setActiveTab('games')}
                       onOpenCoach={() => setActiveTab('coach')}
                       onStartLiveCapture={todayGames.length > 0 ? handleQuickLiveStatsClick : undefined}
+                      onLogPractice={() => setShowPracticeMode(true)}
                       latestUnseenInsight={insightsHook.latestUnseen}
                       onViewInsight={(id) => insightsHook.markInsightSeen(id)}
                     />
