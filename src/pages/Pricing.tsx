@@ -23,7 +23,7 @@ export default function Pricing() {
   const [searchParams] = useSearchParams();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
-  const { purchasePlan, isPurchasing, diagnostics, debugLog } = useBilling();
+  const { purchasePlan, isPurchasing, diagnostics, debugLog, lastPurchaseResult, forceResetPurchaseState } = useBilling();
   const { findPackage } = useNativeRC();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [promoApplied, setPromoApplied] = useState(false);
@@ -192,15 +192,48 @@ export default function Pricing() {
             v{native ? 'native' : 'web'} · tap to debug
           </button>
           {showDebug && (
-            <div className="mt-3 bg-black/90 text-green-400 text-[10px] font-mono rounded-lg p-3 text-left max-h-48 overflow-y-auto whitespace-pre-wrap">
+            <div className="mt-3 bg-black/90 text-green-400 text-[10px] font-mono rounded-lg p-3 text-left max-h-[60vh] overflow-y-auto whitespace-pre-wrap">
+              <div className="text-yellow-400 font-bold mb-1">── STATE ──</div>
+              <div>isPurchasing: <span className={isPurchasing ? 'text-red-400' : 'text-green-400'}>{String(isPurchasing)}</span></div>
+              <div>loadingPlan: <span className={loadingPlan ? 'text-red-400' : 'text-green-400'}>{String(loadingPlan)}</span></div>
+              <div>lastPurchaseResult: {lastPurchaseResult}</div>
+              <div>globalInFlight: <span id="debug-global-flag" /></div>
+
+              <div className="text-yellow-400 font-bold mt-2 mb-1">── PLATFORM ──</div>
               <div>isDespia: {String(diagnostics.isDespia)}</div>
               <div>isDespiaIOS: {String(diagnostics.isDespiaIOS)}</div>
               <div>isDespiaAndroid: {String(diagnostics.isDespiaAndroid)}</div>
               <div>isWeb: {String(diagnostics.isWeb)}</div>
               <div>platform: {diagnostics.platform}</div>
-              <div>isPurchasing: {String(isPurchasing)}</div>
-              <div className="border-t border-green-800 mt-2 pt-2">
-                {debugLog.length === 0 ? '(no log entries yet)' : debugLog.map((l, i) => <div key={i}>{l}</div>)}
+
+              <div className="text-yellow-400 font-bold mt-2 mb-1">── CALLBACKS ──</div>
+              <div>onRevenueCatPurchase: {typeof window.onRevenueCatPurchase}</div>
+              <div>onRevenueCatPaywallDismiss: {typeof (window as any).onRevenueCatPaywallDismiss}</div>
+
+              <div className="text-yellow-400 font-bold mt-2 mb-1">── ACTIONS ──</div>
+              <div className="flex gap-2 flex-wrap mb-2">
+                <button
+                  className="bg-red-800 text-white px-2 py-1 rounded text-[10px]"
+                  onClick={() => {
+                    forceResetPurchaseState();
+                    setLoadingPlan(null);
+                  }}
+                >
+                  Force Reset State
+                </button>
+                <button
+                  className="bg-blue-800 text-white px-2 py-1 rounded text-[10px]"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(debugLog.join('\n')).then(() => toast.info('Log copied'));
+                  }}
+                >
+                  Copy Log
+                </button>
+              </div>
+
+              <div className="text-yellow-400 font-bold mt-2 mb-1">── LOG ({debugLog.length} entries) ──</div>
+              <div className="border-t border-green-800 pt-1">
+                {debugLog.length === 0 ? '(no log entries yet)' : debugLog.slice(-50).map((l, i) => <div key={i}>{l}</div>)}
               </div>
             </div>
           )}
