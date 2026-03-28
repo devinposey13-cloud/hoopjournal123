@@ -1,78 +1,41 @@
 
-## Fix iOS paywall lock after dismissing the Apple purchase sheet
 
-### What I found
-The current code already tries to recover from cancellation, but there are still two likely failure points:
+## Fix: iOS Apple Pay Sheet Dismissal Not Detected
 
-1. `useBilling()` is instantiated separately in multiple places (`Upgrade`, `Pricing`, `NativePurchaseSheet`, `PaywallSheet`), so purchase state can drift across components instead of being managed from one shared source.
-2. In `purchaseNative`, the fallback return-check timer can be scheduled multiple times from `focus`, `pageshow`, and `visibilitychange` without cancelling the previous one. That can leave stale dismissal logic racing with the next purchase attempt.
+### Root Cause
 
-This matches the symptom: after cancelling one Apple sheet, the app still believes a purchase session is active, so tapping another plan does nothing until refresh.
+The Despia documentation confirms that `onRevenueCatPurchase()` only fires on **successful** purchases. There is **no** `onRevenueCatPaywallDismiss` callback for direct `revenuecat://purchase` calls (that callback only works with `revenuecat://launchPaywall`).
 
-### Implementation plan
+The current code relies on three detection methods after dispatching a purchase, all of which fail on iOS:
 
-#### 1. Harden native purchase cleanup in `src/hooks/useBilling.ts`
-- Add a single, well-defined reset path for **every** native purchase outcome:
-  - success
-  - cancel/dismiss
-  - error
-  - timeout
-  - app-return fallback
-- Prevent multiple fallback timers from stacking:
-  - clear the previous fallback timer before scheduling a new one
-  - ignore duplicate `focus` / `pageshow` / `visibilitychange` events once return handling has started
-- Add a short-lived “return check in progress” guard so dismissal handling runs once per Apple sheet session.
-- Ensure cleanup always removes:
-  - `window.onRevenueCatPurchase`
-  - `window.onRevenueCatPaywallDismiss`
-  - focus/pageshow/visibility listeners
-  - any active timeout/fallback timer
-  - purchase session refs/locks
-- Keep the final `finally` block as the last safety net and make logs explicit:
-  - `selected_package`
-  - `purchase_sheet_opened`
-  - `purchase_sheet_dismissed`
-  - `purchase_cancelled`
-  - `purchase_error`
-  - `purchase_state_reset`
-  - `buttons_reenabled`
+1. `onRevenueCatPaywallDismiss` — never fires for direct purchases
+2. `visibilitychange` — the Apple pay sheet is a native modal overlay; the WKWebView is never hidden
+3. `focus` — the web view never loses focus because the overlay is native UI
 
-#### 2. Stop relying on duplicated purchase state across separate hook instances
-- Refactor the native paywall surfaces so the component that triggers the purchase is the one that owns the visible loading/lock state.
-- Most important target:
-  - `src/components/purchase/NativePurchaseSheet.tsx`
-- The sheet should use:
-  - its own local interaction lock for the active attempt
-  - the billing hook only for the actual purchase call/result
-- This avoids a stale `isPurchasing` value from another mounted screen instance keeping buttons disabled.
+Result: the promise never resolves, `globalPurchaseInFlight` stays `true`, all buttons remain locked.
 
-#### 3. Make plan switching immediately available after dismissal in `NativePurchaseSheet`
-- Ensure all interactive controls unlock after cancellation:
-  - monthly/yearly toggle
-  - plan cards
-  - subscribe CTA
-  - restore button
-  - close button
-- Keep the selected plan visible after cancellation so the user can either retry it or switch to a different plan immediately.
-- Ensure no invisible loading state or backdrop continues intercepting taps after the Apple sheet closes.
+### Fix
 
-#### 4. Audit the other paywall entry point too
-- Apply the same cleanup assumptions to `src/components/paywall/PaywallSheet.tsx`, since it also uses `useBilling()` and disables plan selection via `isPurchasing`.
-- Make its local `purchasingPlan` and global purchase flags behave safely after cancel so the same lock cannot appear there.
+Add a **touch-based return detector**. When the Apple pay sheet is open, the user cannot interact with the web page. The moment the sheet closes, the first `touchstart` or `pointerdown` event on the document signals the user is back.
 
-#### 5. Verify the entry screens don’t introduce stale locks
-- Review `src/pages/Upgrade.tsx` and `src/pages/Pricing.tsx` to ensure they do not keep redundant loading flags alive after a cancelled native attempt.
-- Remove or minimize any state that is only used for web checkout but can interfere with native retry behavior.
+#### Changes to `src/hooks/useBilling.ts` — `purchaseNative()`
 
-### Expected result
-After this fix:
-- user taps Plan A
-- Apple sheet opens
-- user cancels
-- app immediately resets purchase state
-- user can switch to Plan B and tap Subscribe again without refreshing
+Inside the promise, after dispatching `despia()`:
 
-### Technical notes
-- Likely core fix area: `purchaseNative()` timer/listener lifecycle
-- Likely UX fix area: avoid using multiple independent `useBilling()` instances as the source of truth for disabled UI
-- No backend changes should be needed; this is a client-side native purchase state-management issue
+- Register a `touchstart` listener on `document` that calls `runReturnCheck('touch_return', 500)` when the user touches the page (only if >1s has passed since launch and not yet settled)
+- Add this listener to the existing `cleanup()` function so it is properly removed
+- Remove the reliance on `onRevenueCatPaywallDismiss` for direct purchases (it never fires)
+- Keep the `focus`/`visibilitychange` listeners as secondary fallbacks (they may work on some devices)
+- Keep the 120s hard timeout as the last resort
+
+#### No changes needed to `NativePurchaseSheet.tsx` or `PaywallSheet.tsx`
+
+The existing soft-reset logic in the `catch` block of `handlePurchase` already handles the rejected promise correctly — it calls `performSoftReset()` which clears all locks and bumps `resetKey`. Once the promise actually rejects (which the touch detector will now trigger), the UI will recover automatically.
+
+### Summary of the detection chain (in order of priority)
+
+1. `onRevenueCatPurchase` → success path (poll backend, resolve)
+2. `touchstart` on document → user regained control → poll backend briefly, then reject as cancelled if no purchase found
+3. `focus` / `visibilitychange` → secondary fallback (same logic)
+4. 120s hard timeout → last resort
+
