@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { PracticeMode } from '@/components/practice/PracticeMode';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,7 +17,7 @@ import { getLetterGradeFromScore, calculateGameScore, getGradeColor } from '@/ut
 import { getGameStatus, getSmartPrompt, getNextRelevantGame, findLinkedLoggedGame, getMissingGames, getSeasonTrackingSummary, type GameStatus, type GameStatusResult } from '@/utils/gameStatus';
 import { calculateConsistencyStreak } from '@/utils/xpCalculations';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
-import { Radio, Calendar, MapPin, Clock, ChevronRight, ChevronLeft, Trophy, Users, X, Zap, ClipboardList, AlertCircle, Check, Flame } from 'lucide-react';
+import { Radio, Calendar, MapPin, Clock, ChevronRight, ChevronLeft, Trophy, Users, X, Zap, ClipboardList, AlertCircle, Check, Flame, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
