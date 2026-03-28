@@ -51,6 +51,7 @@ export function EmptyDashboardWelcome({
   coachVoiceGender,
   onLogFirstGame, 
   onPregameTalk,
+  onLogPractice,
   onUploadPhoto,
   onSkipPhoto,
   onAvatarGenerated,
@@ -400,6 +401,16 @@ export function EmptyDashboardWelcome({
                 <Mic className="w-4 h-4 mr-2" />
                 Pregame Talk
               </Button>
+              {onLogPractice && (
+                <Button
+                  onClick={onLogPractice}
+                  variant="outline"
+                  className="w-full h-12"
+                >
+                  <Target className="w-4 h-4 mr-2" />
+                  Log Practice
+                </Button>
+              )}
             </motion.div>
           </CardContent>
         </Card>
