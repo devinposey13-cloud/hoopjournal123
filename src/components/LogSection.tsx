@@ -96,6 +96,7 @@ export function LogSection({
   const [quickCaptureOpponent, setQuickCaptureOpponent] = useState('');
   const [quickCaptureScheduledGameId, setQuickCaptureScheduledGameId] = useState<string | undefined>();
   const [quickCaptureTeamId, setQuickCaptureTeamId] = useState<string | undefined>();
+  const [showPracticeMode, setShowPracticeMode] = useState(false);
   const [isSavingQuickCapture, setIsSavingQuickCapture] = useState(false);
 
   // Calendar month state
@@ -305,6 +306,10 @@ export function LogSection({
     setQuickCaptureScheduledGameId(undefined);
     setQuickCaptureTeamId(undefined);
   };
+
+  if (showPracticeMode) {
+    return <PracticeMode onBack={() => setShowPracticeMode(false)} />;
+  }
 
   if (showQuickLiveCapture) {
     return (
