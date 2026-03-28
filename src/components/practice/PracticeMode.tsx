@@ -1,13 +1,18 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveProfile } from '@/hooks/useActiveProfile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Save, Target, History, Trash2, Undo2, Circle, Flame, Zap } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { ArrowLeft, Target, History, Trash2, Undo2, Circle, Flame, Zap, Trophy, TrendingUp, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { FireCelebration } from '@/components/FireCelebration';
+import { StatFlash } from '@/components/StatFlash';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
+import { useHapticFeedback } from '@/hooks/useHapticFeedback';
 
 interface PracticeSession {
   id: string;
@@ -32,6 +37,8 @@ interface ShotAction {
   result: ShotResult;
 }
 
+const DEFAULT_GOAL = 50;
+
 const SESSION_OPTIONS: { type: SessionType; label: string; desc: string; icon: React.ReactNode }[] = [
   { type: 'ft', label: 'Free Throws', desc: 'FT shooting focus', icon: <Target className="w-5 h-5" /> },
   { type: 'mid', label: 'Mid Range', desc: 'Pull-up & elbow work', icon: <Flame className="w-5 h-5" /> },
@@ -47,11 +54,12 @@ const SESSION_TYPE_LABELS: Record<string, string> = {
   shooting: 'Full Workout',
 };
 
-function StatButton({ label, variant, emphasis = 'primary', onPress }: {
+function StatButton({ label, variant, emphasis = 'primary', onPress, large = false }: {
   label: string;
   variant: 'success' | 'danger';
   emphasis?: 'primary' | 'secondary';
   onPress: () => void;
+  large?: boolean;
 }) {
   const isPrimary = emphasis === 'primary';
   const variantClasses = {
@@ -67,14 +75,14 @@ function StatButton({ label, variant, emphasis = 'primary', onPress }: {
     <button
       onClick={onPress}
       className={cn(
-        'py-3 px-3 rounded-lg border font-semibold transition-all duration-100',
+        'rounded-lg border font-semibold transition-all duration-100',
         'flex items-center justify-center gap-1.5',
         'touch-manipulation select-none',
-        'min-h-[44px]',
+        large ? 'py-6 px-4 min-h-[72px]' : 'py-3 px-3 min-h-[44px]',
         variantClasses[variant]
       )}
     >
-      <span className="text-sm">{label}</span>
+      <span className={large ? "text-lg" : "text-sm"}>{label}</span>
     </button>
   );
 }
@@ -87,11 +95,21 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
   const { user } = useAuth();
   const { activeProfileId } = useActiveProfile();
   const [sessionType, setSessionType] = useState<SessionType | null>(null);
-  const [view, setView] = useState<'select' | 'log' | 'history'>('select');
+  const [view, setView] = useState<'select' | 'log' | 'history' | 'summary'>('select');
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState<PracticeSession[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<string>('all');
+  const [sessionGoal] = useState(DEFAULT_GOAL);
+
+  // Feedback state — matches LiveStatCapture
+  const [showFireCelebration, setShowFireCelebration] = useState(false);
+  const [flashState, setFlashState] = useState<{ show: boolean; emoji: string; message: string; variant: 'success' | 'danger' | 'warning' | 'neutral' }>({
+    show: false, emoji: '', message: '', variant: 'neutral'
+  });
+  const flashKeyRef = useRef(0);
+  const { playSound } = useSoundEffects();
+  const { triggerHaptic } = useHapticFeedback();
 
   // Shot stats
   const [ftMade, setFtMade] = useState(0);
@@ -101,7 +119,12 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
   const [threeMade, setThreeMade] = useState(0);
   const [threeAttempted, setThreeAttempted] = useState(0);
 
+  // Streak
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+
   const [actionHistory, setActionHistory] = useState<ShotAction[]>([]);
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
 
   const totalMade = ftMade + midMade + threeMade;
   const totalAttempted = ftAttempted + midAttempted + threeAttempted;
@@ -109,6 +132,7 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
   const ftPct = ftAttempted > 0 ? Math.round((ftMade / ftAttempted) * 100) : 0;
   const midPct = midAttempted > 0 ? Math.round((midMade / midAttempted) * 100) : 0;
   const threePct = threeAttempted > 0 ? Math.round((threeMade / threeAttempted) * 100) : 0;
+  const goalProgress = Math.min(100, Math.round((totalAttempted / sessionGoal) * 100));
 
   const zonesForSession: ShotZone[] = useMemo(() => {
     if (!sessionType || sessionType === 'full') return ['ft', 'mid', '3pt'];
@@ -116,6 +140,39 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
   }, [sessionType]);
 
   const isSingleZone = zonesForSession.length === 1;
+
+  // Recompute streak from action history
+  const recomputeStreak = useCallback((actions: ShotAction[]) => {
+    let streak = 0;
+    for (let i = actions.length - 1; i >= 0; i--) {
+      if (actions[i].result === 'make') streak++;
+      else break;
+    }
+    setCurrentStreak(streak);
+    // best streak across entire history
+    let best = 0, run = 0;
+    for (const a of actions) {
+      if (a.result === 'make') { run++; if (run > best) best = run; }
+      else { run = 0; }
+    }
+    setBestStreak(best);
+  }, []);
+
+  const triggerFlash = useCallback((result: ShotResult, zone: ShotZone) => {
+    flashKeyRef.current += 1;
+    if (result === 'make') {
+      setShowFireCelebration(true);
+      setTimeout(() => setShowFireCelebration(false), 800);
+      playSound?.('make');
+      triggerHaptic?.('success');
+    } else {
+      const zoneLabels: Record<ShotZone, string> = { ft: 'FT', mid: 'MID', '3pt': '3PT' };
+      setFlashState({ show: true, emoji: '❌', message: `${zoneLabels[zone]} MISS`, variant: 'danger' });
+      setTimeout(() => setFlashState(prev => ({ ...prev, show: false })), 900);
+      playSound?.('miss');
+      triggerHaptic?.('error');
+    }
+  }, [playSound, triggerHaptic]);
 
   const recordShot = useCallback((zone: ShotZone, result: ShotResult) => {
     if (zone === 'ft') {
@@ -128,8 +185,11 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
       if (result === 'make') { setThreeMade(p => p + 1); setThreeAttempted(p => p + 1); }
       else { setThreeAttempted(p => p + 1); }
     }
-    setActionHistory(prev => [...prev, { zone, result }]);
-  }, []);
+    const newActions = [...actionHistory, { zone, result }];
+    setActionHistory(newActions);
+    recomputeStreak(newActions);
+    triggerFlash(result, zone);
+  }, [actionHistory, recomputeStreak, triggerFlash]);
 
   const undoLastForZone = useCallback((zone: ShotZone) => {
     const lastIdx = [...actionHistory].reverse().findIndex(a => a.zone === zone);
@@ -148,9 +208,11 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
       else { setThreeAttempted(p => Math.max(0, p - 1)); }
     }
 
-    setActionHistory(prev => [...prev.slice(0, actualIdx), ...prev.slice(actualIdx + 1)]);
+    const newActions = [...actionHistory.slice(0, actualIdx), ...actionHistory.slice(actualIdx + 1)];
+    setActionHistory(newActions);
+    recomputeStreak(newActions);
     toast.info(`Undid ${zone.toUpperCase()} ${action.result}`, { duration: 1500, icon: '↩️' });
-  }, [actionHistory]);
+  }, [actionHistory, recomputeStreak]);
 
   const undoLast = useCallback(() => {
     if (actionHistory.length === 0) return;
@@ -165,8 +227,10 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
       if (last.result === 'make') { setThreeMade(p => Math.max(0, p - 1)); setThreeAttempted(p => Math.max(0, p - 1)); }
       else { setThreeAttempted(p => Math.max(0, p - 1)); }
     }
-    setActionHistory(prev => prev.slice(0, -1));
-  }, [actionHistory]);
+    const newActions = actionHistory.slice(0, -1);
+    setActionHistory(newActions);
+    recomputeStreak(newActions);
+  }, [actionHistory, recomputeStreak]);
 
   const fetchHistory = async () => {
     if (!user) return;
@@ -193,13 +257,23 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
     setMidMade(0); setMidAttempted(0);
     setThreeMade(0); setThreeAttempted(0);
     setActionHistory([]);
+    setCurrentStreak(0);
+    setBestStreak(0);
+    setSessionStartTime(new Date());
     setView('log');
   };
 
-  const handleSave = async () => {
+  const handleFinishPractice = () => {
+    if (totalAttempted === 0) { toast.error('Log at least one shot before finishing.'); return; }
+    setView('summary');
+  };
+
+  const handleSaveSummary = async () => {
     if (!user) return;
-    if (totalAttempted === 0) { toast.error('Log at least one shot before saving.'); return; }
     setSaving(true);
+    const durationMin = sessionStartTime
+      ? Math.round((Date.now() - sessionStartTime.getTime()) / 60000)
+      : null;
     const { error } = await (supabase as any).from('practice_sessions').insert({
       user_id: user.id,
       profile_id: activeProfileId || null,
@@ -207,12 +281,14 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
       ft_made: ftMade, ft_attempted: ftAttempted,
       midrange_made: midMade, midrange_attempted: midAttempted,
       three_pt_made: threeMade, three_pt_attempted: threeAttempted,
+      duration_minutes: durationMin,
     });
     setSaving(false);
     if (error) { console.error('Failed to save practice session:', error); toast.error('Failed to save practice session'); return; }
     toast.success('Practice session saved! 🏀');
     setFtMade(0); setFtAttempted(0); setMidMade(0); setMidAttempted(0);
     setThreeMade(0); setThreeAttempted(0); setActionHistory([]);
+    setCurrentStreak(0); setBestStreak(0);
     fetchHistory();
     setView('select');
     setSessionType(null);
@@ -238,13 +314,18 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
   }, [history, historyFilter]);
 
   const zoneLabel = (zone: ShotZone) => zone === 'ft' ? 'Free Throws' : zone === 'mid' ? 'Mid Range' : '3PT';
-  const zoneIcon = (zone: ShotZone) => zone === '3pt' ? <Circle className="w-3.5 h-3.5 text-primary" /> : <Target className="w-3.5 h-3.5 text-primary" />;
+  const zoneIcon = (zone: ShotZone, size = 'w-3.5 h-3.5') => zone === '3pt'
+    ? <Circle className={cn(size, "text-primary")} />
+    : zone === 'mid' ? <Flame className={cn(size, "text-primary")} />
+    : <Target className={cn(size, "text-primary")} />;
   const zoneMade = (zone: ShotZone) => zone === 'ft' ? ftMade : zone === 'mid' ? midMade : threeMade;
   const zoneAtt = (zone: ShotZone) => zone === 'ft' ? ftAttempted : zone === 'mid' ? midAttempted : threeAttempted;
   const zonePct = (zone: ShotZone) => {
     const att = zoneAtt(zone);
     return att > 0 ? Math.round((zoneMade(zone) / att) * 100) : 0;
   };
+
+  const practiceXp = Math.round(totalMade * 2 + totalAttempted * 0.5);
 
   // ─── Session Type Selection Screen ─────────────────────────
   if (view === 'select') {
@@ -291,10 +372,112 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
     );
   }
 
+  // ─── Summary Modal Screen ────────────────────────────────
+  if (view === 'summary') {
+    const durationMin = sessionStartTime
+      ? Math.max(1, Math.round((Date.now() - sessionStartTime.getTime()) / 60000))
+      : null;
+    const insight = overallPct >= 60
+      ? "🔥 Elite shooting session! Keep it up."
+      : overallPct >= 45
+      ? "💪 Solid work. Consistency is building."
+      : overallPct >= 30
+      ? "📈 Room to grow. Focus on form next time."
+      : "🎯 Keep grinding. Every rep counts.";
+
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <div className="bg-card border-b border-border px-3 py-2 flex items-center justify-between sticky top-0 z-10">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setView('log')}>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <p className="font-semibold text-sm">Practice Summary</p>
+          <div className="w-8" />
+        </div>
+
+        <div className="flex-1 px-4 py-6 space-y-4 animate-fade-in">
+          {/* Big percentage */}
+          <div className="text-center py-6">
+            <p className="text-6xl font-bold">{overallPct}%</p>
+            <p className="text-muted-foreground text-sm mt-1">{totalMade} / {totalAttempted} shots made</p>
+          </div>
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card>
+              <CardContent className="p-3 text-center">
+                <p className="text-2xl font-bold">{bestStreak}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Best Streak</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3 text-center">
+                <p className="text-2xl font-bold text-primary">+{practiceXp}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Practice XP</p>
+              </CardContent>
+            </Card>
+            {durationMin && (
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <p className="text-2xl font-bold">{durationMin}<span className="text-sm font-normal text-muted-foreground">m</span></p>
+                  <p className="text-[10px] text-muted-foreground uppercase">Duration</p>
+                </CardContent>
+              </Card>
+            )}
+            <Card>
+              <CardContent className="p-3 text-center">
+                <p className="text-2xl font-bold">{totalAttempted}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Total Shots</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Zone breakdown */}
+          {zonesForSession.length > 1 && (
+            <div className="space-y-1.5">
+              {zonesForSession.map(z => zoneAtt(z) > 0 && (
+                <div key={z} className="flex items-center justify-between bg-card rounded-lg px-3 py-2 border border-border">
+                  <div className="flex items-center gap-2">
+                    {zoneIcon(z)}
+                    <span className="text-sm font-medium">{zoneLabel(z)}</span>
+                  </div>
+                  <span className="text-sm font-bold tabular-nums">{zoneMade(z)}/{zoneAtt(z)} ({zonePct(z)}%)</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Insight */}
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-center">
+            <p className="text-sm">{insight}</p>
+          </div>
+        </div>
+
+        {/* Save button */}
+        <div className="px-4 py-4 border-t border-border bg-card">
+          <Button onClick={handleSaveSummary} disabled={saving} className="w-full h-12 text-base font-semibold gap-2">
+            <Check className="w-5 h-5" />
+            {saving ? 'Saving...' : 'Save & Close'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // ─── Shooting Log Screen ─────────────────────────────────
   if (view === 'log') {
     return (
       <div className="min-h-screen bg-background flex flex-col">
+        {/* Feedback overlays — same as LiveStatCapture */}
+        <FireCelebration show={showFireCelebration} />
+        <StatFlash
+          key={flashKeyRef.current}
+          show={flashState.show}
+          emoji={flashState.emoji}
+          message={flashState.message}
+          variant={flashState.variant}
+        />
+
         {/* Header */}
         <div className="bg-card border-b border-border px-3 py-2 flex items-center justify-between sticky top-0 z-10">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setView('select'); setSessionType(null); }}>
@@ -310,17 +493,47 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
         </div>
 
         <div className="flex-1 flex flex-col">
-          {/* Overall % Display */}
-          <div className="bg-gradient-to-r from-primary to-primary/80 py-3 text-center mt-2 mx-3 rounded-lg">
-            <p className={cn(
-              "text-4xl font-bold text-primary-foreground",
-              totalAttempted === 0 && "opacity-50"
-            )}>
-              {totalAttempted > 0 ? `${overallPct}%` : '—'}
-            </p>
-            <p className="text-primary-foreground/70 text-xs mt-1">
-              {totalMade} / {totalAttempted} total shots
-            </p>
+          {/* Enhanced Banner */}
+          <div className="bg-gradient-to-r from-primary to-primary/80 py-3 text-center mt-2 mx-3 rounded-lg relative overflow-hidden">
+            <div className="flex items-center justify-center gap-4">
+              <div>
+                <p className={cn(
+                  "text-4xl font-bold text-primary-foreground tabular-nums",
+                  totalAttempted === 0 && "opacity-50"
+                )}>
+                  {totalAttempted > 0 ? `${overallPct}%` : '—'}
+                </p>
+                <p className="text-primary-foreground/70 text-xs mt-0.5">
+                  {totalMade} / {totalAttempted} shots
+                </p>
+              </div>
+              {/* Streak badge */}
+              {currentStreak >= 2 && (
+                <div className="bg-primary-foreground/20 backdrop-blur-sm rounded-lg px-3 py-1.5 animate-scale-in">
+                  <p className="text-primary-foreground text-lg font-bold tabular-nums">🔥 {currentStreak}</p>
+                  <p className="text-primary-foreground/70 text-[9px] uppercase">Streak</p>
+                </div>
+              )}
+            </div>
+
+            {/* Goal progress bar */}
+            <div className="mx-4 mt-2">
+              <div className="flex items-center justify-between text-[9px] text-primary-foreground/60 mb-0.5">
+                <span>Goal</span>
+                <span>{totalAttempted} / {sessionGoal}</span>
+              </div>
+              <div className="h-1.5 bg-primary-foreground/20 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary-foreground/80 rounded-full transition-all duration-300"
+                  style={{ width: `${goalProgress}%` }}
+                />
+              </div>
+            </div>
+
+            {/* XP earned */}
+            {totalAttempted > 0 && (
+              <p className="text-primary-foreground/50 text-[10px] mt-1.5">+{practiceXp} XP</p>
+            )}
           </div>
 
           {/* Quick Stats Bar — only for full workout */}
@@ -337,20 +550,22 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
 
           {/* Shooting Zones */}
           <div className="flex-1 px-3 py-2 space-y-2 overflow-auto">
-            <h3 className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Shooting</h3>
+            {!isSingleZone && (
+              <h3 className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Shooting</h3>
+            )}
 
             {zonesForSession.map(zone => (
               <div key={zone} className={cn(
                 "bg-card rounded-lg border border-border",
-                isSingleZone ? "p-4" : "p-2"
+                isSingleZone ? "p-5" : "p-2"
               )}>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-1.5">
-                    {zoneIcon(zone)}
-                    <span className={cn("font-medium", isSingleZone ? "text-base" : "text-sm")}>{zoneLabel(zone)}</span>
+                    {zoneIcon(zone, isSingleZone ? 'w-5 h-5' : 'w-3.5 h-3.5')}
+                    <span className={cn("font-semibold", isSingleZone ? "text-lg" : "text-sm")}>{zoneLabel(zone)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={cn("text-muted-foreground", isSingleZone ? "text-sm" : "text-xs")}>
+                    <span className={cn("text-muted-foreground tabular-nums", isSingleZone ? "text-sm" : "text-xs")}>
                       {zoneMade(zone)}/{zoneAtt(zone)} ({zonePct(zone)}%)
                     </span>
                     <Button
@@ -363,13 +578,14 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
                     </Button>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <StatButton label="Made" variant="success" emphasis="primary" onPress={() => recordShot(zone, 'make')} />
-                  <StatButton label="Miss" variant="danger" emphasis="secondary" onPress={() => recordShot(zone, 'miss')} />
+                <div className="grid grid-cols-2 gap-3">
+                  <StatButton label="Made" variant="success" emphasis="primary" large={isSingleZone} onPress={() => recordShot(zone, 'make')} />
+                  <StatButton label="Miss" variant="danger" emphasis="secondary" large={isSingleZone} onPress={() => recordShot(zone, 'miss')} />
                 </div>
-                {/* Expanded single-zone: show a larger percentage ring */}
+
+                {/* Single-zone expanded stats */}
                 {isSingleZone && zoneAtt(zone) > 0 && (
-                  <div className="mt-4 flex items-center justify-center gap-6">
+                  <div className="mt-5 flex items-center justify-center gap-8">
                     <div className="text-center">
                       <p className="text-3xl font-bold">{zoneMade(zone)}</p>
                       <p className="text-[10px] text-muted-foreground uppercase">Makes</p>
@@ -381,8 +597,8 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
                     </div>
                     <div className="h-10 w-px bg-border" />
                     <div className="text-center">
-                      <p className="text-3xl font-bold">{zoneAtt(zone)}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase">Total</p>
+                      <p className="text-3xl font-bold">{bestStreak}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase">Best Run</p>
                     </div>
                   </div>
                 )}
@@ -390,11 +606,11 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
             ))}
           </div>
 
-          {/* Save button */}
+          {/* Finish button */}
           <div className="px-3 py-3 border-t border-border bg-card">
-            <Button onClick={handleSave} disabled={saving || totalAttempted === 0} className="w-full h-12 text-base font-semibold gap-2">
-              <Save className="w-5 h-5" />
-              {saving ? 'Saving...' : 'Save Practice Session'}
+            <Button onClick={handleFinishPractice} disabled={totalAttempted === 0} className="w-full h-12 text-base font-semibold gap-2">
+              <Trophy className="w-5 h-5" />
+              Finish Practice
             </Button>
           </div>
         </div>
@@ -481,6 +697,7 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
                     {sessionFtPct !== null && <span>FT: {sessionFtPct}%</span>}
                     {sessionMidPct !== null && <span>Mid: {sessionMidPct}%</span>}
                     {sessionThreePct !== null && <span>3PT: {sessionThreePct}%</span>}
+                    {session.duration_minutes && <span>{session.duration_minutes}m</span>}
                   </div>
                 </CardContent>
               </Card>
