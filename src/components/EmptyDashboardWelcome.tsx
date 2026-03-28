@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Mic, Camera, User, Sparkles, Loader2, Check, X, RefreshCw, Trash2, Volume2, ImageIcon } from 'lucide-react';
+import { Plus, Mic, Camera, User, Sparkles, Loader2, Check, X, RefreshCw, Trash2, Volume2, ImageIcon, Target } from 'lucide-react';
 import { getCoachAvatarUrl } from '@/utils/coachAvatar';
 import { WebcamCaptureDialog } from '@/components/WebcamCaptureDialog';
 import { useCoachVoice } from '@/hooks/useCoachVoice';
@@ -32,6 +32,7 @@ interface EmptyDashboardWelcomeProps {
   coachVoiceGender?: 'male' | 'female';
   onLogFirstGame: () => void;
   onPregameTalk: () => void;
+  onLogPractice?: () => void;
   onUploadPhoto: () => void;
   onSkipPhoto: () => void;
   onAvatarGenerated?: (newAvatarUrl: string) => void;
@@ -50,6 +51,7 @@ export function EmptyDashboardWelcome({
   coachVoiceGender,
   onLogFirstGame, 
   onPregameTalk,
+  onLogPractice,
   onUploadPhoto,
   onSkipPhoto,
   onAvatarGenerated,
@@ -399,6 +401,16 @@ export function EmptyDashboardWelcome({
                 <Mic className="w-4 h-4 mr-2" />
                 Pregame Talk
               </Button>
+              {onLogPractice && (
+                <Button
+                  onClick={onLogPractice}
+                  variant="outline"
+                  className="w-full h-12"
+                >
+                  <Target className="w-4 h-4 mr-2" />
+                  Log Practice
+                </Button>
+              )}
             </motion.div>
           </CardContent>
         </Card>

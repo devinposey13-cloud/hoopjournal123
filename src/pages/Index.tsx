@@ -756,6 +756,7 @@ export default function Index() {
                     onPregameTalk={() => {
                       setActiveTab('coach');
                     }}
+                    onLogPractice={() => setShowPracticeMode(true)}
                     onUploadPhoto={() => {
                       setActiveTab('settings');
                     }}
@@ -771,21 +772,9 @@ export default function Index() {
                       await updateProfile({ ...profile, avatar: undefined });
                     }}
                     onIntroPlayed={() => {
-                      // Clear the flag after intro is played
                       setJustCompletedOnboarding(false);
                     }}
                   />
-                  
-                  <div className="mt-6 flex justify-center">
-                    <Button
-                      variant="outline"
-                      className="gap-2"
-                      onClick={() => setShowPracticeMode(true)}
-                    >
-                      <Target className="h-4 w-4" />
-                      Log Practice
-                    </Button>
-                  </div>
                 </div>
               </div>
             ) : (
@@ -888,22 +877,12 @@ export default function Index() {
                       onLogGame={() => setActiveTab('games')}
                       onOpenCoach={() => setActiveTab('coach')}
                       onStartLiveCapture={todayGames.length > 0 ? handleQuickLiveStatsClick : undefined}
+                      onLogPractice={() => setShowPracticeMode(true)}
                       latestUnseenInsight={insightsHook.latestUnseen}
                       onViewInsight={(id) => insightsHook.markInsightSeen(id)}
                     />
                   </AnimatedSection>
 
-                  {/* LOG PRACTICE BUTTON */}
-                  <AnimatedSection delay={0.08}>
-                    <Button
-                      variant="outline"
-                      className="w-full h-12 gap-2 border-primary/30 hover:bg-primary/10 text-foreground font-semibold"
-                      onClick={() => setShowPracticeMode(true)}
-                    >
-                      <Target className="w-5 h-5 text-primary" />
-                      Log Practice
-                    </Button>
-                  </AnimatedSection>
 
                   {/* DAILY INSIGHT / AI SUMMARY */}
                   <AnimatedSection delay={0.15}>
