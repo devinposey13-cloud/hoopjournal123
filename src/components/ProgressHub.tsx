@@ -1,12 +1,17 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart3, TrendingUp, Video, Trophy, Activity } from 'lucide-react';
+import { BarChart3, TrendingUp, Video, Trophy, Activity, Dumbbell, GitCompare } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import { QuickStatsRow } from '@/components/progress/QuickStatsRow';
 import { AIInsightsPanel } from '@/components/progress/AIInsightsPanel';
 import { HeroPerformanceChart } from '@/components/progress/HeroPerformanceChart';
+import { PracticeProgressView } from '@/components/progress/PracticeProgressView';
 import { useXpProgress } from '@/hooks/useXpProgress';
+import { useAuth } from '@/hooks/useAuth';
+import { useActiveProfile } from '@/hooks/useActiveProfile';
+import { supabase } from '@/integrations/supabase/client';
 import type { GameStats, SeasonStats, PlayerTeam, VideoClip } from '@/types/basketball';
 
 // Lazy load heavy components for better performance
