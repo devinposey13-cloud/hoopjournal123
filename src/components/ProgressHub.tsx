@@ -264,6 +264,7 @@ export function ProgressHub({
           </motion.div>
         </AnimatePresence>
       </Tabs>
+      )}
     </div>
   );
 }
