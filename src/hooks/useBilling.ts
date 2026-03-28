@@ -344,9 +344,21 @@ export function useBilling(): UseBillingReturn {
         });
       }, 120000);
 
+      // Touch-based return detector: while the Apple pay sheet is open,
+      // the user cannot interact with the web view. The first touch after
+      // dismissal signals the user is back.
+      const onTouchReturn = () => {
+        if (!settled && Date.now() - launchedAt > 1500) {
+          log('[Billing] touch_return_detected — user regained control');
+          runReturnCheck('touch_return', 400);
+        }
+      };
+
       window.addEventListener('focus', onPossibleReturn);
       window.addEventListener('pageshow', onPossibleReturn);
       document.addEventListener('visibilitychange', onVisibilityChange);
+      document.addEventListener('touchstart', onTouchReturn, { passive: true });
+      document.addEventListener('pointerdown', onTouchReturn, { passive: true });
 
       window.onRevenueCatPurchase = handlePurchaseCallback;
       (window as any).onRevenueCatPaywallDismiss = handleDismissCallback;
