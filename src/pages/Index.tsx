@@ -881,6 +881,17 @@ export default function Index() {
                     />
                   </AnimatedSection>
 
+                  {/* LOG PRACTICE BUTTON */}
+                  <AnimatedSection delay={0.08}>
+                    <Button
+                      variant="outline"
+                      className="w-full h-12 gap-2 border-primary/30 hover:bg-primary/10 text-foreground font-semibold"
+                      onClick={() => setShowPracticeMode(true)}
+                    >
+                      <Target className="w-5 h-5 text-primary" />
+                      Log Practice
+                    </Button>
+                  </AnimatedSection>
 
                   {/* DAILY INSIGHT / AI SUMMARY */}
                   <AnimatedSection delay={0.15}>
