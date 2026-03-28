@@ -54,7 +54,8 @@ import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import { useRetroactiveXp } from '@/hooks/useRetroactiveXp';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { LogOut, Trophy, X, Radio, Users, TrendingUp, MessageSquare, Gamepad2, Shield } from 'lucide-react';
+import { LogOut, Trophy, X, Radio, Users, TrendingUp, MessageSquare, Gamepad2, Shield, Target } from 'lucide-react';
+import { PracticeMode } from '@/components/practice/PracticeMode';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton, GamesHubTabSkeleton, CoachTabSkeleton, StatsTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -91,6 +92,8 @@ export default function Index() {
   const [coachPrefillPrompt, setCoachPrefillPrompt] = useState<string | undefined>();
   const [autoOpenAddGame, setAutoOpenAddGame] = useState(false);
   const [showPostAuthRecovery, setShowPostAuthRecovery] = useState(false);
+  const [showPracticeMode, setShowPracticeMode] = useState(false);
+  const handleTabChange = (tab: Tab) => { setShowPracticeMode(false); setActiveTab(tab); };
   const { user, loading: authLoading, signOut, isGuest } = useAuth();
   const { currentPlan, accessBadge } = usePlan();
   const { teams } = usePlayerTeams();
@@ -697,7 +700,7 @@ export default function Index() {
       {!isMobile && (
         <Navigation 
           activeTab={activeTab} 
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
           seasons={seasons}
           activeSeason={activeSeason}
           onSeasonChange={switchSeason}
@@ -712,7 +715,7 @@ export default function Index() {
       {isMobile && (
         <BottomNavigation 
           activeTab={activeTab} 
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
           seasons={seasons}
           activeSeason={activeSeason}
           onSeasonChange={switchSeason}
@@ -727,8 +730,15 @@ export default function Index() {
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="animate-fade-in">
-            {/* Show Coach AI welcome for new users with no games */}
-            {games.length === 0 ? (
+            {showPracticeMode ? (
+              <div className="journal-page rounded-2xl overflow-hidden">
+                <div className="px-6 md:px-10 py-6">
+                  <PracticeMode onBack={() => setShowPracticeMode(false)} />
+                </div>
+              </div>
+            ) :
+            /* Show Coach AI welcome for new users with no games */
+            games.length === 0 ? (
               <div className="journal-page rounded-2xl overflow-hidden">
                 <div className="px-6 md:px-10 py-8">
                   <JournalHeader playerName={profile.name} className="mb-6 animate-fade-in" />
@@ -872,6 +882,17 @@ export default function Index() {
                     />
                   </AnimatedSection>
 
+                  {/* LOG PRACTICE BUTTON */}
+                  <AnimatedSection delay={0.08}>
+                    <Button
+                      variant="outline"
+                      className="w-full h-12 gap-2 border-primary/30 hover:bg-primary/10 text-foreground font-semibold"
+                      onClick={() => setShowPracticeMode(true)}
+                    >
+                      <Target className="w-5 h-5 text-primary" />
+                      Log Practice
+                    </Button>
+                  </AnimatedSection>
 
                   {/* DAILY INSIGHT / AI SUMMARY */}
                   <AnimatedSection delay={0.15}>

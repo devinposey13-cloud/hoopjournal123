@@ -1523,6 +1523,69 @@ export type Database = {
           },
         ]
       }
+      practice_sessions: {
+        Row: {
+          created_at: string
+          duration_minutes: number | null
+          ft_attempted: number
+          ft_made: number
+          id: string
+          midrange_attempted: number
+          midrange_made: number
+          notes: string | null
+          practice_type: string
+          profile_id: string | null
+          three_pt_attempted: number
+          three_pt_made: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number | null
+          ft_attempted?: number
+          ft_made?: number
+          id?: string
+          midrange_attempted?: number
+          midrange_made?: number
+          notes?: string | null
+          practice_type?: string
+          profile_id?: string | null
+          three_pt_attempted?: number
+          three_pt_made?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number | null
+          ft_attempted?: number
+          ft_made?: number
+          id?: string
+          midrange_attempted?: number
+          midrange_made?: number
+          notes?: string | null
+          practice_type?: string
+          profile_id?: string | null
+          three_pt_attempted?: number
+          three_pt_made?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quick_cards: {
         Row: {
           badges: Json
