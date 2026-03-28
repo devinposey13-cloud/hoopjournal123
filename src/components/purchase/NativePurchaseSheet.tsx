@@ -45,7 +45,7 @@ export function NativePurchaseSheet({
   recommendedPlan = 'pro',
   initialBillingCycle = 'monthly',
 }: NativePurchaseSheetProps) {
-  const { purchasePlan, restorePurchases, isRestoring, isNative } = useBilling();
+  const { purchasePlan, restorePurchases, isRestoring, isNative, forceResetPurchaseState } = useBilling();
   const { ready: rcReady, loading: rcLoading, diagnostics: rcDiag, retry: rcRetry, findPackage } = useNativeRC();
   const { isOnline } = useOnlineStatus();
   const navigate = useNavigate();
@@ -54,6 +54,7 @@ export function NativePurchaseSheet({
   const [selectedPlan, setSelectedPlan] = useState<PlanId>(recommendedPlan);
   const [loadingMessage, setLoadingMessage] = useState('Loading plans…');
   const [isAttemptingPurchase, setIsAttemptingPurchase] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
 
   useEffect(() => {
     if (!open) {
@@ -86,6 +87,14 @@ export function NativePurchaseSheet({
     return pkg?.priceString || null;
   };
 
+  const performSoftReset = () => {
+    console.log('[NativePurchaseSheet] paywall_soft_reset_started');
+    forceResetPurchaseState();
+    setIsAttemptingPurchase(false);
+    setResetKey(k => k + 1);
+    console.log('[NativePurchaseSheet] paywall_soft_reset_completed');
+  };
+
   const handlePurchase = async () => {
     if (interactionLocked || isRestoring) return;
     if (!isOnline) {
@@ -103,10 +112,18 @@ export function NativePurchaseSheet({
         onClose();
       }
     } catch {
-      // Error handled by useBilling
+      console.log('[NativePurchaseSheet] purchase_sheet_dismissed');
+      performSoftReset();
     } finally {
       setIsAttemptingPurchase(false);
       console.log('[NativePurchaseSheet] buttons_reenabled');
+      // Fallback: verify interactivity after a short delay
+      setTimeout(() => {
+        if (isAttemptingPurchase) {
+          console.log('[NativePurchaseSheet] paywall_still_stuck — forcing recovery');
+          performSoftReset();
+        }
+      }, 800);
     }
   };
 

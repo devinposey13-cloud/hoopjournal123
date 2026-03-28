@@ -55,7 +55,7 @@ const PDF_VALUE_BULLETS = [
 export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: PaywallSheetProps) {
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('pro');
-  const { purchasePlan, restorePurchases, isRestoring, isNative } = useBilling();
+  const { purchasePlan, restorePurchases, isRestoring, isNative, forceResetPurchaseState } = useBilling();
   const { refresh: refreshEntitlements } = useNativeEntitlements();
   const { findPackage } = useNativeRC();
   const { isOnline } = useOnlineStatus();
@@ -64,6 +64,7 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
 
   const [purchasingPlan, setPurchasingPlan] = useState<PlanId | null>(null);
   const [isAttemptingPurchase, setIsAttemptingPurchase] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
 
   const interactionLocked = isAttemptingPurchase;
 
@@ -80,6 +81,14 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
     }
   }, [open]);
 
+  const performSoftReset = () => {
+    console.log('[PaywallSheet] paywall_soft_reset_started');
+    forceResetPurchaseState();
+    setIsAttemptingPurchase(false);
+    setPurchasingPlan(null);
+    setResetKey(k => k + 1);
+    console.log('[PaywallSheet] paywall_soft_reset_completed');
+  };
 
   if (!config) return null;
 
@@ -106,10 +115,21 @@ export function PaywallSheet({ open, reason, currentPlan, onClose, onUpgrade }: 
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message.toLowerCase() : '';
-      if (msg.includes('cancel')) return;
+      if (msg.includes('cancel')) {
+        console.log('[PaywallSheet] purchase_sheet_dismissed');
+        performSoftReset();
+        return;
+      }
     } finally {
       setIsAttemptingPurchase(false);
       setPurchasingPlan(null);
+      // Fallback: verify interactivity after a short delay
+      setTimeout(() => {
+        if (isAttemptingPurchase) {
+          console.log('[PaywallSheet] paywall_still_stuck — forcing recovery');
+          performSoftReset();
+        }
+      }, 800);
     }
   };
 
