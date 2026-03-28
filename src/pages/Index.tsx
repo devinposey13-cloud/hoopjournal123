@@ -715,7 +715,7 @@ export default function Index() {
       {isMobile && (
         <BottomNavigation 
           activeTab={activeTab} 
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
           seasons={seasons}
           activeSeason={activeSeason}
           onSeasonChange={switchSeason}
