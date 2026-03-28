@@ -108,7 +108,7 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
     show: false, emoji: '', message: '', variant: 'neutral'
   });
   const flashKeyRef = useRef(0);
-  const { playMake, playMiss } = useSoundEffects();
+  const { playSound } = useSoundEffects();
   const { triggerHaptic } = useHapticFeedback();
 
   // Shot stats
