@@ -23,7 +23,7 @@ export default function Pricing() {
   const [searchParams] = useSearchParams();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { currentPlan } = usePlan();
-  const { purchasePlan, isPurchasing, diagnostics, debugLog } = useBilling();
+  const { purchasePlan, isPurchasing, diagnostics, debugLog, lastPurchaseResult, forceResetPurchaseState } = useBilling();
   const { findPackage } = useNativeRC();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [promoApplied, setPromoApplied] = useState(false);
