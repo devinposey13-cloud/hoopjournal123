@@ -756,6 +756,7 @@ export default function Index() {
                     onPregameTalk={() => {
                       setActiveTab('coach');
                     }}
+                    onLogPractice={() => setShowPracticeMode(true)}
                     onUploadPhoto={() => {
                       setActiveTab('settings');
                     }}
@@ -771,21 +772,9 @@ export default function Index() {
                       await updateProfile({ ...profile, avatar: undefined });
                     }}
                     onIntroPlayed={() => {
-                      // Clear the flag after intro is played
                       setJustCompletedOnboarding(false);
                     }}
                   />
-                  
-                  <div className="mt-6 flex justify-center">
-                    <Button
-                      variant="outline"
-                      className="gap-2"
-                      onClick={() => setShowPracticeMode(true)}
-                    >
-                      <Target className="h-4 w-4" />
-                      Log Practice
-                    </Button>
-                  </div>
                 </div>
               </div>
             ) : (
