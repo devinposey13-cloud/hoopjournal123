@@ -93,6 +93,7 @@ export default function Index() {
   const [autoOpenAddGame, setAutoOpenAddGame] = useState(false);
   const [showPostAuthRecovery, setShowPostAuthRecovery] = useState(false);
   const [showPracticeMode, setShowPracticeMode] = useState(false);
+  const handleTabChange = (tab: Tab) => { setShowPracticeMode(false); setActiveTab(tab); };
   const { user, loading: authLoading, signOut, isGuest } = useAuth();
   const { currentPlan, accessBadge } = usePlan();
   const { teams } = usePlayerTeams();
