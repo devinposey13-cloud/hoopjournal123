@@ -345,6 +345,15 @@ export function useBilling(): UseBillingReturn {
         }, delayMs);
       }
 
+      timeout = setTimeout(() => {
+        log('[Billing] ⚠ Native purchase callback timed out (120s). Checking backend…');
+        settle(() => {
+          pollSubscriptionStatus(3, 2000, planId)
+            .then((confirmedPlan) => resolve({ confirmed: confirmedPlan === planId }))
+            .catch(() => resolve({ confirmed: false }));
+        });
+      }, 120000);
+
       window.addEventListener('focus', onPossibleReturn);
       window.addEventListener('pageshow', onPossibleReturn);
       document.addEventListener('visibilitychange', onVisibilityChange);
