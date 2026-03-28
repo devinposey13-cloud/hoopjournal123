@@ -775,6 +775,17 @@ export default function Index() {
                       setJustCompletedOnboarding(false);
                     }}
                   />
+                  
+                  <div className="mt-6 flex justify-center">
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => setShowPracticeMode(true)}
+                    >
+                      <Target className="h-4 w-4" />
+                      Log Practice
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : (
