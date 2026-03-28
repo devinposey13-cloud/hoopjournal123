@@ -54,7 +54,8 @@ import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import { useRetroactiveXp } from '@/hooks/useRetroactiveXp';
 import { isAfter, isBefore, isToday, startOfDay, isSameDay, format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { LogOut, Trophy, X, Radio, Users, TrendingUp, MessageSquare, Gamepad2, Shield } from 'lucide-react';
+import { LogOut, Trophy, X, Radio, Users, TrendingUp, MessageSquare, Gamepad2, Shield, Target } from 'lucide-react';
+import { PracticeMode } from '@/components/practice/PracticeMode';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { DashboardSkeleton, GamesTabSkeleton, ScheduleTabSkeleton, GamesHubTabSkeleton, CoachTabSkeleton, StatsTabSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -91,6 +92,7 @@ export default function Index() {
   const [coachPrefillPrompt, setCoachPrefillPrompt] = useState<string | undefined>();
   const [autoOpenAddGame, setAutoOpenAddGame] = useState(false);
   const [showPostAuthRecovery, setShowPostAuthRecovery] = useState(false);
+  const [showPracticeMode, setShowPracticeMode] = useState(false);
   const { user, loading: authLoading, signOut, isGuest } = useAuth();
   const { currentPlan, accessBadge } = usePlan();
   const { teams } = usePlayerTeams();
