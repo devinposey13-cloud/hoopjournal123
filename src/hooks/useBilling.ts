@@ -271,12 +271,40 @@ export function useBilling(): UseBillingReturn {
         runReturnCheck('onRevenueCatPaywallDismiss', 250);
       };
 
+      // Touch-based return detector: while the Apple pay sheet is open,
+      // the user cannot interact with the web view. The first touch after
+      // dismissal signals the user is back.
+      const onTouchReturn = () => {
+        if (!settled && Date.now() - launchedAt > 1500) {
+          log('[Billing] touch_return_detected — user regained control');
+          runReturnCheck('touch_return', 400);
+        }
+      };
+
+      const onPossibleReturn = () => {
+        if (!settled && Date.now() - launchedAt > 1000) {
+          runReturnCheck('focus_return');
+        }
+      };
+
+      const onVisibilityChange = () => {
+        if (document.visibilityState === 'hidden') {
+          appWasHidden = true;
+          return;
+        }
+        if (document.visibilityState === 'visible' && !settled && (appWasHidden || Date.now() - launchedAt > 1000)) {
+          runReturnCheck('visibility_return');
+        }
+      };
+
       const cleanup = () => {
         clearFallbackTimer();
         if (timeout) clearTimeout(timeout);
         window.removeEventListener('focus', onPossibleReturn);
         window.removeEventListener('pageshow', onPossibleReturn);
         document.removeEventListener('visibilitychange', onVisibilityChange);
+        document.removeEventListener('touchstart', onTouchReturn);
+        document.removeEventListener('pointerdown', onTouchReturn);
         if (window.onRevenueCatPurchase === handlePurchaseCallback) {
           window.onRevenueCatPurchase = undefined;
         }
@@ -313,27 +341,9 @@ export function useBilling(): UseBillingReturn {
           } catch (err) {
             log(`[Billing] ⚠ Return check polling failed after ${reason}: ${err}`);
           }
-
           settle(() => reject(new Error('cancelled')));
         }, delayMs);
       }
-
-      const onPossibleReturn = () => {
-        if (!settled && Date.now() - launchedAt > 1000) {
-          runReturnCheck('focus_return');
-        }
-      };
-
-      const onVisibilityChange = () => {
-        if (document.visibilityState === 'hidden') {
-          appWasHidden = true;
-          return;
-        }
-
-        if (document.visibilityState === 'visible' && !settled && (appWasHidden || Date.now() - launchedAt > 1000)) {
-          runReturnCheck('visibility_return');
-        }
-      };
 
       timeout = setTimeout(() => {
         log('[Billing] ⚠ Native purchase callback timed out (120s). Checking backend…');
@@ -347,6 +357,8 @@ export function useBilling(): UseBillingReturn {
       window.addEventListener('focus', onPossibleReturn);
       window.addEventListener('pageshow', onPossibleReturn);
       document.addEventListener('visibilitychange', onVisibilityChange);
+      document.addEventListener('touchstart', onTouchReturn, { passive: true });
+      document.addEventListener('pointerdown', onTouchReturn, { passive: true });
 
       window.onRevenueCatPurchase = handlePurchaseCallback;
       (window as any).onRevenueCatPaywallDismiss = handleDismissCallback;
