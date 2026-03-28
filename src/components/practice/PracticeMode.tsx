@@ -121,7 +121,7 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
   const fetchHistory = async () => {
     if (!user) return;
     setLoadingHistory(true);
-    const query = supabase
+    const query = (supabase as any)
       .from('practice_sessions')
       .select('*')
       .eq('user_id', user.id)
@@ -148,7 +148,7 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from('practice_sessions').insert({
+    const { error } = await (supabase as any).from('practice_sessions').insert({
       user_id: user.id,
       profile_id: activeProfileId || null,
       practice_type: 'shooting',
@@ -176,7 +176,7 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('practice_sessions').delete().eq('id', id);
+    const { error } = await (supabase as any).from('practice_sessions').delete().eq('id', id);
     if (error) {
       toast.error('Failed to delete session');
       return;
