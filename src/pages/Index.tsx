@@ -736,8 +736,8 @@ export default function Index() {
                 </div>
               </div>
             ) :
-            {/* Show Coach AI welcome for new users with no games */}
-            {games.length === 0 ? (
+            /* Show Coach AI welcome for new users with no games */
+            games.length === 0 ? (
               <div className="journal-page rounded-2xl overflow-hidden">
                 <div className="px-6 md:px-10 py-8">
                   <JournalHeader playerName={profile.name} className="mb-6 animate-fade-in" />
