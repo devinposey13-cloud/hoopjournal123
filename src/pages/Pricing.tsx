@@ -224,10 +224,10 @@ export default function Pricing() {
                 <button
                   className="bg-blue-800 text-white px-2 py-1 rounded text-[10px]"
                   onClick={() => {
-                    setDebugLogSnapshot([...debugLog]);
+                    navigator.clipboard?.writeText(debugLog.join('\n')).then(() => toast.info('Log copied'));
                   }}
                 >
-                  Snapshot Log
+                  Copy Log
                 </button>
               </div>
 
