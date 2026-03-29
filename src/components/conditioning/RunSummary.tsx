@@ -1,10 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Clock, MapPin, Zap, Shield } from 'lucide-react';
+import { Check, X, Clock, MapPin, Zap, Shield, Signal } from 'lucide-react';
 import { GpsPoint } from '@/hooks/useGpsTracking';
 import { RunTrace } from './RunTrace';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface RunResult {
   points: GpsPoint[];
