@@ -6,7 +6,7 @@ import { useActiveProfile } from '@/hooks/useActiveProfile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Target, History, Trash2, Undo2, Circle, Flame, Zap, Trophy, TrendingUp, Check } from 'lucide-react';
+import { ArrowLeft, Target, History, Trash2, Undo2, Circle, Flame, Zap, Trophy, TrendingUp, Check, Footprints } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
