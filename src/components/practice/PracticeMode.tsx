@@ -740,4 +740,4 @@ export const PracticeMode = forwardRef<HTMLDivElement, PracticeModeProps>(functi
       </div>
     </div>
   );
-}
+});

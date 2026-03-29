@@ -271,4 +271,4 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
       </div>
     </div>
   );
-}
+});
