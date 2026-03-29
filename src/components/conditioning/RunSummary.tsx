@@ -84,6 +84,45 @@ export function RunSummary({ result, saving, onSave, onDiscard }: RunSummaryProp
           <p className="text-sm text-muted-foreground mt-2">{format(new Date(), 'MMM d, yyyy')}</p>
         </div>
 
+        {/* Conditioning Grade */}
+        {grade && (
+          <div className="flex flex-col items-center gap-2">
+            <div
+              className="w-20 h-20 rounded-2xl flex items-center justify-center border-2"
+              style={{
+                borderColor: grade.color,
+                backgroundColor: `${grade.color}15`,
+                boxShadow: grade.glow,
+              }}
+            >
+              <span
+                className="text-2xl font-black"
+                style={{ color: grade.color }}
+              >
+                {grade.grade}
+              </span>
+            </div>
+            {grade.gradeLabel && (
+              <span
+                className="text-xs font-semibold px-3 py-1 rounded-full"
+                style={{ color: grade.color, backgroundColor: `${grade.color}15` }}
+              >
+                {grade.gradeLabel}
+              </span>
+            )}
+            {grade.reason && (
+              <span className="text-xs text-muted-foreground">
+                {grade.reason}
+              </span>
+            )}
+            {grade.mileTimeFormatted && (
+              <span className="text-xs text-muted-foreground">
+                Mile pace: {grade.mileTimeFormatted}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Status badges row */}
         <div className="flex justify-center gap-2 flex-wrap">
           <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border ${statusCfg.color}`}>
