@@ -187,7 +187,7 @@ function ConditioningSection({ sessions }: { sessions: ConditioningSession[] }) 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Running className="h-5 w-5 text-primary" />
+        <Footprints className="h-5 w-5 text-primary" />
         <h3 className="text-base font-semibold">Conditioning</h3>
         {avgTrustScore != null && (
           <span className={cn(
@@ -207,7 +207,7 @@ function ConditioningSection({ sessions }: { sessions: ConditioningSession[] }) 
           label="Runs"
           value={totals.count}
           suffix=""
-          icon={<Running className="h-4 w-4" />}
+          icon={<Footprints className="h-4 w-4" />}
           variant="default"
           delay={0}
         />
