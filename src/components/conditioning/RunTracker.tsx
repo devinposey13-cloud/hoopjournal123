@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Pause, Play, Square, MapPin } from 'lucide-react';
+import { ArrowLeft, Pause, Play, Square, MapPin, Smartphone } from 'lucide-react';
 import { useGpsTracking, getVerificationStatus, GpsPoint } from '@/hooks/useGpsTracking';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveProfile } from '@/hooks/useActiveProfile';
+import { useWakeLock } from '@/hooks/useWakeLock';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -42,6 +43,7 @@ export function RunTracker({ onBack, onSaved }: RunTrackerProps) {
   const { user } = useAuth();
   const { activeProfileId } = useActiveProfile();
   const gps = useGpsTracking();
+  const wakeLock = useWakeLock();
   const [phase, setPhase] = useState<'idle' | 'running' | 'summary'>('idle');
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [saving, setSaving] = useState(false);
@@ -51,12 +53,25 @@ export function RunTracker({ onBack, onSaved }: RunTrackerProps) {
     window.scrollTo(0, 0);
   }, [phase]);
 
+  // Show warning toast when wake lock is released unexpectedly during a run
+  useEffect(() => {
+    if (phase === 'running' && wakeLock.wasReleased && !wakeLock.isActive) {
+      toast.warning('Screen lock released — keep screen on for accurate tracking', { duration: 4000 });
+    }
+  }, [phase, wakeLock.wasReleased, wakeLock.isActive]);
+
   const handleStart = useCallback(async () => {
     const ok = await gps.startTracking();
-    if (ok) setPhase('running');
-  }, [gps]);
+    if (ok) {
+      setPhase('running');
+      await wakeLock.request();
+      if (!wakeLock.isSupported) {
+        toast.info('Keep your screen awake manually for best tracking accuracy', { duration: 5000 });
+      }
+    }
+  }, [gps, wakeLock]);
 
-  const handleFinish = useCallback(() => {
+  const handleFinish = useCallback(async () => {
     const result = gps.stopTracking();
     const status = getVerificationStatus(
       result.gpsPointCount, result.averageAccuracy, result.maxSpeed, false
@@ -64,13 +79,13 @@ export function RunTracker({ onBack, onSaved }: RunTrackerProps) {
     setRunResult({ ...result, verificationStatus: status });
     setPhase('summary');
     setConfirmStop(false);
-  }, [gps]);
+    await wakeLock.release();
+  }, [gps, wakeLock]);
 
   const handleSave = useCallback(async () => {
     if (!user || !runResult) return;
     setSaving(true);
 
-    // Strip GPS points to minimal data for storage
     const minimalPoints = runResult.points.map(p => ({
       lat: Math.round(p.lat * 100000) / 100000,
       lng: Math.round(p.lng * 100000) / 100000,
@@ -102,6 +117,13 @@ export function RunTracker({ onBack, onSaved }: RunTrackerProps) {
     toast.success('Run saved! 🏃');
     onSaved();
   }, [user, activeProfileId, runResult, onSaved]);
+
+  // Release wake lock on unmount (e.g. navigating away)
+  useEffect(() => {
+    return () => {
+      wakeLock.release();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Summary view
   if (phase === 'summary' && runResult) {
@@ -216,8 +238,9 @@ export function RunTracker({ onBack, onSaved }: RunTrackerProps) {
         </div>
       </div>
 
-      {/* GPS indicator */}
-      <div className="px-4 pb-6 flex justify-center">
+      {/* Status indicators */}
+      <div className="px-4 pb-6 flex flex-col items-center gap-2">
+        {/* GPS indicator */}
         <div className={cn(
           "flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full",
           gps.points.length > 0 ? "bg-green-500/15 text-green-400" : "bg-muted text-muted-foreground"
@@ -227,6 +250,23 @@ export function RunTracker({ onBack, onSaved }: RunTrackerProps) {
             gps.points.length > 0 ? "bg-green-400 animate-pulse" : "bg-muted-foreground"
           )} />
           {gps.points.length > 0 ? `GPS Active · ${gps.points.length} pts` : 'Acquiring GPS...'}
+        </div>
+
+        {/* Wake lock indicator */}
+        <div className={cn(
+          "flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full",
+          wakeLock.isActive
+            ? "bg-blue-500/15 text-blue-400"
+            : wakeLock.isSupported
+              ? "bg-yellow-500/15 text-yellow-400"
+              : "bg-muted text-muted-foreground"
+        )}>
+          <Smartphone className="w-3 h-3" />
+          {wakeLock.isActive
+            ? 'Screen Stay-On Active'
+            : wakeLock.isSupported
+              ? 'Screen lock released'
+              : 'Manual screen-on needed'}
         </div>
       </div>
     </div>
