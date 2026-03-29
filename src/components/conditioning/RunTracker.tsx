@@ -130,12 +130,19 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
       distanceMeters: result.distanceMeters,
     });
 
+    const conditioningGrade = calculateConditioningGrade({
+      distanceMeters: result.distanceMeters,
+      elapsedSeconds: result.elapsedSeconds,
+      coachTrustBand: coachTrust.band,
+    });
+
     setRunResult({
       ...result,
       verificationStatus: status,
       trackingMode,
       backgroundTrackingEnabled: bgLocation.isNativeSupported,
       coachTrust,
+      conditioningGrade,
     });
     setPhase('summary');
     setConfirmStop(false);
