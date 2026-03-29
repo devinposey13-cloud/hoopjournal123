@@ -96,7 +96,7 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
   const { user } = useAuth();
   const { activeProfileId } = useActiveProfile();
   const [sessionType, setSessionType] = useState<SessionType | null>(null);
-  const [view, setView] = useState<'select' | 'log' | 'history' | 'summary'>('select');
+  const [view, setView] = useState<'select' | 'log' | 'history' | 'summary' | 'conditioning'>('select');
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState<PracticeSession[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -327,6 +327,11 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
   };
 
   const practiceXp = Math.round(totalMade * 2 + totalAttempted * 0.5);
+
+  // ─── Conditioning View ─────────────────────────────────────
+  if (view === 'conditioning') {
+    return <ConditioningHome onBack={() => setView('select')} />;
+  }
 
   // ─── Session Type Selection Screen ─────────────────────────
   if (view === 'select') {
