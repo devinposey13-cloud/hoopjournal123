@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { ConditioningHome } from '@/components/conditioning/ConditioningHome';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveProfile } from '@/hooks/useActiveProfile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Target, History, Trash2, Undo2, Circle, Flame, Zap, Trophy, TrendingUp, Check } from 'lucide-react';
+import { ArrowLeft, Target, History, Trash2, Undo2, Circle, Flame, Zap, Trophy, TrendingUp, Check, Footprints } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -95,7 +96,7 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
   const { user } = useAuth();
   const { activeProfileId } = useActiveProfile();
   const [sessionType, setSessionType] = useState<SessionType | null>(null);
-  const [view, setView] = useState<'select' | 'log' | 'history' | 'summary'>('select');
+  const [view, setView] = useState<'select' | 'log' | 'history' | 'summary' | 'conditioning'>('select');
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState<PracticeSession[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -327,6 +328,11 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
 
   const practiceXp = Math.round(totalMade * 2 + totalAttempted * 0.5);
 
+  // ─── Conditioning View ─────────────────────────────────────
+  if (view === 'conditioning') {
+    return <ConditioningHome onBack={() => setView('select')} />;
+  }
+
   // ─── Session Type Selection Screen ─────────────────────────
   if (view === 'select') {
     return (
@@ -367,6 +373,28 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
               <ArrowLeft className="w-4 h-4 text-muted-foreground rotate-180 shrink-0" />
             </button>
           ))}
+
+          {/* Conditioning card */}
+          <div className="pt-2">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 px-1">Training</p>
+            <button
+              onClick={() => setView('conditioning')}
+              className={cn(
+                "w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-card",
+                "hover:bg-accent/50 active:scale-[0.98] transition-all",
+                "text-left touch-manipulation"
+              )}
+            >
+              <div className="h-11 w-11 rounded-full bg-primary/15 flex items-center justify-center text-primary shrink-0">
+                <Footprints className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">Conditioning</p>
+                <p className="text-xs text-muted-foreground">Track runs and conditioning workouts</p>
+              </div>
+              <ArrowLeft className="w-4 h-4 text-muted-foreground rotate-180 shrink-0" />
+            </button>
+          </div>
         </div>
       </div>
     );

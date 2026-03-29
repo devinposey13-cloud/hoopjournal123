@@ -413,6 +413,84 @@ export type Database = {
           },
         ]
       }
+      conditioning_sessions: {
+        Row: {
+          activity_type: string
+          average_accuracy: number | null
+          created_at: string
+          elapsed_seconds: number | null
+          end_time: string | null
+          gps_point_count: number | null
+          gps_points: Json | null
+          id: string
+          is_manual: boolean
+          max_speed: number | null
+          notes: string | null
+          pause_count: number | null
+          profile_id: string | null
+          session_date: string
+          start_time: string | null
+          total_distance_meters: number | null
+          user_id: string
+          verification_status: string
+        }
+        Insert: {
+          activity_type?: string
+          average_accuracy?: number | null
+          created_at?: string
+          elapsed_seconds?: number | null
+          end_time?: string | null
+          gps_point_count?: number | null
+          gps_points?: Json | null
+          id?: string
+          is_manual?: boolean
+          max_speed?: number | null
+          notes?: string | null
+          pause_count?: number | null
+          profile_id?: string | null
+          session_date?: string
+          start_time?: string | null
+          total_distance_meters?: number | null
+          user_id: string
+          verification_status?: string
+        }
+        Update: {
+          activity_type?: string
+          average_accuracy?: number | null
+          created_at?: string
+          elapsed_seconds?: number | null
+          end_time?: string | null
+          gps_point_count?: number | null
+          gps_points?: Json | null
+          id?: string
+          is_manual?: boolean
+          max_speed?: number | null
+          notes?: string | null
+          pause_count?: number | null
+          profile_id?: string | null
+          session_date?: string
+          start_time?: string | null
+          total_distance_meters?: number | null
+          user_id?: string
+          verification_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conditioning_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "player_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conditioning_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_reports: {
         Row: {
           admin_notes: string | null
