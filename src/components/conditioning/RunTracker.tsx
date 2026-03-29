@@ -43,6 +43,7 @@ interface RunResult {
   trackingMode: 'background' | 'foreground';
   backgroundTrackingEnabled: boolean;
   coachTrust: CoachTrustResult;
+  conditioningGrade: ConditioningGradeResult;
 }
 
 export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function RunTracker({ onBack, onSaved }, ref) {
