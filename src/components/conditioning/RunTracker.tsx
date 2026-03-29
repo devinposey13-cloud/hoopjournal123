@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { RunSummary } from './RunSummary';
 import { calculateCoachTrust, type CoachTrustResult } from '@/utils/coachTrust';
+import { calculateConditioningGrade, type ConditioningGradeResult } from '@/utils/conditioningGrade';
 
 interface RunTrackerProps {
   onBack: () => void;
