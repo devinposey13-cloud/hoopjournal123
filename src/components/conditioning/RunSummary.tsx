@@ -65,6 +65,7 @@ export function RunSummary({ result, saving, onSave, onDiscard }: RunSummaryProp
   const trust = result.coachTrust;
   const trustColors = trust ? TRUST_BAND_COLORS[trust.band] : null;
   const [showTrustDetails, setShowTrustDetails] = useState(false);
+  const grade = result.conditioningGrade;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
