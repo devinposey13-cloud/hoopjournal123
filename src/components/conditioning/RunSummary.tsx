@@ -7,6 +7,7 @@ import { RunTrace } from './RunTrace';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { type CoachTrustResult, TRUST_BAND_COLORS } from '@/utils/coachTrust';
+import { type ConditioningGradeResult } from '@/utils/conditioningGrade';
 
 interface RunResult {
   points: GpsPoint[];
@@ -20,6 +21,7 @@ interface RunResult {
   trackingMode?: 'background' | 'foreground';
   backgroundTrackingEnabled?: boolean;
   coachTrust?: CoachTrustResult;
+  conditioningGrade?: ConditioningGradeResult;
 }
 
 interface RunSummaryProps {
