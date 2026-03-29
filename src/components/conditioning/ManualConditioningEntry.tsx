@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +24,10 @@ export function ManualConditioningEntry({ onBack, onSaved }: ManualConditioningE
   const { user } = useAuth();
   const { activeProfileId } = useActiveProfile();
   const [activityType, setActivityType] = useState('run');
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [minutes, setMinutes] = useState('');
   const [seconds, setSeconds] = useState('');
   const [distance, setDistance] = useState('');

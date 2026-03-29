@@ -51,6 +51,10 @@ const STATUS_LABELS: Record<string, { label: string; className: string }> = {
 export function ConditioningHistory({ onBack }: ConditioningHistoryProps) {
   const { user } = useAuth();
   const { activeProfileId } = useActiveProfile();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [sessions, setSessions] = useState<ConditioningSession[]>([]);
   const [loading, setLoading] = useState(true);
 

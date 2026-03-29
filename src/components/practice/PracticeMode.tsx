@@ -127,6 +127,11 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
   const [actionHistory, setActionHistory] = useState<ShotAction[]>([]);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
 
+  // Scroll to top on view change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
+
   const totalMade = ftMade + midMade + threeMade;
   const totalAttempted = ftAttempted + midAttempted + threeAttempted;
   const overallPct = totalAttempted > 0 ? Math.round((totalMade / totalAttempted) * 100) : 0;

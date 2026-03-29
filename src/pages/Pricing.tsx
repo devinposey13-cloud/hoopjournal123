@@ -51,9 +51,6 @@ export default function Pricing() {
   const success = searchParams.get('success');
   const canceled = searchParams.get('canceled');
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   useEffect(() => {
     if (canceled === 'true') {

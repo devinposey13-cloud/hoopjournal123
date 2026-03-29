@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Pause, Play, Square, MapPin } from 'lucide-react';
 import { useGpsTracking, getVerificationStatus, GpsPoint } from '@/hooks/useGpsTracking';
@@ -46,6 +46,10 @@ export function RunTracker({ onBack, onSaved }: RunTrackerProps) {
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmStop, setConfirmStop] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [phase]);
 
   const handleStart = useCallback(async () => {
     const ok = await gps.startTracking();
