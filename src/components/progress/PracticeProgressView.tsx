@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { ChartContainer } from '@/components/ui/chart';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Target, Trophy, TrendingUp, TrendingDown, Percent, Circle, Flame, Running, Timer, Shield, ChevronDown, ChevronUp } from 'lucide-react';
+import { Target, Trophy, TrendingUp, TrendingDown, Percent, Circle, Flame, Footprints, Timer, Shield, ChevronDown, ChevronUp } from 'lucide-react';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
