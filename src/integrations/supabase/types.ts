@@ -418,6 +418,8 @@ export type Database = {
           activity_type: string
           average_accuracy: number | null
           background_tracking_enabled: boolean
+          coach_trust_band: string | null
+          coach_trust_score: number | null
           created_at: string
           elapsed_seconds: number | null
           end_time: string | null
@@ -433,6 +435,7 @@ export type Database = {
           start_time: string | null
           total_distance_meters: number | null
           tracking_mode: string
+          trust_reasons: Json | null
           user_id: string
           verification_status: string
         }
@@ -440,6 +443,8 @@ export type Database = {
           activity_type?: string
           average_accuracy?: number | null
           background_tracking_enabled?: boolean
+          coach_trust_band?: string | null
+          coach_trust_score?: number | null
           created_at?: string
           elapsed_seconds?: number | null
           end_time?: string | null
@@ -455,6 +460,7 @@ export type Database = {
           start_time?: string | null
           total_distance_meters?: number | null
           tracking_mode?: string
+          trust_reasons?: Json | null
           user_id: string
           verification_status?: string
         }
@@ -462,6 +468,8 @@ export type Database = {
           activity_type?: string
           average_accuracy?: number | null
           background_tracking_enabled?: boolean
+          coach_trust_band?: string | null
+          coach_trust_score?: number | null
           created_at?: string
           elapsed_seconds?: number | null
           end_time?: string | null
@@ -477,6 +485,7 @@ export type Database = {
           start_time?: string | null
           total_distance_meters?: number | null
           tracking_mode?: string
+          trust_reasons?: Json | null
           user_id?: string
           verification_status?: string
         }

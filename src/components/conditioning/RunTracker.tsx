@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { RunSummary } from './RunSummary';
+import { calculateCoachTrust, type CoachTrustResult } from '@/utils/coachTrust';
 
 interface RunTrackerProps {
   onBack: () => void;
@@ -40,6 +41,7 @@ interface RunResult {
   verificationStatus: string;
   trackingMode: 'background' | 'foreground';
   backgroundTrackingEnabled: boolean;
+  coachTrust: CoachTrustResult;
 }
 
 export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function RunTracker({ onBack, onSaved }, ref) {
@@ -103,31 +105,38 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
   }, [gps, bgLocation, wakeLock]);
 
   const handleFinish = useCallback(async () => {
-    // Stop browser GPS first
     const result = gps.stopTracking();
-
-    // Stop native background tracking and get any additional points
     const nativePoints = await bgLocation.stopNativeTracking();
-
-    // Merge: use browser points as primary, native points fill gaps
-    // Native points are only used when browser tracking was paused/backgrounded
-    const finalPoints = result.points;
     const wasBackground = nativePoints.length > 0;
 
     const status = getVerificationStatus(
       result.gpsPointCount, result.averageAccuracy, result.maxSpeed, false
     );
 
+    const trackingMode = wasBackground ? 'background' as const : 'foreground' as const;
+
+    const coachTrust = calculateCoachTrust({
+      trackingMode,
+      backgroundTrackingEnabled: bgLocation.isNativeSupported,
+      wasInterrupted: bgLocation.wasInterrupted,
+      averageAccuracy: result.averageAccuracy,
+      pauseCount: result.pauseCount,
+      maxSpeed: result.maxSpeed,
+      gpsPointCount: result.gpsPointCount,
+      isManual: false,
+      elapsedSeconds: result.elapsedSeconds,
+      distanceMeters: result.distanceMeters,
+    });
+
     setRunResult({
       ...result,
       verificationStatus: status,
-      trackingMode: wasBackground ? 'background' : 'foreground',
+      trackingMode,
       backgroundTrackingEnabled: bgLocation.isNativeSupported,
+      coachTrust,
     });
     setPhase('summary');
     setConfirmStop(false);
-
-    // Release wake lock
     await wakeLock.release();
   }, [gps, bgLocation, wakeLock]);
 
@@ -157,6 +166,9 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
       is_manual: false,
       tracking_mode: runResult.trackingMode,
       background_tracking_enabled: runResult.backgroundTrackingEnabled,
+      coach_trust_score: runResult.coachTrust.score,
+      coach_trust_band: runResult.coachTrust.band,
+      trust_reasons: runResult.coachTrust.reasons,
     });
 
     setSaving(false);
