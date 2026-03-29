@@ -178,6 +178,8 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
       coach_trust_score: runResult.coachTrust.score,
       coach_trust_band: runResult.coachTrust.band,
       trust_reasons: runResult.coachTrust.reasons,
+      conditioning_grade: runResult.conditioningGrade.grade,
+      grade_label: runResult.conditioningGrade.gradeLabel || null,
     });
 
     setSaving(false);
