@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { ConditioningHome } from '@/components/conditioning/ConditioningHome';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveProfile } from '@/hooks/useActiveProfile';
