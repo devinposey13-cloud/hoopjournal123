@@ -1,10 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Clock, MapPin, Zap, Shield } from 'lucide-react';
+import { Check, X, Clock, MapPin, Zap, Shield, Signal } from 'lucide-react';
 import { GpsPoint } from '@/hooks/useGpsTracking';
 import { RunTrace } from './RunTrace';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface RunResult {
   points: GpsPoint[];
@@ -15,6 +16,8 @@ interface RunResult {
   averageAccuracy: number;
   gpsPointCount: number;
   verificationStatus: string;
+  trackingMode?: 'background' | 'foreground';
+  backgroundTrackingEnabled?: boolean;
 }
 
 interface RunSummaryProps {
@@ -71,6 +74,17 @@ export function RunSummary({ result, saving, onSave, onDiscard }: RunSummaryProp
             {statusCfg.icon}
             {statusCfg.label}
           </span>
+          {result.trackingMode && (
+            <span className={cn(
+              "inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border",
+              result.trackingMode === 'background'
+                ? "bg-green-500/15 text-green-400 border-green-500/30"
+                : "bg-muted text-muted-foreground border-border"
+            )}>
+              <Signal className="w-3 h-3" />
+              {result.trackingMode === 'background' ? 'Tracked in Background' : 'Tracked in Foreground'}
+            </span>
+          )}
         </div>
 
         {/* Stats grid */}

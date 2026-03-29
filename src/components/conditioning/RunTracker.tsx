@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Pause, Play, Square, MapPin, Smartphone } from 'lucide-react';
+import { ArrowLeft, Pause, Play, Square, MapPin, Smartphone, Signal, AlertTriangle } from 'lucide-react';
 import { useGpsTracking, getVerificationStatus, GpsPoint } from '@/hooks/useGpsTracking';
+import { useBackgroundLocation } from '@/hooks/useBackgroundLocation';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveProfile } from '@/hooks/useActiveProfile';
 import { useWakeLock } from '@/hooks/useWakeLock';
@@ -37,17 +38,21 @@ interface RunResult {
   averageAccuracy: number;
   gpsPointCount: number;
   verificationStatus: string;
+  trackingMode: 'background' | 'foreground';
+  backgroundTrackingEnabled: boolean;
 }
 
 export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function RunTracker({ onBack, onSaved }, ref) {
   const { user } = useAuth();
   const { activeProfileId } = useActiveProfile();
   const gps = useGpsTracking();
+  const bgLocation = useBackgroundLocation();
   const wakeLock = useWakeLock();
   const [phase, setPhase] = useState<'idle' | 'running' | 'summary'>('idle');
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmStop, setConfirmStop] = useState(false);
+  const [showResumeWarning, setShowResumeWarning] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -60,27 +65,71 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
     }
   }, [phase, wakeLock.wasReleased, wakeLock.isActive]);
 
+  // Handle app resume — show warning if tracking may have been interrupted
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && phase === 'running') {
+        // If NOT using native background tracking, foreground GPS may have been interrupted
+        if (!bgLocation.isNativeActive) {
+          setShowResumeWarning(true);
+          setTimeout(() => setShowResumeWarning(false), 6000);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [phase, bgLocation.isNativeActive]);
+
   const handleStart = useCallback(async () => {
     const ok = await gps.startTracking();
-    if (ok) {
-      setPhase('running');
-      await wakeLock.request();
-      if (!wakeLock.isSupported) {
-        toast.info('Keep your screen awake manually for best tracking accuracy', { duration: 5000 });
-      }
+    if (!ok) return;
+
+    setPhase('running');
+
+    // Try to enable native background tracking
+    const nativeOk = await bgLocation.startNativeTracking();
+
+    if (nativeOk) {
+      toast.success('Tracking will continue if you lock your phone', { duration: 3000, icon: '📍' });
+    } else if (bgLocation.isNativeSupported) {
+      toast.info('Keep the app open for best tracking', { duration: 3000 });
     }
-  }, [gps, wakeLock]);
+
+    // Request wake lock as additional layer
+    await wakeLock.request();
+    if (!wakeLock.isSupported && !nativeOk) {
+      toast.info('Keep your screen awake manually for best tracking accuracy', { duration: 5000 });
+    }
+  }, [gps, bgLocation, wakeLock]);
 
   const handleFinish = useCallback(async () => {
+    // Stop browser GPS first
     const result = gps.stopTracking();
+
+    // Stop native background tracking and get any additional points
+    const nativePoints = await bgLocation.stopNativeTracking();
+
+    // Merge: use browser points as primary, native points fill gaps
+    // Native points are only used when browser tracking was paused/backgrounded
+    const finalPoints = result.points;
+    const wasBackground = nativePoints.length > 0;
+
     const status = getVerificationStatus(
       result.gpsPointCount, result.averageAccuracy, result.maxSpeed, false
     );
-    setRunResult({ ...result, verificationStatus: status });
+
+    setRunResult({
+      ...result,
+      verificationStatus: status,
+      trackingMode: wasBackground ? 'background' : 'foreground',
+      backgroundTrackingEnabled: bgLocation.isNativeSupported,
+    });
     setPhase('summary');
     setConfirmStop(false);
+
+    // Release wake lock
     await wakeLock.release();
-  }, [gps, wakeLock]);
+  }, [gps, bgLocation, wakeLock]);
 
   const handleSave = useCallback(async () => {
     if (!user || !runResult) return;
@@ -106,6 +155,8 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
       pause_count: runResult.pauseCount,
       verification_status: runResult.verificationStatus,
       is_manual: false,
+      tracking_mode: runResult.trackingMode,
+      background_tracking_enabled: runResult.backgroundTrackingEnabled,
     });
 
     setSaving(false);
@@ -118,10 +169,11 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
     onSaved();
   }, [user, activeProfileId, runResult, onSaved]);
 
-  // Release wake lock on unmount (e.g. navigating away)
+  // Release wake lock and stop native tracking on unmount
   useEffect(() => {
     return () => {
       wakeLock.release();
+      bgLocation.stopNativeTracking();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -157,6 +209,11 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
             <p className="text-sm text-muted-foreground max-w-xs">
               GPS will track your route, distance, and pace in real time.
             </p>
+            {bgLocation.isNativeSupported && (
+              <p className="text-xs text-muted-foreground max-w-xs">
+                Tracking continues even if you lock your phone.
+              </p>
+            )}
           </div>
           {gps.error && (
             <p className="text-sm text-destructive text-center">{gps.error}</p>
@@ -173,6 +230,22 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
   // Running view
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Resume warning banner */}
+      {showResumeWarning && !bgLocation.isNativeActive && (
+        <div className="bg-yellow-500/15 border-b border-yellow-500/30 px-4 py-2 flex items-center gap-2 animate-fade-in">
+          <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0" />
+          <p className="text-xs text-yellow-400">
+            Tracking may have been interrupted while app was in background
+          </p>
+          <button
+            className="ml-auto text-yellow-400/60 hover:text-yellow-400 text-xs"
+            onClick={() => setShowResumeWarning(false)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Dark header with live stats */}
       <div className="bg-card border-b border-border px-4 py-4 space-y-4">
         {/* Timer - primary */}
@@ -251,6 +324,19 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
           )} />
           {gps.points.length > 0 ? `GPS Active · ${gps.points.length} pts` : 'Acquiring GPS...'}
         </div>
+
+        {/* Tracking mode indicator */}
+        {bgLocation.isNativeActive ? (
+          <div className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-400">
+            <Signal className="w-3 h-3" />
+            Background Tracking Enabled
+          </div>
+        ) : bgLocation.isNativeSupported ? (
+          <div className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-yellow-500/15 text-yellow-400">
+            <Signal className="w-3 h-3" />
+            Foreground Only
+          </div>
+        ) : null}
 
         {/* Wake lock indicator */}
         <div className={cn(

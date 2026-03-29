@@ -417,6 +417,7 @@ export type Database = {
         Row: {
           activity_type: string
           average_accuracy: number | null
+          background_tracking_enabled: boolean
           created_at: string
           elapsed_seconds: number | null
           end_time: string | null
@@ -431,12 +432,14 @@ export type Database = {
           session_date: string
           start_time: string | null
           total_distance_meters: number | null
+          tracking_mode: string
           user_id: string
           verification_status: string
         }
         Insert: {
           activity_type?: string
           average_accuracy?: number | null
+          background_tracking_enabled?: boolean
           created_at?: string
           elapsed_seconds?: number | null
           end_time?: string | null
@@ -451,12 +454,14 @@ export type Database = {
           session_date?: string
           start_time?: string | null
           total_distance_meters?: number | null
+          tracking_mode?: string
           user_id: string
           verification_status?: string
         }
         Update: {
           activity_type?: string
           average_accuracy?: number | null
+          background_tracking_enabled?: boolean
           created_at?: string
           elapsed_seconds?: number | null
           end_time?: string | null
@@ -471,6 +476,7 @@ export type Database = {
           session_date?: string
           start_time?: string | null
           total_distance_meters?: number | null
+          tracking_mode?: string
           user_id?: string
           verification_status?: string
         }
