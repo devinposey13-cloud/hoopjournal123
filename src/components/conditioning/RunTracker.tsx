@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { RunSummary } from './RunSummary';
 import { calculateCoachTrust, type CoachTrustResult } from '@/utils/coachTrust';
+import { calculateConditioningGrade, type ConditioningGradeResult } from '@/utils/conditioningGrade';
 
 interface RunTrackerProps {
   onBack: () => void;
@@ -42,6 +43,7 @@ interface RunResult {
   trackingMode: 'background' | 'foreground';
   backgroundTrackingEnabled: boolean;
   coachTrust: CoachTrustResult;
+  conditioningGrade: ConditioningGradeResult;
 }
 
 export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function RunTracker({ onBack, onSaved }, ref) {
@@ -128,12 +130,19 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
       distanceMeters: result.distanceMeters,
     });
 
+    const conditioningGrade = calculateConditioningGrade({
+      distanceMeters: result.distanceMeters,
+      elapsedSeconds: result.elapsedSeconds,
+      coachTrustBand: coachTrust.band,
+    });
+
     setRunResult({
       ...result,
       verificationStatus: status,
       trackingMode,
       backgroundTrackingEnabled: bgLocation.isNativeSupported,
       coachTrust,
+      conditioningGrade,
     });
     setPhase('summary');
     setConfirmStop(false);
@@ -169,6 +178,8 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
       coach_trust_score: runResult.coachTrust.score,
       coach_trust_band: runResult.coachTrust.band,
       trust_reasons: runResult.coachTrust.reasons,
+      conditioning_grade: runResult.conditioningGrade.grade,
+      grade_label: runResult.conditioningGrade.gradeLabel || null,
     });
 
     setSaving(false);

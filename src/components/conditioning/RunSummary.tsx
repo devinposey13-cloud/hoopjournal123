@@ -7,6 +7,7 @@ import { RunTrace } from './RunTrace';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { type CoachTrustResult, TRUST_BAND_COLORS } from '@/utils/coachTrust';
+import { type ConditioningGradeResult } from '@/utils/conditioningGrade';
 
 interface RunResult {
   points: GpsPoint[];
@@ -20,6 +21,7 @@ interface RunResult {
   trackingMode?: 'background' | 'foreground';
   backgroundTrackingEnabled?: boolean;
   coachTrust?: CoachTrustResult;
+  conditioningGrade?: ConditioningGradeResult;
 }
 
 interface RunSummaryProps {
@@ -63,6 +65,7 @@ export function RunSummary({ result, saving, onSave, onDiscard }: RunSummaryProp
   const trust = result.coachTrust;
   const trustColors = trust ? TRUST_BAND_COLORS[trust.band] : null;
   const [showTrustDetails, setShowTrustDetails] = useState(false);
+  const grade = result.conditioningGrade;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -80,6 +83,45 @@ export function RunSummary({ result, saving, onSave, onDiscard }: RunSummaryProp
           <p className="text-5xl font-mono font-bold">{formatTime(result.elapsedSeconds)}</p>
           <p className="text-sm text-muted-foreground mt-2">{format(new Date(), 'MMM d, yyyy')}</p>
         </div>
+
+        {/* Conditioning Grade */}
+        {grade && (
+          <div className="flex flex-col items-center gap-2">
+            <div
+              className="w-20 h-20 rounded-2xl flex items-center justify-center border-2"
+              style={{
+                borderColor: grade.color,
+                backgroundColor: `${grade.color}15`,
+                boxShadow: grade.glow,
+              }}
+            >
+              <span
+                className="text-2xl font-black"
+                style={{ color: grade.color }}
+              >
+                {grade.grade}
+              </span>
+            </div>
+            {grade.gradeLabel && (
+              <span
+                className="text-xs font-semibold px-3 py-1 rounded-full"
+                style={{ color: grade.color, backgroundColor: `${grade.color}15` }}
+              >
+                {grade.gradeLabel}
+              </span>
+            )}
+            {grade.reason && (
+              <span className="text-xs text-muted-foreground">
+                {grade.reason}
+              </span>
+            )}
+            {grade.mileTimeFormatted && (
+              <span className="text-xs text-muted-foreground">
+                Mile pace: {grade.mileTimeFormatted}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Status badges row */}
         <div className="flex justify-center gap-2 flex-wrap">
