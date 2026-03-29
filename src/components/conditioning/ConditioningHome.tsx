@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Play, PenLine, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,10 @@ interface ConditioningHomeProps {
 
 export function ConditioningHome({ onBack }: ConditioningHomeProps) {
   const [view, setView] = useState<'home' | 'run' | 'manual' | 'history'>('home');
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
 
   if (view === 'run') return <RunTracker onBack={() => setView('home')} onSaved={() => setView('history')} />;
   if (view === 'manual') return <ManualConditioningEntry onBack={() => setView('home')} onSaved={() => setView('history')} />;

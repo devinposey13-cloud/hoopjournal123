@@ -89,9 +89,6 @@ export default function Upgrade() {
     }
   };
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

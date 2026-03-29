@@ -35,6 +35,7 @@ import TermsOfService from "./pages/TermsOfService";
 import EULA from "./pages/EULA";
 import ClaimCard from "./pages/ClaimCard";
 import { AppleAuthDebugOverlay } from "./components/settings/AppleAuthDebugOverlay";
+import { ScrollToTop } from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -94,6 +95,7 @@ const App = () => (
               <RuntimeLogger />
               <AppleAuthDebugOverlay />
               <BrowserRouter>
+                <ScrollToTop />
                 <GlobalPaywall />
                 
                 <Routes>
