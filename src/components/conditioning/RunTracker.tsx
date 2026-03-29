@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Pause, Play, Square, MapPin, Smartphone } from 'lucide-react';
 import { useGpsTracking, getVerificationStatus, GpsPoint } from '@/hooks/useGpsTracking';
@@ -39,7 +39,7 @@ interface RunResult {
   verificationStatus: string;
 }
 
-export function RunTracker({ onBack, onSaved }: RunTrackerProps) {
+export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function RunTracker({ onBack, onSaved }, ref) {
   const { user } = useAuth();
   const { activeProfileId } = useActiveProfile();
   const gps = useGpsTracking();
@@ -271,4 +271,4 @@ export function RunTracker({ onBack, onSaved }: RunTrackerProps) {
       </div>
     </div>
   );
-}
+});

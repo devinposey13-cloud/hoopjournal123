@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, forwardRef } from 'react';
 import { ConditioningHome } from '@/components/conditioning/ConditioningHome';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -92,7 +92,7 @@ interface PracticeModeProps {
   onBack: () => void;
 }
 
-export function PracticeMode({ onBack }: PracticeModeProps) {
+export const PracticeMode = forwardRef<HTMLDivElement, PracticeModeProps>(function PracticeMode({ onBack }, ref) {
   const { user } = useAuth();
   const { activeProfileId } = useActiveProfile();
   const [sessionType, setSessionType] = useState<SessionType | null>(null);
@@ -740,4 +740,4 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
       </div>
     </div>
   );
-}
+});
