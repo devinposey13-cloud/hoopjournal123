@@ -420,11 +420,13 @@ export type Database = {
           background_tracking_enabled: boolean
           coach_trust_band: string | null
           coach_trust_score: number | null
+          conditioning_grade: string | null
           created_at: string
           elapsed_seconds: number | null
           end_time: string | null
           gps_point_count: number | null
           gps_points: Json | null
+          grade_label: string | null
           id: string
           is_manual: boolean
           max_speed: number | null
@@ -445,11 +447,13 @@ export type Database = {
           background_tracking_enabled?: boolean
           coach_trust_band?: string | null
           coach_trust_score?: number | null
+          conditioning_grade?: string | null
           created_at?: string
           elapsed_seconds?: number | null
           end_time?: string | null
           gps_point_count?: number | null
           gps_points?: Json | null
+          grade_label?: string | null
           id?: string
           is_manual?: boolean
           max_speed?: number | null
@@ -470,11 +474,13 @@ export type Database = {
           background_tracking_enabled?: boolean
           coach_trust_band?: string | null
           coach_trust_score?: number | null
+          conditioning_grade?: string | null
           created_at?: string
           elapsed_seconds?: number | null
           end_time?: string | null
           gps_point_count?: number | null
           gps_points?: Json | null
+          grade_label?: string | null
           id?: string
           is_manual?: boolean
           max_speed?: number | null
