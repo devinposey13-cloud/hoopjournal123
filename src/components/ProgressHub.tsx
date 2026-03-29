@@ -66,11 +66,12 @@ export function ProgressHub({
   const [activeSubTab, setActiveSubTab] = useState<ProgressSubTab>(initialSubTab);
   const [dataSource, setDataSource] = useState<DataSourceMode>('games');
   const [practiceSessions, setPracticeSessions] = useState<any[]>([]);
+  const [conditioningSessions, setConditioningSessions] = useState<any[]>([]);
   const { progress: xpProgress } = useXpProgress();
   const { user } = useAuth();
   const { activeProfile } = useActiveProfile();
 
-  // Fetch practice sessions when needed
+  // Fetch practice + conditioning sessions when needed
   useEffect(() => {
     if ((dataSource === 'practice' || dataSource === 'combined') && user) {
       const fetchSessions = async () => {
@@ -87,7 +88,25 @@ export function ProgressHub({
         const { data } = await query;
         setPracticeSessions(data || []);
       };
+
+      const fetchConditioning = async () => {
+        let query = supabase
+          .from('conditioning_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('activity_type', 'run')
+          .order('created_at', { ascending: false });
+
+        if (activeProfile?.id) {
+          query = query.or(`profile_id.eq.${activeProfile.id},profile_id.is.null`);
+        }
+
+        const { data } = await query;
+        setConditioningSessions(data || []);
+      };
+
       fetchSessions();
+      fetchConditioning();
     }
   }, [dataSource, user, activeProfile]);
 
@@ -155,6 +174,7 @@ export function ProgressHub({
           sessions={practiceSessions}
           games={games}
           mode={dataSource as 'practice' | 'combined'}
+          conditioningSessions={conditioningSessions}
         />
       ) : (
         <>
