@@ -373,6 +373,28 @@ export function PracticeMode({ onBack }: PracticeModeProps) {
               <ArrowLeft className="w-4 h-4 text-muted-foreground rotate-180 shrink-0" />
             </button>
           ))}
+
+          {/* Conditioning card */}
+          <div className="pt-2">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 px-1">Training</p>
+            <button
+              onClick={() => setView('conditioning')}
+              className={cn(
+                "w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-card",
+                "hover:bg-accent/50 active:scale-[0.98] transition-all",
+                "text-left touch-manipulation"
+              )}
+            >
+              <div className="h-11 w-11 rounded-full bg-primary/15 flex items-center justify-center text-primary shrink-0">
+                <Footprints className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">Conditioning</p>
+                <p className="text-xs text-muted-foreground">Track runs and conditioning workouts</p>
+              </div>
+              <ArrowLeft className="w-4 h-4 text-muted-foreground rotate-180 shrink-0" />
+            </button>
+          </div>
         </div>
       </div>
     );
