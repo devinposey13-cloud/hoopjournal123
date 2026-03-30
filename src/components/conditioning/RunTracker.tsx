@@ -212,69 +212,82 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
   }, [gps, bgLocation, wakeLock]);
 
   const handleFinish = useCallback(async () => {
-    const result = gps.stopTracking();
-    const nativePoints = await bgLocation.stopNativeTracking();
-    const wasBackground = nativePoints.length > 0;
+    try {
+      const result = gps.stopTracking();
 
-    // Merge foreground + native background points for best coverage
-    const merged = mergeGpsPoints(result.points, nativePoints);
+      let nativePoints: NativeLocationPoint[] = [];
+      try {
+        nativePoints = await bgLocation.stopNativeTracking();
+      } catch (e) {
+        console.warn('[RunTracker] Failed to stop native tracking:', e);
+      }
 
-    // Use merged data if it provides better coverage (more distance or more points)
-    const useMerged = merged.mergedPoints.length > result.points.length || 
-                      merged.totalDistance > result.distanceMeters;
+      const wasBackground = nativePoints.length > 0;
 
-    const finalPoints = useMerged ? merged.mergedPoints : result.points;
-    const finalDistance = useMerged ? merged.totalDistance : result.distanceMeters;
-    const finalMaxSpeed = Math.max(useMerged ? merged.maxSpeed : result.maxSpeed, result.maxSpeed);
-    const finalAvgAccuracy = useMerged ? merged.avgAccuracy : result.averageAccuracy;
-    const finalPointCount = finalPoints.length;
+      // Merge foreground + native background points for best coverage
+      const merged = mergeGpsPoints(result.points, nativePoints);
 
-    if (useMerged && nativePoints.length > 0) {
-      console.log(`[RunTracker] Merged ${nativePoints.length} native points with ${result.points.length} foreground points → ${finalPointCount} total`);
+      // Use merged data if it provides better coverage (more distance or more points)
+      const useMerged = merged.mergedPoints.length > result.points.length || 
+                        merged.totalDistance > result.distanceMeters;
+
+      const finalPoints = useMerged ? merged.mergedPoints : result.points;
+      const finalDistance = useMerged ? merged.totalDistance : result.distanceMeters;
+      const finalMaxSpeed = Math.max(useMerged ? merged.maxSpeed : result.maxSpeed, result.maxSpeed);
+      const finalAvgAccuracy = useMerged ? merged.avgAccuracy : result.averageAccuracy;
+      const finalPointCount = finalPoints.length;
+
+      if (useMerged && nativePoints.length > 0) {
+        console.log(`[RunTracker] Merged ${nativePoints.length} native points with ${result.points.length} foreground points → ${finalPointCount} total`);
+      }
+
+      const status = getVerificationStatus(
+        finalPointCount, finalAvgAccuracy, finalMaxSpeed, false
+      );
+
+      const trackingMode = wasBackground ? 'background' as const : 'foreground' as const;
+
+      const coachTrust = calculateCoachTrust({
+        trackingMode,
+        backgroundTrackingEnabled: bgLocation.isNativeSupported,
+        wasInterrupted: bgLocation.wasInterrupted,
+        averageAccuracy: finalAvgAccuracy,
+        pauseCount: result.pauseCount,
+        maxSpeed: finalMaxSpeed,
+        gpsPointCount: finalPointCount,
+        isManual: false,
+        elapsedSeconds: result.elapsedSeconds,
+        distanceMeters: finalDistance,
+      });
+
+      const conditioningGrade = calculateConditioningGrade({
+        distanceMeters: finalDistance,
+        elapsedSeconds: result.elapsedSeconds,
+        coachTrustBand: coachTrust.band,
+      });
+
+      setRunResult({
+        points: finalPoints,
+        distanceMeters: finalDistance,
+        elapsedSeconds: result.elapsedSeconds,
+        pauseCount: result.pauseCount,
+        maxSpeed: finalMaxSpeed,
+        averageAccuracy: finalAvgAccuracy,
+        gpsPointCount: finalPointCount,
+        verificationStatus: status,
+        trackingMode,
+        backgroundTrackingEnabled: bgLocation.isNativeSupported,
+        coachTrust,
+        conditioningGrade,
+      });
+      setPhase('summary');
+      setConfirmStop(false);
+    } catch (err) {
+      console.error('[RunTracker] handleFinish error:', err);
+      toast.error('Something went wrong finishing the run. Please try again.');
+    } finally {
+      try { await wakeLock.release(); } catch (_) {}
     }
-
-    const status = getVerificationStatus(
-      finalPointCount, finalAvgAccuracy, finalMaxSpeed, false
-    );
-
-    const trackingMode = wasBackground ? 'background' as const : 'foreground' as const;
-
-    const coachTrust = calculateCoachTrust({
-      trackingMode,
-      backgroundTrackingEnabled: bgLocation.isNativeSupported,
-      wasInterrupted: bgLocation.wasInterrupted,
-      averageAccuracy: finalAvgAccuracy,
-      pauseCount: result.pauseCount,
-      maxSpeed: finalMaxSpeed,
-      gpsPointCount: finalPointCount,
-      isManual: false,
-      elapsedSeconds: result.elapsedSeconds,
-      distanceMeters: finalDistance,
-    });
-
-    const conditioningGrade = calculateConditioningGrade({
-      distanceMeters: finalDistance,
-      elapsedSeconds: result.elapsedSeconds,
-      coachTrustBand: coachTrust.band,
-    });
-
-    setRunResult({
-      points: finalPoints,
-      distanceMeters: finalDistance,
-      elapsedSeconds: result.elapsedSeconds,
-      pauseCount: result.pauseCount,
-      maxSpeed: finalMaxSpeed,
-      averageAccuracy: finalAvgAccuracy,
-      gpsPointCount: finalPointCount,
-      verificationStatus: status,
-      trackingMode,
-      backgroundTrackingEnabled: bgLocation.isNativeSupported,
-      coachTrust,
-      conditioningGrade,
-    });
-    setPhase('summary');
-    setConfirmStop(false);
-    await wakeLock.release();
   }, [gps, bgLocation, wakeLock]);
 
   const handleSave = useCallback(async () => {
