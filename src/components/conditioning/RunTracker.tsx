@@ -31,6 +31,111 @@ function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(2)} km`;
 }
 
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const MAX_SPEED_MS = 12;
+const MIN_DISTANCE_METERS = 3;
+
+/**
+ * Merge foreground browser GPS points with native background points.
+ * Native points fill gaps where the foreground GPS was paused (app backgrounded).
+ * Returns merged points sorted by timestamp with recalculated distance.
+ */
+function mergeGpsPoints(
+  foregroundPoints: GpsPoint[],
+  nativePoints: NativeLocationPoint[]
+): { mergedPoints: GpsPoint[]; totalDistance: number; maxSpeed: number; avgAccuracy: number } {
+  if (nativePoints.length === 0) {
+    // No native data — use foreground as-is
+    const totalDist = calculateDistanceFromPoints(foregroundPoints);
+    const maxSpd = foregroundPoints.reduce((m, p) => Math.max(m, p.speed ?? 0), 0);
+    const avgAcc = foregroundPoints.length > 0
+      ? foregroundPoints.reduce((s, p) => s + p.accuracy, 0) / foregroundPoints.length
+      : 0;
+    return { mergedPoints: foregroundPoints, totalDistance: totalDist, maxSpeed: maxSpd, avgAccuracy: avgAcc };
+  }
+
+  // Convert native points to GpsPoint format
+  const convertedNative: GpsPoint[] = nativePoints
+    .filter(p => p.horizontalAccuracy <= 30)
+    .map(p => ({
+      lat: p.latitude,
+      lng: p.longitude,
+      accuracy: p.horizontalAccuracy,
+      timestamp: p.gpsTimestamp ?? p.timestamp,
+      speed: p.speed !== null && p.speed >= 0 ? p.speed : null,
+    }));
+
+  if (convertedNative.length === 0) {
+    const totalDist = calculateDistanceFromPoints(foregroundPoints);
+    const maxSpd = foregroundPoints.reduce((m, p) => Math.max(m, p.speed ?? 0), 0);
+    const avgAcc = foregroundPoints.length > 0
+      ? foregroundPoints.reduce((s, p) => s + p.accuracy, 0) / foregroundPoints.length
+      : 0;
+    return { mergedPoints: foregroundPoints, totalDistance: totalDist, maxSpeed: maxSpd, avgAccuracy: avgAcc };
+  }
+
+  // Find time gaps in foreground data (>5 seconds between points = potential background gap)
+  const GAP_THRESHOLD_MS = 5000;
+  const allPoints: GpsPoint[] = [...foregroundPoints];
+
+  // For each gap in foreground data, fill with native points from that window
+  for (let i = 1; i < foregroundPoints.length; i++) {
+    const gap = foregroundPoints[i].timestamp - foregroundPoints[i - 1].timestamp;
+    if (gap > GAP_THRESHOLD_MS) {
+      const gapStart = foregroundPoints[i - 1].timestamp;
+      const gapEnd = foregroundPoints[i].timestamp;
+      const fillers = convertedNative.filter(p => p.timestamp > gapStart && p.timestamp < gapEnd);
+      allPoints.push(...fillers);
+    }
+  }
+
+  // Also append native points that extend beyond the last foreground point
+  if (foregroundPoints.length > 0) {
+    const lastFg = foregroundPoints[foregroundPoints.length - 1].timestamp;
+    const trailing = convertedNative.filter(p => p.timestamp > lastFg);
+    allPoints.push(...trailing);
+  }
+
+  // Deduplicate by removing points too close in time (<1s)
+  const sorted = allPoints.sort((a, b) => a.timestamp - b.timestamp);
+  const deduped: GpsPoint[] = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].timestamp - deduped[deduped.length - 1].timestamp >= 1000) {
+      deduped.push(sorted[i]);
+    }
+  }
+
+  const totalDist = calculateDistanceFromPoints(deduped);
+  const maxSpd = deduped.reduce((m, p) => Math.max(m, p.speed ?? 0), 0);
+  const avgAcc = deduped.reduce((s, p) => s + p.accuracy, 0) / deduped.length;
+
+  return { mergedPoints: deduped, totalDistance: totalDist, maxSpeed: maxSpd, avgAccuracy: avgAcc };
+}
+
+function calculateDistanceFromPoints(points: GpsPoint[]): number {
+  let total = 0;
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    const dist = haversineDistance(prev.lat, prev.lng, curr.lat, curr.lng);
+    const timeDiff = (curr.timestamp - prev.timestamp) / 1000;
+    const speed = timeDiff > 0 ? dist / timeDiff : 0;
+    if (dist < MIN_DISTANCE_METERS) continue;
+    if (speed > MAX_SPEED_MS) continue;
+    total += dist;
+  }
+  return total;
+}
+
 interface RunResult {
   points: GpsPoint[];
   distanceMeters: number;
