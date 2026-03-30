@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Pause, Play, Square, MapPin, Smartphone, Signal, AlertTriangle } from 'lucide-react';
 import { useGpsTracking, getVerificationStatus, GpsPoint } from '@/hooks/useGpsTracking';
-import { useBackgroundLocation } from '@/hooks/useBackgroundLocation';
+import { useBackgroundLocation, NativeLocationPoint } from '@/hooks/useBackgroundLocation';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveProfile } from '@/hooks/useActiveProfile';
 import { useWakeLock } from '@/hooks/useWakeLock';
