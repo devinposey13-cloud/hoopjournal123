@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Pause, Play, Square, MapPin, Smartphone, Signal, AlertTriangle } from 'lucide-react';
 import { useGpsTracking, getVerificationStatus, GpsPoint } from '@/hooks/useGpsTracking';
-import { useBackgroundLocation } from '@/hooks/useBackgroundLocation';
+import { useBackgroundLocation, NativeLocationPoint } from '@/hooks/useBackgroundLocation';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveProfile } from '@/hooks/useActiveProfile';
 import { useWakeLock } from '@/hooks/useWakeLock';
@@ -29,6 +29,111 @@ function formatTime(seconds: number): string {
 function formatDistance(meters: number): string {
   if (meters < 1000) return `${Math.round(meters)}m`;
   return `${(meters / 1000).toFixed(2)} km`;
+}
+
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const MAX_SPEED_MS = 12;
+const MIN_DISTANCE_METERS = 3;
+
+/**
+ * Merge foreground browser GPS points with native background points.
+ * Native points fill gaps where the foreground GPS was paused (app backgrounded).
+ * Returns merged points sorted by timestamp with recalculated distance.
+ */
+function mergeGpsPoints(
+  foregroundPoints: GpsPoint[],
+  nativePoints: NativeLocationPoint[]
+): { mergedPoints: GpsPoint[]; totalDistance: number; maxSpeed: number; avgAccuracy: number } {
+  if (nativePoints.length === 0) {
+    // No native data — use foreground as-is
+    const totalDist = calculateDistanceFromPoints(foregroundPoints);
+    const maxSpd = foregroundPoints.reduce((m, p) => Math.max(m, p.speed ?? 0), 0);
+    const avgAcc = foregroundPoints.length > 0
+      ? foregroundPoints.reduce((s, p) => s + p.accuracy, 0) / foregroundPoints.length
+      : 0;
+    return { mergedPoints: foregroundPoints, totalDistance: totalDist, maxSpeed: maxSpd, avgAccuracy: avgAcc };
+  }
+
+  // Convert native points to GpsPoint format
+  const convertedNative: GpsPoint[] = nativePoints
+    .filter(p => p.horizontalAccuracy <= 30)
+    .map(p => ({
+      lat: p.latitude,
+      lng: p.longitude,
+      accuracy: p.horizontalAccuracy,
+      timestamp: p.gpsTimestamp ?? p.timestamp,
+      speed: p.speed !== null && p.speed >= 0 ? p.speed : null,
+    }));
+
+  if (convertedNative.length === 0) {
+    const totalDist = calculateDistanceFromPoints(foregroundPoints);
+    const maxSpd = foregroundPoints.reduce((m, p) => Math.max(m, p.speed ?? 0), 0);
+    const avgAcc = foregroundPoints.length > 0
+      ? foregroundPoints.reduce((s, p) => s + p.accuracy, 0) / foregroundPoints.length
+      : 0;
+    return { mergedPoints: foregroundPoints, totalDistance: totalDist, maxSpeed: maxSpd, avgAccuracy: avgAcc };
+  }
+
+  // Find time gaps in foreground data (>5 seconds between points = potential background gap)
+  const GAP_THRESHOLD_MS = 5000;
+  const allPoints: GpsPoint[] = [...foregroundPoints];
+
+  // For each gap in foreground data, fill with native points from that window
+  for (let i = 1; i < foregroundPoints.length; i++) {
+    const gap = foregroundPoints[i].timestamp - foregroundPoints[i - 1].timestamp;
+    if (gap > GAP_THRESHOLD_MS) {
+      const gapStart = foregroundPoints[i - 1].timestamp;
+      const gapEnd = foregroundPoints[i].timestamp;
+      const fillers = convertedNative.filter(p => p.timestamp > gapStart && p.timestamp < gapEnd);
+      allPoints.push(...fillers);
+    }
+  }
+
+  // Also append native points that extend beyond the last foreground point
+  if (foregroundPoints.length > 0) {
+    const lastFg = foregroundPoints[foregroundPoints.length - 1].timestamp;
+    const trailing = convertedNative.filter(p => p.timestamp > lastFg);
+    allPoints.push(...trailing);
+  }
+
+  // Deduplicate by removing points too close in time (<1s)
+  const sorted = allPoints.sort((a, b) => a.timestamp - b.timestamp);
+  const deduped: GpsPoint[] = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].timestamp - deduped[deduped.length - 1].timestamp >= 1000) {
+      deduped.push(sorted[i]);
+    }
+  }
+
+  const totalDist = calculateDistanceFromPoints(deduped);
+  const maxSpd = deduped.reduce((m, p) => Math.max(m, p.speed ?? 0), 0);
+  const avgAcc = deduped.reduce((s, p) => s + p.accuracy, 0) / deduped.length;
+
+  return { mergedPoints: deduped, totalDistance: totalDist, maxSpeed: maxSpd, avgAccuracy: avgAcc };
+}
+
+function calculateDistanceFromPoints(points: GpsPoint[]): number {
+  let total = 0;
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    const dist = haversineDistance(prev.lat, prev.lng, curr.lat, curr.lng);
+    const timeDiff = (curr.timestamp - prev.timestamp) / 1000;
+    const speed = timeDiff > 0 ? dist / timeDiff : 0;
+    if (dist < MIN_DISTANCE_METERS) continue;
+    if (speed > MAX_SPEED_MS) continue;
+    total += dist;
+  }
+  return total;
 }
 
 interface RunResult {
@@ -111,8 +216,25 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
     const nativePoints = await bgLocation.stopNativeTracking();
     const wasBackground = nativePoints.length > 0;
 
+    // Merge foreground + native background points for best coverage
+    const merged = mergeGpsPoints(result.points, nativePoints);
+
+    // Use merged data if it provides better coverage (more distance or more points)
+    const useMerged = merged.mergedPoints.length > result.points.length || 
+                      merged.totalDistance > result.distanceMeters;
+
+    const finalPoints = useMerged ? merged.mergedPoints : result.points;
+    const finalDistance = useMerged ? merged.totalDistance : result.distanceMeters;
+    const finalMaxSpeed = Math.max(useMerged ? merged.maxSpeed : result.maxSpeed, result.maxSpeed);
+    const finalAvgAccuracy = useMerged ? merged.avgAccuracy : result.averageAccuracy;
+    const finalPointCount = finalPoints.length;
+
+    if (useMerged && nativePoints.length > 0) {
+      console.log(`[RunTracker] Merged ${nativePoints.length} native points with ${result.points.length} foreground points → ${finalPointCount} total`);
+    }
+
     const status = getVerificationStatus(
-      result.gpsPointCount, result.averageAccuracy, result.maxSpeed, false
+      finalPointCount, finalAvgAccuracy, finalMaxSpeed, false
     );
 
     const trackingMode = wasBackground ? 'background' as const : 'foreground' as const;
@@ -121,23 +243,29 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
       trackingMode,
       backgroundTrackingEnabled: bgLocation.isNativeSupported,
       wasInterrupted: bgLocation.wasInterrupted,
-      averageAccuracy: result.averageAccuracy,
+      averageAccuracy: finalAvgAccuracy,
       pauseCount: result.pauseCount,
-      maxSpeed: result.maxSpeed,
-      gpsPointCount: result.gpsPointCount,
+      maxSpeed: finalMaxSpeed,
+      gpsPointCount: finalPointCount,
       isManual: false,
       elapsedSeconds: result.elapsedSeconds,
-      distanceMeters: result.distanceMeters,
+      distanceMeters: finalDistance,
     });
 
     const conditioningGrade = calculateConditioningGrade({
-      distanceMeters: result.distanceMeters,
+      distanceMeters: finalDistance,
       elapsedSeconds: result.elapsedSeconds,
       coachTrustBand: coachTrust.band,
     });
 
     setRunResult({
-      ...result,
+      points: finalPoints,
+      distanceMeters: finalDistance,
+      elapsedSeconds: result.elapsedSeconds,
+      pauseCount: result.pauseCount,
+      maxSpeed: finalMaxSpeed,
+      averageAccuracy: finalAvgAccuracy,
+      gpsPointCount: finalPointCount,
       verificationStatus: status,
       trackingMode,
       backgroundTrackingEnabled: bgLocation.isNativeSupported,
