@@ -29,6 +29,8 @@ interface OnboardingFlowProps {
 const TOTAL_STEPS = 4;
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
+  const { user } = useAuth();
+  const [ageCheckLoading, setAgeCheckLoading] = useState(true);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
