@@ -216,8 +216,25 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
     const nativePoints = await bgLocation.stopNativeTracking();
     const wasBackground = nativePoints.length > 0;
 
+    // Merge foreground + native background points for best coverage
+    const merged = mergeGpsPoints(result.points, nativePoints);
+
+    // Use merged data if it provides better coverage (more distance or more points)
+    const useMerged = merged.mergedPoints.length > result.points.length || 
+                      merged.totalDistance > result.distanceMeters;
+
+    const finalPoints = useMerged ? merged.mergedPoints : result.points;
+    const finalDistance = useMerged ? merged.totalDistance : result.distanceMeters;
+    const finalMaxSpeed = Math.max(useMerged ? merged.maxSpeed : result.maxSpeed, result.maxSpeed);
+    const finalAvgAccuracy = useMerged ? merged.avgAccuracy : result.averageAccuracy;
+    const finalPointCount = finalPoints.length;
+
+    if (useMerged && nativePoints.length > 0) {
+      console.log(`[RunTracker] Merged ${nativePoints.length} native points with ${result.points.length} foreground points → ${finalPointCount} total`);
+    }
+
     const status = getVerificationStatus(
-      result.gpsPointCount, result.averageAccuracy, result.maxSpeed, false
+      finalPointCount, finalAvgAccuracy, finalMaxSpeed, false
     );
 
     const trackingMode = wasBackground ? 'background' as const : 'foreground' as const;
@@ -226,23 +243,29 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
       trackingMode,
       backgroundTrackingEnabled: bgLocation.isNativeSupported,
       wasInterrupted: bgLocation.wasInterrupted,
-      averageAccuracy: result.averageAccuracy,
+      averageAccuracy: finalAvgAccuracy,
       pauseCount: result.pauseCount,
-      maxSpeed: result.maxSpeed,
-      gpsPointCount: result.gpsPointCount,
+      maxSpeed: finalMaxSpeed,
+      gpsPointCount: finalPointCount,
       isManual: false,
       elapsedSeconds: result.elapsedSeconds,
-      distanceMeters: result.distanceMeters,
+      distanceMeters: finalDistance,
     });
 
     const conditioningGrade = calculateConditioningGrade({
-      distanceMeters: result.distanceMeters,
+      distanceMeters: finalDistance,
       elapsedSeconds: result.elapsedSeconds,
       coachTrustBand: coachTrust.band,
     });
 
     setRunResult({
-      ...result,
+      points: finalPoints,
+      distanceMeters: finalDistance,
+      elapsedSeconds: result.elapsedSeconds,
+      pauseCount: result.pauseCount,
+      maxSpeed: finalMaxSpeed,
+      averageAccuracy: finalAvgAccuracy,
+      gpsPointCount: finalPointCount,
       verificationStatus: status,
       trackingMode,
       backgroundTrackingEnabled: bgLocation.isNativeSupported,
