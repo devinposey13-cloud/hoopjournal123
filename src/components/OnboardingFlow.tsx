@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AgeConfirmationGate } from './onboarding/AgeConfirmationGate';
 import { OnboardingBackground } from './onboarding/OnboardingBackground';
@@ -8,6 +8,8 @@ import { PlayerIdentityCard } from './onboarding/PlayerIdentityCard';
 import { GoalsCard } from './onboarding/GoalsCard';
 import { CompletionCard } from './onboarding/CompletionCard';
 import { ClaimCardFlow } from './ClaimCardFlow';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface OnboardingData {
   name: string;
