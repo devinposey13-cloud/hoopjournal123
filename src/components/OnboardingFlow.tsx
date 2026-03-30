@@ -43,6 +43,20 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     parentEmail: null,
   });
 
+  // Check if user already confirmed age — skip the gate silently
+  useEffect(() => {
+    if (!user) { setAgeCheckLoading(false); return; }
+    supabase
+      .from('age_confirmations' as any)
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .then(({ data: rows }) => {
+        if (rows && rows.length > 0) setAgeConfirmed(true);
+        setAgeCheckLoading(false);
+      });
+  }, [user]);
+
   const goBack = useCallback(() => {
     if (currentStep > 0) {
       setDirection(-1);
