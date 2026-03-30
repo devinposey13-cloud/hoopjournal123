@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AgeConfirmationGate } from './onboarding/AgeConfirmationGate';
 import { OnboardingBackground } from './onboarding/OnboardingBackground';
@@ -8,6 +8,8 @@ import { PlayerIdentityCard } from './onboarding/PlayerIdentityCard';
 import { GoalsCard } from './onboarding/GoalsCard';
 import { CompletionCard } from './onboarding/CompletionCard';
 import { ClaimCardFlow } from './ClaimCardFlow';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface OnboardingData {
   name: string;
@@ -27,6 +29,8 @@ interface OnboardingFlowProps {
 const TOTAL_STEPS = 4;
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
+  const { user } = useAuth();
+  const [ageCheckLoading, setAgeCheckLoading] = useState(true);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(0);
@@ -38,6 +42,20 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     seasonGoals: [],
     parentEmail: null,
   });
+
+  // Check if user already confirmed age — skip the gate silently
+  useEffect(() => {
+    if (!user) { setAgeCheckLoading(false); return; }
+    supabase
+      .from('age_confirmations' as any)
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .then(({ data: rows }) => {
+        if (rows && rows.length > 0) setAgeConfirmed(true);
+        setAgeCheckLoading(false);
+      });
+  }, [user]);
 
   const goBack = useCallback(() => {
     if (currentStep > 0) {
@@ -90,6 +108,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       filter: 'blur(4px)',
     }),
   };
+
+  if (ageCheckLoading) return null;
 
   if (!ageConfirmed) {
     return <AgeConfirmationGate onConfirmed={() => setAgeConfirmed(true)} />;
