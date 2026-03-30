@@ -109,6 +109,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     }),
   };
 
+  if (ageCheckLoading) return null;
+
   if (!ageConfirmed) {
     return <AgeConfirmationGate onConfirmed={() => setAgeConfirmed(true)} />;
   }
