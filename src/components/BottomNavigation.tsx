@@ -65,6 +65,10 @@ export function BottomNavigation({
   const handleTabClick = (tab: typeof primaryTabs[0]) => {
     // Always update the active tab state first
     onTabChange(tab.id);
+    // Scroll to top on every tab switch (iOS WKWebView compatible)
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
     // Then navigate if there's a route
     if (tab.route) {
       navigate(tab.route);
