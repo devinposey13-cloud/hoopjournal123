@@ -339,8 +339,8 @@ function PromoCardCanvas({
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, opacity: 0.85 }}>
           <img src={hoopJournalLogo} alt="" style={{ width: 76, height: 76, borderRadius: 14 }} crossOrigin="anonymous" />
           <div data-canvas-footer-brand="true">
-            <div style={{ color: s.bright, fontSize: 26, fontWeight: 800, opacity: 0.9 }}>Hoop Journal</div>
-            <div style={{ color: s.dim, fontSize: 15, fontWeight: 500, letterSpacing: '0.05em', opacity: 0.8 }}>EVENT EDITION</div>
+            <div style={{ color: s.bright, fontSize: 26, fontWeight: 800 }}>Hoop Journal</div>
+            <div style={{ color: s.dim, fontSize: 15, fontWeight: 500, letterSpacing: '2px' }}>EVENT EDITION</div>
           </div>
         </div>
         <div data-canvas-appstore="true" style={{ display: 'flex', alignItems: 'center' }}>
