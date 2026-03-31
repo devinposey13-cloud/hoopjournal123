@@ -208,18 +208,21 @@ function PromoCardCanvas({
       <div style={{
         position: 'absolute', top: 96, bottom: 280, left: 72, right: 72,
       }}>
-        {/* Avatar */}
+        {/* Avatar — perfect circle, no transforms, pixel-aligned */}
         <div style={{
-          width: 580, height: 580, borderRadius: '50%',
+          width: 540, height: 540, borderRadius: '50%',
+          aspectRatio: '1 / 1',
           border: `8px solid ${color}`,
+          boxSizing: 'border-box',
           overflow: 'hidden',
-          boxShadow: `0 0 60px ${color}30, 0 0 120px ${color}10`,
-          position: 'absolute', top: 0, left: 250,
+          boxShadow: `0 0 60px ${color}30`,
+          position: 'absolute', top: 0, left: 0, right: 0,
+          marginLeft: 'auto', marginRight: 'auto',
         }}
           data-canvas-avatar="true"
         >
           {photoUrl ? (
-            <img src={photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} crossOrigin="anonymous" />
+            <img src={photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', aspectRatio: '1 / 1' }} crossOrigin="anonymous" />
           ) : (
             <div style={{
               width: '100%', height: '100%', background: '#1e293b',
@@ -234,7 +237,7 @@ function PromoCardCanvas({
 
         {/* Identity block — name is primary, archetype secondary */}
         <div style={{
-          position: 'absolute', top: 630, left: 0, right: 0,
+          position: 'absolute', top: 590, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
           <div data-canvas-name="true" style={{
@@ -246,7 +249,7 @@ function PromoCardCanvas({
 
           <div data-canvas-team="true" style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
-            marginTop: 12, flexWrap: 'wrap',
+            marginTop: 14, flexWrap: 'wrap',
           }}>
             <span style={{
               color: s.muted, fontSize: 28, fontWeight: 700,
@@ -259,24 +262,24 @@ function PromoCardCanvas({
             }}>#{jerseyNumber}{position ? ` • ${position}` : ''}</span>
           </div>
 
-          {/* Archetype — slightly smaller, more spacing from name */}
+          {/* Archetype title */}
           <div data-canvas-archetype="true" data-canvas-color={color} style={{
             color, fontSize: 32, fontWeight: 800,
             letterSpacing: '8px', textTransform: 'uppercase',
-            marginTop: 30, textAlign: 'center',
+            marginTop: 32, textAlign: 'center',
+            lineHeight: 1.3,
           }}>{archetype}</div>
 
-          {/* Status Line — scouting feel */}
+          {/* Archetype subtitle */}
           <div data-canvas-status="true" style={{
             color: s.sub, fontSize: 19, fontWeight: 700,
             letterSpacing: '6px', textTransform: 'uppercase',
-            marginTop: 14, textAlign: 'center',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            maxWidth: '100%',
+            marginTop: 10, textAlign: 'center',
+            lineHeight: 1.3,
           }}>{statusLine}</div>
 
           <div style={{
-            width: 300, height: 2, marginTop: 20,
+            width: 300, height: 2, marginTop: 24,
             background: `linear-gradient(90deg, transparent, ${color}40, transparent)`,
           }} />
         </div>
@@ -287,7 +290,8 @@ function PromoCardCanvas({
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
           <div style={{
-            position: 'absolute', top: 120, left: 290,
+            position: 'absolute', top: 120, left: 0, right: 0,
+            marginLeft: 'auto', marginRight: 'auto',
             width: 500, height: 500, borderRadius: '50%',
             background: `radial-gradient(circle, ${color}10 0%, transparent 55%)`,
             pointerEvents: 'none',
