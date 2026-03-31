@@ -1135,6 +1135,26 @@ export function AdminQuickMode() {
       ctx.restore();
     }
 
+    // ── 12. Redraw App Store badge ──
+    if (positions.appStore) {
+      try {
+        const badgeImg = new Image();
+        badgeImg.crossOrigin = 'anonymous';
+        await new Promise<void>((res, rej) => {
+          badgeImg.onload = () => res();
+          badgeImg.onerror = () => rej();
+          badgeImg.src = appStoreBadge;
+        });
+        const aspectRatio = badgeImg.naturalWidth / badgeImg.naturalHeight;
+        const drawW = positions.appStore.w;
+        const drawH = drawW / aspectRatio;
+        ctx.save();
+        ctx.globalAlpha = 0.85;
+        ctx.drawImage(badgeImg, positions.appStore.x, positions.appStore.cy - drawH / 2, drawW, drawH);
+        ctx.restore();
+      } catch { /* badge load failed, skip */ }
+    }
+
     return new Promise((resolve) => out.toBlob((b) => resolve(b), 'image/png'));
   }
 

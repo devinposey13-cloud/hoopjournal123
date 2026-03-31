@@ -506,6 +506,25 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
         ctx.restore();
       }
 
+      // ── 16. Redraw App Store badge ──
+      if (appStorePos) {
+        try {
+          const badgeImg = new Image();
+          badgeImg.crossOrigin = 'anonymous';
+          await new Promise<void>((res, rej) => {
+            badgeImg.onload = () => res();
+            badgeImg.onerror = () => rej();
+            badgeImg.src = appStoreBadge;
+          });
+          const aspectRatio = badgeImg.naturalWidth / badgeImg.naturalHeight;
+          const drawW = appStorePos.w;
+          const drawH = drawW / aspectRatio;
+          ctx.save();
+          ctx.drawImage(badgeImg, appStorePos.x, appStorePos.cy - drawH / 2, drawW, drawH);
+          ctx.restore();
+        } catch { /* badge load failed, skip */ }
+      }
+
       return new Promise((resolve) => out.toBlob((blob) => resolve(blob ?? null), 'image/png'));
     } catch (err) {
       console.error('[ReportCard] Export failed:', err);
