@@ -351,6 +351,9 @@ function PromoCardCanvas({
             <div style={{ color: s.dim, fontSize: 15, fontWeight: 500, letterSpacing: '0.05em', opacity: 0.8 }}>EVENT EDITION</div>
           </div>
         </div>
+        <div data-canvas-badge="appstore" style={{ display: 'flex', alignItems: 'center' }}>
+          <img src={appStoreBadge} alt="Download on the App Store" style={{ width: 120, height: 'auto' }} crossOrigin="anonymous" />
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <div data-canvas-footer-scan="true" style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to claim</div>
           <div style={{ padding: 6, background: 'rgba(255,255,255,0.95)', borderRadius: 10 }}>
