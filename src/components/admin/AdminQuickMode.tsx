@@ -147,7 +147,7 @@ function generateClaimCode(): string {
 
 // ── Promo Card Canvas ──
 function PromoCardCanvas({ 
-  playerName, teamName, jerseyNumber, position, photoUrl, template, cardRef, claimUrl, isNewlyGenerated 
+  playerName, teamName, jerseyNumber, position, photoUrl, template, cardRef, claimUrl, isNewlyGenerated, classYear 
 }: {
   playerName: string;
   teamName: string;
@@ -158,6 +158,7 @@ function PromoCardCanvas({
   cardRef: React.RefObject<HTMLDivElement>;
   claimUrl?: string;
   isNewlyGenerated?: boolean;
+  classYear?: number | null;
 }) {
   const { color, glow, grade, badges, headline, archetype, statusLine } = template;
   const CANVAS_W = 1080;
