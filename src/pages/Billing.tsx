@@ -75,6 +75,27 @@ export default function Billing() {
   }, [currentPlan]);
 
   const handleCancel = async (immediate: boolean) => {
+    // App Store subscribers must cancel through Apple, not Stripe
+    if (billingSource === 'ios_app_store') {
+      const { isDespia } = await import('@/lib/platform');
+      if (isDespia()) {
+        try {
+          const despiaModule = await import('despia-native');
+          const despia = (despiaModule.default || despiaModule) as any;
+          despia('managesubscriptions://');
+        } catch {
+          window.open('https://apps.apple.com/account/subscriptions', '_blank');
+        }
+      } else {
+        const url = 'https://apps.apple.com/account/subscriptions';
+        const win = window.open(url, '_blank', 'noopener,noreferrer');
+        if (!win) window.location.href = url;
+      }
+      toast.info('Opening App Store subscription management…');
+      setCancelOpen(false);
+      return;
+    }
+
     setCanceling(true);
     try {
       const result = await cancelSubscription(immediate);
