@@ -1,40 +1,22 @@
 
 
-## Fix: Avatar Deletion Not Persisting
+## Reset Tester Account Password
 
-### Problem
-When deleting an avatar, `handleDeleteAvatar` calls `updateProfile({ avatar: undefined })`. In `useCloudData.ts`, line 902 uses the nullish coalescing operator (`??`), which treats `undefined` as nullish and falls back to `profile.avatar` (the old URL). The database never receives `null`, so on refresh the old avatar reappears.
+### Approach
+Use the existing `admin-password-reset` edge function to set a new password for `appreview@hoopjournal.me` directly — no email required.
 
-### Root Cause
-```ts
-avatar_url: updates.avatar ?? profile.avatar ?? null,
-```
-`undefined ?? profile.avatar` evaluates to `profile.avatar` — the old URL.
+### Steps
+1. Call the `admin-password-reset` edge function with the tester's user ID and a new password
+2. Share the updated credentials with you
 
-### Fix
+### What You'll Get
+- **Email:** `appreview@hoopjournal.me`
+- **Password:** A new password you choose (or I can generate one)
 
-**File: `src/hooks/useCloudData.ts`** (line 902)
+### Alternative
+If you'd prefer a real email address for the tester account (so Google reviewers can actually receive verification emails if needed), I can:
+1. Create a **new** tester account with a real email you control
+2. Set a known password via the admin function
 
-Change the avatar field logic to explicitly check if `avatar` was included in the updates object:
-
-```ts
-avatar_url: 'avatar' in updates ? (updates.avatar ?? null) : (profile.avatar ?? null),
-```
-
-This way, when `handleDeleteAvatar` passes `{ avatar: undefined }`, the `'avatar' in updates` check is `true`, and `updates.avatar ?? null` resolves to `null` — correctly clearing the database field.
-
-**File: `src/pages/Profile.tsx`** (line 209-210)
-
-Also update the delete handler to pass `null` instead of `undefined` for clarity:
-
-```ts
-setFormData(prev => ({ ...prev, avatar: undefined }));
-await updateProfile({ avatar: null as any });
-```
-
-### Also affected
-The same `??` pattern applies to other fields, but avatar is the only one with an explicit delete flow, so this is the only one that needs fixing now.
-
-### Summary
-One line change in `useCloudData.ts` to use an explicit `'avatar' in updates` check, ensuring deletion properly writes `null` to the database.
+No code changes needed — this is purely an operational task using existing infrastructure.
 
