@@ -250,12 +250,12 @@ function PromoCardCanvas({
           }}>
             <span style={{
               color: s.muted, fontSize: 28, fontWeight: 700,
-              letterSpacing: '0.25em', textTransform: 'uppercase',
+              letterSpacing: '7px', textTransform: 'uppercase',
             }}>{teamName}</span>
             <span style={{ color: s.dim, fontSize: 28, fontWeight: 700 }}>|</span>
             <span style={{
               color: s.muted, fontSize: 28, fontWeight: 700,
-              letterSpacing: '0.15em',
+              letterSpacing: '4px',
             }}>#{jerseyNumber}{position ? ` • ${position}` : ''}</span>
           </div>
 
