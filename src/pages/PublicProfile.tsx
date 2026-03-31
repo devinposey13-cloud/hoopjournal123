@@ -22,6 +22,7 @@ interface PublicProfileData {
   number: number;
   height: string;
   grade: string;
+  class_year: number | null;
   avatar_url: string | null;
   user_id: string;
   instagram_url: string | null;
