@@ -1,32 +1,34 @@
 
 
-## Add Conditioning Data to Progress Tab Practice View
+## Add App Store Badge to Report Cards and Quick Entry Cards
 
 ### Overview
-When the user selects "Practice" in the Progress tab, they currently only see shooting stats. This enhancement adds a Conditioning section below the shooting stats showing run history, totals, and trends — keeping the view clean and consistent.
+Add the uploaded Apple "Download on the App Store" badge SVG to the footer area of both the **Game Report Card** (`ReportCardCanvas.tsx`) and the **Admin Quick Mode Event Card** (`AdminQuickMode.tsx`). The badge will sit alongside the existing branding/QR section at the bottom.
 
 ### Changes
 
-**1. `src/components/ProgressHub.tsx` — Fetch conditioning sessions**
-- Add a `conditioningSessions` state array alongside `practiceSessions`
-- In the existing `useEffect` that fires when `dataSource === 'practice'`, also query `conditioning_sessions` table filtered by `user_id` (and `profile_id` if active)
-- Pass `conditioningSessions` as a new prop to `PracticeProgressView`
+**1. Copy the uploaded SVG into assets**
+- Copy `user-uploads://Download_on_the_App_Store_Badge_US-UK_RGB_blk_092917.svg` → `src/assets/app-store-badge.svg`
 
-**2. `src/components/progress/PracticeProgressView.tsx` — Add conditioning section to Practice view**
-- Add optional `conditioningSessions` prop to the component interface
-- After the existing shooting stats section (in `mode === 'practice'`), render a new "Conditioning" section if there are sessions:
-  - **Summary stats row** (reusing `StatCard` pattern): Total Runs, Total Distance, Total Time, Avg Pace
-  - **Best run callout** (reusing the amber `Trophy` card pattern from best practice session)
-  - **Last 5 runs trend chart** (reusing the same `AreaChart` pattern, showing distance or pace over time)
-  - **Trust score average** displayed as a small badge if available
-- In `mode === 'combined'`, optionally show a conditioning summary card comparing total conditioning volume
+**2. `src/components/report-card/ReportCardCanvas.tsx` — Add badge to footer**
+- Import the App Store badge SVG
+- In the footer section (lines ~393-413), add the badge between the branding and QR code, or below the "Hoop Journal" brand text
+- Size it proportionally (~120px wide for story, ~90px for post format)
+- Apply a white background pill/rounded rect behind it since the badge is black on transparent
+- Add `data-canvas-text` or similar attribute so the Canvas 2D export picks it up as an image
 
-**3. No database changes needed**
-- All data already exists in `conditioning_sessions` table with the fields needed (elapsed_seconds, total_distance_meters, coach_trust_score, created_at, activity_type, verification_status)
+**3. `src/components/GameReportCard.tsx` — Update Canvas 2D export to draw the badge**
+- In the `captureCard` function, query for the App Store badge element and capture its position
+- Draw the badge image onto the final canvas during the manual redraw phase so it exports crisp
+
+**4. `src/components/admin/AdminQuickMode.tsx` — Add badge to event card footer**
+- Import the App Store badge SVG
+- In the footer section (lines ~341-364), add the badge near the branding area
+- Same sizing approach as the report card
+- Update the Canvas 2D export logic in AdminQuickMode to include the badge in the final rendered output
 
 ### Technical details
-- Reuse the existing `StatCard` and chart patterns already in `PracticeProgressView` for visual consistency
-- Calculate pace as `elapsed_seconds / (total_distance_meters / 1000)` converted to min/km
-- Filter to only `activity_type = 'run'` sessions for the conditioning stats
-- The conditioning section uses a `Running` icon from lucide and a section header to visually separate it from shooting stats
+- SVG can be imported directly as an image src in React (`import badge from '@/assets/app-store-badge.svg'`)
+- For canvas export, load the SVG as an `Image()` element and `drawImage()` it at the correct position
+- The badge needs a subtle white or light background treatment since the SVG has black fill — a small white rounded rect behind it will make it pop on the dark card backgrounds
 
