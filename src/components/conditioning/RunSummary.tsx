@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Check, X, Clock, MapPin, Zap, Shield, Signal, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react';
+import { Check, X, Clock, MapPin, Zap, Shield, Signal, ChevronDown, ChevronUp, ShieldCheck, Share2 } from 'lucide-react';
 import { GpsPoint } from '@/hooks/useGpsTracking';
 import { RunTrace } from './RunTrace';
+import { ConditioningReportCard } from './ConditioningReportCard';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { type CoachTrustResult, TRUST_BAND_COLORS } from '@/utils/coachTrust';
 import { type ConditioningGradeResult } from '@/utils/conditioningGrade';
+import { useActiveProfile } from '@/hooks/useActiveProfile';
 
 interface RunResult {
   points: GpsPoint[];
@@ -65,7 +67,11 @@ export function RunSummary({ result, saving, onSave, onDiscard }: RunSummaryProp
   const trust = result.coachTrust;
   const trustColors = trust ? TRUST_BAND_COLORS[trust.band] : null;
   const [showTrustDetails, setShowTrustDetails] = useState(false);
+  const [showCard, setShowCard] = useState(false);
   const grade = result.conditioningGrade;
+  const { activeProfile } = useActiveProfile();
+
+  const canShowCard = grade && trust && grade.grade !== 'No Grade';
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -220,6 +226,18 @@ export function RunSummary({ result, saving, onSave, onDiscard }: RunSummaryProp
         {/* Run Trace */}
         {showTrace && <RunTrace points={result.points} />}
 
+        {/* Share Card button */}
+        {canShowCard && (
+          <Button
+            variant="outline"
+            className="w-full gap-2 h-12 text-base"
+            onClick={() => setShowCard(true)}
+          >
+            <Share2 className="w-5 h-5" />
+            Share Conditioning Card
+          </Button>
+        )}
+
         {/* Save button */}
         <Button
           className="w-full gap-2 h-12 text-base"
@@ -230,6 +248,28 @@ export function RunSummary({ result, saving, onSave, onDiscard }: RunSummaryProp
           {saving ? 'Saving...' : 'Save Run'}
         </Button>
       </div>
+
+      {/* Conditioning Report Card Dialog */}
+      {canShowCard && activeProfile && (
+        <ConditioningReportCard
+          open={showCard}
+          onOpenChange={setShowCard}
+          data={{
+            playerName: activeProfile.name || 'Player',
+            playerTeam: activeProfile.team || 'Team',
+            jerseyNumber: activeProfile.number || 0,
+            position: activeProfile.position || undefined,
+            avatarUrl: activeProfile.avatar_url || undefined,
+            conditioningGrade: grade,
+            coachTrust: trust,
+            elapsedSeconds: result.elapsedSeconds,
+            distanceMeters: result.distanceMeters,
+            trackingMode: result.trackingMode,
+            gpsPoints: result.points,
+            sessionDate: new Date().toISOString(),
+          }}
+        />
+      )}
     </div>
   );
 }
