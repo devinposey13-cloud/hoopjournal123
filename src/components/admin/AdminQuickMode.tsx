@@ -1091,26 +1091,20 @@ export function AdminQuickMode() {
       ctx.restore();
     }
 
-    // ── 10. Redraw footer branding text (logo image handled by html2canvas) ──
+    // ── 10. Redraw footer branding text ──
     if (footerBrandEl && positions.footerBrand) {
       const p = positions.footerBrand;
       ctx.save();
-      ctx.globalAlpha = 0.85;
-      // "Hoop Journal" text — positioned to the right of the logo
-      const logoSize = 76 * scaleX;
-      const textX = p.x + logoSize + 16 * scaleX;
       // Title
-      ctx.font = `800 26px ${FONT}`;
+      ctx.font = `800 28px ${FONT}`;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       ctx.fillStyle = '#f8fafc';
-      ctx.globalAlpha = 0.85 * 0.9;
-      ctx.fillText('Hoop Journal', textX, p.cy - 16);
+      ctx.fillText('Hoop Journal', p.x, p.cy - 14);
       // Subtitle
-      ctx.font = `500 15px ${FONT}`;
+      ctx.font = `600 14px ${FONT}`;
       ctx.fillStyle = '#475569';
-      ctx.globalAlpha = 0.85 * 0.8;
-      drawTrackedText(ctx, 'EVENT EDITION', textX + ctx.measureText('EVENT EDITION').width / 2, p.cy + 14, 15 * 0.05);
+      drawTrackedText(ctx, 'EVENT EDITION', p.x + ctx.measureText('EVENT EDITION').width / 2, p.cy + 16, 14 * 0.15);
       ctx.restore();
     }
 
