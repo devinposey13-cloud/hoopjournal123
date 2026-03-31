@@ -1270,6 +1270,7 @@ export function AdminQuickMode() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
 
             {/* Photo */}
             <div className="space-y-2">
