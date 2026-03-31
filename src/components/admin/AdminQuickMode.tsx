@@ -16,6 +16,7 @@ import courtLines from '@/assets/basketball-court-lines.jpg';
 import appStoreBadge from '@/assets/app-store-badge.svg';
 import html2canvas from 'html2canvas';
 import { QRCodeSVG } from 'qrcode.react';
+import { getClassYearOptions, formatClassYear } from '@/utils/classYear';
 
 // ── Template Definitions ──
 const TEMPLATES = {
@@ -146,7 +147,7 @@ function generateClaimCode(): string {
 
 // ── Promo Card Canvas ──
 function PromoCardCanvas({ 
-  playerName, teamName, jerseyNumber, position, photoUrl, template, cardRef, claimUrl, isNewlyGenerated 
+  playerName, teamName, jerseyNumber, position, photoUrl, template, cardRef, claimUrl, isNewlyGenerated, classYear 
 }: {
   playerName: string;
   teamName: string;
@@ -157,6 +158,7 @@ function PromoCardCanvas({
   cardRef: React.RefObject<HTMLDivElement>;
   claimUrl?: string;
   isNewlyGenerated?: boolean;
+  classYear?: number | null;
 }) {
   const { color, glow, grade, badges, headline, archetype, statusLine } = template;
   const CANVAS_W = 1080;
@@ -259,7 +261,7 @@ function PromoCardCanvas({
             <span style={{
               color: s.muted, fontSize: 28, fontWeight: 700,
               letterSpacing: '4px',
-            }}>#{jerseyNumber}{position ? ` • ${position}` : ''}</span>
+            }}>#{jerseyNumber}{position ? ` • ${position}` : ''}{classYear ? ` • Class of ${classYear}` : ''}</span>
           </div>
 
           {/* Archetype title */}
@@ -444,6 +446,7 @@ export function AdminQuickMode() {
   const [teamName, setTeamName] = useState(saved.current.teamName || '');
   const [jerseyNumber, setJerseyNumber] = useState(saved.current.jerseyNumber || '');
   const [position, setPosition] = useState(saved.current.position || '');
+  const [classYear, setClassYear] = useState<string>(saved.current.classYear || '');
   const [templateKey, setTemplateKey] = useState<TemplateKey>(saved.current.templateKey || 'scorer');
   const [contactInfo, setContactInfo] = useState(saved.current.contactInfo || '');
   const [photoUrl, setPhotoUrl] = useState<string | null>(saved.current.photoUrl || null);
@@ -456,8 +459,8 @@ export function AdminQuickMode() {
 
   // Save form on every change so camera interruptions can recover the latest draft
   useEffect(() => {
-    saveFormForCamera({ playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl });
-  }, [playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl]);
+    saveFormForCamera({ playerName, teamName, jerseyNumber, position, classYear, templateKey, contactInfo, photoUrl });
+  }, [playerName, teamName, jerseyNumber, position, classYear, templateKey, contactInfo, photoUrl]);
 
   // UI state
   const [generating, setGenerating] = useState(false);
@@ -675,7 +678,7 @@ export function AdminQuickMode() {
         claim_token: claimToken,
         expires_at: expiresAt,
         contact_info: contactInfo || null,
-        card_source: 'event_quick_mode',
+        class_year: classYear ? parseInt(classYear) : null,
         verification_status: 'promo_generated',
         eligible_for_leaderboards: false,
         eligible_for_career_stats: false,
@@ -779,6 +782,7 @@ export function AdminQuickMode() {
     setPlayerName('');
     setJerseyNumber('');
     setPosition('');
+    setClassYear('');
     setContactInfo('');
     setPhotoUrl(null);
     setPhotoFile(null);
@@ -1253,6 +1257,19 @@ export function AdminQuickMode() {
                   className="mt-1"
                 />
               </div>
+              <div>
+                <Label htmlFor="qm-classyear" className="text-sm font-semibold">Class Year</Label>
+                <Select value={classYear} onValueChange={setClassYear}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getClassYearOptions().map((y) => (
+                      <SelectItem key={y} value={String(y)}>Class of {y}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Photo */}
@@ -1365,6 +1382,7 @@ export function AdminQuickMode() {
             teamName={teamName || 'TEAM NAME'}
             jerseyNumber={parseInt(jerseyNumber) || 0}
             position={position}
+            classYear={classYear ? parseInt(classYear) : null}
             photoUrl={photoUrl || undefined}
             template={activeTemplate}
             cardRef={exportRef}
@@ -1388,6 +1406,7 @@ export function AdminQuickMode() {
                   teamName={teamName || 'TEAM NAME'}
                   jerseyNumber={parseInt(jerseyNumber) || 0}
                   position={position}
+                  classYear={classYear ? parseInt(classYear) : null}
                   photoUrl={photoUrl || undefined}
                   template={activeTemplate}
                   cardRef={cardRef}

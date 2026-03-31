@@ -9,6 +9,7 @@ export interface PlayerProfileRecord {
   number: number;
   height: string;
   grade: string;
+  class_year?: number | null;
   avatar_url?: string;
   username?: string;
   display_name?: string;
@@ -51,6 +52,7 @@ export function mapRecordToPlayerProfile(record: PlayerProfileRecord): PlayerPro
     number: record.number,
     height: record.height,
     grade: record.grade,
+    classYear: record.class_year,
     avatar: record.avatar_url,
     username: record.username,
     displayName: record.display_name,

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { PlayerProfile, SeasonStats, GameStats } from '@/types/basketball';
 import { Trophy, TrendingUp, FileDown, Instagram } from 'lucide-react';
+import { getClassYearDisplay } from '@/utils/classYear';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { exportSeasonStatsPdf } from '@/utils/exportPdf';
@@ -84,7 +85,7 @@ export function PlayerHeader({ profile, seasonStats, games, xpProgress, tierAchi
               <span>•</span>
               <span>{profile.team}</span>
               <span>•</span>
-              <span>{profile.grade}</span>
+              <span>{getClassYearDisplay(profile.classYear, profile.grade)}</span>
               {profile.instagramUrl && (
                 <a
                   href={profile.instagramUrl}

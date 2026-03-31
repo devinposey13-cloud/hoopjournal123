@@ -10,6 +10,7 @@ import { User, Target, Star, Percent, Flame, TrendingUp, Circle, Users } from 'l
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PlanId, AccessBadge } from '@/lib/plans';
+import { getClassYearDisplay } from '@/utils/classYear';
 
 interface TierAchievement {
   tier: string;
@@ -199,13 +200,13 @@ export function PlayerCard({
                 {profile.position && (
                   <span className="font-medium">{profile.position}</span>
                 )}
-                {profile.position && profile.grade && (
+                {profile.position && (profile.classYear || profile.grade) && (
                   <span className="text-border">•</span>
                 )}
-                {profile.grade && (
-                  <span>{profile.grade}</span>
+                {(profile.classYear || profile.grade) && (
+                  <span>{getClassYearDisplay(profile.classYear, profile.grade)}</span>
                 )}
-                {(profile.position || profile.grade) && displayTeam && (
+                {(profile.position || profile.classYear || profile.grade) && displayTeam && (
                   <span className="text-border">•</span>
                 )}
                 <span className="truncate max-w-[100px] sm:max-w-none">{displayTeam}</span>

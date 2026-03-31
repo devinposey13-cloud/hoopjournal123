@@ -13,6 +13,7 @@ const defaultProfile: PlayerProfile = {
   number: 23,
   height: "5'8\"",
   grade: '8th Grade',
+  classYear: null,
   username: undefined,
   displayName: undefined,
   isProfilePublic: false,
@@ -251,6 +252,7 @@ export function useCloudData() {
           number: settingsData.number,
           height: settingsData.height,
           grade: settingsData.grade,
+          classYear: settingsData.class_year ?? null,
           avatar: settingsData.avatar_url || undefined,
           username: settingsData.username || undefined,
           displayName: settingsData.display_name || undefined,
@@ -896,6 +898,7 @@ export function useCloudData() {
           number: updates.number ?? profile.number,
           height: updates.height ?? profile.height,
           grade: updates.grade ?? profile.grade,
+          class_year: updates.classYear ?? profile.classYear ?? null,
           avatar_url: updates.avatar ?? profile.avatar ?? null,
           username: updates.username ?? profile.username ?? null,
           display_name: updates.displayName ?? profile.displayName ?? null,
@@ -916,7 +919,7 @@ export function useCloudData() {
           coach_voice_gender: updates.coachVoiceGender ?? profile.coachVoiceGender ?? 'male',
           // Ring of Honor opt-in
           ring_of_honor_opt_in: updates.ringOfHonorOptIn ?? profile.ringOfHonorOptIn ?? false,
-        })
+        } as any)
         .eq('id', activeProfileId);
 
       if (error) throw error;

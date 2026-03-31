@@ -12,6 +12,7 @@ import { ClipCard } from '@/components/ClipCard';
 import { PublicMilestoneCard } from '@/components/milestones/PublicMilestoneCard';
 import { MilestoneRarity } from '@/types/milestone';
 import { cn } from '@/lib/utils';
+import { getClassYearDisplay } from '@/utils/classYear';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 
 interface PublicProfileData {
@@ -21,6 +22,7 @@ interface PublicProfileData {
   number: number;
   height: string;
   grade: string;
+  class_year: number | null;
   avatar_url: string | null;
   user_id: string;
   instagram_url: string | null;
@@ -144,6 +146,7 @@ export default function PublicProfile() {
           number: profileData.number,
           height: profileData.height,
           grade: profileData.grade,
+          class_year: profileData.class_year ?? null,
           avatar_url: profileData.avatar_url,
           user_id: profileData.user_id,
           instagram_url: profileData.instagram_url,
@@ -356,7 +359,7 @@ export default function PublicProfile() {
           </p>
           <div className="flex items-center gap-2">
             <p className="text-muted-foreground">
-              {profile.team} • {profile.grade} • {profile.height}
+              {profile.team} • {getClassYearDisplay(profile.class_year, profile.grade)} • {profile.height}
             </p>
             {profile.instagram_url && (
               <a

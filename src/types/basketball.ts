@@ -76,6 +76,7 @@ export interface PlayerProfile {
   number: number;
   height: string;
   grade: string;
+  classYear?: number | null;
   avatar?: string;
   username?: string;
   displayName?: string;
