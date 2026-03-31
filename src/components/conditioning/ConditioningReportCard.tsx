@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from 'react';
 import html2canvas from 'html2canvas';
+import appStoreBadge from '@/assets/app-store-badge.svg';
 import { Share2, Copy, Check, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
