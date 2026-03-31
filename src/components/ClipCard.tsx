@@ -1,4 +1,4 @@
-import { Play, Trash2, Globe, MessageCircle } from 'lucide-react';
+import { Play, Trash2, Globe, MessageCircle, Flag } from 'lucide-react';
 import { format } from 'date-fns';
 import { VideoClip } from '@/types/basketball';
 import { Button } from '@/components/ui/button';
