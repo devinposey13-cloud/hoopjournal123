@@ -83,8 +83,9 @@ export interface UserAccessInfo {
  * Priority: grandfathered > admin override > promo lock-in > subscription
  */
 export function getEffectivePlan(user: UserAccessInfo): PlanId {
-  if (user.isGrandfathered) return 'elite';
+  // Admin override always takes highest priority
   if (user.adminOverridePlan) return user.adminOverridePlan;
+  if (user.isGrandfathered) return 'elite';
   // AAU promo lock-in: Elite access while on active Pro subscription
   if (
     user.promoLockedIn &&
