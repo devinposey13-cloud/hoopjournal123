@@ -181,16 +181,17 @@ function PromoCardCanvas({
         backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
         opacity: 0.025, pointerEvents: 'none', filter: 'invert(1)',
       }} />
-      {/* Background glow */}
+      {/* Background glow — flat, no 3D transforms */}
       <div style={{
-        position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%, -50%)',
+        position: 'absolute', top: '30%', left: '50%',
+        marginLeft: -450, marginTop: -450,
         width: 900, height: 900, borderRadius: '50%',
-        background: `radial-gradient(circle, ${color}10 0%, transparent 65%)`,
+        background: `radial-gradient(circle, ${color}08 0%, transparent 65%)`,
         pointerEvents: 'none',
       }} />
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 4,
-        background: `linear-gradient(90deg, transparent 10%, ${color}50 50%, transparent 90%)`,
+        background: `linear-gradient(90deg, transparent 10%, ${color}40 50%, transparent 90%)`,
       }} />
 
       {/* PROMO BADGE */}
@@ -212,8 +213,8 @@ function PromoCardCanvas({
           width: 580, height: 580, borderRadius: '50%',
           border: `8px solid ${color}`,
           overflow: 'hidden',
-          boxShadow: `0 0 80px ${color}50, 0 0 160px ${color}20, inset 0 0 40px ${color}10`,
-          position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+          boxShadow: `0 0 60px ${color}30, 0 0 120px ${color}10`,
+          position: 'absolute', top: 0, left: 250,
         }}
           data-canvas-avatar="true"
         >
@@ -238,8 +239,8 @@ function PromoCardCanvas({
         }}>
           <div data-canvas-name="true" style={{
             color: s.bright, fontSize: 76, fontWeight: 900,
-            letterSpacing: '0.06em', textTransform: 'uppercase',
-            textAlign: 'center', lineHeight: 1.02,
+            letterSpacing: '4px', textTransform: 'uppercase',
+            textAlign: 'center', lineHeight: 1,
             maxWidth: '100%', wordBreak: 'break-word',
           }}>{playerName}</div>
 
@@ -249,31 +250,29 @@ function PromoCardCanvas({
           }}>
             <span style={{
               color: s.muted, fontSize: 28, fontWeight: 700,
-              letterSpacing: '0.25em', textTransform: 'uppercase',
+              letterSpacing: '7px', textTransform: 'uppercase',
             }}>{teamName}</span>
             <span style={{ color: s.dim, fontSize: 28, fontWeight: 700 }}>|</span>
             <span style={{
               color: s.muted, fontSize: 28, fontWeight: 700,
-              letterSpacing: '0.15em',
+              letterSpacing: '4px',
             }}>#{jerseyNumber}{position ? ` • ${position}` : ''}</span>
           </div>
 
           {/* Archetype — slightly smaller, more spacing from name */}
           <div data-canvas-archetype="true" data-canvas-color={color} style={{
             color, fontSize: 32, fontWeight: 800,
-            letterSpacing: '0.25em', textTransform: 'uppercase',
+            letterSpacing: '8px', textTransform: 'uppercase',
             marginTop: 30, textAlign: 'center',
-            textShadow: `0 0 30px ${color}40`,
           }}>{archetype}</div>
 
           {/* Status Line — scouting feel */}
           <div data-canvas-status="true" style={{
             color: s.sub, fontSize: 19, fontWeight: 700,
-            letterSpacing: '0.35em', textTransform: 'uppercase',
+            letterSpacing: '6px', textTransform: 'uppercase',
             marginTop: 14, textAlign: 'center',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             maxWidth: '100%',
-            opacity: 0.75,
           }}>{statusLine}</div>
 
           <div style={{
@@ -282,36 +281,32 @@ function PromoCardCanvas({
           }} />
         </div>
 
-        {/* Grade — ~12% larger, tighter to content */}
+        {/* Grade — flat 2D rendering, no transforms */}
         <div style={{
           position: 'absolute', top: 940, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
           <div style={{
-            position: 'absolute', top: 120, left: '50%', transform: 'translate(-50%, -50%)',
+            position: 'absolute', top: 120, left: 290,
             width: 500, height: 500, borderRadius: '50%',
-            background: `radial-gradient(circle, ${color}15 0%, transparent 55%)`,
+            background: `radial-gradient(circle, ${color}10 0%, transparent 55%)`,
             pointerEvents: 'none',
           }} />
-          {/* GAME GRADE label — more visible */}
+          {/* GAME GRADE label */}
           <div data-canvas-label="true" style={{
             color: s.muted, fontSize: 19, fontWeight: 800,
-            letterSpacing: '0.5em', textTransform: 'uppercase',
+            letterSpacing: '10px', textTransform: 'uppercase',
             textAlign: 'center', marginBottom: 16,
-            opacity: 0.85,
           }}>GAME GRADE</div>
           <div style={{
             fontSize: 244, fontWeight: 900, color,
-            lineHeight: 0.82, textShadow: glow,
-            letterSpacing: '-0.03em', textAlign: 'center',
+            lineHeight: 1, textAlign: 'center',
             minHeight: 200,
-            ...(isNewlyGenerated ? {
-              animation: 'gradeReveal 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-            } : {}),
+            textShadow: `0 0 40px ${color}50`,
           }}
             data-canvas-grade="true"
             data-grade-color={color}
-            data-grade-glow={glow}
+            data-grade-glow={`0 0 40px ${color}50`}
           >{grade}</div>
         </div>
 
@@ -323,17 +318,14 @@ function PromoCardCanvas({
         }}>
           {badges.slice(0, 3).map((badge, i) => (
             <div key={i} data-canvas-badge={i} style={{
-              background: i === 0 ? `${color}20` : `${color}10`,
-              border: `1.5px solid ${i === 0 ? `${color}50` : `${color}28`}`,
+              background: `${color}15`,
+              border: `1.5px solid ${color}35`,
               borderRadius: 50,
-              padding: i === 0 ? '13px 34px' : '12px 30px',
-              color: i === 0 ? color : color,
+              padding: '12px 30px',
+              color,
               fontSize: i === 0 ? 23 : 21,
-              fontWeight: i === 0 ? 800 : 700,
-              letterSpacing: '0.04em',
-              opacity: i === 0 ? 1 : 0.8,
-              boxShadow: i === 0 ? `0 0 24px ${color}18` : 'none',
-              transform: i === 0 ? 'scale(1.04)' : 'none',
+              fontWeight: 700,
+              letterSpacing: '1px',
             }}>{badge}</div>
           ))}
         </div>
@@ -347,15 +339,15 @@ function PromoCardCanvas({
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, opacity: 0.85 }}>
           <img src={hoopJournalLogo} alt="" style={{ width: 76, height: 76, borderRadius: 14 }} crossOrigin="anonymous" />
           <div data-canvas-footer-brand="true">
-            <div style={{ color: s.bright, fontSize: 26, fontWeight: 800, opacity: 0.9 }}>Hoop Journal</div>
-            <div style={{ color: s.dim, fontSize: 15, fontWeight: 500, letterSpacing: '0.05em', opacity: 0.8 }}>EVENT EDITION</div>
+            <div style={{ color: s.bright, fontSize: 26, fontWeight: 800 }}>Hoop Journal</div>
+            <div style={{ color: s.dim, fontSize: 15, fontWeight: 500, letterSpacing: '2px' }}>EVENT EDITION</div>
           </div>
         </div>
         <div data-canvas-appstore="true" style={{ display: 'flex', alignItems: 'center' }}>
           <img src={appStoreBadge} alt="Download on the App Store" style={{ width: 120, height: 'auto' }} crossOrigin="anonymous" />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-          <div data-canvas-footer-scan="true" style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to claim</div>
+          <div data-canvas-footer-scan="true" style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Scan to claim</div>
           <div style={{ padding: 6, background: 'rgba(255,255,255,0.95)', borderRadius: 10 }}>
             {claimUrl ? (
               <QRCodeSVG value={claimUrl} size={160} bgColor="#ffffff" fgColor="#000000" level="M" />
@@ -363,18 +355,10 @@ function PromoCardCanvas({
               <div style={{ width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 12 }}>Generate card first</div>
             )}
           </div>
-          <div data-canvas-footer-claim="true" style={{ color: s.dim, fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', marginTop: 2 }}>Claim within 72 hours</div>
+          <div data-canvas-footer-claim="true" style={{ color: s.dim, fontSize: 10, fontWeight: 600, letterSpacing: '1px', marginTop: 2 }}>Claim within 72 hours</div>
         </div>
       </div>
 
-      {/* Grade reveal animation keyframes */}
-      <style>{`
-        @keyframes gradeReveal {
-          0% { opacity: 0; transform: scale(0.88); }
-          60% { opacity: 1; transform: scale(1.03); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
     </div>
   );
 }
