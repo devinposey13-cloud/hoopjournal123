@@ -237,7 +237,7 @@ function PromoCardCanvas({
 
         {/* Identity block — name is primary, archetype secondary */}
         <div style={{
-          position: 'absolute', top: 630, left: 0, right: 0,
+          position: 'absolute', top: 590, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
           <div data-canvas-name="true" style={{
@@ -249,7 +249,7 @@ function PromoCardCanvas({
 
           <div data-canvas-team="true" style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
-            marginTop: 12, flexWrap: 'wrap',
+            marginTop: 14, flexWrap: 'wrap',
           }}>
             <span style={{
               color: s.muted, fontSize: 28, fontWeight: 700,
@@ -262,24 +262,24 @@ function PromoCardCanvas({
             }}>#{jerseyNumber}{position ? ` • ${position}` : ''}</span>
           </div>
 
-          {/* Archetype — slightly smaller, more spacing from name */}
+          {/* Archetype title */}
           <div data-canvas-archetype="true" data-canvas-color={color} style={{
             color, fontSize: 32, fontWeight: 800,
             letterSpacing: '8px', textTransform: 'uppercase',
-            marginTop: 30, textAlign: 'center',
+            marginTop: 32, textAlign: 'center',
+            lineHeight: 1.3,
           }}>{archetype}</div>
 
-          {/* Status Line — scouting feel */}
+          {/* Archetype subtitle */}
           <div data-canvas-status="true" style={{
             color: s.sub, fontSize: 19, fontWeight: 700,
             letterSpacing: '6px', textTransform: 'uppercase',
-            marginTop: 14, textAlign: 'center',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            maxWidth: '100%',
+            marginTop: 10, textAlign: 'center',
+            lineHeight: 1.3,
           }}>{statusLine}</div>
 
           <div style={{
-            width: 300, height: 2, marginTop: 20,
+            width: 300, height: 2, marginTop: 24,
             background: `linear-gradient(90deg, transparent, ${color}40, transparent)`,
           }} />
         </div>
