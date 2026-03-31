@@ -146,6 +146,7 @@ export default function PublicProfile() {
           number: profileData.number,
           height: profileData.height,
           grade: profileData.grade,
+          class_year: profileData.class_year ?? null,
           avatar_url: profileData.avatar_url,
           user_id: profileData.user_id,
           instagram_url: profileData.instagram_url,
