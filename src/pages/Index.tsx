@@ -101,6 +101,7 @@ export default function Index() {
   const { isAdmin } = useAdmin();
   const { totalPending: adminNotificationCount } = useAdminNotifications();
   const { isApproved, loading: approvalLoading, refetch: refetchApproval } = useApprovalStatus();
+  const { isBlocked } = useBlockedStatus();
   const {
     games,
     clips,
