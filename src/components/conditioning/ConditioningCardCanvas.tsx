@@ -341,27 +341,29 @@ export const ConditioningCardCanvas = forwardRef<HTMLDivElement, ConditioningCar
           }}>{dateStr}</div>
         </div>
 
-        {/* Footer */}
+        {/* Footer — two-zone layout: branding left, CTA right */}
         <div style={{
-          position: 'absolute', bottom: 60, left: 80, right: 80,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          position: 'absolute', bottom: 48, left: 80, right: 80,
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, opacity: 0.85 }}>
-            <img src={hoopJournalLogo} alt="" style={{ width: 76, height: 76, borderRadius: 14 }} crossOrigin="anonymous" />
+          {/* LEFT ZONE: Branding */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+            <img src={hoopJournalLogo} alt="" style={{ width: 80, height: 80, borderRadius: 16 }} crossOrigin="anonymous" />
             <div data-canvas-footer-brand="true">
-              <div style={{ color: s.bright, fontSize: 26, fontWeight: 800, opacity: 0.9 }}>Hoop Journal</div>
-              <div style={{ color: s.dim, fontSize: 15, fontWeight: 500, letterSpacing: '0.05em', opacity: 0.8 }}>CONDITIONING REPORT</div>
+              <div style={{ color: s.bright, fontSize: 28, fontWeight: 800, lineHeight: 1.2 }}>Hoop Journal</div>
+              <div style={{ color: s.dim, fontSize: 14, fontWeight: 600, letterSpacing: '3px', marginTop: 4 }}>CONDITIONING REPORT</div>
             </div>
           </div>
-          <div data-canvas-appstore="true" style={{ display: 'flex', alignItems: 'center' }}>
-            <img src={appStoreBadge} alt="Download on the App Store" style={{ width: 120, height: 'auto' }} crossOrigin="anonymous" />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-            <div data-canvas-footer-scan="true" style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to claim report</div>
-            <div style={{ padding: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 10 }}>
-              <img src={hoopJournalQr} alt="" style={{ width: 160, height: 160, borderRadius: 6 }} crossOrigin="anonymous" />
+          {/* RIGHT ZONE: QR (primary) + App Store badge (secondary) */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <div data-canvas-footer-scan="true" style={{ color: '#94a3b8', fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Scan to Claim</div>
+            <div style={{ padding: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 12 }}>
+              <img src={hoopJournalQr} alt="" style={{ width: 150, height: 150, borderRadius: 6 }} crossOrigin="anonymous" />
             </div>
-            <div data-canvas-footer-claim="true" style={{ color: s.dim, fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', marginTop: 2 }}>Claim within 72 hours</div>
+            <div data-canvas-footer-claim="true" style={{ color: s.dim, fontSize: 11, fontWeight: 600, letterSpacing: '1px', marginTop: 2 }}>Claim within 72 hours</div>
+            <div data-canvas-appstore="true" style={{ marginTop: 6 }}>
+              <img src={appStoreBadge} alt="Download on the App Store" style={{ width: 100, height: 'auto', opacity: 0.85 }} crossOrigin="anonymous" />
+            </div>
           </div>
         </div>
       </div>
