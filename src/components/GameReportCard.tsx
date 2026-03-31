@@ -88,8 +88,9 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
       const xpEl = container.querySelector('[data-canvas-xp]') as HTMLElement | null;
       const tagEls = Array.from(container.querySelectorAll('[data-canvas-tag]')) as HTMLElement[];
       const careerHighEls = Array.from(container.querySelectorAll('[data-canvas-career-high]')) as HTMLElement[];
+      const appStoreEl = container.querySelector('[data-canvas-appstore]') as HTMLElement | null;
 
-      const allHideable = [...allTextEls, gradeEl, xpEl, ...tagEls, ...careerHighEls].filter(Boolean) as HTMLElement[];
+      const allHideable = [...allTextEls, gradeEl, xpEl, ...tagEls, ...careerHighEls, appStoreEl].filter(Boolean) as HTMLElement[];
 
       // ── Read bounding rects BEFORE hiding ──
       const containerRect = container.getBoundingClientRect();
