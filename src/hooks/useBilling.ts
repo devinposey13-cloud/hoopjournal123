@@ -32,7 +32,7 @@ export const PRODUCT_TO_PLAN: Record<string, PlanId> = {
   monthly: 'pro',
   yearly: 'pro',
   lifetime: 'elite',
-  // Android prefixed variants
+  // Android prefixed variants (legacy)
   'premium:HoopJ_pro_monthly': 'pro',
   'premium:HoopJ_pro_yearly': 'pro',
   'premium:HoopJ_elite_monthly': 'elite',
@@ -41,12 +41,25 @@ export const PRODUCT_TO_PLAN: Record<string, PlanId> = {
   'premium:hj_pro_yearly': 'pro',
   'premium:hj_elite_monthly': 'elite',
   'premium:hj_elite_yearly': 'elite',
+  // Google Play Store product IDs (RevenueCat)
+  'pro_monthly:promonthly': 'pro',
+  'pro_monthly:proyearly': 'pro',
+  'pro_monthly:elitemonthly': 'elite',
+  'pro_monthly:eliteyearly': 'elite',
 };
 
 // Internal plan + billing → store product ID
 function getNativeProductId(planId: PlanId, billingCycle: BillingCycle): string {
+  if (isDespiaAndroid()) {
+    // Google Play Store product IDs from RevenueCat
+    const androidMap: Record<string, Record<string, string>> = {
+      pro: { monthly: 'pro_monthly:promonthly', yearly: 'pro_monthly:proyearly' },
+      elite: { monthly: 'pro_monthly:elitemonthly', yearly: 'pro_monthly:eliteyearly' },
+    };
+    const cycle = billingCycle === 'yearly' ? 'yearly' : 'monthly';
+    return androidMap[planId]?.[cycle] ?? `premium:HoopJ_${planId}_${cycle}`;
+  }
   const base = `HoopJ_${planId}_${billingCycle === 'yearly' ? 'yearly' : 'monthly'}`;
-  if (isDespiaAndroid()) return `premium:${base}`;
   return base;
 }
 
