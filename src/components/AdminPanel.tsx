@@ -442,6 +442,67 @@ export function AdminPanel() {
   const grades = ['1st Grade', '2nd Grade', '3rd Grade', '4th Grade', '5th Grade', '6th Grade', '7th Grade', '8th Grade', '9th Grade', '10th Grade', '11th Grade', '12th Grade'];
 
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
+  const [blockingUser, setBlockingUser] = useState<string | null>(null);
+  const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
+
+  // Fetch blocked users on load
+  useEffect(() => {
+    async function fetchBlockedUsers() {
+      const { data } = await supabase
+        .from('blocked_users')
+        .select('user_id')
+        .eq('is_active', true);
+      if (data) {
+        setBlockedUserIds(new Set(data.map(b => b.user_id)));
+      }
+    }
+    fetchBlockedUsers();
+  }, []);
+
+  // Block/unblock user
+  async function handleToggleBlock(authUserId: string, userName: string) {
+    const isCurrentlyBlocked = blockedUserIds.has(authUserId);
+    if (!isCurrentlyBlocked && !confirm(`Block ${userName}? They will be signed out and unable to use the app.`)) return;
+
+    setBlockingUser(authUserId);
+    try {
+      if (isCurrentlyBlocked) {
+        // Unblock: set is_active = false
+        const { error } = await supabase
+          .from('blocked_users')
+          .update({ is_active: false, unblocked_at: new Date().toISOString() })
+          .eq('user_id', authUserId)
+          .eq('is_active', true);
+        if (error) throw error;
+        setBlockedUserIds(prev => { const next = new Set(prev); next.delete(authUserId); return next; });
+        toast.success(`${userName} has been unblocked`);
+      } else {
+        // Block
+        const { error } = await supabase
+          .from('blocked_users')
+          .insert({
+            user_id: authUserId,
+            blocked_by: session?.user?.id,
+            reason: 'Blocked by admin',
+          } as any);
+        if (error) throw error;
+        setBlockedUserIds(prev => new Set(prev).add(authUserId));
+        toast.success(`${userName} has been blocked`);
+        dispatchSlackAlert({
+          category: 'moderation',
+          severity: 'warning',
+          title: 'User Blocked',
+          summary: `Admin blocked user: ${userName}`,
+          dedup_key: `block_${authUserId}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling block:', error);
+      toast.error('Failed to update block status');
+    } finally {
+      setBlockingUser(null);
+    }
+  }
 
   // Delete user completely (including auth.users entry)
   async function handleDeleteUser(userId: string, authUserId: string) {
