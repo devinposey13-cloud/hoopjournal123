@@ -502,18 +502,23 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             onClick={async () => {
                               if (effectiveBillingSource === 'ios_app_store') {
-                                // Route to Apple's subscription management
-                                try {
-                                  track('manage_ios_subscription_opened', {});
-                                  const despiaModule = await import('despia-native');
-                                  const despia = (despiaModule.default || despiaModule) as any;
-                                  despia('managesubscriptions://');
-                                  toast.info('Opening App Store subscription management…');
-                                } catch {
-                                  // Fallback: open Apple's subscription management URL
-                                  window.open('https://apps.apple.com/account/subscriptions', '_blank');
-                                  toast.info('Please manage your subscription in the App Store.');
+                                track('manage_ios_subscription_opened', {});
+                                if (isDespia()) {
+                                  // Native shell — use Despia bridge
+                                  try {
+                                    const despiaModule = await import('despia-native');
+                                    const despia = (despiaModule.default || despiaModule) as any;
+                                    despia('managesubscriptions://');
+                                  } catch {
+                                    window.open('https://apps.apple.com/account/subscriptions', '_blank');
+                                  }
+                                } else {
+                                  // Web / preview — open Apple URL directly
+                                  const url = 'https://apps.apple.com/account/subscriptions';
+                                  const win = window.open(url, '_blank', 'noopener,noreferrer');
+                                  if (!win) window.location.href = url;
                                 }
+                                toast.info('Opening App Store subscription management…');
                               } else {
                                 // Stripe cancellation
                                 setIsCanceling(true);
