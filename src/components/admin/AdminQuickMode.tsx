@@ -1406,6 +1406,7 @@ export function AdminQuickMode() {
                   teamName={teamName || 'TEAM NAME'}
                   jerseyNumber={parseInt(jerseyNumber) || 0}
                   position={position}
+                  classYear={classYear ? parseInt(classYear) : null}
                   photoUrl={photoUrl || undefined}
                   template={activeTemplate}
                   cardRef={cardRef}
