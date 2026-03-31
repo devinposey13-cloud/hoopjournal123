@@ -1,34 +1,40 @@
 
 
-## Add App Store Badge to Report Cards and Quick Entry Cards
+## Fix: Avatar Deletion Not Persisting
 
-### Overview
-Add the uploaded Apple "Download on the App Store" badge SVG to the footer area of both the **Game Report Card** (`ReportCardCanvas.tsx`) and the **Admin Quick Mode Event Card** (`AdminQuickMode.tsx`). The badge will sit alongside the existing branding/QR section at the bottom.
+### Problem
+When deleting an avatar, `handleDeleteAvatar` calls `updateProfile({ avatar: undefined })`. In `useCloudData.ts`, line 902 uses the nullish coalescing operator (`??`), which treats `undefined` as nullish and falls back to `profile.avatar` (the old URL). The database never receives `null`, so on refresh the old avatar reappears.
 
-### Changes
+### Root Cause
+```ts
+avatar_url: updates.avatar ?? profile.avatar ?? null,
+```
+`undefined ?? profile.avatar` evaluates to `profile.avatar` — the old URL.
 
-**1. Copy the uploaded SVG into assets**
-- Copy `user-uploads://Download_on_the_App_Store_Badge_US-UK_RGB_blk_092917.svg` → `src/assets/app-store-badge.svg`
+### Fix
 
-**2. `src/components/report-card/ReportCardCanvas.tsx` — Add badge to footer**
-- Import the App Store badge SVG
-- In the footer section (lines ~393-413), add the badge between the branding and QR code, or below the "Hoop Journal" brand text
-- Size it proportionally (~120px wide for story, ~90px for post format)
-- Apply a white background pill/rounded rect behind it since the badge is black on transparent
-- Add `data-canvas-text` or similar attribute so the Canvas 2D export picks it up as an image
+**File: `src/hooks/useCloudData.ts`** (line 902)
 
-**3. `src/components/GameReportCard.tsx` — Update Canvas 2D export to draw the badge**
-- In the `captureCard` function, query for the App Store badge element and capture its position
-- Draw the badge image onto the final canvas during the manual redraw phase so it exports crisp
+Change the avatar field logic to explicitly check if `avatar` was included in the updates object:
 
-**4. `src/components/admin/AdminQuickMode.tsx` — Add badge to event card footer**
-- Import the App Store badge SVG
-- In the footer section (lines ~341-364), add the badge near the branding area
-- Same sizing approach as the report card
-- Update the Canvas 2D export logic in AdminQuickMode to include the badge in the final rendered output
+```ts
+avatar_url: 'avatar' in updates ? (updates.avatar ?? null) : (profile.avatar ?? null),
+```
 
-### Technical details
-- SVG can be imported directly as an image src in React (`import badge from '@/assets/app-store-badge.svg'`)
-- For canvas export, load the SVG as an `Image()` element and `drawImage()` it at the correct position
-- The badge needs a subtle white or light background treatment since the SVG has black fill — a small white rounded rect behind it will make it pop on the dark card backgrounds
+This way, when `handleDeleteAvatar` passes `{ avatar: undefined }`, the `'avatar' in updates` check is `true`, and `updates.avatar ?? null` resolves to `null` — correctly clearing the database field.
+
+**File: `src/pages/Profile.tsx`** (line 209-210)
+
+Also update the delete handler to pass `null` instead of `undefined` for clarity:
+
+```ts
+setFormData(prev => ({ ...prev, avatar: undefined }));
+await updateProfile({ avatar: null as any });
+```
+
+### Also affected
+The same `??` pattern applies to other fields, but avatar is the only one with an explicit delete flow, so this is the only one that needs fixing now.
+
+### Summary
+One line change in `useCloudData.ts` to use an explicit `'avatar' in updates` check, ensuring deletion properly writes `null` to the database.
 
