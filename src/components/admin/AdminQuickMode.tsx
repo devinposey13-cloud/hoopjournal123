@@ -290,7 +290,8 @@ function PromoCardCanvas({
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
           <div style={{
-            position: 'absolute', top: 120, left: 290,
+            position: 'absolute', top: 120, left: 0, right: 0,
+            marginLeft: 'auto', marginRight: 'auto',
             width: 500, height: 500, borderRadius: '50%',
             background: `radial-gradient(circle, ${color}10 0%, transparent 55%)`,
             pointerEvents: 'none',
