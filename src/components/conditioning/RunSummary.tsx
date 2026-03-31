@@ -226,6 +226,18 @@ export function RunSummary({ result, saving, onSave, onDiscard }: RunSummaryProp
         {/* Run Trace */}
         {showTrace && <RunTrace points={result.points} />}
 
+        {/* Share Card button */}
+        {canShowCard && (
+          <Button
+            variant="outline"
+            className="w-full gap-2 h-12 text-base"
+            onClick={() => setShowCard(true)}
+          >
+            <Share2 className="w-5 h-5" />
+            Share Conditioning Card
+          </Button>
+        )}
+
         {/* Save button */}
         <Button
           className="w-full gap-2 h-12 text-base"
@@ -236,6 +248,28 @@ export function RunSummary({ result, saving, onSave, onDiscard }: RunSummaryProp
           {saving ? 'Saving...' : 'Save Run'}
         </Button>
       </div>
+
+      {/* Conditioning Report Card Dialog */}
+      {canShowCard && activeProfile && (
+        <ConditioningReportCard
+          open={showCard}
+          onOpenChange={setShowCard}
+          data={{
+            playerName: activeProfile.name || 'Player',
+            playerTeam: activeProfile.team || 'Team',
+            jerseyNumber: activeProfile.number || 0,
+            position: activeProfile.position || undefined,
+            avatarUrl: activeProfile.avatar_url || undefined,
+            conditioningGrade: grade,
+            coachTrust: trust,
+            elapsedSeconds: result.elapsedSeconds,
+            distanceMeters: result.distanceMeters,
+            trackingMode: result.trackingMode,
+            gpsPoints: result.points,
+            sessionDate: new Date().toISOString(),
+          }}
+        />
+      )}
     </div>
   );
 }
