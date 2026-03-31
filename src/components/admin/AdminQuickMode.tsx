@@ -1257,7 +1257,19 @@ export function AdminQuickMode() {
                   className="mt-1"
                 />
               </div>
-            </div>
+              <div>
+                <Label htmlFor="qm-classyear" className="text-sm font-semibold">Class Year</Label>
+                <Select value={classYear} onValueChange={setClassYear}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getClassYearOptions().map((y) => (
+                      <SelectItem key={y} value={String(y)}>Class of {y}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
             {/* Photo */}
             <div className="space-y-2">
