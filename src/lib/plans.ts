@@ -124,8 +124,8 @@ export type AccessBadge =
   | null;
 
 export function getAccessBadge(user: UserAccessInfo): AccessBadge {
-  if (user.isGrandfathered) return { type: 'grandfathered', label: 'Founding Member' };
   if (user.adminOverridePlan) return { type: 'admin_override', label: `${planCatalog[user.adminOverridePlan].name} Access (Admin Granted)`, plan: user.adminOverridePlan };
+  if (user.isGrandfathered) return { type: 'grandfathered', label: 'Founding Member' };
   if (
     user.promoLockedIn &&
     user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
