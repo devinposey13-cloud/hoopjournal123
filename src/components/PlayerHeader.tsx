@@ -85,7 +85,7 @@ export function PlayerHeader({ profile, seasonStats, games, xpProgress, tierAchi
               <span>•</span>
               <span>{profile.team}</span>
               <span>•</span>
-              <span>{profile.grade}</span>
+              <span>{getClassYearDisplay(profile.classYear, profile.grade)}</span>
               {profile.instagramUrl && (
                 <a
                   href={profile.instagramUrl}

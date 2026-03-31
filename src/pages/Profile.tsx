@@ -357,7 +357,7 @@ export default function Profile() {
               />
             </div>
 
-            {/* Position & School Grade */}
+            {/* Position & Class Year */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Position</Label>
@@ -376,20 +376,24 @@ export default function Profile() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>School Grade</Label>
+                <Label>Class Year</Label>
                 <Select
-                  value={formData.grade}
-                  onValueChange={(value) => setFormData({ ...formData, grade: value })}
+                  value={formData.classYear ? String(formData.classYear) : (formData.grade ? String(gradeToClassYear(formData.grade) || '') : '')}
+                  onValueChange={(value) => {
+                    const year = parseInt(value);
+                    setFormData({ ...formData, classYear: year });
+                  }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select grade" />
+                    <SelectValue placeholder="Select class year" />
                   </SelectTrigger>
                   <SelectContent>
-                    {grades.map((g) => (
-                      <SelectItem key={g} value={g}>{g}</SelectItem>
+                    {getClassYearOptions().map((y) => (
+                      <SelectItem key={y} value={String(y)}>Class of {y}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">Your graduating class year</p>
               </div>
             </div>
 
