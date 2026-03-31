@@ -898,6 +898,7 @@ export function useCloudData() {
           number: updates.number ?? profile.number,
           height: updates.height ?? profile.height,
           grade: updates.grade ?? profile.grade,
+          class_year: updates.classYear ?? profile.classYear ?? null,
           avatar_url: updates.avatar ?? profile.avatar ?? null,
           username: updates.username ?? profile.username ?? null,
           display_name: updates.displayName ?? profile.displayName ?? null,
@@ -918,7 +919,7 @@ export function useCloudData() {
           coach_voice_gender: updates.coachVoiceGender ?? profile.coachVoiceGender ?? 'male',
           // Ring of Honor opt-in
           ring_of_honor_opt_in: updates.ringOfHonorOptIn ?? profile.ringOfHonorOptIn ?? false,
-        })
+        } as any)
         .eq('id', activeProfileId);
 
       if (error) throw error;
