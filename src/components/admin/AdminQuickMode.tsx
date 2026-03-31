@@ -281,36 +281,32 @@ function PromoCardCanvas({
           }} />
         </div>
 
-        {/* Grade — ~12% larger, tighter to content */}
+        {/* Grade — flat 2D rendering, no transforms */}
         <div style={{
           position: 'absolute', top: 940, left: 0, right: 0,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
           <div style={{
-            position: 'absolute', top: 120, left: '50%', transform: 'translate(-50%, -50%)',
+            position: 'absolute', top: 120, left: 290,
             width: 500, height: 500, borderRadius: '50%',
-            background: `radial-gradient(circle, ${color}15 0%, transparent 55%)`,
+            background: `radial-gradient(circle, ${color}10 0%, transparent 55%)`,
             pointerEvents: 'none',
           }} />
-          {/* GAME GRADE label — more visible */}
+          {/* GAME GRADE label */}
           <div data-canvas-label="true" style={{
             color: s.muted, fontSize: 19, fontWeight: 800,
-            letterSpacing: '0.5em', textTransform: 'uppercase',
+            letterSpacing: '10px', textTransform: 'uppercase',
             textAlign: 'center', marginBottom: 16,
-            opacity: 0.85,
           }}>GAME GRADE</div>
           <div style={{
             fontSize: 244, fontWeight: 900, color,
-            lineHeight: 0.82, textShadow: glow,
-            letterSpacing: '-0.03em', textAlign: 'center',
+            lineHeight: 1, textAlign: 'center',
             minHeight: 200,
-            ...(isNewlyGenerated ? {
-              animation: 'gradeReveal 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-            } : {}),
+            textShadow: `0 0 40px ${color}50`,
           }}
             data-canvas-grade="true"
             data-grade-color={color}
-            data-grade-glow={glow}
+            data-grade-glow={`0 0 40px ${color}50`}
           >{grade}</div>
         </div>
 
