@@ -243,6 +243,7 @@ export default function Index() {
     if (isBootstrapLoading) return 'loading';
     if (!user && isGuest) return 'guest_dashboard';
     if (!user) return 'auth_form';
+    if (isBlocked) return 'blocked';
     // isApproved === null means still resolving — treat as loading, not as rejected
     if (isApproved === false && !isAdmin) return 'pending_approval';
     if (showOnboarding) return 'onboarding';
@@ -250,7 +251,7 @@ export default function Index() {
   };
 
   const finalRoute = useMemo(determineFinalRoute, [
-    isBootstrapLoading, user, isGuest, isApproved, isAdmin, showOnboarding,
+    isBootstrapLoading, user, isGuest, isBlocked, isApproved, isAdmin, showOnboarding,
   ]);
 
   // ── Navigation lock ──
