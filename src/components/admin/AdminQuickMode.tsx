@@ -181,16 +181,17 @@ function PromoCardCanvas({
         backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
         opacity: 0.025, pointerEvents: 'none', filter: 'invert(1)',
       }} />
-      {/* Background glow */}
+      {/* Background glow — flat, no 3D transforms */}
       <div style={{
-        position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%, -50%)',
+        position: 'absolute', top: '30%', left: '50%',
+        marginLeft: -450, marginTop: -450,
         width: 900, height: 900, borderRadius: '50%',
-        background: `radial-gradient(circle, ${color}10 0%, transparent 65%)`,
+        background: `radial-gradient(circle, ${color}08 0%, transparent 65%)`,
         pointerEvents: 'none',
       }} />
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 4,
-        background: `linear-gradient(90deg, transparent 10%, ${color}50 50%, transparent 90%)`,
+        background: `linear-gradient(90deg, transparent 10%, ${color}40 50%, transparent 90%)`,
       }} />
 
       {/* PROMO BADGE */}
