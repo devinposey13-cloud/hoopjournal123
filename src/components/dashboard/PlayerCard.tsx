@@ -10,6 +10,7 @@ import { User, Target, Star, Percent, Flame, TrendingUp, Circle, Users } from 'l
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PlanId, AccessBadge } from '@/lib/plans';
+import { getClassYearDisplay } from '@/utils/classYear';
 
 interface TierAchievement {
   tier: string;
