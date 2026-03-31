@@ -207,7 +207,7 @@ export default function Profile() {
       }
       
       setFormData(prev => ({ ...prev, avatar: undefined }));
-      await updateProfile({ avatar: undefined });
+      await updateProfile({ avatar: null as any });
       toast.success('Profile photo removed');
     } catch (error) {
       toast.error('Failed to remove photo');
