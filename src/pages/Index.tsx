@@ -49,6 +49,7 @@ import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import { useApprovalStatus } from '@/hooks/useApprovalStatus';
+import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { useFirstLogin } from '@/hooks/useFirstLogin';
 import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import { useRetroactiveXp } from '@/hooks/useRetroactiveXp';
