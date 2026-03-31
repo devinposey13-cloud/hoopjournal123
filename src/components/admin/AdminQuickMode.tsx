@@ -459,8 +459,8 @@ export function AdminQuickMode() {
 
   // Save form on every change so camera interruptions can recover the latest draft
   useEffect(() => {
-    saveFormForCamera({ playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl });
-  }, [playerName, teamName, jerseyNumber, position, templateKey, contactInfo, photoUrl]);
+    saveFormForCamera({ playerName, teamName, jerseyNumber, position, classYear, templateKey, contactInfo, photoUrl });
+  }, [playerName, teamName, jerseyNumber, position, classYear, templateKey, contactInfo, photoUrl]);
 
   // UI state
   const [generating, setGenerating] = useState(false);
