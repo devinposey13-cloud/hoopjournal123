@@ -1224,6 +1224,7 @@ export type Database = {
         Row: {
           avatar_skipped_at: string | null
           avatar_url: string | null
+          class_year: number | null
           coach_persona: string | null
           coach_voice_gender: string
           court_role: string | null
@@ -1255,6 +1256,7 @@ export type Database = {
         Insert: {
           avatar_skipped_at?: string | null
           avatar_url?: string | null
+          class_year?: number | null
           coach_persona?: string | null
           coach_voice_gender?: string
           court_role?: string | null
@@ -1286,6 +1288,7 @@ export type Database = {
         Update: {
           avatar_skipped_at?: string | null
           avatar_url?: string | null
+          class_year?: number | null
           coach_persona?: string | null
           coach_voice_gender?: string
           court_role?: string | null
@@ -1695,6 +1698,7 @@ export type Database = {
           claim_status: string
           claim_token: string | null
           claimed_by_user_id: string | null
+          class_year: number | null
           contact_info: string | null
           created_at: string
           created_by_admin_id: string
@@ -1726,6 +1730,7 @@ export type Database = {
           claim_status?: string
           claim_token?: string | null
           claimed_by_user_id?: string | null
+          class_year?: number | null
           contact_info?: string | null
           created_at?: string
           created_by_admin_id: string
@@ -1757,6 +1762,7 @@ export type Database = {
           claim_status?: string
           claim_token?: string | null
           claimed_by_user_id?: string | null
+          class_year?: number | null
           contact_info?: string | null
           created_at?: string
           created_by_admin_id?: string
