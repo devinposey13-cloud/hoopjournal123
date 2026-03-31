@@ -217,7 +217,14 @@ export const RunTracker = forwardRef<HTMLDivElement, RunTrackerProps>(function R
 
       let nativePoints: NativeLocationPoint[] = [];
       try {
-        nativePoints = await bgLocation.stopNativeTracking();
+        // Race against a timeout — native bridge may hang on stale builds
+        nativePoints = await Promise.race([
+          bgLocation.stopNativeTracking(),
+          new Promise<NativeLocationPoint[]>((resolve) => setTimeout(() => {
+            console.warn('[RunTracker] Native stop timed out after 3s');
+            resolve([]);
+          }, 3000)),
+        ]);
       } catch (e) {
         console.warn('[RunTracker] Failed to stop native tracking:', e);
       }
