@@ -262,9 +262,8 @@ function PromoCardCanvas({
           {/* Archetype — slightly smaller, more spacing from name */}
           <div data-canvas-archetype="true" data-canvas-color={color} style={{
             color, fontSize: 32, fontWeight: 800,
-            letterSpacing: '0.25em', textTransform: 'uppercase',
+            letterSpacing: '8px', textTransform: 'uppercase',
             marginTop: 30, textAlign: 'center',
-            textShadow: `0 0 30px ${color}40`,
           }}>{archetype}</div>
 
           {/* Status Line — scouting feel */}
