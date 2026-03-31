@@ -21,6 +21,7 @@ const SAMPLE_PROFILE: PlayerProfile = {
   number: 23,
   height: "6'1\"",
   grade: '10th Grade',
+  classYear: 2028,
   isProfilePublic: false,
   coachPersona: null,
   coachVoiceGender: 'male',

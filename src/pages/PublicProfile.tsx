@@ -359,7 +359,7 @@ export default function PublicProfile() {
           </p>
           <div className="flex items-center gap-2">
             <p className="text-muted-foreground">
-              {profile.team} • {profile.grade} • {profile.height}
+              {profile.team} • {getClassYearDisplay(profile.class_year, profile.grade)} • {profile.height}
             </p>
             {profile.instagram_url && (
               <a
