@@ -208,18 +208,21 @@ function PromoCardCanvas({
       <div style={{
         position: 'absolute', top: 96, bottom: 280, left: 72, right: 72,
       }}>
-        {/* Avatar */}
+        {/* Avatar — perfect circle, no transforms, pixel-aligned */}
         <div style={{
-          width: 580, height: 580, borderRadius: '50%',
+          width: 540, height: 540, borderRadius: '50%',
+          aspectRatio: '1 / 1',
           border: `8px solid ${color}`,
+          boxSizing: 'border-box',
           overflow: 'hidden',
-          boxShadow: `0 0 60px ${color}30, 0 0 120px ${color}10`,
-          position: 'absolute', top: 0, left: 250,
+          boxShadow: `0 0 60px ${color}30`,
+          position: 'absolute', top: 0, left: 0, right: 0,
+          marginLeft: 'auto', marginRight: 'auto',
         }}
           data-canvas-avatar="true"
         >
           {photoUrl ? (
-            <img src={photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} crossOrigin="anonymous" />
+            <img src={photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', aspectRatio: '1 / 1' }} crossOrigin="anonymous" />
           ) : (
             <div style={{
               width: '100%', height: '100%', background: '#1e293b',
