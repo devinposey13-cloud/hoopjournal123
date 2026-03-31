@@ -161,7 +161,7 @@ serve(async (req) => {
       }
     }
 
-    const subscribed = hasStripeSub || (billingSource === "ios_app_store");
+    const subscribed = hasStripeSub || (planType !== null && planType !== "free");
 
     return new Response(JSON.stringify({
       subscribed,
