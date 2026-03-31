@@ -335,31 +335,33 @@ function PromoCardCanvas({
         </div>
       </div>
 
-      {/* Footer — slightly de-emphasized branding */}
+      {/* Footer — two-zone layout: branding left, CTA right */}
       <div style={{
-        position: 'absolute', bottom: 60, left: 80, right: 80,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        position: 'absolute', bottom: 48, left: 80, right: 80,
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, opacity: 0.85 }}>
-          <img src={hoopJournalLogo} alt="" style={{ width: 76, height: 76, borderRadius: 14 }} crossOrigin="anonymous" />
+        {/* LEFT ZONE: Branding */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          <img src={hoopJournalLogo} alt="" style={{ width: 80, height: 80, borderRadius: 16 }} crossOrigin="anonymous" />
           <div data-canvas-footer-brand="true">
-            <div style={{ color: s.bright, fontSize: 26, fontWeight: 800 }}>Hoop Journal</div>
-            <div style={{ color: s.dim, fontSize: 15, fontWeight: 500, letterSpacing: '2px' }}>EVENT EDITION</div>
+            <div style={{ color: s.bright, fontSize: 28, fontWeight: 800, lineHeight: 1.2 }}>Hoop Journal</div>
+            <div style={{ color: s.dim, fontSize: 14, fontWeight: 600, letterSpacing: '3px', marginTop: 4 }}>EVENT EDITION</div>
           </div>
         </div>
-        <div data-canvas-appstore="true" style={{ display: 'flex', alignItems: 'center' }}>
-          <img src={appStoreBadge} alt="Download on the App Store" style={{ width: 120, height: 'auto' }} crossOrigin="anonymous" />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-          <div data-canvas-footer-scan="true" style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Scan to claim</div>
-          <div style={{ padding: 6, background: 'rgba(255,255,255,0.95)', borderRadius: 10 }}>
+        {/* RIGHT ZONE: QR (primary) + App Store badge (secondary) */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <div data-canvas-footer-scan="true" style={{ color: s.sub, fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Scan to Claim</div>
+          <div style={{ padding: 8, background: 'rgba(255,255,255,0.95)', borderRadius: 12 }}>
             {claimUrl ? (
-              <QRCodeSVG value={claimUrl} size={160} bgColor="#ffffff" fgColor="#000000" level="M" />
+              <QRCodeSVG value={claimUrl} size={150} bgColor="#ffffff" fgColor="#000000" level="M" />
             ) : (
-              <div style={{ width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 12 }}>Generate card first</div>
+              <div style={{ width: 150, height: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 12 }}>Generate card first</div>
             )}
           </div>
-          <div data-canvas-footer-claim="true" style={{ color: s.dim, fontSize: 10, fontWeight: 600, letterSpacing: '1px', marginTop: 2 }}>Claim within 72 hours</div>
+          <div data-canvas-footer-claim="true" style={{ color: s.dim, fontSize: 11, fontWeight: 600, letterSpacing: '1px', marginTop: 2 }}>Claim within 72 hours</div>
+          <div data-canvas-appstore="true" style={{ marginTop: 6 }}>
+            <img src={appStoreBadge} alt="Download on the App Store" style={{ width: 100, height: 'auto', opacity: 0.85 }} crossOrigin="anonymous" />
+          </div>
         </div>
       </div>
 
