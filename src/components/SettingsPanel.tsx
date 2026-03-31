@@ -62,8 +62,10 @@ export function SettingsPanel({ profile, onUpdateProfile, onStartOver }: Setting
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   
   const { isSubscribed, planType, subscriptionEnd, subscriptionStatus, billingCycle, cancelAtPeriodEnd, billingSource, isLoading: subLoading, openCustomerPortal, cancelSubscription } = useSubscription();
-  // Determine effective billing source: backend value, or infer from Despia runtime
-  const effectiveBillingSource = billingSource || (isDespia() && isSubscribed ? 'ios_app_store' : 'stripe');
+  // Trust the backend billing_source; only fall back to platform heuristic
+  // when backend returns null AND user is in native Despia runtime
+  const effectiveBillingSource: 'stripe' | 'ios_app_store' = billingSource
+    ?? (isDespia() && isSubscribed ? 'ios_app_store' : 'stripe');
   const { currentPlan, accessInfo, accessBadge, loading: planLoading } = usePlan();
   const { theme, setTheme } = useTheme();
   const { isAdmin } = useAdmin();
