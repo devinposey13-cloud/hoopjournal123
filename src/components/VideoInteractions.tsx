@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ReportContentDialog } from './ReportContentDialog';
 
 interface Comment {
   id: string;
