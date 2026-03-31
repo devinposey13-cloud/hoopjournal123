@@ -21,6 +21,11 @@ const RC_PRODUCT_TO_PLAN: Record<string, string> = {
   monthly: "pro",
   yearly: "pro",
   lifetime: "elite",
+  // Google Play Store product IDs
+  "pro_monthly:promonthly": "pro",
+  "pro_monthly:proyearly": "pro",
+  "pro_monthly:elitemonthly": "elite",
+  "pro_monthly:eliteyearly": "elite",
 };
 
 serve(async (req) => {

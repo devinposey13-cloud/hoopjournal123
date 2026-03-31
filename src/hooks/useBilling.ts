@@ -50,8 +50,16 @@ export const PRODUCT_TO_PLAN: Record<string, PlanId> = {
 
 // Internal plan + billing → store product ID
 function getNativeProductId(planId: PlanId, billingCycle: BillingCycle): string {
+  if (isDespiaAndroid()) {
+    // Google Play Store product IDs from RevenueCat
+    const androidMap: Record<string, Record<string, string>> = {
+      pro: { monthly: 'pro_monthly:promonthly', yearly: 'pro_monthly:proyearly' },
+      elite: { monthly: 'pro_monthly:elitemonthly', yearly: 'pro_monthly:eliteyearly' },
+    };
+    const cycle = billingCycle === 'yearly' ? 'yearly' : 'monthly';
+    return androidMap[planId]?.[cycle] ?? `premium:HoopJ_${planId}_${cycle}`;
+  }
   const base = `HoopJ_${planId}_${billingCycle === 'yearly' ? 'yearly' : 'monthly'}`;
-  if (isDespiaAndroid()) return `premium:${base}`;
   return base;
 }
 
