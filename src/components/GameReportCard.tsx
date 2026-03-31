@@ -120,6 +120,7 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
       const xpPos = xpEl ? getPos(xpEl) : null;
       const tagPositions = tagEls.map(el => ({ pos: getPos(el), text: el.textContent || '' }));
       const careerHighPositions = careerHighEls.map(el => ({ pos: getPos(el), text: el.textContent || '' }));
+      const appStorePos = appStoreEl ? getPos(appStoreEl) : null;
 
       // Collect avatar image data
       const avatarImg = avatarEl?.querySelector('img') as HTMLImageElement | null;
