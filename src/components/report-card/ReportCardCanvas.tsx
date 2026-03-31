@@ -6,6 +6,7 @@ import { calculateCareerHighs } from '@/utils/statsCalculations';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import hoopJournalQr from '@/assets/hoop-journal-qr.png';
 import courtLines from '@/assets/basketball-court-lines.jpg';
+import appStoreBadge from '@/assets/app-store-badge.svg';
 
 export type ExportFormat = 'story' | 'post';
 
