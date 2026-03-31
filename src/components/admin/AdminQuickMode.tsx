@@ -261,7 +261,7 @@ function PromoCardCanvas({
             <span style={{
               color: s.muted, fontSize: 28, fontWeight: 700,
               letterSpacing: '4px',
-            }}>#{jerseyNumber}{position ? ` • ${position}` : ''}</span>
+            }}>#{jerseyNumber}{position ? ` • ${position}` : ''}{classYear ? ` • Class of ${classYear}` : ''}</span>
           </div>
 
           {/* Archetype title */}
