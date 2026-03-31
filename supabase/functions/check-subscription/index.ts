@@ -134,22 +134,30 @@ serve(async (req) => {
       }
     }
 
-    // If no Stripe subscription, check plan_overrides for RevenueCat/App Store subscription
+    // If no Stripe subscription, check plan_overrides for RevenueCat/App Store or admin override
     if (!hasStripeSub) {
-      logStep("No Stripe subscription, checking plan_overrides for native subscription");
+      logStep("No Stripe subscription, checking plan_overrides for native/admin subscription");
       const { data: overrideData } = await supabaseClient
         .from("plan_overrides")
-        .select("subscription_plan, updated_at")
+        .select("subscription_plan, admin_override_plan, updated_at")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (overrideData && overrideData.subscription_plan && overrideData.subscription_plan !== "free") {
-        planType = overrideData.subscription_plan;
-        subscriptionStatus = "active";
-        billingSource = "ios_app_store";
-        logStep("Found native subscription in plan_overrides", { planType, billingSource });
+      if (overrideData) {
+        // Admin override takes priority
+        const effectivePlan = overrideData.admin_override_plan || overrideData.subscription_plan;
+        if (effectivePlan && effectivePlan !== "free") {
+          planType = effectivePlan;
+          subscriptionStatus = "active";
+          // If admin_override_plan is set, this is an admin grant — not App Store
+          // Only assume ios_app_store if there's no admin override (i.e., set by RevenueCat webhook)
+          billingSource = overrideData.admin_override_plan ? null : "ios_app_store";
+          logStep("Found subscription in plan_overrides", { planType, billingSource, adminOverride: !!overrideData.admin_override_plan });
+        } else {
+          logStep("No active subscription found anywhere");
+        }
       } else {
-        logStep("No active subscription found anywhere");
+        logStep("No plan_overrides record found");
       }
     }
 
