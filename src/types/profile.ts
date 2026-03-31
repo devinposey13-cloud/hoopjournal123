@@ -9,6 +9,7 @@ export interface PlayerProfileRecord {
   number: number;
   height: string;
   grade: string;
+  class_year?: number | null;
   avatar_url?: string;
   username?: string;
   display_name?: string;
