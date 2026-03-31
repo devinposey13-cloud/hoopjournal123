@@ -678,7 +678,7 @@ export function AdminQuickMode() {
         claim_token: claimToken,
         expires_at: expiresAt,
         contact_info: contactInfo || null,
-        card_source: 'event_quick_mode',
+        class_year: classYear ? parseInt(classYear) : null,
         verification_status: 'promo_generated',
         eligible_for_leaderboards: false,
         eligible_for_career_stats: false,
