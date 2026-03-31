@@ -876,7 +876,7 @@ export function AdminQuickMode() {
       [avatarEl, 'avatar'], [gradeEl, 'grade'], [nameEl, 'name'], [teamEl, 'team'],
       [archetypeEl, 'archetype'], [statusEl, 'status'], [labelEl, 'label'],
       [badgesEl, 'badges'], [eventTagEl, 'eventTag'],
-      [footerBrandEl, 'footerBrand'], [footerScanEl, 'footerScan'], [footerClaimEl, 'footerClaim'],
+      [footerBrandEl, 'footerBrand'], [footerScanEl, 'footerScan'], [footerClaimEl, 'footerClaim'], [appStoreEl, 'appStore'],
     ];
     for (const [el, key] of posKeys) {
       if (el) positions[key] = getPos(el);
