@@ -215,6 +215,39 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_users: {
+        Row: {
+          blocked_at: string
+          blocked_by: string
+          created_at: string
+          id: string
+          is_active: boolean
+          reason: string | null
+          unblocked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          blocked_at?: string
+          blocked_by: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          reason?: string | null
+          unblocked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          blocked_at?: string
+          blocked_by?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          reason?: string | null
+          unblocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       broadcast_messages: {
         Row: {
           created_at: string
