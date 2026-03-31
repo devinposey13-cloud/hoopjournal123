@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Check, X, Clock, MapPin, Zap, Shield, Signal, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react';
+import { Check, X, Clock, MapPin, Zap, Shield, Signal, ChevronDown, ChevronUp, ShieldCheck, Share2 } from 'lucide-react';
 import { GpsPoint } from '@/hooks/useGpsTracking';
 import { RunTrace } from './RunTrace';
+import { ConditioningReportCard } from './ConditioningReportCard';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { type CoachTrustResult, TRUST_BAND_COLORS } from '@/utils/coachTrust';
 import { type ConditioningGradeResult } from '@/utils/conditioningGrade';
+import { useActiveProfile } from '@/hooks/useActiveProfile';
 
 interface RunResult {
   points: GpsPoint[];
