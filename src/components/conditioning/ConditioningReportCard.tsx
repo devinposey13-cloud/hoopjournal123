@@ -50,8 +50,9 @@ export function ConditioningReportCard({ open, onOpenChange, data }: Conditionin
       const allTextEls = Array.from(container.querySelectorAll('[data-canvas-name], [data-canvas-team], [data-canvas-archetype], [data-canvas-status], [data-canvas-label], [data-canvas-grade], [data-canvas-time], [data-canvas-distance], [data-canvas-trust], [data-canvas-tracking], [data-canvas-date], [data-canvas-footer-brand], [data-canvas-footer-scan], [data-canvas-footer-claim], [data-canvas-eventtag]')) as HTMLElement[];
       const badgeEls = Array.from(container.querySelectorAll('[data-canvas-badge]')) as HTMLElement[];
       const avatarEl = container.querySelector('[data-canvas-avatar]') as HTMLElement | null;
+      const appStoreEl = container.querySelector('[data-canvas-appstore]') as HTMLElement | null;
 
-      const allHideable = [...allTextEls, ...badgeEls].filter(Boolean);
+      const allHideable = [...allTextEls, ...badgeEls, appStoreEl].filter(Boolean);
 
       const containerRect = container.getBoundingClientRect();
       const scaleX = CANVAS_W / containerRect.width;
