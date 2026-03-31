@@ -49,6 +49,7 @@ import { useGameWithMilestones } from '@/hooks/useGameWithMilestones';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import { useApprovalStatus } from '@/hooks/useApprovalStatus';
+import { useBlockedStatus } from '@/hooks/useBlockedStatus';
 import { useFirstLogin } from '@/hooks/useFirstLogin';
 import { usePlayerTeams } from '@/hooks/usePlayerTeams';
 import { useRetroactiveXp } from '@/hooks/useRetroactiveXp';
@@ -100,6 +101,7 @@ export default function Index() {
   const { isAdmin } = useAdmin();
   const { totalPending: adminNotificationCount } = useAdminNotifications();
   const { isApproved, loading: approvalLoading, refetch: refetchApproval } = useApprovalStatus();
+  const { isBlocked } = useBlockedStatus();
   const {
     games,
     clips,
@@ -241,6 +243,7 @@ export default function Index() {
     if (isBootstrapLoading) return 'loading';
     if (!user && isGuest) return 'guest_dashboard';
     if (!user) return 'auth_form';
+    if (isBlocked) return 'blocked';
     // isApproved === null means still resolving — treat as loading, not as rejected
     if (isApproved === false && !isAdmin) return 'pending_approval';
     if (showOnboarding) return 'onboarding';
@@ -248,7 +251,7 @@ export default function Index() {
   };
 
   const finalRoute = useMemo(determineFinalRoute, [
-    isBootstrapLoading, user, isGuest, isApproved, isAdmin, showOnboarding,
+    isBootstrapLoading, user, isGuest, isBlocked, isApproved, isAdmin, showOnboarding,
   ]);
 
   // ── Navigation lock ──
@@ -390,6 +393,24 @@ export default function Index() {
 
   if (activeRoute === 'auth_form') {
     return <AuthForm />;
+  }
+
+  if (activeRoute === 'blocked') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md text-center space-y-4">
+          <Shield className="w-16 h-16 text-destructive mx-auto" />
+          <h1 className="text-2xl font-bold">Account Blocked</h1>
+          <p className="text-muted-foreground">
+            Your account has been blocked due to a violation of our community guidelines. 
+            If you believe this is a mistake, please contact support.
+          </p>
+          <Button variant="outline" onClick={signOut}>
+            Sign Out
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   if (activeRoute === 'pending_approval') {
