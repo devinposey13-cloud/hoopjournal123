@@ -213,8 +213,8 @@ function PromoCardCanvas({
           width: 580, height: 580, borderRadius: '50%',
           border: `8px solid ${color}`,
           overflow: 'hidden',
-          boxShadow: `0 0 80px ${color}50, 0 0 160px ${color}20, inset 0 0 40px ${color}10`,
-          position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+          boxShadow: `0 0 60px ${color}30, 0 0 120px ${color}10`,
+          position: 'absolute', top: 0, left: 250,
         }}
           data-canvas-avatar="true"
         >
