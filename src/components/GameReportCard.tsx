@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useMemo } from 'react';
+import appStoreBadge from '@/assets/app-store-badge.svg';
 import html2canvas from 'html2canvas';
 import { Share2, Copy, Check, HelpCircle, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';

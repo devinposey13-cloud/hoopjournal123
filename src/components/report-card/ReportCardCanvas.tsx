@@ -6,6 +6,7 @@ import { calculateCareerHighs } from '@/utils/statsCalculations';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import hoopJournalQr from '@/assets/hoop-journal-qr.png';
 import courtLines from '@/assets/basketball-court-lines.jpg';
+import appStoreBadge from '@/assets/app-store-badge.svg';
 
 export type ExportFormat = 'story' | 'post';
 
@@ -403,6 +404,9 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 <div style={{ color: s.bright, fontSize: isPost ? 20 : 28, fontWeight: 800 }}>Hoop Journal</div>
                 <div style={{ color: s.dim, fontSize: isPost ? 13 : 18, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
               </div>
+            </div>
+            <div data-canvas-appstore="true" style={{ display: 'flex', alignItems: 'center' }}>
+              <img src={appStoreBadge} alt="Download on the App Store" style={{ width: isPost ? 90 : 120, height: 'auto' }} crossOrigin="anonymous" />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
               <div data-canvas-text="footer-scan" style={{ color: s.dim, fontSize: isPost ? 8 : 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to track</div>

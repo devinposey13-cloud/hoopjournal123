@@ -13,6 +13,7 @@ import { Camera, Upload, Zap, Printer, Download, RotateCcw, Eye, Image as ImageI
 import { cn } from '@/lib/utils';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import courtLines from '@/assets/basketball-court-lines.jpg';
+import appStoreBadge from '@/assets/app-store-badge.svg';
 import html2canvas from 'html2canvas';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -349,6 +350,9 @@ function PromoCardCanvas({
             <div style={{ color: s.bright, fontSize: 26, fontWeight: 800, opacity: 0.9 }}>Hoop Journal</div>
             <div style={{ color: s.dim, fontSize: 15, fontWeight: 500, letterSpacing: '0.05em', opacity: 0.8 }}>EVENT EDITION</div>
           </div>
+        </div>
+        <div data-canvas-appstore="true" style={{ display: 'flex', alignItems: 'center' }}>
+          <img src={appStoreBadge} alt="Download on the App Store" style={{ width: 120, height: 'auto' }} crossOrigin="anonymous" />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <div data-canvas-footer-scan="true" style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to claim</div>
