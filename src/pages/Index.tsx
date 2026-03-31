@@ -395,6 +395,24 @@ export default function Index() {
     return <AuthForm />;
   }
 
+  if (activeRoute === 'blocked') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md text-center space-y-4">
+          <Shield className="w-16 h-16 text-destructive mx-auto" />
+          <h1 className="text-2xl font-bold">Account Blocked</h1>
+          <p className="text-muted-foreground">
+            Your account has been blocked due to a violation of our community guidelines. 
+            If you believe this is a mistake, please contact support.
+          </p>
+          <Button variant="outline" onClick={signOut}>
+            Sign Out
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (activeRoute === 'pending_approval') {
     return <PendingApproval onRefresh={refetchApproval} />;
   }
