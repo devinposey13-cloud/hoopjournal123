@@ -405,6 +405,9 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 <div style={{ color: s.dim, fontSize: isPost ? 13 : 18, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
               </div>
             </div>
+            <div data-canvas-badge="appstore" style={{ display: 'flex', alignItems: 'center' }}>
+              <img src={appStoreBadge} alt="Download on the App Store" style={{ width: isPost ? 90 : 120, height: 'auto' }} crossOrigin="anonymous" />
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
               <div data-canvas-text="footer-scan" style={{ color: s.dim, fontSize: isPost ? 8 : 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to track</div>
               <div style={{ padding: isPost ? 4 : 6, background: 'rgba(255,255,255,0.06)', borderRadius: isPost ? 8 : 10 }}>

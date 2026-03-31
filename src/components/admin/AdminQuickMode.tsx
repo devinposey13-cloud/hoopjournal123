@@ -13,6 +13,7 @@ import { Camera, Upload, Zap, Printer, Download, RotateCcw, Eye, Image as ImageI
 import { cn } from '@/lib/utils';
 import hoopJournalLogo from '@/assets/hoop-journal-logo-v2.png';
 import courtLines from '@/assets/basketball-court-lines.jpg';
+import appStoreBadge from '@/assets/app-store-badge.svg';
 import html2canvas from 'html2canvas';
 import { QRCodeSVG } from 'qrcode.react';
 
