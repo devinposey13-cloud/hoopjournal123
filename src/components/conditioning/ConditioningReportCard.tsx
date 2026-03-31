@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from 'react';
 import html2canvas from 'html2canvas';
+import appStoreBadge from '@/assets/app-store-badge.svg';
 import { Share2, Copy, Check, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -49,8 +50,9 @@ export function ConditioningReportCard({ open, onOpenChange, data }: Conditionin
       const allTextEls = Array.from(container.querySelectorAll('[data-canvas-name], [data-canvas-team], [data-canvas-archetype], [data-canvas-status], [data-canvas-label], [data-canvas-grade], [data-canvas-time], [data-canvas-distance], [data-canvas-trust], [data-canvas-tracking], [data-canvas-date], [data-canvas-footer-brand], [data-canvas-footer-scan], [data-canvas-footer-claim], [data-canvas-eventtag]')) as HTMLElement[];
       const badgeEls = Array.from(container.querySelectorAll('[data-canvas-badge]')) as HTMLElement[];
       const avatarEl = container.querySelector('[data-canvas-avatar]') as HTMLElement | null;
+      const appStoreEl = container.querySelector('[data-canvas-appstore]') as HTMLElement | null;
 
-      const allHideable = [...allTextEls, ...badgeEls].filter(Boolean);
+      const allHideable = [...allTextEls, ...badgeEls, appStoreEl].filter(Boolean);
 
       const containerRect = container.getBoundingClientRect();
       const scaleX = CANVAS_W / containerRect.width;
@@ -76,6 +78,7 @@ export function ConditioningReportCard({ open, onOpenChange, data }: Conditionin
       });
       const badgePositions = badgeEls.map(el => ({ pos: getPos(el), text: el.textContent || '' }));
       const avatarPos = avatarEl ? getPos(avatarEl) : null;
+      const appStorePos = appStoreEl ? getPos(appStoreEl) : null;
       const avatarImg = avatarEl?.querySelector('img') as HTMLImageElement | null;
 
       // Hide for clean capture
@@ -277,6 +280,26 @@ export function ConditioningReportCard({ open, onOpenChange, data }: Conditionin
 
       const fcPos = positions.get('footer-claim');
       if (fcPos) drawText('footer-claim', 'CLAIM WITHIN 72 HOURS', `600 10px ${FONT}`, '#475569');
+
+      // Redraw App Store badge
+      if (appStorePos) {
+        try {
+          const badgeImg = new Image();
+          badgeImg.crossOrigin = 'anonymous';
+          await new Promise<void>((res, rej) => {
+            badgeImg.onload = () => res();
+            badgeImg.onerror = () => rej();
+            badgeImg.src = appStoreBadge;
+          });
+          const aspectRatio = badgeImg.naturalWidth / badgeImg.naturalHeight;
+          const drawW = appStorePos.w;
+          const drawH = drawW / aspectRatio;
+          ctx.save();
+          ctx.globalAlpha = 0.85;
+          ctx.drawImage(badgeImg, appStorePos.x, appStorePos.cy - drawH / 2, drawW, drawH);
+          ctx.restore();
+        } catch { /* badge load failed, skip */ }
+      }
 
       return new Promise((resolve) => out.toBlob((blob) => resolve(blob ?? null), 'image/png'));
     } catch (err) {

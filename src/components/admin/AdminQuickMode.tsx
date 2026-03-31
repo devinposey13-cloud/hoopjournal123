@@ -849,8 +849,9 @@ export function AdminQuickMode() {
     const footerBrandEl = container.querySelector('[data-canvas-footer-brand]') as HTMLElement | null;
     const footerScanEl = container.querySelector('[data-canvas-footer-scan]') as HTMLElement | null;
     const footerClaimEl = container.querySelector('[data-canvas-footer-claim]') as HTMLElement | null;
+    const appStoreEl = container.querySelector('[data-canvas-appstore]') as HTMLElement | null;
 
-    const allEls = [avatarEl, gradeEl, nameEl, teamEl, archetypeEl, statusEl, labelEl, badgesEl, eventTagEl, footerBrandEl, footerScanEl, footerClaimEl].filter(Boolean) as HTMLElement[];
+    const allEls = [avatarEl, gradeEl, nameEl, teamEl, archetypeEl, statusEl, labelEl, badgesEl, eventTagEl, footerBrandEl, footerScanEl, footerClaimEl, appStoreEl].filter(Boolean) as HTMLElement[];
 
     // Read bounding rects BEFORE hiding
     const containerRect = container.getBoundingClientRect();
@@ -875,7 +876,7 @@ export function AdminQuickMode() {
       [avatarEl, 'avatar'], [gradeEl, 'grade'], [nameEl, 'name'], [teamEl, 'team'],
       [archetypeEl, 'archetype'], [statusEl, 'status'], [labelEl, 'label'],
       [badgesEl, 'badges'], [eventTagEl, 'eventTag'],
-      [footerBrandEl, 'footerBrand'], [footerScanEl, 'footerScan'], [footerClaimEl, 'footerClaim'],
+      [footerBrandEl, 'footerBrand'], [footerScanEl, 'footerScan'], [footerClaimEl, 'footerClaim'], [appStoreEl, 'appStore'],
     ];
     for (const [el, key] of posKeys) {
       if (el) positions[key] = getPos(el);
@@ -1132,6 +1133,26 @@ export function AdminQuickMode() {
       ctx.fillStyle = '#475569';
       ctx.fillText('Claim within 72 hours', p.cx, p.cy);
       ctx.restore();
+    }
+
+    // ── 12. Redraw App Store badge ──
+    if (positions.appStore) {
+      try {
+        const badgeImg = new Image();
+        badgeImg.crossOrigin = 'anonymous';
+        await new Promise<void>((res, rej) => {
+          badgeImg.onload = () => res();
+          badgeImg.onerror = () => rej();
+          badgeImg.src = appStoreBadge;
+        });
+        const aspectRatio = badgeImg.naturalWidth / badgeImg.naturalHeight;
+        const drawW = positions.appStore.w;
+        const drawH = drawW / aspectRatio;
+        ctx.save();
+        ctx.globalAlpha = 0.85;
+        ctx.drawImage(badgeImg, positions.appStore.x, positions.appStore.cy - drawH / 2, drawW, drawH);
+        ctx.restore();
+      } catch { /* badge load failed, skip */ }
     }
 
     return new Promise((resolve) => out.toBlob((b) => resolve(b), 'image/png'));

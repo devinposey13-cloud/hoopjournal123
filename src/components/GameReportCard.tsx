@@ -88,8 +88,9 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
       const xpEl = container.querySelector('[data-canvas-xp]') as HTMLElement | null;
       const tagEls = Array.from(container.querySelectorAll('[data-canvas-tag]')) as HTMLElement[];
       const careerHighEls = Array.from(container.querySelectorAll('[data-canvas-career-high]')) as HTMLElement[];
+      const appStoreEl = container.querySelector('[data-canvas-appstore]') as HTMLElement | null;
 
-      const allHideable = [...allTextEls, gradeEl, xpEl, ...tagEls, ...careerHighEls].filter(Boolean) as HTMLElement[];
+      const allHideable = [...allTextEls, gradeEl, xpEl, ...tagEls, ...careerHighEls, appStoreEl].filter(Boolean) as HTMLElement[];
 
       // ── Read bounding rects BEFORE hiding ──
       const containerRect = container.getBoundingClientRect();
@@ -119,6 +120,7 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
       const xpPos = xpEl ? getPos(xpEl) : null;
       const tagPositions = tagEls.map(el => ({ pos: getPos(el), text: el.textContent || '' }));
       const careerHighPositions = careerHighEls.map(el => ({ pos: getPos(el), text: el.textContent || '' }));
+      const appStorePos = appStoreEl ? getPos(appStoreEl) : null;
 
       // Collect avatar image data
       const avatarImg = avatarEl?.querySelector('img') as HTMLImageElement | null;
@@ -502,6 +504,25 @@ export function GameReportCard({ open, onOpenChange, game, playerName, playerTea
         ctx.fillStyle = '#475569';
         ctx.fillText('SCAN TO TRACK', footerScanPos.cx, footerScanPos.cy);
         ctx.restore();
+      }
+
+      // ── 16. Redraw App Store badge ──
+      if (appStorePos) {
+        try {
+          const badgeImg = new Image();
+          badgeImg.crossOrigin = 'anonymous';
+          await new Promise<void>((res, rej) => {
+            badgeImg.onload = () => res();
+            badgeImg.onerror = () => rej();
+            badgeImg.src = appStoreBadge;
+          });
+          const aspectRatio = badgeImg.naturalWidth / badgeImg.naturalHeight;
+          const drawW = appStorePos.w;
+          const drawH = drawW / aspectRatio;
+          ctx.save();
+          ctx.drawImage(badgeImg, appStorePos.x, appStorePos.cy - drawH / 2, drawW, drawH);
+          ctx.restore();
+        } catch { /* badge load failed, skip */ }
       }
 
       return new Promise((resolve) => out.toBlob((blob) => resolve(blob ?? null), 'image/png'));
