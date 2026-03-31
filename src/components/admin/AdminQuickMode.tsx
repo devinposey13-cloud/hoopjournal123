@@ -347,7 +347,7 @@ function PromoCardCanvas({
           <img src={appStoreBadge} alt="Download on the App Store" style={{ width: 120, height: 'auto' }} crossOrigin="anonymous" />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-          <div data-canvas-footer-scan="true" style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Scan to claim</div>
+          <div data-canvas-footer-scan="true" style={{ color: s.dim, fontSize: 10, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Scan to claim</div>
           <div style={{ padding: 6, background: 'rgba(255,255,255,0.95)', borderRadius: 10 }}>
             {claimUrl ? (
               <QRCodeSVG value={claimUrl} size={160} bgColor="#ffffff" fgColor="#000000" level="M" />
@@ -355,7 +355,7 @@ function PromoCardCanvas({
               <div style={{ width: 160, height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 12 }}>Generate card first</div>
             )}
           </div>
-          <div data-canvas-footer-claim="true" style={{ color: s.dim, fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', marginTop: 2 }}>Claim within 72 hours</div>
+          <div data-canvas-footer-claim="true" style={{ color: s.dim, fontSize: 10, fontWeight: 600, letterSpacing: '1px', marginTop: 2 }}>Claim within 72 hours</div>
         </div>
       </div>
 
