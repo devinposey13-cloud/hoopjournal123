@@ -405,7 +405,7 @@ export const ReportCardCanvas = forwardRef<HTMLDivElement, ReportCardCanvasProps
                 <div style={{ color: s.dim, fontSize: isPost ? 13 : 18, fontWeight: 500 }}>Track Your Game. Improve Every Day.</div>
               </div>
             </div>
-            <div data-canvas-badge="appstore" style={{ display: 'flex', alignItems: 'center' }}>
+            <div data-canvas-appstore="true" style={{ display: 'flex', alignItems: 'center' }}>
               <img src={appStoreBadge} alt="Download on the App Store" style={{ width: isPost ? 90 : 120, height: 'auto' }} crossOrigin="anonymous" />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
