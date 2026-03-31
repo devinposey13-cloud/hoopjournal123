@@ -515,11 +515,13 @@ export type Database = {
       content_reports: {
         Row: {
           admin_notes: string | null
-          ai_response: string
+          ai_response: string | null
+          content_reference_id: string | null
+          content_type: string
           created_at: string
           id: string
           reason: string | null
-          reported_content: string
+          reported_content: string | null
           reporter_user_id: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -527,11 +529,13 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
-          ai_response: string
+          ai_response?: string | null
+          content_reference_id?: string | null
+          content_type?: string
           created_at?: string
           id?: string
           reason?: string | null
-          reported_content: string
+          reported_content?: string | null
           reporter_user_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -539,11 +543,13 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
-          ai_response?: string
+          ai_response?: string | null
+          content_reference_id?: string | null
+          content_type?: string
           created_at?: string
           id?: string
           reason?: string | null
-          reported_content?: string
+          reported_content?: string | null
           reporter_user_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null

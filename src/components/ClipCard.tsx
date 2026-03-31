@@ -1,4 +1,4 @@
-import { Play, Trash2, Globe, MessageCircle } from 'lucide-react';
+import { Play, Trash2, Globe, MessageCircle, Flag } from 'lucide-react';
 import { format } from 'date-fns';
 import { VideoClip } from '@/types/basketball';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { VideoInteractions, VideoLikeButton } from './VideoInteractions';
+import { ReportContentDialog } from './ReportContentDialog';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ClipCardProps {
@@ -103,6 +104,18 @@ export function ClipCard({ clip, onDelete, showPlayerInfo }: ClipCardProps) {
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <MessageCircle className="w-3.5 h-3.5" />
                 <span>{commentCount}</span>
+              </div>
+              <div className="ml-auto" onClick={(e) => e.stopPropagation()}>
+                <ReportContentDialog
+                  contentType="video"
+                  contentId={clip.id}
+                  contentPreview={clip.title}
+                  trigger={
+                    <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors">
+                      <Flag className="w-3 h-3" />
+                    </button>
+                  }
+                />
               </div>
             </div>
           )}

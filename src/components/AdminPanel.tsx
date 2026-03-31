@@ -63,14 +63,16 @@ interface UserProfile {
 interface ContentReport {
   id: string;
   reporter_user_id: string | null;
-  reported_content: string;
-  ai_response: string;
+  reported_content: string | null;
+  ai_response: string | null;
   reason: string | null;
   status: string;
   admin_notes: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
   created_at: string;
+  content_type: string;
+  content_reference_id: string | null;
 }
 
 interface PasswordResetRequest {
@@ -1629,6 +1631,10 @@ export function AdminPanel() {
                         }>
                           {report.status.replace('_', ' ')}
                         </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {report.content_type === 'comment' ? '💬 Comment' :
+                           report.content_type === 'video' ? '🎥 Video' : '🤖 AI Response'}
+                        </Badge>
                         <span className="text-sm text-muted-foreground">
                           {format(new Date(report.created_at), 'MMM d, yyyy h:mm a')}
                         </span>
@@ -1639,14 +1645,21 @@ export function AdminPanel() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div>
-                      <Label className="text-xs text-muted-foreground">User Message</Label>
-                      <p className="text-sm bg-muted p-2 rounded mt-1">{report.reported_content}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">AI Response (Reported)</Label>
-                      <p className="text-sm bg-muted p-2 rounded mt-1 max-h-32 overflow-y-auto">{report.ai_response}</p>
-                    </div>
+                    {report.reported_content && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">
+                          {report.content_type === 'comment' ? 'Comment' :
+                           report.content_type === 'video' ? 'Video Title' : 'User Message'}
+                        </Label>
+                        <p className="text-sm bg-muted p-2 rounded mt-1">{report.reported_content}</p>
+                      </div>
+                    )}
+                    {report.ai_response && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">AI Response (Reported)</Label>
+                        <p className="text-sm bg-muted p-2 rounded mt-1 max-h-32 overflow-y-auto">{report.ai_response}</p>
+                      </div>
+                    )}
                     {report.reason && (
                       <div>
                         <Label className="text-xs text-muted-foreground">Reason</Label>

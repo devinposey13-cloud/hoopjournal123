@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heart, MessageCircle, Send, Trash2, Loader2 } from 'lucide-react';
+import { Heart, MessageCircle, Send, Trash2, Loader2, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ReportContentDialog } from './ReportContentDialog';
 
 interface Comment {
   id: string;
@@ -245,7 +246,7 @@ export function VideoInteractions({ videoId, showComments = true }: VideoInterac
                       </div>
                       <p className="text-sm text-foreground/90 break-words">{comment.content}</p>
                     </div>
-                    {comment.isOwner && (
+                    {comment.isOwner ? (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -254,7 +255,15 @@ export function VideoInteractions({ videoId, showComments = true }: VideoInterac
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>
-                    )}
+                    ) : user ? (
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <ReportContentDialog
+                          contentType="comment"
+                          contentId={comment.id}
+                          contentPreview={comment.content}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
