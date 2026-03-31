@@ -359,14 +359,6 @@ function PromoCardCanvas({
         </div>
       </div>
 
-      {/* Grade reveal animation keyframes */}
-      <style>{`
-        @keyframes gradeReveal {
-          0% { opacity: 0; transform: scale(0.88); }
-          60% { opacity: 1; transform: scale(1.03); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
     </div>
   );
 }
