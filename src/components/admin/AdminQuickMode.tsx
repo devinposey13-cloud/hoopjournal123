@@ -269,11 +269,10 @@ function PromoCardCanvas({
           {/* Status Line — scouting feel */}
           <div data-canvas-status="true" style={{
             color: s.sub, fontSize: 19, fontWeight: 700,
-            letterSpacing: '0.35em', textTransform: 'uppercase',
+            letterSpacing: '6px', textTransform: 'uppercase',
             marginTop: 14, textAlign: 'center',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             maxWidth: '100%',
-            opacity: 0.75,
           }}>{statusLine}</div>
 
           <div style={{
