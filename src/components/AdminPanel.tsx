@@ -63,14 +63,16 @@ interface UserProfile {
 interface ContentReport {
   id: string;
   reporter_user_id: string | null;
-  reported_content: string;
-  ai_response: string;
+  reported_content: string | null;
+  ai_response: string | null;
   reason: string | null;
   status: string;
   admin_notes: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
   created_at: string;
+  content_type: string;
+  content_reference_id: string | null;
 }
 
 interface PasswordResetRequest {
