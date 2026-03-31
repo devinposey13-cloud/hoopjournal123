@@ -239,8 +239,8 @@ function PromoCardCanvas({
         }}>
           <div data-canvas-name="true" style={{
             color: s.bright, fontSize: 76, fontWeight: 900,
-            letterSpacing: '0.06em', textTransform: 'uppercase',
-            textAlign: 'center', lineHeight: 1.02,
+            letterSpacing: '4px', textTransform: 'uppercase',
+            textAlign: 'center', lineHeight: 1,
             maxWidth: '100%', wordBreak: 'break-word',
           }}>{playerName}</div>
 
