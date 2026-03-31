@@ -83,8 +83,9 @@ export interface UserAccessInfo {
  * Priority: grandfathered > admin override > promo lock-in > subscription
  */
 export function getEffectivePlan(user: UserAccessInfo): PlanId {
-  if (user.isGrandfathered) return 'elite';
+  // Admin override always takes highest priority
   if (user.adminOverridePlan) return user.adminOverridePlan;
+  if (user.isGrandfathered) return 'elite';
   // AAU promo lock-in: Elite access while on active Pro subscription
   if (
     user.promoLockedIn &&
@@ -103,8 +104,10 @@ export function getEffectivePlan(user: UserAccessInfo): PlanId {
 
 /** Returns true if the user has any kind of special access (shouldn't see paywalls) */
 export function hasSpecialAccess(user: UserAccessInfo): boolean {
-  if (user.isGrandfathered) return true;
+  // Admin override to 'free' means NO special access
+  if (user.adminOverridePlan === 'free') return false;
   if (user.adminOverridePlan) return true;
+  if (user.isGrandfathered) return true;
   if (
     user.promoLockedIn &&
     user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
@@ -121,8 +124,8 @@ export type AccessBadge =
   | null;
 
 export function getAccessBadge(user: UserAccessInfo): AccessBadge {
-  if (user.isGrandfathered) return { type: 'grandfathered', label: 'Founding Member' };
   if (user.adminOverridePlan) return { type: 'admin_override', label: `${planCatalog[user.adminOverridePlan].name} Access (Admin Granted)`, plan: user.adminOverridePlan };
+  if (user.isGrandfathered) return { type: 'grandfathered', label: 'Founding Member' };
   if (
     user.promoLockedIn &&
     user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
