@@ -125,6 +125,7 @@ const App = () => (
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/eula" element={<EULA />} />
                   <Route path="/claim" element={<ClaimCard />} />
+                  <Route path="/delete-account" element={<DeleteAccount />} />
                   <Route path="/:username" element={<PublicProfile />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
