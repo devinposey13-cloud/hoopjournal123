@@ -1641,6 +1641,27 @@ export function AdminPanel() {
                             )}
                           </Button>
 
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={blockedUserIds.has(user.user_id) ? "text-destructive hover:text-destructive" : ""}
+                                onClick={() => handleToggleBlock(user.user_id, user.display_name || user.name)}
+                                disabled={blockingUser === user.user_id}
+                              >
+                                {blockingUser === user.user_id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Shield className={cn("w-4 h-4", blockedUserIds.has(user.user_id) && "fill-current")} />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {blockedUserIds.has(user.user_id) ? 'Unblock User' : 'Block User'}
+                            </TooltipContent>
+                          </Tooltip>
+
                           <Button
                             variant="ghost"
                             size="icon"
