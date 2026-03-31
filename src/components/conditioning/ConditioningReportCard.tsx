@@ -281,6 +281,26 @@ export function ConditioningReportCard({ open, onOpenChange, data }: Conditionin
       const fcPos = positions.get('footer-claim');
       if (fcPos) drawText('footer-claim', 'CLAIM WITHIN 72 HOURS', `600 10px ${FONT}`, '#475569');
 
+      // Redraw App Store badge
+      if (appStorePos) {
+        try {
+          const badgeImg = new Image();
+          badgeImg.crossOrigin = 'anonymous';
+          await new Promise<void>((res, rej) => {
+            badgeImg.onload = () => res();
+            badgeImg.onerror = () => rej();
+            badgeImg.src = appStoreBadge;
+          });
+          const aspectRatio = badgeImg.naturalWidth / badgeImg.naturalHeight;
+          const drawW = appStorePos.w;
+          const drawH = drawW / aspectRatio;
+          ctx.save();
+          ctx.globalAlpha = 0.85;
+          ctx.drawImage(badgeImg, appStorePos.x, appStorePos.cy - drawH / 2, drawW, drawH);
+          ctx.restore();
+        } catch { /* badge load failed, skip */ }
+      }
+
       return new Promise((resolve) => out.toBlob((blob) => resolve(blob ?? null), 'image/png'));
     } catch (err) {
       console.error('[ConditioningCard] Export failed:', err);
