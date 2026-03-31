@@ -782,6 +782,7 @@ export function AdminQuickMode() {
     setPlayerName('');
     setJerseyNumber('');
     setPosition('');
+    setClassYear('');
     setContactInfo('');
     setPhotoUrl(null);
     setPhotoFile(null);
