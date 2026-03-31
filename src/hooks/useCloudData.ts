@@ -13,6 +13,7 @@ const defaultProfile: PlayerProfile = {
   number: 23,
   height: "5'8\"",
   grade: '8th Grade',
+  classYear: null,
   username: undefined,
   displayName: undefined,
   isProfilePublic: false,
