@@ -104,8 +104,10 @@ export function getEffectivePlan(user: UserAccessInfo): PlanId {
 
 /** Returns true if the user has any kind of special access (shouldn't see paywalls) */
 export function hasSpecialAccess(user: UserAccessInfo): boolean {
-  if (user.isGrandfathered) return true;
+  // Admin override to 'free' means NO special access
+  if (user.adminOverridePlan === 'free') return false;
   if (user.adminOverridePlan) return true;
+  if (user.isGrandfathered) return true;
   if (
     user.promoLockedIn &&
     user.promoType === 'AAU_MARCH_2026_ELITE_LOCK' &&
