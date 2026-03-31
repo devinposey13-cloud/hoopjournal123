@@ -1112,17 +1112,17 @@ export function AdminQuickMode() {
     if (footerScanEl && positions.footerScan) {
       const p = positions.footerScan;
       ctx.save();
-      ctx.font = `700 10px ${FONT}`;
+      ctx.font = `700 12px ${FONT}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#475569';
-      drawTrackedText(ctx, 'SCAN TO CLAIM', p.cx, p.cy, 10 * 0.1);
+      ctx.fillStyle = '#94a3b8';
+      drawTrackedText(ctx, 'SCAN TO CLAIM', p.cx, p.cy, 12 * 0.1);
       ctx.restore();
     }
     if (footerClaimEl && positions.footerClaim) {
       const p = positions.footerClaim;
       ctx.save();
-      ctx.font = `600 10px ${FONT}`;
+      ctx.font = `600 11px ${FONT}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#475569';
