@@ -849,8 +849,9 @@ export function AdminQuickMode() {
     const footerBrandEl = container.querySelector('[data-canvas-footer-brand]') as HTMLElement | null;
     const footerScanEl = container.querySelector('[data-canvas-footer-scan]') as HTMLElement | null;
     const footerClaimEl = container.querySelector('[data-canvas-footer-claim]') as HTMLElement | null;
+    const appStoreEl = container.querySelector('[data-canvas-appstore]') as HTMLElement | null;
 
-    const allEls = [avatarEl, gradeEl, nameEl, teamEl, archetypeEl, statusEl, labelEl, badgesEl, eventTagEl, footerBrandEl, footerScanEl, footerClaimEl].filter(Boolean) as HTMLElement[];
+    const allEls = [avatarEl, gradeEl, nameEl, teamEl, archetypeEl, statusEl, labelEl, badgesEl, eventTagEl, footerBrandEl, footerScanEl, footerClaimEl, appStoreEl].filter(Boolean) as HTMLElement[];
 
     // Read bounding rects BEFORE hiding
     const containerRect = container.getBoundingClientRect();
