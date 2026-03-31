@@ -34,6 +34,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import EULA from "./pages/EULA";
 import ClaimCard from "./pages/ClaimCard";
+import DeleteAccount from "./pages/DeleteAccount";
 import { AppleAuthDebugOverlay } from "./components/settings/AppleAuthDebugOverlay";
 import { ScrollToTop } from "./components/ScrollToTop";
 
@@ -124,6 +125,7 @@ const App = () => (
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/eula" element={<EULA />} />
                   <Route path="/claim" element={<ClaimCard />} />
+                  <Route path="/delete-account" element={<DeleteAccount />} />
                   <Route path="/:username" element={<PublicProfile />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
