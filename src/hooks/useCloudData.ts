@@ -899,7 +899,7 @@ export function useCloudData() {
           height: updates.height ?? profile.height,
           grade: updates.grade ?? profile.grade,
           class_year: updates.classYear ?? profile.classYear ?? null,
-          avatar_url: updates.avatar ?? profile.avatar ?? null,
+          avatar_url: 'avatar' in updates ? (updates.avatar ?? null) : (profile.avatar ?? null),
           username: updates.username ?? profile.username ?? null,
           display_name: updates.displayName ?? profile.displayName ?? null,
           is_profile_public: updates.isProfilePublic ?? profile.isProfilePublic ?? false,
