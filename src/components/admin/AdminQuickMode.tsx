@@ -318,17 +318,14 @@ function PromoCardCanvas({
         }}>
           {badges.slice(0, 3).map((badge, i) => (
             <div key={i} data-canvas-badge={i} style={{
-              background: i === 0 ? `${color}20` : `${color}10`,
-              border: `1.5px solid ${i === 0 ? `${color}50` : `${color}28`}`,
+              background: `${color}15`,
+              border: `1.5px solid ${color}35`,
               borderRadius: 50,
-              padding: i === 0 ? '13px 34px' : '12px 30px',
-              color: i === 0 ? color : color,
+              padding: '12px 30px',
+              color,
               fontSize: i === 0 ? 23 : 21,
-              fontWeight: i === 0 ? 800 : 700,
-              letterSpacing: '0.04em',
-              opacity: i === 0 ? 1 : 0.8,
-              boxShadow: i === 0 ? `0 0 24px ${color}18` : 'none',
-              transform: i === 0 ? 'scale(1.04)' : 'none',
+              fontWeight: 700,
+              letterSpacing: '1px',
             }}>{badge}</div>
           ))}
         </div>
