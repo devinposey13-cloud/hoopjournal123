@@ -16,6 +16,7 @@ import courtLines from '@/assets/basketball-court-lines.jpg';
 import appStoreBadge from '@/assets/app-store-badge.svg';
 import html2canvas from 'html2canvas';
 import { QRCodeSVG } from 'qrcode.react';
+import { getClassYearOptions, formatClassYear } from '@/utils/classYear';
 
 // ── Template Definitions ──
 const TEMPLATES = {
