@@ -1,39 +1,22 @@
 
 
-## Update Product ID Mappings for Google Play
+## Add "Free" Option to Admin Plan Override
 
 ### Problem
-The Google Play Store product IDs in RevenueCat don't match what the codebase expects:
-
-```text
-Current code expects (Android):    RevenueCat Play Store actual:
-premium:HoopJ_pro_monthly      →  pro_monthly:promonthly
-premium:HoopJ_pro_yearly       →  pro_monthly:proyearly
-premium:HoopJ_elite_monthly    →  pro_monthly:elitemonthly
-premium:HoopJ_elite_yearly     →  pro_monthly:eliteyearly
-```
-
-Also: The Play Store products need their entitlements attached in RevenueCat (screenshot shows "Attach" for all four).
+The admin console only offers "Pro" and "Elite" as plan override options. There's no way to force a user down to Free (e.g., to revoke a grandfathered or promo-granted plan).
 
 ### Plan
 
-**1. Add Play Store product IDs to client mapping (`src/hooks/useBilling.ts`)**
-- Add the four new Play Store IDs to `PRODUCT_TO_PLAN`:
-  - `pro_monthly:promonthly` → `pro`
-  - `pro_monthly:proyearly` → `pro`
-  - `pro_monthly:elitemonthly` → `elite`
-  - `pro_monthly:eliteyearly` → `elite`
-- Update `getNativeProductId()` to return the correct Play Store ID on Android instead of `premium:HoopJ_...`
+**1. Add "Free" option to the quick override dropdown in `src/components/AdminPanel.tsx`**
+- Add `<SelectItem value="free">Free</SelectItem>` between "No Override" and "Pro" (~line 1507)
 
-**2. Add Play Store product IDs to webhook mapping (`supabase/functions/revenuecat-webhook/index.ts`)**
-- Add the same four IDs to `RC_PRODUCT_TO_PLAN` so the webhook correctly processes Play Store purchases
+**2. Add "Free" option to the detailed override dropdown in `src/components/admin/AdminAccessControls.tsx`**
+- Add `<SelectItem value="free">Free</SelectItem>` between "No override" and "Pro" (~line 473)
 
-**3. RevenueCat setup (manual, not code)**
-- Attach entitlements to all four Play Store products in RevenueCat dashboard:
-  - `pro_monthly:promonthly` and `pro_monthly:proyearly` → **pro** entitlement
-  - `pro_monthly:elitemonthly` and `pro_monthly:eliteyearly` → **elite** entitlement
+### How it works
+The existing `getEffectivePlan()` logic already handles this correctly — `adminOverridePlan` is checked before subscription/promo/grandfathered status, so setting it to `'free'` will force the user to the free tier regardless of other access. "No Override" (null) continues to let the normal priority chain apply.
 
 ### Files Changed
-- `src/hooks/useBilling.ts` — add Play Store IDs to mapping + fix `getNativeProductId` for Android
-- `supabase/functions/revenuecat-webhook/index.ts` — add Play Store IDs to webhook mapping
+- `src/components/AdminPanel.tsx` — add "Free" select option
+- `src/components/admin/AdminAccessControls.tsx` — add "Free" select option
 
