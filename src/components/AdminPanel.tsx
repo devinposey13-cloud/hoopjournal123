@@ -1504,6 +1504,7 @@ export function AdminPanel() {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="none">No Override</SelectItem>
+                                <SelectItem value="free">Free</SelectItem>
                                 <SelectItem value="pro">Pro</SelectItem>
                                 <SelectItem value="elite">Elite</SelectItem>
                               </SelectContent>
