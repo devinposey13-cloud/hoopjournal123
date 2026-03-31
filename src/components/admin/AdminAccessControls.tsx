@@ -470,6 +470,7 @@ export function AdminAccessControls({ users, approvalRequests }: AdminAccessCont
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No override</SelectItem>
+                      <SelectItem value="free">Free</SelectItem>
                       <SelectItem value="pro">Pro</SelectItem>
                       <SelectItem value="elite">Elite</SelectItem>
                     </SelectContent>
