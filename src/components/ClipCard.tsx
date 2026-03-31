@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { VideoInteractions, VideoLikeButton } from './VideoInteractions';
+import { ReportContentDialog } from './ReportContentDialog';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ClipCardProps {
