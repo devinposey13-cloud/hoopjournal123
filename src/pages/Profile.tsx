@@ -30,7 +30,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 const positions = ['Point Guard', 'Shooting Guard', 'Combo Guard', 'Small Forward', 'Power Forward', 'Center'];
-const grades = ['6th Grade', '7th Grade', '8th Grade', 'Freshman', 'Sophomore', 'Junior', 'Senior'];
+import { getClassYearOptions, getClassYearDisplay, gradeToClassYear } from '@/utils/classYear';
 
 export default function Profile() {
   const navigate = useNavigate();
