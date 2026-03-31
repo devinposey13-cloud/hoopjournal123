@@ -252,6 +252,7 @@ export function useCloudData() {
           number: settingsData.number,
           height: settingsData.height,
           grade: settingsData.grade,
+          classYear: settingsData.class_year ?? null,
           avatar: settingsData.avatar_url || undefined,
           username: settingsData.username || undefined,
           displayName: settingsData.display_name || undefined,
