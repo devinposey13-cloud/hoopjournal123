@@ -446,6 +446,7 @@ export function AdminQuickMode() {
   const [teamName, setTeamName] = useState(saved.current.teamName || '');
   const [jerseyNumber, setJerseyNumber] = useState(saved.current.jerseyNumber || '');
   const [position, setPosition] = useState(saved.current.position || '');
+  const [classYear, setClassYear] = useState<string>(saved.current.classYear || '');
   const [templateKey, setTemplateKey] = useState<TemplateKey>(saved.current.templateKey || 'scorer');
   const [contactInfo, setContactInfo] = useState(saved.current.contactInfo || '');
   const [photoUrl, setPhotoUrl] = useState<string | null>(saved.current.photoUrl || null);
