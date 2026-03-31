@@ -78,6 +78,7 @@ export function ConditioningReportCard({ open, onOpenChange, data }: Conditionin
       });
       const badgePositions = badgeEls.map(el => ({ pos: getPos(el), text: el.textContent || '' }));
       const avatarPos = avatarEl ? getPos(avatarEl) : null;
+      const appStorePos = appStoreEl ? getPos(appStoreEl) : null;
       const avatarImg = avatarEl?.querySelector('img') as HTMLImageElement | null;
 
       // Hide for clean capture
