@@ -187,6 +187,7 @@ export default function Upgrade() {
               </div>
             </div>
           )}
+          <PurchaseDebugPanel visible={showDebug} />
         </div>
       </div>
 
