@@ -15,7 +15,7 @@
       justify-content: center;
       min-height: 100vh;
     }
-    .wrap { text-align: center; }
+    .wrap { text-align: center; max-width: 340px; }
     .spinner {
       width: 40px; height: 40px; margin: 0 auto 16px;
       border: 3px solid rgba(255,255,255,0.15);
@@ -25,18 +25,58 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     p { font-size: 15px; opacity: .7; }
+    #status { font-size: 13px; opacity: .5; margin-top: 12px; }
+    #fallback-msg { display: none; margin-top: 20px; }
+    #manual-btn {
+      display: none;
+      margin-top: 12px;
+      padding: 14px 28px;
+      background: #F97316;
+      color: #fff;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    #debug-info {
+      margin-top: 16px;
+      font-size: 11px;
+      opacity: .4;
+      word-break: break-all;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="spinner"></div>
     <p>Returning to Hoop Journal…</p>
+    <p id="status"></p>
+
+    <div id="fallback-msg">
+      <p style="opacity:.7;font-size:14px;">If the app didn't open automatically, tap below:</p>
+      <a id="manual-btn" href="#">Open Hoop Journal</a>
+    </div>
+
+    <div id="debug-info"></div>
   </div>
 
   <script>
     (function () {
       var SCHEME = 'hoopjournal';
       var CALLBACK_PATH = 'oauth/auth/callback';
+      var debug = document.getElementById('debug-info');
+      var logs = [];
+
+      function log(msg) {
+        logs.push('[' + new Date().toISOString().substr(11, 12) + '] ' + msg);
+        debug.textContent = logs.join('\n');
+        console.log('[native-callback] ' + msg);
+      }
+
+      log('Page loaded. URL: ' + window.location.href);
+      log('Hash: ' + (window.location.hash ? 'present (' + window.location.hash.length + ' chars)' : 'empty'));
+      log('Search: ' + (window.location.search ? 'present (' + window.location.search.length + ' chars)' : 'empty'));
 
       // Tokens can arrive in either the hash (#access_token=...) or query (?access_token=...)
       var raw = window.location.hash
@@ -59,18 +99,56 @@
         if (v) forward.set(k, v);
       });
 
+      var hasTokens = forward.has('access_token');
+      var hasError = forward.has('error');
       var query = forward.toString();
       var deepLink = SCHEME + '://' + CALLBACK_PATH + (query ? '?' + query : '');
 
-      console.log('[native-callback] Redirecting to deep link:', deepLink);
+      log('Tokens found: ' + (hasTokens ? 'YES' : 'NO'));
+      log('Error found: ' + (hasError ? forward.get('error') : 'NO'));
+      log('Deep link: ' + deepLink.substring(0, 80) + '...');
 
-      // Redirect immediately
-      window.location.replace(deepLink);
+      // Update visible status
+      var status = document.getElementById('status');
+      status.textContent = hasTokens ? 'Tokens received ✓' : (hasError ? 'Error: ' + forward.get('error') : 'No tokens found');
 
-      // Fallback: if replace doesn't work within 2s, try href
+      // Strategy 1: Create hidden <a> and programmatically click it
+      // Chrome Custom Tabs handles <a> clicks more reliably than window.location for custom schemes
+      try {
+        var link = document.createElement('a');
+        link.href = deepLink;
+        link.style.cssText = 'position:absolute;opacity:0;pointer-events:none;';
+        document.body.appendChild(link);
+        link.click();
+        log('Strategy 1: <a>.click() fired');
+      } catch (e) {
+        log('Strategy 1 failed: ' + e.message);
+      }
+
+      // Strategy 2: window.location after short delay
       setTimeout(function () {
+        log('Strategy 2: window.location.href');
         window.location.href = deepLink;
-      }, 2000);
+      }, 600);
+
+      // Strategy 3: window.location.replace after longer delay
+      setTimeout(function () {
+        log('Strategy 3: window.location.replace');
+        try {
+          window.location.replace(deepLink);
+        } catch (e) {
+          log('Strategy 3 failed: ' + e.message);
+        }
+      }, 1500);
+
+      // Last resort: show manual button after 3s
+      setTimeout(function () {
+        log('Showing manual fallback button');
+        var btn = document.getElementById('manual-btn');
+        btn.href = deepLink;
+        btn.style.display = 'inline-block';
+        document.getElementById('fallback-msg').style.display = 'block';
+      }, 3000);
     })();
   </script>
 </body>
