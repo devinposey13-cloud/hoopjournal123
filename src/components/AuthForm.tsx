@@ -114,8 +114,13 @@ export function AuthForm() {
     try {
       if (isNativeApp()) {
         // ── DESPIA NATIVE: Open system browser via Despia bridge ──
-        const redirectTo = getOAuthRedirectUri({ forNative: true });
-        console.log(`[Auth:Google] Despia native flow, redirectTo: ${redirectTo}`);
+        // Android uses a static HTML callback page that deep-links back to the app
+        // iOS continues using the SPA route (already works via OAuth bridge)
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        const redirectTo = isAndroid
+          ? getNativeCallbackUri()
+          : getOAuthRedirectUri({ forNative: true });
+        console.log(`[Auth:Google] Despia native flow, isAndroid: ${isAndroid}, redirectTo: ${redirectTo}`);
 
         googleTimeoutRef.current = window.setTimeout(() => {
           setGoogleLoading(false);
