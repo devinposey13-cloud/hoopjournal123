@@ -235,6 +235,7 @@ export default function Pricing() {
               </div>
             </div>
           )}
+          <PurchaseDebugPanel visible={showDebug} />
         </div>
       </div>
 
