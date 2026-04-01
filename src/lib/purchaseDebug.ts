@@ -139,7 +139,7 @@ export function startDebugSession(opts: {
     offeringId: opts.offeringId,
     productId: opts.productId,
     route: typeof window !== 'undefined' ? window.location.pathname : '',
-    appVersion: typeof __APP_VERSION__ !== 'undefined' ? (window as any).__APP_VERSION__ : 'unknown',
+    appVersion: (window as any).__APP_VERSION__ || 'unknown',
     callbackRegistered: false,
     callbackRegisteredAt: null,
     paywallLaunched: false,
