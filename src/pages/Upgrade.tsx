@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PurchaseDebugPanel } from '@/components/billing/PurchaseDebugPanel';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
