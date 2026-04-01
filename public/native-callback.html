@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signing in…</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #141a23;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .wrap { text-align: center; }
+    .spinner {
+      width: 40px; height: 40px; margin: 0 auto 16px;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: #F97316;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    p { font-size: 15px; opacity: .7; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="spinner"></div>
+    <p>Returning to Hoop Journal…</p>
+  </div>
+
+  <script>
+    (function () {
+      var SCHEME = 'hoopjournal';
+      var CALLBACK_PATH = 'oauth/auth/callback';
+
+      // Tokens can arrive in either the hash (#access_token=...) or query (?access_token=...)
+      var raw = window.location.hash
+        ? window.location.hash.substring(1)
+        : window.location.search.substring(1);
+
+      var params = new URLSearchParams(raw);
+
+      // Build deep-link with all relevant parameters
+      var forward = new URLSearchParams();
+
+      ['access_token', 'refresh_token', 'expires_in', 'token_type', 'type'].forEach(function (k) {
+        var v = params.get(k);
+        if (v) forward.set(k, v);
+      });
+
+      // Also forward errors
+      ['error', 'error_description', 'error_code'].forEach(function (k) {
+        var v = params.get(k);
+        if (v) forward.set(k, v);
+      });
+
+      var query = forward.toString();
+      var deepLink = SCHEME + '://' + CALLBACK_PATH + (query ? '?' + query : '');
+
+      console.log('[native-callback] Redirecting to deep link:', deepLink);
+
+      // Redirect immediately
+      window.location.replace(deepLink);
+
+      // Fallback: if replace doesn't work within 2s, try href
+      setTimeout(function () {
+        window.location.href = deepLink;
+      }, 2000);
+    })();
+  </script>
+</body>
+</html>

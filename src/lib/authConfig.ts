@@ -138,3 +138,15 @@ export const APPLE_CLIENT_ID = 'com.despia.hoopjourney.AppleAuth';
  * and Lovable Cloud auth settings.
  */
 export const APPLE_REDIRECT_URI = `${APP_ORIGIN}/~oauth/callback`;
+
+// ── Android Native OAuth ───────────────────────────────────────────
+
+/**
+ * Static callback page for Android native OAuth.
+ * This lightweight HTML page extracts tokens from the URL and
+ * immediately deep-links back to the Despia native app via
+ * hoopjournal://oauth/auth/callback?tokens.
+ */
+export const NATIVE_CALLBACK_PATH = '/native-callback.html';
+export const getNativeCallbackUri = (): string =>
+  `${APP_ORIGIN}${NATIVE_CALLBACK_PATH}`;

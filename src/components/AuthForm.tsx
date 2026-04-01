@@ -18,6 +18,7 @@ import { signInWithAppleNative, signInWithAppleRedirect } from '@/lib/apple-auth
 import {
   isCustomDomain,
   getOAuthRedirectUri,
+  getNativeCallbackUri,
 } from '@/lib/authConfig';
 
 const getDirectOAuthUrl = async (
