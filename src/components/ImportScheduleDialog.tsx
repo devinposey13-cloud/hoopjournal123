@@ -365,7 +365,6 @@ export function ImportScheduleDialog({ onImport, isMobile, existingGames = [] }:
                     ref={fileInputRef}
                     type="file"
                     accept="image/jpeg,image/png,image/heic,image/heif,image/webp"
-                    capture={isMobileDevice ? "environment" : undefined}
                     onChange={handleFileSelect}
                     className="hidden"
                   />
